@@ -1,0 +1,111 @@
+:root {
+  /* ---- Brand: warm orange ---- */
+  --brand-50: #fff7ed;
+  --brand-100: #ffedd5;
+  --brand-200: #fed7aa;
+  --brand-300: #fdba74;
+  --brand-400: #fb923c;
+  --brand-500: #f97316; /* primary */
+  --brand-600: #ea580c;
+  --brand-700: #c2410c;
+  --brand-800: #9a3412;
+  --brand-gradient: linear-gradient(135deg, #fb923c 0%, #f97316 55%, #ea580c 100%);
+  --brand-gradient-soft: linear-gradient(135deg, #fff3e6 0%, #ffe4c9 100%);
+
+  /* ---- Neutrals (warm) ---- */
+  --bg: #fbf7f2;
+  --surface: #ffffff;
+  --surface-2: #fbf5ee;
+  --surface-3: #f4ede3;
+  --border: #efe6da;
+  --border-strong: #e3d6c6;
+
+  --ink: #2b2019;
+  --ink-2: #6b5d51;
+  --ink-3: #9a8c7d;
+  --ink-inverse: #ffffff;
+
+  /* ---- Semantic ---- */
+  --success: #16a34a;
+  --success-bg: #e9f8ef;
+  --warning: #d97706;
+  --warning-bg: #fef3e2;
+  --danger: #dc2626;
+  --danger-bg: #fdeaea;
+  --info: #2563eb;
+  --info-bg: #e8f0fe;
+
+  /* ---- League tiers ---- */
+  --tier-green: #22c55e;
+  --tier-lime: #84cc16;
+  --tier-yellow: #eab308;
+  --tier-orange: #f97316;
+  --tier-red: #ef4444;
+
+  /* ---- Radius ---- */
+  --r-xs: 8px;
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-xl: 28px;
+  --r-full: 999px;
+
+  /* ---- Shadow ---- */
+  --shadow-sm: 0 1px 2px rgba(43, 32, 25, 0.06);
+  --shadow-md: 0 6px 18px rgba(180, 83, 9, 0.08);
+  --shadow-lg: 0 14px 40px rgba(180, 83, 9, 0.14);
+  --shadow-brand: 0 10px 24px rgba(249, 115, 22, 0.32);
+
+  /* ---- Type ---- */
+  --font-body: "Noto Sans KR", system-ui, -apple-system, sans-serif;
+  --font-display: "Nunito", "Noto Sans KR", system-ui, sans-serif;
+
+  /* ---- Layout ---- */
+  --app-max: 480px;
+  --nav-h: 66px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: #f2e9de;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+a {
+  color: var(--brand-600);
+  text-decoration: none;
+}
+::selection {
+  background: var(--brand-200);
+}

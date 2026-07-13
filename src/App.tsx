@@ -38,6 +38,7 @@ import { Billing } from "./screens/Billing";
 import { Policy } from "./screens/Policy";
 import { FindEmailResult } from "./screens/FindEmailResult";
 import { FindEmailNoMatch } from "./screens/FindEmailNoMatch";
+import { ResetPassword } from "./screens/ResetPassword";
 
 function Splash() {
   return (
@@ -78,6 +79,7 @@ export function App() {
         <Route path="/login" element={<RequireGuest><Login /></RequireGuest>} />
         <Route path="/signup" element={<RequireGuest><Signup /></RequireGuest>} />
         <Route path="/forgot" element={<RequireGuest><Forgot /></RequireGuest>} />
+        <Route path="/reset-password" element={<RequireGuest><ResetPassword /></RequireGuest>} />
 
         {/* Legal documents — viewable by guests and signed-in users */}
         <Route path="/policy/:doc" element={<Policy />} />

@@ -1,13 +1,20 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Screen } from "../components/layout/Screen";
-import { Button, CheckLine } from "../components/ui/kit";
-import { PasswordField, TextField } from "../components/ui/Field";
-import { SocialRow } from "./SocialRow";
+import { HangyulLogo, CitrusOutline } from "../components/brand/AuthBrand";
 import { authApi } from "../api/endpoints";
 import { useLoginFlow } from "../hooks/loginFlow";
 import { ApiError, errorMessage } from "../lib/http";
 
+/**
+ * Login screen — faithful single-screen reproduction of the reference:
+ * back chevron, centered Hangyul logo + slogan, left-aligned 로그인 heading,
+ * filled email/password fields, a dark 자동로그인 checkbox, an orange login
+ * button, and a centered 이메일 찾기 / 비밀번호 찾기 / 회원가입 link row.
+ *
+ * All authentication logic is preserved: email/password state, auto-login
+ * (default on), busy/loading guard, error handling (incl. 401), and the
+ * existing login API + post-login routing via useLoginFlow.
+ */
 export function Login() {
   const nav = useNavigate();
   const completeLogin = useLoginFlow();
@@ -36,42 +43,99 @@ export function Login() {
   }
 
   return (
-    <Screen title="로그인" back>
-      <form className="stack" onSubmit={submit} style={{ gap: 16 }}>
-        <h2 style={{ fontSize: 22, marginTop: 4 }}>다시 만나서 반가워요 👋</h2>
-        <TextField
-          label="이메일"
-          type="email"
-          autoComplete="email"
-          placeholder="you@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <PasswordField
-          label="비밀번호"
-          autoComplete="current-password"
-          placeholder="비밀번호"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        {err && <div className="field__error">⚠ {err}</div>}
-        <CheckLine checked={autoLogin} onToggle={() => setAutoLogin((v) => !v)}>
-          자동 로그인 유지
-        </CheckLine>
-        <Button size="lg" block loading={busy} type="submit">
-          로그인
-        </Button>
-        <button type="button" className="btn btn--ghost" style={{ background: "transparent" }} onClick={() => nav("/forgot")}>
-          비밀번호 · 이메일을 잊으셨나요?
-        </button>
-      </form>
-
-      <div className="row" style={{ margin: "22px 0 14px" }}>
-        <div className="divider" style={{ flex: 1 }} />
-        <span className="dim" style={{ fontSize: 12 }}>소셜 계정으로</span>
-        <div className="divider" style={{ flex: 1 }} />
+    <div className="screen login">
+      <div className="login__decor" aria-hidden="true">
+        <div className="login__glow" />
+        <CitrusOutline className="login__citrus login__citrus--tr" size={150} />
+        <CitrusOutline className="login__citrus login__citrus--ml" size={120} />
+        <CitrusOutline className="login__citrus login__citrus--br" size={180} />
       </div>
-      <SocialRow />
-    </Screen>
+
+      <div className="login__scroll">
+        <div className="login__inner">
+          <button className="login__back" onClick={() => nav(-1)} aria-label="뒤로">
+            <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+
+          <div className="login__brand">
+            <HangyulLogo />
+            <p className="auth__tagline">작은 귤 한 조각처럼, 매일 한 문장씩</p>
+          </div>
+
+          <h1 className="login__heading">로그인</h1>
+
+          <form className="login__form" onSubmit={submit}>
+            <div className="login__field">
+              <label className="login__label" htmlFor="login-email">
+                이메일
+              </label>
+              <input
+                id="login-email"
+                className="login__input"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                placeholder="이메일을 입력해주세요"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            <div className="login__field">
+              <label className="login__label" htmlFor="login-password">
+                비밀번호
+              </label>
+              <input
+                id="login-password"
+                className="login__input"
+                type="password"
+                autoComplete="current-password"
+                placeholder="비밀번호를 입력해주세요"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+
+            {err && <div className="login__error">⚠ {err}</div>}
+
+            <button
+              type="button"
+              className="login__check"
+              role="checkbox"
+              aria-checked={autoLogin}
+              onClick={() => setAutoLogin((v) => !v)}
+            >
+              <span className={`login__check-box ${autoLogin ? "is-on" : ""}`} aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M5 12.5l4.5 4.5L19 7.5" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+              <span className="login__check-label">자동로그인</span>
+            </button>
+
+            <button className="login__submit" type="submit" disabled={busy} aria-label="로그인">
+              {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : "로그인"}
+            </button>
+          </form>
+
+          <div className="login__links">
+            <button className="login__link" onClick={() => nav("/forgot", { state: { mode: "email" } })}>
+              이메일 찾기
+            </button>
+            <button className="login__link" onClick={() => nav("/forgot", { state: { mode: "password" } })}>
+              비밀번호 찾기
+            </button>
+            <button className="login__link" onClick={() => nav("/signup")}>
+              회원가입
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

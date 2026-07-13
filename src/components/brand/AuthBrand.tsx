@@ -118,8 +118,8 @@ export function LineIcon({ size = 30 }: { size?: number }) {
 
 /* ------------------------ Decorative background ----------------------- */
 
-/** A thin, dashed orange citrus-wheel outline. Purely decorative. */
-function CitrusSlice({ className, size }: { className: string; size: number }) {
+/** A thin, dashed orange citrus-wheel outline. Purely decorative & reusable. */
+export function CitrusOutline({ className, size }: { className: string; size: number }) {
   const seg = [];
   for (let i = 0; i < 8; i++) {
     const a = (i * Math.PI) / 4;
@@ -159,10 +159,10 @@ export function AuthDecor() {
   return (
     <div className="auth__decor" aria-hidden="true">
       <div className="auth__glow" />
-      <CitrusSlice className="auth__citrus auth__citrus--tr" size={150} />
-      <CitrusSlice className="auth__citrus auth__citrus--ml" size={120} />
-      <CitrusSlice className="auth__citrus auth__citrus--bl" size={130} />
-      <CitrusSlice className="auth__citrus auth__citrus--br" size={160} />
+      <CitrusOutline className="auth__citrus auth__citrus--tr" size={150} />
+      <CitrusOutline className="auth__citrus auth__citrus--ml" size={120} />
+      <CitrusOutline className="auth__citrus auth__citrus--bl" size={130} />
+      <CitrusOutline className="auth__citrus auth__citrus--br" size={160} />
     </div>
   );
 }

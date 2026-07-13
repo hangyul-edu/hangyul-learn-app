@@ -1,12 +1,15 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CountrySelect } from "../components/ui/CountrySelect";
+import { Sheet } from "../components/ui/Modal";
+import { PolicyBody } from "./Policy";
 import { authApi } from "../api/endpoints";
 import { useLoginFlow } from "../hooks/loginFlow";
 import { useToast } from "../hooks/toast";
 import { useVerification, mmss } from "../hooks/verification";
 import { errorMessage } from "../lib/http";
 import { NATIONALITIES } from "../lib/format";
+import { POLICIES, type PolicyId } from "../lib/policies";
 
 function passwordProblem(p: string): string | null {
   if (p.length < 8 || p.length > 64) return "8~64자로 입력해 주세요.";
@@ -19,11 +22,11 @@ function emailValid(e: string) {
 }
 
 type AgreeKey = "age" | "terms" | "privacy" | "third";
-const AGREEMENTS: { key: AgreeKey; label: string; underline?: boolean }[] = [
+const AGREEMENTS: { key: AgreeKey; label: string; underline?: boolean; doc?: PolicyId }[] = [
   { key: "age", label: "[필수] 만 14세 이상 (미만 시 법정대리인 동의)" },
-  { key: "terms", label: "회원이용약관 (필수)", underline: true },
-  { key: "privacy", label: "개인정보수집 및 이용동의 (필수)" },
-  { key: "third", label: "개인정보 제 3자 제공 동의 (필수)" },
+  { key: "terms", label: "회원이용약관 (필수)", underline: true, doc: "terms" },
+  { key: "privacy", label: "개인정보수집 및 이용동의 (필수)", doc: "privacy" },
+  { key: "third", label: "개인정보 제 3자 제공 동의 (필수)", doc: "third-party" },
 ];
 
 export function Signup() {
@@ -41,6 +44,7 @@ export function Signup() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [agree, setAgree] = useState({ age: false, terms: false, privacy: false, third: false });
+  const [policyOpen, setPolicyOpen] = useState<PolicyId | null>(null);
 
   const dial = useMemo(() => NATIONALITIES.find((n) => n.code === country)?.dial ?? "+82", [country]);
   const e164 = useMemo(() => `${dial}${localPhone.replace(/^0+/, "").replace(/\D/g, "")}`, [dial, localPhone]);
@@ -346,9 +350,18 @@ export function Signup() {
               const checked = agree[a.key];
               return (
                 <div key={a.key} className="signup__agree">
-                  <span className={`signup__agree-label ${a.underline ? "signup__agree-label--link" : ""}`}>
-                    {a.label}
-                  </span>
+                  {a.doc ? (
+                    <button
+                      type="button"
+                      className={`signup__agree-label signup__agree-label--btn ${a.underline ? "signup__agree-label--link" : ""}`}
+                      onClick={() => setPolicyOpen(a.doc!)}
+                      aria-label={`${a.label} 자세히 보기`}
+                    >
+                      {a.label}
+                    </button>
+                  ) : (
+                    <span className="signup__agree-label">{a.label}</span>
+                  )}
                   <button
                     type="button"
                     className="signup__agree-box"
@@ -372,6 +385,14 @@ export function Signup() {
           </button>
         </div>
       </div>
+
+      <Sheet
+        open={policyOpen !== null}
+        onClose={() => setPolicyOpen(null)}
+        title={policyOpen ? POLICIES[policyOpen].title : ""}
+      >
+        {policyOpen && <PolicyBody id={policyOpen} />}
+      </Sheet>
     </div>
   );
 }

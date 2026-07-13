@@ -35,6 +35,7 @@ import { Exams, ExamPlay } from "./screens/Exams";
 import { Recommendations } from "./screens/Recommendations";
 import { PaymentMethods } from "./screens/PaymentMethods";
 import { Billing } from "./screens/Billing";
+import { Policy } from "./screens/Policy";
 
 function Splash() {
   return (
@@ -75,6 +76,9 @@ export function App() {
         <Route path="/login" element={<RequireGuest><Login /></RequireGuest>} />
         <Route path="/signup" element={<RequireGuest><Signup /></RequireGuest>} />
         <Route path="/forgot" element={<RequireGuest><Forgot /></RequireGuest>} />
+
+        {/* Legal documents — viewable by guests and signed-in users */}
+        <Route path="/policy/:doc" element={<Policy />} />
 
         {/* Setup (authenticated, outside tab shell) */}
         <Route path="/setup/profile" element={<RequireAuth><SetupProfile /></RequireAuth>} />

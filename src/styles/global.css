@@ -1492,9 +1492,47 @@ textarea.input {
   font-weight: 700;
   font-size: 14.5px;
 }
+.signup__agree-label--btn {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: var(--su-text);
+}
 .signup__agree-label--link {
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+/* Legal document body (route screen + sign-up sheet) */
+.policy__intro {
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0 0 6px;
+}
+.policy__updated {
+  color: var(--ink-3);
+  font-size: 12.5px;
+  margin: 0 0 14px;
+}
+.policy__section {
+  margin-bottom: 16px;
+}
+.policy__heading {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--ink);
+  margin: 0 0 6px;
+}
+.policy__para {
+  color: var(--ink-2);
+  font-size: 13.5px;
+  line-height: 1.65;
+  margin: 0 0 6px;
 }
 .signup__agree-box {
   flex: 0 0 auto;

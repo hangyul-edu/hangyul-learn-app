@@ -2800,6 +2800,34 @@ textarea.input {
   background: linear-gradient(150deg, #fffdf8 0%, #fffaf2 55%, #fff0df 100%);
   box-shadow: 0 10px 26px rgba(80, 70, 60, 0.1);
 }
+/* Completed-goal achievement banner */
+.home__hero-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: clamp(60px, 15vw, 74px);
+  margin-bottom: clamp(18px, 4vw, 26px);
+  padding: 10px 16px;
+  border-radius: 20px;
+  background: #64c8c9;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(18px, 5.4vw, 22px);
+  box-shadow: 0 8px 18px rgba(80, 70, 60, 0.14);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .home__hero.is-done .home__hero-banner {
+    animation: hero-banner-in 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  }
+}
+@keyframes hero-banner-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
 .home__hero-top {
   display: flex;
   align-items: center;

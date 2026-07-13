@@ -23,9 +23,11 @@ function trackIcon(category: string, size = 30) {
   return <SpeakingIcon size={size} />;
 }
 
-/** Open horseshoe progress gauge with the percentage centered. */
-function DailyGauge({ ratio }: { ratio: number }) {
+/** Open horseshoe progress gauge with the percentage centered. When complete
+ *  the arc turns celebratory yellow; otherwise it uses brand orange. */
+function DailyGauge({ ratio, done }: { ratio: number; done: boolean }) {
   const pct = Math.max(0, Math.min(100, Math.round(ratio * 100)));
+  const arcColor = done ? "#FFB91F" : "#FF5B00";
   const r = 78;
   const cx = 100;
   const cy = 100;
@@ -49,7 +51,7 @@ function DailyGauge({ ratio }: { ratio: number }) {
           <path
             d={d}
             fill="none"
-            stroke="#FF5B00"
+            stroke={arcColor}
             strokeWidth="20"
             strokeLinecap="round"
             strokeDasharray={`${filled} ${arcLen}`}
@@ -110,7 +112,13 @@ export function Home() {
           {(d: DashboardSummary) => {
             const tracks = d.tracks;
             const active: DashboardTrack | undefined = tracks[Math.min(tab, tracks.length - 1)];
-            const ratio = active && active.goal.target ? active.goal.current / active.goal.target : 0;
+            const target = active?.goal.target ?? 0;
+            const rawCurrent = active?.goal.current ?? 0;
+            // Completed = authoritative flag AND a valid goal reached (guards
+            // against a zero/absent goal). Evaluated for the SELECTED track only.
+            const done = !!active && target > 0 && (active.goal.achieved || rawCurrent >= target);
+            const shownCurrent = target > 0 ? Math.min(rawCurrent, target) : rawCurrent; // clamp display to goal
+            const ratio = target ? rawCurrent / target : 0;
             return (
               <>
                 {/* Streak */}
@@ -141,28 +149,39 @@ export function Home() {
                       </span>
                     </div>
 
-                    {/* Hero learning card */}
-                    <section className="home__hero" aria-label={`${active.name} 학습 현황`}>
+                    {/* Hero learning card (in-progress / completed states) */}
+                    <section
+                      className={`home__hero ${done ? "is-done" : ""}`}
+                      aria-label={`${active.name} 학습 현황`}
+                    >
+                      {done && (
+                        <div className="home__hero-banner" role="status">
+                          오늘 목표 100% 달성! 대단해요 ✨
+                        </div>
+                      )}
                       <div className="home__hero-top">
                         <div className="home__hero-info">
                           <h2 className="home__hero-title">{active.name}</h2>
                           <div className="home__hero-level">
                             {active.category === "topik" ? `${active.level}급` : `Lv.${active.level}`}
                           </div>
-                          <div className="home__hero-goal">
+                          <div
+                            className="home__hero-goal"
+                            aria-label={`${active.goal.label || "하루 목표"} ${target}개 중 ${shownCurrent}개 완료, ${Math.min(100, Math.round(ratio * 100))}퍼센트`}
+                          >
                             <span className="home__hero-goal-label">{active.goal.label || "하루 목표"}</span>
                             <span className="home__hero-goal-frac">
-                              {active.goal.current}/{active.goal.target}
+                              {shownCurrent}/{target}
                             </span>
                           </div>
                         </div>
-                        <DailyGauge ratio={ratio} />
+                        <DailyGauge ratio={ratio} done={done} />
                       </div>
                       <button
                         className="home__hero-cta"
                         onClick={() => nav(active.category === "topik" ? "/learn/topik" : "/learn/conversation")}
                       >
-                        바로 시작하기
+                        {done ? "이어서 학습하기" : "바로 시작하기"}
                       </button>
                     </section>
                   </>

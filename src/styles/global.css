@@ -1782,6 +1782,240 @@ textarea.input {
   box-shadow: 0 8px 16px rgba(176, 185, 193, 0.3);
   cursor: default;
 }
+
+/* ============================ Find email screen ============================ */
+.findemail {
+  position: relative;
+  background: #ffffff;
+  --fe-text: #272c30;
+  --fe-label: #69737a;
+  --fe-placeholder: #b2bbc1;
+  --fe-fill: #f3f5f5;
+  --fe-orange: #ff5b00;
+  --fe-dark: #292e31;
+  --fe-teal: #3ec6cb;
+  --fe-disabled: #b0b9c1;
+  --fe-border: #d8dde1;
+}
+.findemail__scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.findemail__inner {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--safe-top) + 10px) clamp(20px, 6.2vw, 25px) calc(24px + var(--safe-bottom));
+}
+
+.findemail__back {
+  width: 44px;
+  height: 44px;
+  margin: 6px 0 0 -10px;
+  border: none;
+  background: none;
+  color: var(--fe-text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.findemail__back:active {
+  opacity: 0.55;
+}
+
+.findemail__title {
+  margin: clamp(36px, 8vh, 72px) 0 0;
+  color: var(--fe-text);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(30px, 8.8vw, 37px);
+  letter-spacing: -0.01em;
+}
+.findemail__subtitle {
+  margin: clamp(16px, 2.6vh, 22px) 0 0;
+  color: var(--fe-label);
+  font-size: clamp(14px, 4vw, 16px);
+  line-height: 1.5;
+}
+
+.findemail__field {
+  display: flex;
+  flex-direction: column;
+  margin-top: clamp(20px, 3.4vh, 30px);
+}
+.findemail__label {
+  color: var(--fe-label);
+  font-weight: 500;
+  font-size: clamp(14px, 4vw, 15px);
+  margin: 0 0 9px 2px;
+}
+.findemail__row {
+  display: flex;
+  align-items: center;
+  gap: clamp(11px, 3.4vw, 15px);
+}
+
+/* Inputs (tall filled fields) */
+.findemail__input {
+  height: clamp(60px, 15.5vw, 70px);
+  width: 100%;
+  border: 1.5px solid transparent;
+  border-radius: 15px;
+  background: var(--fe-fill);
+  padding: 0 20px;
+  font-size: 16px;
+  color: var(--fe-text);
+  transition: border-color 0.14s, background 0.14s;
+}
+.findemail__input::placeholder {
+  color: var(--fe-placeholder);
+}
+.findemail__input:focus {
+  outline: none;
+  border-color: var(--fe-orange);
+  background: #fff;
+  caret-color: var(--fe-orange);
+}
+.findemail__input:disabled {
+  opacity: 0.7;
+}
+.findemail__input--flex {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+.findemail__input.is-error {
+  border-color: var(--danger);
+}
+
+/* Country selector (white, light-gray outline) */
+.findemail__country {
+  flex: 0 0 auto;
+  width: 75px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid var(--fe-border);
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+.findemail__country:active {
+  transform: scale(0.97);
+}
+
+/* Dark action pills */
+.findemail__pill {
+  flex: 0 0 auto;
+  width: 117px;
+  height: 50px;
+  border: none;
+  border-radius: 10px;
+  background: var(--fe-dark);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 0 3px 9px rgba(41, 46, 49, 0.2);
+  transition: transform 0.08s ease, opacity 0.15s;
+}
+.findemail__pill--sm {
+  width: 88px;
+}
+.findemail__pill:active {
+  transform: scale(0.97);
+}
+.findemail__pill:disabled {
+  opacity: 0.45;
+  box-shadow: none;
+  cursor: default;
+}
+
+/* Code input with integrated timer */
+.findemail__code {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: clamp(60px, 15.5vw, 70px);
+  border: 1.5px solid transparent;
+  border-radius: 15px;
+  background: var(--fe-fill);
+  transition: border-color 0.14s, background 0.14s;
+}
+.findemail__code:focus-within {
+  border-color: var(--fe-orange);
+  background: #fff;
+}
+.findemail__code-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  background: none;
+  padding: 0 74px 0 20px;
+  font-size: 16px;
+  color: var(--fe-text);
+  caret-color: var(--fe-orange);
+}
+.findemail__code-input:focus {
+  outline: none;
+}
+.findemail__code-input::placeholder {
+  color: var(--fe-placeholder);
+}
+.findemail__timer {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--fe-teal);
+  font-weight: 500;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.findemail__err {
+  margin: 8px 0 0 2px;
+  color: var(--danger);
+  font-size: 12.5px;
+}
+
+/* Intentional empty area before the bottom action */
+.findemail__spacer {
+  flex: 1 1 auto;
+  min-height: clamp(28px, 10vh, 120px);
+}
+
+.findemail__submit {
+  height: clamp(58px, 15vw, 70px);
+  width: 100%;
+  border: none;
+  border-radius: 16px;
+  background: var(--fe-orange);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 18px rgba(255, 91, 0, 0.24);
+  transition: transform 0.08s ease, background 0.15s, box-shadow 0.15s;
+}
+.findemail__submit:active {
+  transform: scale(0.99);
+}
+.findemail__submit:disabled {
+  background: var(--fe-disabled);
+  box-shadow: 0 8px 16px rgba(176, 185, 193, 0.3);
+  cursor: default;
+}
 .signup__agree-box {
   flex: 0 0 auto;
   border: none;

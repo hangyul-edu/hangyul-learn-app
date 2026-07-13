@@ -49,6 +49,19 @@ export function useVerification(opts: {
     return () => clearInterval(t);
   }, [cooldown]);
 
+  /** Clear all verification state — call when a verified input (phone/country/
+   *  name) changes so a stale code/token can't be reused. */
+  const reset = useCallback(() => {
+    setVid(null);
+    setCode("");
+    setExpiresAt(null);
+    setSecondsLeft(0);
+    setCooldown(0);
+    setVerified(false);
+    setToken("");
+    setError(null);
+  }, []);
+
   const request = useCallback(async () => {
     if (sending || cooldown > 0) return;
     setSending(true);
@@ -100,6 +113,7 @@ export function useVerification(opts: {
     error,
     request,
     confirmCode,
+    reset,
   };
 }
 

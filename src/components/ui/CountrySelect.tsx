@@ -10,9 +10,12 @@ import { NATIONALITIES } from "../../lib/format";
 export function CountrySelect({
   value,
   onChange,
+  className = "signup__country",
 }: {
   value: string;
   onChange: (code: string) => void;
+  /** Trigger-button class; defaults to the sign-up style. */
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const current = NATIONALITIES.find((n) => n.code === value) ?? NATIONALITIES[0];
@@ -21,7 +24,7 @@ export function CountrySelect({
     <>
       <button
         type="button"
-        className="signup__country"
+        className={className}
         onClick={() => setOpen(true)}
         aria-label={`국가 선택, 현재 ${current.label}`}
         aria-haspopup="dialog"

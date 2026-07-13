@@ -5,17 +5,11 @@ import { Button, CheckLine, OptionCard } from "../components/ui/kit";
 import { onboardingApi } from "../api/endpoints";
 import { OnboardingIntro } from "./OnboardingIntro";
 import { OnboardingPurpose } from "./OnboardingPurpose";
+import { OnboardingSpeaking } from "./OnboardingSpeaking";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 
 type Purpose = "conversation" | "topik";
-const SPEAK = [
-  { v: "beginner", emoji: "🌱", t: "왕초보", s: "완전히 처음이에요" },
-  { v: "elementary", emoji: "🐣", t: "초급", s: "단어를 조금 알아요" },
-  { v: "intermediate", emoji: "🌿", t: "중급", s: "간단한 문장을 만들어요" },
-  { v: "advanced", emoji: "🌳", t: "고급", s: "일상 대화가 가능해요" },
-  { v: "fluent", emoji: "🏆", t: "유창함", s: "자유롭게 말해요" },
-];
 const GOALS = [5, 10, 20, 30, 40];
 
 export function Onboarding() {
@@ -72,6 +66,18 @@ export function Onboarding() {
       />
     );
 
+  // Step 1, conversation branch — Korean speaking-level question.
+  if (step === 1 && purpose === "conversation")
+    return (
+      <OnboardingSpeaking
+        value={speaking}
+        onSelect={setSpeaking}
+        onBack={() => setStep(0)}
+        onNext={() => setStep(2)}
+        progress={(step + 1) / 3}
+      />
+    );
+
   return (
     <div className="screen">
       <TopBar back onBack={() => setStep((s) => s - 1)} title="시작하기" />
@@ -89,14 +95,6 @@ export function Onboarding() {
           </div>
         )}
 
-        {step === 1 && purpose === "conversation" && (
-          <div className="stack">
-            <h2 style={{ fontSize: 22 }}>지금 실력은 어느 정도인가요?</h2>
-            {SPEAK.map((s) => (
-              <OptionCard key={s.v} selected={speaking === s.v} onClick={() => setSpeaking(s.v)} emoji={s.emoji} title={s.t} sub={s.s} />
-            ))}
-          </div>
-        )}
         {step === 1 && purpose === "topik" && (
           <div className="stack">
             <h2 style={{ fontSize: 22 }}>목표 TOPIK 급수는?</h2>

@@ -32,11 +32,12 @@ function GoalCharacter() {
 }
 
 /**
- * Final conversation-track onboarding question — daily sentence goal. Faithful
- * visual for the existing Onboarding step 2 (conversation branch); it owns no
- * state or API logic. The parent keeps the `goal` draft and calls the existing
- * `submit()` on the CTA, which completes onboarding server-side (level
- * assignment + navigation) only on success.
+ * Final onboarding question — daily goal. Faithful visual for the existing
+ * Onboarding step 2 (both branches: `daily_sentence_goal` for conversation,
+ * `daily_question_goal` for TOPIK — only the heading differs). It owns no state
+ * or API logic: the parent keeps the `goal` draft and calls the existing
+ * `submit()` on the CTA, which sends the branch-correct field and completes
+ * onboarding server-side (level assignment + navigation) only on success.
  */
 export function OnboardingDailyGoal({
   value,
@@ -45,6 +46,7 @@ export function OnboardingDailyGoal({
   onSubmit,
   busy,
   progress,
+  heading,
 }: {
   value: number;
   onSelect: (n: number) => void;
@@ -53,6 +55,8 @@ export function OnboardingDailyGoal({
   busy: boolean;
   /** 0–1 position of this question in the flow (drives the progress bar). */
   progress: number;
+  /** The second heading line (branch-specific: sentences vs. questions). */
+  heading: string;
 }) {
   const pct = Math.round(Math.min(1, Math.max(0, progress)) * 100);
   const valid = GOALS.some((g) => g.n === value);
@@ -80,7 +84,7 @@ export function OnboardingDailyGoal({
 
           <div className="onbg__heading">
             <p className="onbg__q1">마지막 질문이에요!</p>
-            <h1 className="onbg__q2">하루에 몇 문장씩 연습할까요?</h1>
+            <h1 className="onbg__q2">{heading}</h1>
           </div>
 
           <div className="onbq__answers" role="radiogroup" aria-label="하루 학습 목표">

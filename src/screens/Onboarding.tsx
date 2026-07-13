@@ -4,6 +4,7 @@ import { TopBar } from "../components/layout/Screen";
 import { Button, CheckLine, OptionCard } from "../components/ui/kit";
 import { onboardingApi } from "../api/endpoints";
 import { OnboardingIntro } from "./OnboardingIntro";
+import { OnboardingPurpose } from "./OnboardingPurpose";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 
@@ -58,9 +59,22 @@ export function Onboarding() {
   // question flow (no answer submitted, onboarding not marked complete).
   if (!started) return <OnboardingIntro onStart={() => setStarted(true)} />;
 
+  // Step 0 — learning-purpose (track) selection, with its faithful layout. The
+  // draft `purpose` and branch routing stay here; the screen only reads/sets it.
+  if (step === 0)
+    return (
+      <OnboardingPurpose
+        purpose={purpose}
+        onSelect={setPurpose}
+        onBack={() => setStarted(false)}
+        onNext={() => setStep(1)}
+        progress={(step + 1) / 3}
+      />
+    );
+
   return (
     <div className="screen">
-      <TopBar back onBack={() => (step === 0 ? nav("/home") : setStep((s) => s - 1))} title="시작하기" />
+      <TopBar back onBack={() => setStep((s) => s - 1)} title="시작하기" />
       <div className="screen__body">
         <div className="progress" style={{ marginBottom: 22 }}>
           <div className="progress__bar" style={{ width: `${((step + 1) / 3) * 100}%` }} />

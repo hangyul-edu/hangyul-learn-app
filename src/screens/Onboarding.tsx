@@ -6,6 +6,7 @@ import { onboardingApi } from "../api/endpoints";
 import { OnboardingIntro } from "./OnboardingIntro";
 import { OnboardingPurpose } from "./OnboardingPurpose";
 import { OnboardingSpeaking } from "./OnboardingSpeaking";
+import { OnboardingDailyGoal } from "./OnboardingDailyGoal";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 
@@ -74,6 +75,20 @@ export function Onboarding() {
         onSelect={setSpeaking}
         onBack={() => setStep(0)}
         onNext={() => setStep(2)}
+        progress={(step + 1) / 3}
+      />
+    );
+
+  // Step 2, conversation branch — final question (daily sentence goal). The CTA
+  // runs the existing submit(), which completes onboarding server-side.
+  if (step === 2 && purpose === "conversation")
+    return (
+      <OnboardingDailyGoal
+        value={goal}
+        onSelect={setGoal}
+        onBack={() => setStep(1)}
+        onSubmit={submit}
+        busy={busy}
         progress={(step + 1) / 3}
       />
     );

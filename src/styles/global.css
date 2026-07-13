@@ -2585,6 +2585,109 @@ textarea.input {
   transform: rotate(12deg);
 }
 
+/* Onboarding: daily-goal (final conversation) question */
+.onbg__heading {
+  margin-top: clamp(26px, 5vh, 48px);
+  text-align: center;
+}
+.onbg__q1 {
+  margin: 0;
+  color: #272c30;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(15px, 4.4vw, 18px);
+}
+.onbg__q2 {
+  margin: clamp(6px, 1vh, 10px) 0 0;
+  color: #272c30;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(21px, 6vw, 25px);
+  line-height: 1.3;
+}
+.onbg__card {
+  height: clamp(64px, 16vw, 82px);
+  border: 1px solid #e1e4e6;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(37, 43, 47, 0.06);
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 4vw, 18px);
+  padding: 0 clamp(22px, 7vw, 28px);
+  cursor: pointer;
+  transition: border-color 0.14s, background 0.14s, transform 0.08s;
+}
+.onbg__card:active {
+  transform: scale(0.99);
+}
+.onbg__card.is-selected {
+  background: #fff8f3;
+  border-color: #ff6a1a;
+}
+.onbg__qty {
+  min-width: clamp(46px, 13vw, 56px);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(19px, 5.4vw, 22px);
+  color: #59636a;
+}
+.onbg__card.is-selected .onbg__qty {
+  color: #ff5b00;
+}
+.onbg__pill {
+  display: inline-flex;
+  align-items: center;
+  height: clamp(36px, 9vw, 44px);
+  padding: 0 clamp(12px, 4vw, 16px);
+  border-radius: 999px;
+  background: #f3f5f5;
+  color: #59636a;
+  font-size: clamp(13px, 4vw, 16px);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.onbg__pill--rec {
+  background: #ddf6f4;
+}
+.onbg__pill-hl {
+  color: #48c7c9;
+  font-weight: 700;
+  margin-right: 3px;
+}
+
+/* Green-cap character + pink stepping stones */
+.onbg__art {
+  position: relative;
+  width: 100%;
+  height: clamp(120px, 24vh, 168px);
+  margin-top: clamp(14px, 3vh, 30px);
+  flex-shrink: 0;
+}
+.onbg__char {
+  position: absolute;
+  left: 20%;
+  bottom: 14%;
+  width: clamp(94px, 26vw, 120px);
+  display: block;
+}
+.onbg__stones {
+  position: absolute;
+  left: 27%;
+  right: 5%;
+  bottom: 8%;
+  display: flex;
+  align-items: center;
+  gap: clamp(9px, 3.4vw, 18px);
+}
+.onbg__stones i {
+  flex: 1;
+  max-width: 46px;
+  height: clamp(9px, 2.4vw, 13px);
+  border-radius: 50%;
+  background: #fbdadb;
+}
+
 /* Next button */
 .onbq__next {
   height: clamp(56px, 14vw, 66px);

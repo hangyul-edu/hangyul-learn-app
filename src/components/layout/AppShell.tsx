@@ -1,20 +1,21 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { http } from "../../lib/http";
+import { NavHome, NavLecture, NavFlag, NavMedal, NavMore } from "../brand/HomeIcons";
 
-const TABS = [
-  { to: "/home", icon: "🏠", label: "홈" },
-  { to: "/learn", icon: "📚", label: "학습" },
-  { to: "/league", icon: "🏆", label: "리그" },
-  { to: "/social", icon: "👥", label: "친구" },
-  { to: "/profile", icon: "🙂", label: "내 정보" },
+type TabId = "home" | "lecture" | "personalized" | "league" | "more";
+const TABS: { id: TabId; to: string; label: string; icon: (a: boolean) => JSX.Element }[] = [
+  { id: "home", to: "/home", label: "홈", icon: (a) => <NavHome active={a} /> },
+  { id: "lecture", to: "/courses", label: "강의", icon: (a) => <NavLecture active={a} /> },
+  { id: "personalized", to: "/recommend", label: "맞춤 학습", icon: (a) => <NavFlag active={a} /> },
+  { id: "league", to: "/league", label: "리그", icon: (a) => <NavMedal active={a} /> },
+  { id: "more", to: "/profile", label: "더보기", icon: (a) => <NavMore active={a} /> },
 ];
 
 export function AppShell() {
   const nav = useNavigate();
   const loc = useLocation();
 
-  // Small unread badge on the profile/home tab area — polled lightly.
   const { data: unread } = useQuery({
     queryKey: ["notif-unread"],
     queryFn: () => http.get<{ has_unread: boolean }>("/notifications/unread"),
@@ -28,17 +29,21 @@ export function AppShell() {
     <>
       <Outlet />
       <nav className="bottomnav">
-        {TABS.map((t) => (
-          <button
-            key={t.to}
-            className={`bottomnav__item ${active(t.to) ? "is-active" : ""}`}
-            onClick={() => nav(t.to)}
-          >
-            <span className="bottomnav__icon">{t.icon}</span>
-            {t.label}
-            {t.to === "/profile" && unread?.has_unread && <span className="bottomnav__badge" />}
-          </button>
-        ))}
+        {TABS.map((t) => {
+          const on = active(t.to);
+          return (
+            <button
+              key={t.id}
+              className={`bottomnav__item ${on ? "is-active" : ""}`}
+              onClick={() => nav(t.to)}
+              aria-current={on ? "page" : undefined}
+            >
+              <span className="bottomnav__icon">{t.icon(on)}</span>
+              {t.label}
+              {t.id === "more" && unread?.has_unread && <span className="bottomnav__badge" />}
+            </button>
+          );
+        })}
       </nav>
     </>
   );

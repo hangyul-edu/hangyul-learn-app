@@ -2688,6 +2688,289 @@ textarea.input {
   background: #fbdadb;
 }
 
+/* ============================ Home dashboard ============================ */
+.home {
+  background: #fff9f2;
+}
+.home__body {
+  padding: calc(var(--safe-top) + 12px) 18px calc(var(--nav-h) + 24px + var(--safe-bottom));
+}
+
+/* Header */
+.home__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 4px 0;
+}
+.home__greet {
+  margin: 0;
+  color: #272c30;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(18px, 5.2vw, 21px);
+}
+.home__greet b {
+  font-weight: 800;
+}
+.home__bell {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.home__bell-dot {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff5b00;
+}
+
+/* Streak card */
+.home__streak {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin-top: 16px;
+  padding: 16px 18px;
+  border: none;
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(80, 70, 60, 0.1);
+  cursor: pointer;
+}
+.home__streak:active {
+  transform: scale(0.995);
+}
+.home__streak-text {
+  flex: 1;
+  text-align: left;
+  color: #272c30;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(19px, 5.4vw, 23px);
+}
+
+/* Learning-mode tabs */
+.home__tabs {
+  display: flex;
+  gap: 6px;
+  margin: 22px 0 0 2px;
+  width: fit-content;
+}
+.home__tab {
+  width: clamp(56px, 16vw, 66px);
+  height: clamp(48px, 13vw, 56px);
+  border: none;
+  border-radius: 14px 14px 4px 4px;
+  background: #f1f2f4;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.02);
+}
+.home__tab.is-active {
+  background: #fffdf8;
+  box-shadow: 0 -4px 10px rgba(80, 70, 60, 0.06);
+}
+.home__tab--topik {
+  background: #ffa15e;
+}
+.home__tab--topik.is-active {
+  background: #ff9147;
+}
+.home__tab--muted {
+  background: #eef0f2;
+}
+
+/* Hero learning card */
+.home__hero {
+  margin-top: -2px;
+  border-radius: 26px;
+  border-top-left-radius: 6px;
+  padding: clamp(22px, 6vw, 30px);
+  background: linear-gradient(150deg, #fffdf8 0%, #fffaf2 55%, #fff0df 100%);
+  box-shadow: 0 10px 26px rgba(80, 70, 60, 0.1);
+}
+.home__hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 150px;
+}
+.home__hero-info {
+  flex: 1;
+  min-width: 0;
+}
+.home__hero-title {
+  margin: 0;
+  color: #211a14;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(26px, 8vw, 33px);
+}
+.home__hero-level {
+  margin-top: 8px;
+  color: #737d93;
+  font-weight: 600;
+  font-size: clamp(15px, 4.4vw, 18px);
+}
+.home__hero-goal {
+  margin-top: 16px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.home__hero-goal-label {
+  color: #737d93;
+  font-size: clamp(15px, 4.4vw, 18px);
+}
+.home__hero-goal-frac {
+  color: #211a14;
+  font-weight: 800;
+  font-size: clamp(16px, 4.8vw, 19px);
+}
+.home__hero-cta {
+  width: 100%;
+  height: clamp(60px, 15.5vw, 74px);
+  margin-top: clamp(18px, 4vw, 26px);
+  border: none;
+  border-radius: 18px;
+  background: #ff5b00;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(18px, 5.4vw, 22px);
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(255, 91, 0, 0.22);
+  transition: transform 0.08s ease;
+}
+.home__hero-cta:active {
+  transform: scale(0.99);
+}
+
+/* Circular daily gauge */
+.home__gauge {
+  position: relative;
+  width: clamp(128px, 36vw, 156px);
+  height: clamp(128px, 36vw, 156px);
+  flex-shrink: 0;
+}
+.home__gauge svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 4px 8px rgba(80, 70, 60, 0.08));
+}
+.home__gauge-val {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff5b00;
+}
+.home__gauge-num {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(38px, 11vw, 48px);
+  line-height: 1;
+}
+.home__gauge-pct {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(18px, 5vw, 22px);
+  margin-left: 1px;
+}
+
+/* Shortcut cards */
+.home__shortcuts {
+  display: flex;
+  gap: 14px;
+  margin-top: 18px;
+}
+.home__shortcut {
+  flex: 1;
+  min-width: 0;
+  aspect-ratio: 1 / 0.84;
+  border: 1px solid #f0eee9;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(80, 70, 60, 0.07);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: transform 0.08s ease;
+}
+.home__shortcut:active {
+  transform: scale(0.98);
+}
+.home__shortcut-play {
+  width: clamp(74px, 21vw, 100px);
+  height: clamp(58px, 16vw, 78px);
+  border-radius: 16px;
+  background: #ffda76;
+  display: grid;
+  place-items: center;
+}
+.home__shortcut-label {
+  color: #737d93;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(18px, 5.4vw, 22px);
+}
+
+/* Non-subscriber promotion banner */
+.home__promo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 22px;
+  padding: 0 18px;
+  height: clamp(52px, 13.5vw, 60px);
+  border: none;
+  border-radius: 14px;
+  background: #16171a;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+}
+.home__promo-text {
+  flex: 1;
+  text-align: left;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(14px, 4vw, 17px);
+}
+.home__promo-hl {
+  color: #ffd227;
+  font-weight: 800;
+}
+
+/* Bottom-nav: warm active/inactive per the reference */
+.bottomnav__item {
+  color: #aeb7bd;
+}
+.bottomnav__item.is-active {
+  color: #ff5b00;
+}
+.bottomnav__icon {
+  display: grid;
+  place-items: center;
+}
+
 /* Next button */
 .onbq__next {
   height: clamp(56px, 14vw, 66px);

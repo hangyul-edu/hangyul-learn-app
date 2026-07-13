@@ -1,130 +1,199 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { TopBar } from "../components/layout/Screen";
-import { Card, ProgressRing } from "../components/ui/kit";
 import { Async, SkeletonList } from "../components/ui/states";
-import { dashboardApi, gameApi } from "../api/endpoints";
+import { dashboardApi } from "../api/endpoints";
+import { http } from "../lib/http";
 import { useAuth } from "../hooks/auth";
-import type { DashboardSummary } from "../lib/types";
+import {
+  BellIcon,
+  SunIcon,
+  SpeakingIcon,
+  PencilIcon,
+  GearIcon,
+  PlayIcon,
+  BookIcon,
+  ChevronRight,
+} from "../components/brand/HomeIcons";
+import type { DashboardSummary, DashboardTrack } from "../lib/types";
 
-function hello() {
-  const h = new Date().getHours();
-  if (h < 6) return "늦은 밤이에요";
-  if (h < 12) return "좋은 아침이에요";
-  if (h < 18) return "좋은 오후예요";
-  return "좋은 저녁이에요";
+/** Icon for a learning track's tab, chosen from its stable category. */
+function trackIcon(category: string, size = 30) {
+  if (category === "topik") return <PencilIcon size={size} />;
+  return <SpeakingIcon size={size} />;
+}
+
+/** Open horseshoe progress gauge with the percentage centered. */
+function DailyGauge({ ratio }: { ratio: number }) {
+  const pct = Math.max(0, Math.min(100, Math.round(ratio * 100)));
+  const r = 78;
+  const cx = 100;
+  const cy = 100;
+  // Arc from ~135° to ~405° (270° sweep, gap at the bottom).
+  const start = 135;
+  const sweep = 270;
+  const circ = 2 * Math.PI * r;
+  const arcLen = (sweep / 360) * circ;
+  const filled = (pct / 100) * arcLen;
+  const pol = (deg: number) => {
+    const a = (deg * Math.PI) / 180;
+    return `${cx + r * Math.cos(a)} ${cy + r * Math.sin(a)}`;
+  };
+  const largeArc = sweep > 180 ? 1 : 0;
+  const d = `M ${pol(start)} A ${r} ${r} 0 ${largeArc} 1 ${pol(start + sweep)}`;
+  return (
+    <div className="home__gauge">
+      <svg viewBox="0 0 200 200" aria-hidden="true">
+        <path d={d} fill="none" stroke="#fff" strokeWidth="20" strokeLinecap="round" />
+        {pct > 0 && (
+          <path
+            d={d}
+            fill="none"
+            stroke="#FF5B00"
+            strokeWidth="20"
+            strokeLinecap="round"
+            strokeDasharray={`${filled} ${arcLen}`}
+          />
+        )}
+      </svg>
+      <div className="home__gauge-val">
+        <span className="home__gauge-num">{pct}</span>
+        <span className="home__gauge-pct">%</span>
+      </div>
+    </div>
+  );
+}
+
+function hello(name: string) {
+  return (
+    <h1 className="home__greet">
+      <b>{name}님</b>, 반가워요!
+    </h1>
+  );
 }
 
 export function Home() {
   const nav = useNavigate();
   const { me } = useAuth();
   const q = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
-  const pts = useQuery({ queryKey: ["points"], queryFn: gameApi.points });
+  const unread = useQuery({
+    queryKey: ["notif-unread"],
+    queryFn: () => http.get<{ has_unread: boolean }>("/notifications/unread"),
+    staleTime: 30_000,
+  });
+
+  const [tab, setTab] = useState(0);
+  const nickname = me?.nickname ?? me?.name ?? "회원";
 
   return (
-    <div className="screen">
-      <TopBar
-        title={<span className="hangul-lg" style={{ color: "var(--brand-600)" }}>한글</span>}
-        right={
-          <>
-            <button className="topbar__btn" onClick={() => nav("/points")} title="포인트">
-              <span style={{ fontSize: 14, fontWeight: 800 }}>⚡{pts.data?.season_points ?? 0}</span>
-            </button>
-            <button className="topbar__btn" onClick={() => nav("/notifications")} aria-label="알림">
-              🔔
-            </button>
-          </>
-        }
-      />
-      <div className="screen__body screen__body--nav">
-        <div style={{ marginBottom: 16 }}>
-          <div className="muted" style={{ fontSize: 13 }}>{hello()},</div>
-          <h1 style={{ fontSize: 24 }}>{me?.nickname ?? me?.name ?? "회원"}님 👋</h1>
-        </div>
+    <div className="screen home">
+      <div className="screen__body screen__body--nav home__body">
+        <header className="home__header">
+          {hello(nickname)}
+          <button
+            className="home__bell"
+            onClick={() => nav("/notifications")}
+            aria-label={unread.data?.has_unread ? "알림, 새 알림 있음" : "알림"}
+          >
+            <BellIcon />
+            {unread.data?.has_unread && <span className="home__bell-dot" aria-hidden="true" />}
+          </button>
+        </header>
 
         <Async
           loading={q.isLoading}
           error={q.error}
           data={q.data}
           onRetry={() => q.refetch()}
-          skeleton={<SkeletonList rows={3} height={110} />}
+          skeleton={<SkeletonList rows={3} height={120} />}
         >
-          {(d: DashboardSummary) => (
-            <div className="stack" style={{ gap: 16 }}>
-              {/* streak + minutes */}
-              <Card variant="brand" className="row" padLg>
-                <div style={{ flex: 1 }}>
-                  <div style={{ opacity: 0.9, fontSize: 13, fontWeight: 700 }}>연속 학습</div>
-                  <div className="big-num" style={{ fontSize: 40 }}>
-                    {d.streak_days}
-                    <span style={{ fontSize: 16, marginLeft: 4 }}>일 🔥</span>
-                  </div>
-                </div>
-                <div className="center" style={{ opacity: 0.95 }}>
-                  <div className="big-num" style={{ fontSize: 24 }}>{d.today_minutes}</div>
-                  <div style={{ fontSize: 12 }}>오늘 학습(분)</div>
-                </div>
-              </Card>
+          {(d: DashboardSummary) => {
+            const tracks = d.tracks;
+            const active: DashboardTrack | undefined = tracks[Math.min(tab, tracks.length - 1)];
+            const ratio = active && active.goal.target ? active.goal.current / active.goal.target : 0;
+            return (
+              <>
+                {/* Streak */}
+                <button className="home__streak" onClick={() => nav("/points")}>
+                  <SunIcon size={80} />
+                  <span className="home__streak-text">연속 학습 {d.streak_days}일째</span>
+                  <ChevronRight size={22} />
+                </button>
 
-              {/* premium banner */}
-              {d.paywall_required && (
-                <Card variant="soft" onClick={() => nav("/subscription")} className="row">
-                  <span style={{ fontSize: 28 }}>👑</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 800 }}>프리미엄으로 무제한 학습</div>
-                    <div className="muted" style={{ fontSize: 12.5 }}>더 높은 목표와 AI 기능을 열어보세요</div>
-                  </div>
-                  <span className="listrow__chev">›</span>
-                </Card>
-              )}
-
-              {/* tracks with nested goal */}
-              <div className="section-title">오늘의 목표</div>
-              {d.tracks.map((t) => {
-                const ratio = t.goal.target ? t.goal.current / t.goal.target : 0;
-                return (
-                  <Card
-                    key={t.track_id}
-                    onClick={() => nav(t.category === "topik" ? "/learn/topik" : "/learn/conversation")}
-                    className="row"
-                  >
-                    <ProgressRing
-                      value={ratio}
-                      size={62}
-                      stroke={7}
-                      label={<span style={{ fontSize: 15, fontWeight: 900 }}>{t.category === "topik" ? "📝" : "💬"}</span>}
-                    />
-                    <div style={{ flex: 1 }}>
-                      <div className="row row--between">
-                        <span style={{ fontWeight: 800, fontSize: 16 }}>{t.name}</span>
-                        <span className="badge badge--brand">Lv.{t.level}</span>
-                      </div>
-                      <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>
-                        {t.goal.label} {t.goal.current}/{t.goal.target}
-                        {t.goal.achieved && <span style={{ color: "var(--success)", marginLeft: 6, fontWeight: 700 }}>✓ 달성!</span>}
-                      </div>
+                {tracks.length > 0 && active && (
+                  <>
+                    {/* Learning-mode tabs (driven by real tracks) */}
+                    <div className="home__tabs" role="tablist" aria-label="학습 모드">
+                      {tracks.map((t, i) => (
+                        <button
+                          key={t.track_id}
+                          role="tab"
+                          aria-selected={i === tab}
+                          aria-label={t.name}
+                          className={`home__tab ${i === tab ? "is-active" : ""} home__tab--${t.category}`}
+                          onClick={() => setTab(i)}
+                        >
+                          {trackIcon(t.category)}
+                        </button>
+                      ))}
+                      <span className="home__tab home__tab--muted" aria-hidden="true">
+                        <GearIcon />
+                      </span>
                     </div>
-                    <span className="listrow__chev">›</span>
-                  </Card>
-                );
-              })}
 
-              {/* quick actions */}
-              <div className="section-title">바로가기</div>
-              <div className="grid-2">
-                <Card onClick={() => nav("/ai")} className="stack" style={{ gap: 6, alignItems: "flex-start" }}>
-                  <span style={{ fontSize: 26 }}>🤖</span>
-                  <div style={{ fontWeight: 800 }}>AI 튜터</div>
-                  <div className="muted" style={{ fontSize: 12 }}>대화하며 배우기</div>
-                </Card>
-                <Card onClick={() => nav("/saved")} className="stack" style={{ gap: 6, alignItems: "flex-start" }}>
-                  <span style={{ fontSize: 26 }}>🔖</span>
-                  <div style={{ fontWeight: 800 }}>저장 · 복습</div>
-                  <div className="muted" style={{ fontSize: 12 }}>틀린 문제 다시보기</div>
-                </Card>
-              </div>
-            </div>
-          )}
+                    {/* Hero learning card */}
+                    <section className="home__hero" aria-label={`${active.name} 학습 현황`}>
+                      <div className="home__hero-top">
+                        <div className="home__hero-info">
+                          <h2 className="home__hero-title">{active.name}</h2>
+                          <div className="home__hero-level">
+                            {active.category === "topik" ? `${active.level}급` : `Lv.${active.level}`}
+                          </div>
+                          <div className="home__hero-goal">
+                            <span className="home__hero-goal-label">{active.goal.label || "하루 목표"}</span>
+                            <span className="home__hero-goal-frac">
+                              {active.goal.current}/{active.goal.target}
+                            </span>
+                          </div>
+                        </div>
+                        <DailyGauge ratio={ratio} />
+                      </div>
+                      <button
+                        className="home__hero-cta"
+                        onClick={() => nav(active.category === "topik" ? "/learn/topik" : "/learn/conversation")}
+                      >
+                        바로 시작하기
+                      </button>
+                    </section>
+                  </>
+                )}
+
+                {/* Shortcuts */}
+                <div className="home__shortcuts">
+                  <button className="home__shortcut" onClick={() => nav("/courses")}>
+                    <span className="home__shortcut-play">
+                      <PlayIcon />
+                    </span>
+                    <span className="home__shortcut-label">강의</span>
+                  </button>
+                  <button className="home__shortcut" onClick={() => nav("/saved")}>
+                    <BookIcon size={62} />
+                    <span className="home__shortcut-label">복습하기</span>
+                  </button>
+                </div>
+
+                {/* Non-subscriber promotion */}
+                {d.paywall_required && (
+                  <button className="home__promo" onClick={() => nav("/subscription")}>
+                    <span className="home__promo-text">
+                      아직 한귤 구독 전이라면? <b className="home__promo-hl">지금 바로 구독하세요!</b>
+                    </span>
+                    <ChevronRight size={20} color="#FFD227" />
+                  </button>
+                )}
+              </>
+            );
+          }}
         </Async>
       </div>
     </div>

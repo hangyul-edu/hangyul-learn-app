@@ -8,15 +8,10 @@ import { useLoginFlow } from "../hooks/loginFlow";
 import { useToast } from "../hooks/toast";
 import { useVerification, mmss } from "../hooks/verification";
 import { errorMessage } from "../lib/http";
+import { passwordProblem } from "../lib/validation";
 import { NATIONALITIES } from "../lib/format";
 import { POLICIES, type PolicyId } from "../lib/policies";
 
-function passwordProblem(p: string): string | null {
-  if (p.length < 8 || p.length > 64) return "8~64자로 입력해 주세요.";
-  if (!/[a-zA-Z]/.test(p) || !/[0-9]/.test(p) || !/[^a-zA-Z0-9]/.test(p))
-    return "영문·숫자·특수문자를 모두 포함해야 해요.";
-  return null;
-}
 function emailValid(e: string) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
 }

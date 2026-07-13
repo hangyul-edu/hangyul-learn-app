@@ -2106,6 +2106,71 @@ textarea.input {
 .fenm__link:active {
   opacity: 0.6;
 }
+
+/* ---- Reset-password (new password) — reuses the .findemail root ---- */
+.resetpw__field {
+  display: flex;
+  flex-direction: column;
+}
+.resetpw__field--first {
+  margin-top: clamp(32px, 6.4vh, 62px);
+}
+.resetpw__field--second {
+  margin-top: clamp(20px, 3.4vh, 32px);
+}
+.resetpw__label {
+  color: #68737a;
+  font-weight: 600;
+  font-size: clamp(14px, 4vw, 15px);
+  margin: 0 0 11px 2px;
+}
+.resetpw__input {
+  height: clamp(62px, 16vw, 74px);
+  width: 100%;
+  border: 1.5px solid transparent;
+  border-radius: 16px;
+  background: #f4f6f6;
+  padding: 0 22px;
+  font-size: 15px;
+  color: #272c30;
+  transition: border-color 0.14s, background 0.14s;
+}
+.resetpw__input::placeholder {
+  color: #aeb7be;
+}
+.resetpw__input:focus {
+  outline: none;
+  border-color: var(--fe-orange, #ff5b00);
+  background: #fff;
+  caret-color: var(--fe-orange, #ff5b00);
+}
+.resetpw__input.is-error {
+  border-color: var(--danger);
+}
+.resetpw__submit {
+  height: clamp(62px, 16vw, 74px);
+  width: 100%;
+  border: none;
+  border-radius: 16px;
+  background: #ff5b00;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 18px rgba(255, 91, 0, 0.24);
+  transition: transform 0.08s ease, background 0.15s, box-shadow 0.15s;
+}
+.resetpw__submit:active {
+  transform: scale(0.99);
+}
+.resetpw__submit:disabled {
+  background: #aeb4b9;
+  box-shadow: 0 8px 16px rgba(174, 180, 185, 0.3);
+  cursor: default;
+}
 .signup__agree-box {
   flex: 0 0 auto;
   border: none;

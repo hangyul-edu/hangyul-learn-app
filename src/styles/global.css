@@ -821,3 +821,199 @@ textarea.input {
 .fab:active {
   transform: scale(0.92);
 }
+
+/* ============================ Auth landing (single-screen) ============================ */
+.auth {
+  position: relative;
+  background: #ffffff;
+  overflow: hidden;
+}
+/* Decorative layer — never intercepts touches, never affects layout. */
+.auth__decor {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.auth__glow {
+  position: absolute;
+  top: calc(var(--safe-top) - 40px);
+  left: -70px;
+  width: 78%;
+  height: 40%;
+  background: radial-gradient(58% 60% at 22% 22%, rgba(253, 186, 116, 0.42), rgba(255, 255, 255, 0) 72%);
+}
+.auth__citrus {
+  position: absolute;
+  color: var(--brand-500);
+  opacity: 0.4;
+}
+.auth__citrus--tr {
+  top: calc(var(--safe-top) + 4%);
+  right: -46px;
+}
+.auth__citrus--ml {
+  top: 40%;
+  left: -58px;
+}
+.auth__citrus--bl {
+  top: 62%;
+  left: -60px;
+  opacity: 0.32;
+}
+.auth__citrus--br {
+  bottom: 9%;
+  right: -70px;
+}
+
+/* Content column: proportional spacers keep everything on one screen. */
+.auth__inner {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--safe-top) + 8px) clamp(18px, 6.4vw, 26px) calc(16px + var(--safe-bottom));
+}
+.auth__grow {
+  min-height: 8px;
+}
+.auth__grow--top {
+  flex: 1.25 1 0;
+}
+.auth__grow--mid {
+  flex: 1 1 0;
+}
+.auth__grow--bottom {
+  flex: 1.3 1 0;
+}
+
+/* Brand */
+.auth__brand {
+  text-align: center;
+}
+.auth__logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.auth__logo-mark {
+  width: clamp(46px, 13vw, 58px);
+  height: auto;
+}
+.auth__wordmark {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(33px, 9.4vw, 44px);
+  color: #211a14;
+  letter-spacing: -0.03em;
+}
+.auth__tagline {
+  margin: clamp(12px, 2.4vh, 18px) 0 0;
+  color: var(--ink-2);
+  font-size: clamp(14px, 4vw, 16px);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Primary button stack */
+.auth__actions {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 2.1vh, 17px);
+}
+.auth__btn {
+  height: clamp(58px, 8.4vh, 66px);
+  width: 100%;
+  border: none;
+  border-radius: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(43, 32, 25, 0.1);
+  transition: transform 0.08s ease, box-shadow 0.15s, opacity 0.15s;
+}
+.auth__btn:active {
+  transform: scale(0.98);
+}
+.auth__btn:disabled {
+  opacity: 0.6;
+  transform: none;
+}
+.auth__btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth__btn--primary {
+  background: var(--brand-500);
+  color: #fff;
+  box-shadow: 0 9px 20px rgba(249, 115, 22, 0.34);
+}
+.auth__btn--outline {
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--border-strong);
+}
+.auth__btn--apple {
+  background: #39393b;
+  color: #fff;
+}
+
+/* Circular social row */
+.auth__socials {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: clamp(24px, 4vh, 32px);
+}
+.auth__circle {
+  width: clamp(52px, 14vw, 58px);
+  height: clamp(52px, 14vw, 58px);
+  border: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 5px 13px rgba(43, 32, 25, 0.16);
+  transition: transform 0.08s ease;
+}
+.auth__circle:active {
+  transform: scale(0.94);
+}
+.auth__circle--fb {
+  background: #1877f2;
+}
+.auth__circle--kakao {
+  background: #fee500;
+}
+.auth__circle--line {
+  background: #06c755;
+}
+
+/* Recovery links */
+.auth__recovery {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 26px;
+}
+.auth__link {
+  background: none;
+  border: none;
+  padding: 8px 6px;
+  cursor: pointer;
+  color: var(--ink-2);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: clamp(15px, 4.2vw, 17px);
+}
+.auth__link:active {
+  color: var(--brand-600);
+}

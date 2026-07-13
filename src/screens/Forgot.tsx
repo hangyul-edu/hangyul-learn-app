@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Screen } from "../components/layout/Screen";
 import { Button, Segmented } from "../components/ui/kit";
 import { Dialog } from "../components/ui/Modal";
@@ -15,7 +15,9 @@ type Mode = "email" | "password";
 export function Forgot() {
   const nav = useNavigate();
   const toast = useToast();
-  const [mode, setMode] = useState<Mode>("email");
+  const location = useLocation();
+  const initialMode: Mode = (location.state as { mode?: Mode } | null)?.mode === "password" ? "password" : "email";
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [emailIn, setEmailIn] = useState("");

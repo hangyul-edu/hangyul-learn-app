@@ -7,6 +7,7 @@ import { OnboardingIntro } from "./OnboardingIntro";
 import { OnboardingPurpose } from "./OnboardingPurpose";
 import { OnboardingSpeaking } from "./OnboardingSpeaking";
 import { OnboardingDailyGoal } from "./OnboardingDailyGoal";
+import { OnboardingTopikTarget } from "./OnboardingTopikTarget";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 
@@ -93,6 +94,18 @@ export function Onboarding() {
       />
     );
 
+  // Step 1, TOPIK branch — target-grade question.
+  if (step === 1 && purpose === "topik")
+    return (
+      <OnboardingTopikTarget
+        value={topikTarget}
+        onSelect={setTopikTarget}
+        onBack={() => setStep(0)}
+        onNext={() => setStep(2)}
+        progress={(step + 1) / 3}
+      />
+    );
+
   return (
     <div className="screen">
       <TopBar back onBack={() => setStep((s) => s - 1)} title="시작하기" />
@@ -107,17 +120,6 @@ export function Onboarding() {
             <p className="muted" style={{ marginTop: -6 }}>선택한 목표가 홈 화면 맨 위에 표시돼요. 둘 다 언제든 학습할 수 있어요.</p>
             <OptionCard selected={purpose === "conversation"} onClick={() => setPurpose("conversation")} emoji="💬" title="회화 · 일상 대화" sub="자연스러운 한국어 문장 말하기" />
             <OptionCard selected={purpose === "topik"} onClick={() => setPurpose("topik")} emoji="📝" title="TOPIK 시험 준비" sub="급수별 문제로 실력 다지기" />
-          </div>
-        )}
-
-        {step === 1 && purpose === "topik" && (
-          <div className="stack">
-            <h2 style={{ fontSize: 22 }}>목표 TOPIK 급수는?</h2>
-            <div className="grid-3">
-              {["1", "2", "3", "4", "5", "6"].map((g) => (
-                <OptionCard key={g} selected={topikTarget === g} onClick={() => setTopikTarget(g)} title={`${g}급`} />
-              ))}
-            </div>
           </div>
         )}
 

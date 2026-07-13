@@ -4,7 +4,7 @@ import { CountrySelect } from "../components/ui/CountrySelect";
 import { authApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { useVerification, mmss } from "../hooks/verification";
-import { errorMessage } from "../lib/http";
+import { ApiError, errorMessage } from "../lib/http";
 import { NATIONALITIES } from "../lib/format";
 
 /**
@@ -79,7 +79,18 @@ export function FindEmail() {
       // screen via navigation state — not persisted anywhere.
       nav("/find-email/result", { state: { email: res.email } });
     } catch (e) {
-      toast.error(errorMessage(e));
+      // Only the backend's account-not-found result gets the dedicated screen;
+      // every other error (bad/expired OTP, network, server, …) keeps the
+      // existing toast handling. The consumed verification session is cleared
+      // so a new lookup requires re-verifying.
+      if (e instanceof ApiError && e.status === 404 && e.code === "user_not_found") {
+        phoneV.reset();
+        setVerifiedFor(null);
+        // Push (not replace) so Back / 다시 입력하기 pop cleanly to this form.
+        nav("/find-email/no-match", { state: { noMatch: true } });
+      } else {
+        toast.error(errorMessage(e));
+      }
     } finally {
       setBusy(false);
     }

@@ -2064,6 +2064,48 @@ textarea.input {
 .feres__link:active {
   opacity: 0.6;
 }
+
+/* ---- Find-email account-not-found result (reuses the .findemail root) ---- */
+.fenm__title {
+  margin: clamp(36px, 8vh, 72px) 0 0;
+  color: #272c30;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(30px, 8.8vw, 37px);
+  line-height: 1.28;
+  letter-spacing: -0.01em;
+}
+.fenm__desc {
+  margin: clamp(20px, 3vh, 28px) 0 0;
+  color: #667078;
+  font-size: clamp(14px, 4vw, 16px);
+  line-height: 1.6;
+}
+.fenm__prompt-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(14px, 5.5vw, 26px);
+  margin: clamp(44px, 8vh, 78px) 0 0;
+}
+.fenm__prompt {
+  color: #30363a;
+  font-size: clamp(14px, 4.2vw, 16px);
+}
+.fenm__link {
+  border: none;
+  background: none;
+  padding: 6px 2px;
+  margin: -6px 0;
+  cursor: pointer;
+  color: var(--fe-orange);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(14px, 4.2vw, 16px);
+}
+.fenm__link:active {
+  opacity: 0.6;
+}
 .signup__agree-box {
   flex: 0 0 auto;
   border: none;

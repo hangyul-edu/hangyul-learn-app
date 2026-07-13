@@ -37,6 +37,7 @@ import { PaymentMethods } from "./screens/PaymentMethods";
 import { Billing } from "./screens/Billing";
 import { Policy } from "./screens/Policy";
 import { FindEmailResult } from "./screens/FindEmailResult";
+import { FindEmailNoMatch } from "./screens/FindEmailNoMatch";
 
 function Splash() {
   return (
@@ -83,6 +84,9 @@ export function App() {
 
         {/* Find-email success result (masked email via navigation state) */}
         <Route path="/find-email/result" element={<RequireGuest><FindEmailResult /></RequireGuest>} />
+
+        {/* Find-email account-not-found result */}
+        <Route path="/find-email/no-match" element={<RequireGuest><FindEmailNoMatch /></RequireGuest>} />
 
         {/* Setup (authenticated, outside tab shell) */}
         <Route path="/setup/profile" element={<RequireAuth><SetupProfile /></RequireAuth>} />

@@ -94,10 +94,12 @@ export function App() {
         <Route path="/setup/profile" element={<RequireAuth><SetupProfile /></RequireAuth>} />
         <Route path="/setup/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
 
-        {/* Main app with bottom-nav shell */}
+        {/* Main app with bottom-nav shell (the five bottom-nav tab roots) */}
         <Route element={<RequireAuth><AppShell /></RequireAuth>}>
           <Route path="/home" element={<Home />} />
           <Route path="/learn" element={<Learn />} />
+          <Route path="/courses" element={<Courses />} />
+          <Route path="/recommend" element={<Recommendations />} />
           <Route path="/league" element={<League />} />
           <Route path="/social" element={<Social />} />
           <Route path="/profile" element={<Profile />} />
@@ -107,13 +109,11 @@ export function App() {
         <Route path="/learn/conversation" element={<RequireAuth><Conversation /></RequireAuth>} />
         <Route path="/learn/topik" element={<RequireAuth><Topik /></RequireAuth>} />
         <Route path="/quiz/:quizId" element={<RequireAuth><QuizPlay /></RequireAuth>} />
-        <Route path="/courses" element={<RequireAuth><Courses /></RequireAuth>} />
         <Route path="/courses/:courseId" element={<RequireAuth><CourseDetail /></RequireAuth>} />
         <Route path="/lectures/:lectureId" element={<RequireAuth><Lecture /></RequireAuth>} />
         <Route path="/lectures/:lectureId/practice" element={<RequireAuth><Practice /></RequireAuth>} />
         <Route path="/exams" element={<RequireAuth><Exams /></RequireAuth>} />
         <Route path="/exams/:examId" element={<RequireAuth><ExamPlay /></RequireAuth>} />
-        <Route path="/recommend" element={<RequireAuth><Recommendations /></RequireAuth>} />
         <Route path="/account/payment" element={<RequireAuth><PaymentMethods /></RequireAuth>} />
         <Route path="/account/billing" element={<RequireAuth><Billing /></RequireAuth>} />
         <Route path="/saved" element={<RequireAuth><Saved /></RequireAuth>} />

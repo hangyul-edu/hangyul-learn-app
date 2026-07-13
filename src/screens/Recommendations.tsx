@@ -49,7 +49,7 @@ export function Recommendations() {
   }
 
   return (
-    <Screen title="AI 추천 문장" back>
+    <Screen title="AI 추천 문장" nav>
       <Card variant="soft" style={{ marginBottom: 16 }}>
         <div className="field__label" style={{ marginBottom: 8 }}>어떤 상황의 문장이 필요하세요?</div>
         <div style={{ display: "flex", gap: 8 }}>

@@ -19,7 +19,7 @@ export function Courses() {
   const q = useQuery({ queryKey: ["courses", track], queryFn: () => learnApi.courses(track) });
 
   return (
-    <Screen title="강의" back>
+    <Screen title="강의" nav>
       <div style={{ marginBottom: 14 }}>
         <Segmented
           value={track}

@@ -59,9 +59,9 @@ export const AVATAR_KEYS = Object.keys(CHAR_META) as AvatarKey[];
 export const avatarLabel = (k: AvatarKey) => CHAR_META[k].label;
 export const avatarBg = (k: AvatarKey) => CHAR_META[k].bg;
 
-function CharacterArt({ variant }: { variant: AvatarKey }) {
+export function CharacterArt({ variant, fill = "62%" }: { variant: AvatarKey; fill?: string }) {
   return (
-    <svg viewBox="0 0 100 100" width="62%" height="62%" aria-hidden="true" focusable="false">
+    <svg viewBox="0 0 100 100" width={fill} height={fill} aria-hidden="true" focusable="false">
       <defs>
         <radialGradient id="pShine" cx="0.35" cy="0.32" r="0.75">
           <stop offset="0" stopColor="#FFB56B" stopOpacity="0.9" />
@@ -74,9 +74,10 @@ function CharacterArt({ variant }: { variant: AvatarKey }) {
           {/* raised arms */}
           <path d="M27 54c-6-4-10-10-10-16" stroke="#F5872E" strokeWidth="6" strokeLinecap="round" fill="none" />
           <path d="M73 54c6-4 10-10 10-16" stroke="#F5872E" strokeWidth="6" strokeLinecap="round" fill="none" />
-          {/* leaf */}
-          <path d="M52 20c4-5 10-6 14-5 .5 3-.6 8.4-5.2 10.5-3.7 1.7-7 .3-7.9-.5-.8-1.5-1.2-3.2.9-5z" fill="#5FB65B" />
           <Tangerine />
+          {/* leaf + stem — drawn in front of the body, growing from the head top */}
+          <path d="M50 35c0-4 .4-7 .9-9" stroke="#3F8F3C" strokeWidth="2.4" strokeLinecap="round" fill="none" />
+          <path d="M51 30c4-6 11-7 15-6 .6 3.4-.7 9.6-6 12-4.2 1.9-8 .3-9-.6-.9-1.7-1.4-3.6 0-5.4z" fill="#5FB65B" />
           {/* blue glasses */}
           <circle cx="41" cy="57" r="6.5" fill="none" stroke="#2F6BE0" strokeWidth="2.4" />
           <circle cx="59" cy="57" r="6.5" fill="none" stroke="#2F6BE0" strokeWidth="2.4" />

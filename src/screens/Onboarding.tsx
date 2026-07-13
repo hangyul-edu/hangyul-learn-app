@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { TopBar } from "../components/layout/Screen";
 import { Button, CheckLine, OptionCard } from "../components/ui/kit";
 import { onboardingApi } from "../api/endpoints";
+import { OnboardingIntro } from "./OnboardingIntro";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 
@@ -19,6 +20,7 @@ const GOALS = [5, 10, 20, 30, 40];
 export function Onboarding() {
   const nav = useNavigate();
   const toast = useToast();
+  const [started, setStarted] = useState(false);
   const [step, setStep] = useState(0);
   const [purpose, setPurpose] = useState<Purpose | null>(null);
   const [speaking, setSpeaking] = useState<string | null>(null);
@@ -51,6 +53,10 @@ export function Onboarding() {
       setBusy(false);
     }
   }
+
+  // First show the onboarding introduction; its button transitions into the
+  // question flow (no answer submitted, onboarding not marked complete).
+  if (!started) return <OnboardingIntro onStart={() => setStarted(true)} />;
 
   return (
     <div className="screen">

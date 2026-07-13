@@ -2171,6 +2171,176 @@ textarea.input {
   box-shadow: 0 8px 16px rgba(174, 180, 185, 0.3);
   cursor: default;
 }
+
+/* ============================ Onboarding introduction ============================ */
+.onbi {
+  position: relative;
+  background: #ffffff;
+  overflow: hidden;
+}
+.onbi__decor {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.onbi__citrus {
+  position: absolute;
+  color: #ff5b00;
+  opacity: 0.36;
+}
+.onbi__citrus--tr {
+  top: calc(var(--safe-top) + 6%);
+  right: -64px;
+}
+.onbi__citrus--ml {
+  top: 42%;
+  left: -86px;
+  opacity: 0.3;
+}
+.onbi__citrus--bl {
+  top: 66%;
+  left: 26px;
+  opacity: 0.32;
+  transform: rotate(18deg);
+}
+.onbi__citrus--br {
+  bottom: 12%;
+  right: -78px;
+  opacity: 0.3;
+}
+
+.onbi__scroll {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.onbi__inner {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: calc(var(--safe-top) + 12px) clamp(28px, 8vw, 34px) calc(28px + var(--safe-bottom));
+}
+.onbi__grow {
+  width: 100%;
+  min-height: 12px;
+}
+.onbi__grow--top {
+  flex: 1 1 0;
+}
+.onbi__grow--mid {
+  flex: 0.5 1 0;
+  min-height: 24px;
+}
+.onbi__grow--bottom {
+  flex: 1.2 1 0;
+  min-height: 28px;
+}
+
+.onbi__title {
+  color: #272c30;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(26px, 7.6vw, 32px);
+  text-align: center;
+  letter-spacing: -0.01em;
+}
+.onbi__desc {
+  margin: clamp(16px, 2.4vh, 22px) 0 0;
+  color: #5f6970;
+  font-weight: 500;
+  font-size: clamp(15px, 4.4vw, 17px);
+  line-height: 1.55;
+  text-align: center;
+  max-width: 460px;
+}
+.onbi__msg {
+  margin: clamp(30px, 5vh, 60px) 0 0;
+  color: #5f6970;
+  font-size: clamp(14px, 4.1vw, 16px);
+  line-height: 1.6;
+  text-align: center;
+  max-width: 520px;
+}
+
+/* Character illustration */
+.onbi__art {
+  position: relative;
+  width: min(86vw, 340px);
+  aspect-ratio: 1.18 / 1;
+  flex-shrink: 0;
+}
+.onbi__circle {
+  position: absolute;
+  top: 6%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 79%;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  background: #fff0e5;
+}
+.onbi__shadow {
+  position: absolute;
+  bottom: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 46%;
+  height: 8%;
+  border-radius: 50%;
+  background: #7fd4d6;
+  opacity: 0.55;
+}
+.onbi__char {
+  position: absolute;
+  display: block;
+}
+.onbi__char--center {
+  width: 52%;
+  left: 50%;
+  bottom: 9%;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+.onbi__char--left {
+  width: 33%;
+  left: 1%;
+  bottom: 8%;
+  z-index: 1;
+}
+.onbi__char--right {
+  width: 33%;
+  right: 1%;
+  bottom: 8%;
+  z-index: 1;
+}
+.onbi__char svg {
+  display: block;
+}
+
+/* Primary button */
+.onbi__cta {
+  width: 100%;
+  height: clamp(60px, 15.5vw, 74px);
+  border: none;
+  border-radius: 18px;
+  background: #ff5b00;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(17px, 4.8vw, 19px);
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(80, 70, 60, 0.18);
+  transition: transform 0.08s ease, box-shadow 0.15s;
+}
+.onbi__cta:active {
+  transform: scale(0.99);
+}
 .signup__agree-box {
   flex: 0 0 auto;
   border: none;

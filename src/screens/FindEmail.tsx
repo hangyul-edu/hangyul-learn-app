@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CountrySelect } from "../components/ui/CountrySelect";
-import { Dialog } from "../components/ui/Modal";
-import { Button } from "../components/ui/kit";
 import { authApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { useVerification, mmss } from "../hooks/verification";
@@ -27,7 +25,6 @@ export function FindEmail() {
   const [nameErr, setNameErr] = useState<string | null>(null);
   const [phoneErr, setPhoneErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [foundEmail, setFoundEmail] = useState<string | null>(null);
 
   const dial = useMemo(() => NATIONALITIES.find((n) => n.code === country)?.dial ?? "+82", [country]);
   const e164 = useMemo(() => `${dial}${localPhone.replace(/^0+/, "").replace(/\D/g, "")}`, [dial, localPhone]);
@@ -78,7 +75,9 @@ export function FindEmail() {
     setBusy(true);
     try {
       const res = await authApi.recoverEmail(phoneV.token, name.trim());
-      setFoundEmail(res.email);
+      // The backend returns a pre-masked address; pass it (only) to the result
+      // screen via navigation state — not persisted anywhere.
+      nav("/find-email/result", { state: { email: res.email } });
     } catch (e) {
       toast.error(errorMessage(e));
     } finally {
@@ -210,21 +209,6 @@ export function FindEmail() {
           </button>
         </div>
       </div>
-
-      <Dialog
-        open={!!foundEmail}
-        onClose={() => nav("/login", { replace: true })}
-        emoji="📧"
-        title="이메일을 찾았어요"
-        text="아래 이메일로 로그인해 주세요."
-      >
-        <div className="card card--soft" style={{ fontWeight: 800, fontSize: 18, marginBottom: 16 }}>
-          {foundEmail}
-        </div>
-        <Button block onClick={() => nav("/login", { replace: true })}>
-          로그인하러 가기
-        </Button>
-      </Dialog>
     </div>
   );
 }

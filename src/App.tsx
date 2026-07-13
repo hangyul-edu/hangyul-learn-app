@@ -36,6 +36,7 @@ import { Recommendations } from "./screens/Recommendations";
 import { PaymentMethods } from "./screens/PaymentMethods";
 import { Billing } from "./screens/Billing";
 import { Policy } from "./screens/Policy";
+import { FindEmailResult } from "./screens/FindEmailResult";
 
 function Splash() {
   return (
@@ -79,6 +80,9 @@ export function App() {
 
         {/* Legal documents — viewable by guests and signed-in users */}
         <Route path="/policy/:doc" element={<Policy />} />
+
+        {/* Find-email success result (masked email via navigation state) */}
+        <Route path="/find-email/result" element={<RequireGuest><FindEmailResult /></RequireGuest>} />
 
         {/* Setup (authenticated, outside tab shell) */}
         <Route path="/setup/profile" element={<RequireAuth><SetupProfile /></RequireAuth>} />

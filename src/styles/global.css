@@ -2016,6 +2016,54 @@ textarea.input {
   box-shadow: 0 8px 16px rgba(176, 185, 193, 0.3);
   cursor: default;
 }
+
+/* ---- Find-email success result (reuses the .findemail root) ---- */
+.feres__title {
+  margin: clamp(36px, 8vh, 72px) 0 0;
+  color: #272c30;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(30px, 8.8vw, 37px);
+  letter-spacing: -0.01em;
+}
+.feres__subtitle {
+  margin: clamp(16px, 2.6vh, 22px) 0 0;
+  color: #667078;
+  font-size: clamp(14px, 4vw, 16px);
+  line-height: 1.5;
+}
+.feres__email {
+  margin: clamp(40px, 7vh, 62px) 0 0;
+  color: #30363a;
+  font-size: clamp(16px, 4.6vw, 19px);
+  font-weight: 500;
+  word-break: break-all;
+}
+.feres__prompt-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(10px, 4vw, 18px);
+  margin: clamp(50px, 9vh, 84px) 0 0;
+}
+.feres__prompt {
+  color: #30363a;
+  font-size: clamp(14px, 4.2vw, 16px);
+}
+.feres__link {
+  border: none;
+  background: none;
+  padding: 6px 2px;
+  margin: -6px 0;
+  cursor: pointer;
+  color: var(--fe-orange);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(14px, 4.2vw, 16px);
+}
+.feres__link:active {
+  opacity: 0.6;
+}
 .signup__agree-box {
   flex: 0 0 auto;
   border: none;

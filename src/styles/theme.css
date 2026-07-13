@@ -11,6 +11,7 @@
   --brand-800: #9a3412;
   --brand-gradient: linear-gradient(135deg, #fb923c 0%, #f97316 55%, #ea580c 100%);
   --brand-gradient-soft: linear-gradient(135deg, #fff3e6 0%, #ffe4c9 100%);
+  --auth-orange: #ed712e; /* exact reference orange for the auth screens */
 
   /* ---- Neutrals (warm) ---- */
   --bg: #fbf7f2;

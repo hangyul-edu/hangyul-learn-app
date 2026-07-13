@@ -846,7 +846,7 @@ textarea.input {
 }
 .auth__citrus {
   position: absolute;
-  color: var(--brand-500);
+  color: var(--auth-orange);
   opacity: 0.4;
 }
 .auth__citrus--tr {
@@ -952,9 +952,9 @@ textarea.input {
   justify-content: center;
 }
 .auth__btn--primary {
-  background: var(--brand-500);
+  background: var(--auth-orange);
   color: #fff;
-  box-shadow: 0 9px 20px rgba(249, 115, 22, 0.34);
+  box-shadow: 0 9px 20px rgba(237, 113, 46, 0.34);
 }
 .auth__btn--outline {
   background: #fff;
@@ -1042,7 +1042,7 @@ textarea.input {
 }
 .login__citrus {
   position: absolute;
-  color: var(--brand-500);
+  color: var(--auth-orange);
   opacity: 0.4;
 }
 .login__citrus--tr {
@@ -1202,7 +1202,7 @@ textarea.input {
   width: 100%;
   border: none;
   border-radius: 16px;
-  background: var(--brand-500);
+  background: var(--auth-orange);
   color: #fff;
   font-family: var(--font-display);
   font-weight: 800;

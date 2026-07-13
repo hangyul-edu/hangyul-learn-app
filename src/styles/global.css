@@ -1241,3 +1241,326 @@ textarea.input {
 .login__link:active {
   color: var(--brand-600);
 }
+
+/* ============================ Sign-up screen ============================ */
+.signup {
+  position: relative;
+  background: #ffffff;
+  /* screen-scoped palette (reference), independent of the app brand tokens */
+  --su-text: #252b2f;
+  --su-label: #677078;
+  --su-placeholder: #adb7be;
+  --su-fill: #f4f6f6;
+  --su-orange: #ff5b00;
+  --su-dark: #292e31;
+  --su-teal: #36c4c8;
+  --su-check-bg: #f0f2f3;
+}
+.signup__scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.signup__inner {
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--safe-top) + 10px) clamp(18px, 5vw, 22px) calc(28px + var(--safe-bottom));
+}
+
+.signup__back {
+  width: 44px;
+  height: 44px;
+  margin: 8px 0 4px -10px;
+  border: none;
+  background: none;
+  color: var(--su-text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.signup__back:active {
+  opacity: 0.55;
+}
+
+.signup__title {
+  margin: 14px 0 0;
+  color: var(--su-text);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(28px, 8vw, 32px);
+  letter-spacing: -0.01em;
+}
+.signup__subtitle {
+  margin: 12px 0 0;
+  color: var(--su-label);
+  font-size: 13.5px;
+}
+
+/* Field group */
+.signup__field {
+  display: flex;
+  flex-direction: column;
+  margin-top: clamp(18px, 3vh, 24px);
+}
+.signup__field:first-of-type {
+  margin-top: clamp(26px, 5vh, 40px);
+}
+.signup__label {
+  color: var(--su-label);
+  font-weight: 500;
+  font-size: 13.5px;
+  margin: 0 0 8px 2px;
+}
+.signup__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Inputs */
+.signup__input {
+  height: 55px;
+  width: 100%;
+  border: 1.5px solid transparent; /* reserved so focus adds no layout shift */
+  border-radius: 13px;
+  background: var(--su-fill);
+  padding: 0 16px;
+  font-size: 15px;
+  color: var(--su-text);
+  transition: border-color 0.14s, background 0.14s;
+}
+.signup__input::placeholder {
+  color: var(--su-placeholder);
+}
+.signup__input:focus {
+  outline: none;
+  border-color: var(--su-orange);
+  background: #fff;
+  caret-color: var(--su-orange);
+}
+.signup__input:disabled {
+  opacity: 0.7;
+}
+.signup__input--flex {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+.signup__input.is-error {
+  border-color: var(--danger);
+}
+
+/* Compact country selector */
+.signup__country {
+  flex: 0 0 auto;
+  width: 57px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 1px solid var(--su-orange);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+.signup__country-flag {
+  font-size: 18px;
+  line-height: 1;
+}
+.signup__country-chev {
+  color: var(--su-text);
+  display: flex;
+}
+.signup__country:active {
+  transform: scale(0.97);
+}
+
+/* Dark action pills (인증하기 / 확인) */
+.signup__pill {
+  flex: 0 0 auto;
+  width: 88px;
+  height: 40px;
+  border: none;
+  border-radius: 9px;
+  background: var(--su-dark);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(41, 46, 49, 0.18);
+  transition: transform 0.08s ease, opacity 0.15s;
+}
+.signup__pill--sm {
+  width: 68px;
+}
+.signup__pill:active {
+  transform: scale(0.96);
+}
+.signup__pill:disabled {
+  opacity: 0.45;
+  box-shadow: none;
+  cursor: default;
+}
+
+/* Code input with integrated timer */
+.signup__code {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 55px;
+  border: 1.5px solid transparent;
+  border-radius: 13px;
+  background: var(--su-fill);
+  transition: border-color 0.14s, background 0.14s;
+}
+.signup__code:focus-within {
+  border-color: var(--su-orange);
+  background: #fff;
+}
+.signup__code-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  background: none;
+  padding: 0 60px 0 16px;
+  font-size: 15px;
+  color: var(--su-text);
+  caret-color: var(--su-orange);
+}
+.signup__code-input:focus {
+  outline: none;
+}
+.signup__code-input::placeholder {
+  color: var(--su-placeholder);
+}
+.signup__timer {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--su-teal);
+  font-weight: 500;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+/* Inline error text (compact, no reserved space) */
+.signup__err {
+  margin: 7px 0 0 2px;
+  color: var(--danger);
+  font-size: 12.5px;
+}
+
+/* Terms */
+.signup__terms {
+  margin-top: clamp(30px, 5vh, 46px);
+}
+.signup__terms-title {
+  margin: 0 0 6px;
+  color: var(--su-text);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15.5px;
+}
+.signup__agree {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 4px 0;
+}
+.signup__agree--all {
+  border: none;
+  background: none;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  margin-top: 6px;
+}
+.signup__agree-label {
+  color: var(--su-text);
+  font-size: 14px;
+  line-height: 1.4;
+}
+.signup__agree-label--all {
+  font-weight: 700;
+  font-size: 14.5px;
+}
+.signup__agree-label--link {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.signup__agree-box {
+  flex: 0 0 auto;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+}
+
+/* Checkboxes */
+.signup__check {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(37, 43, 47, 0.16);
+  transition: background 0.14s, border-color 0.14s;
+}
+.signup__check svg {
+  opacity: 0;
+}
+.signup__check.is-on svg {
+  opacity: 1;
+}
+/* Overall = dark filled */
+.signup__check--dark {
+  background: #e7eaec;
+}
+.signup__check--dark.is-on {
+  background: var(--su-dark);
+}
+/* Individual = pale gray selected */
+.signup__check--pale {
+  background: #fff;
+  border: 1px solid #e2e6e8;
+}
+.signup__check--pale.is-on {
+  background: var(--su-check-bg);
+  border-color: #d6dbde;
+}
+
+/* Primary submit */
+.signup__submit {
+  height: 52px;
+  margin-top: clamp(22px, 4vh, 34px);
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  background: var(--su-orange);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 18px rgba(255, 91, 0, 0.26);
+  transition: transform 0.08s ease, opacity 0.15s;
+}
+.signup__submit:active {
+  transform: scale(0.99);
+}
+.signup__submit:disabled {
+  opacity: 0.55;
+  cursor: default;
+}

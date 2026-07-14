@@ -105,7 +105,7 @@ export function Profile() {
           <div className="more__avatar">
             <ProfileAvatar me={me} />
           </div>
-          <button className="more__nick" onClick={() => nav("/account")} aria-label={`${nickname}, 계정 관리 열기`}>
+          <button className="more__nick" onClick={() => nav("/profile/edit")} aria-label="프로필 변경">
             <span className="more__nick-name">{nickname}</span>
             <ChevronRight size={20} color="#9AA0A7" />
           </button>

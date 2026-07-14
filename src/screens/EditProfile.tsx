@@ -1,69 +1,129 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Screen } from "../components/layout/Screen";
-import { Button } from "../components/ui/kit";
-import { Field, TextField } from "../components/ui/Field";
+import {
+  ProfilePlaceholder,
+  CharacterAvatar,
+  CharacterArt,
+  CameraIcon,
+  AVATAR_KEYS,
+  avatarLabel,
+  avatarBg,
+  type AvatarKey,
+} from "../components/brand/ProfileAssets";
 import { userApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
-import { NATIONALITIES } from "../lib/format";
 import type { ProfileImageType } from "../lib/types";
 
-const AVATARS = [
-  { key: "AVATAR_01", emoji: "🦊", bg: "#fde68a" },
-  { key: "AVATAR_02", emoji: "🐨", bg: "#bfdbfe" },
-  { key: "AVATAR_03", emoji: "🐣", bg: "#fecdd3" },
-];
-
+/**
+ * Profile edit ("프로필 변경") — reuses the profile-registration visual system
+ * (.setupp__*) but pre-fills the current profile and gates a Save button that
+ * only enables for validated changes. Image source is exclusive: uploading a
+ * photo (CUSTOM) supersedes a selected character (AVATAR) and vice-versa.
+ */
 export function EditProfile() {
   const nav = useNavigate();
   const toast = useToast();
   const { me, setMe } = useAuth();
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const [nickname, setNickname] = useState(me?.nickname ?? "");
   const [checkToken, setCheckToken] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
-  const [imageType, setImageType] = useState<ProfileImageType>(me?.profile_image_type ?? "AVATAR");
-  const [avatarKey, setAvatarKey] = useState(me?.avatar_key ?? "AVATAR_01");
-  const [nationality, setNationality] = useState(me?.nationality ?? "KR");
+  const [checkMsg, setCheckMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const initialType: ProfileImageType = me?.profile_image_type ?? "NONE";
+  const [imageType, setImageType] = useState<ProfileImageType>(initialType);
+  const [avatarKey, setAvatarKey] = useState<AvatarKey>((me?.avatar_key as AvatarKey) ?? "AVATAR_01");
+  const [customUrl, setCustomUrl] = useState<string | null>(
+    me?.profile_image_type === "CUSTOM" ? me?.profile_image_url ?? null : null,
+  );
+  const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const changed = nickname !== me?.nickname;
+  const trimmed = nickname.trim();
+  const nickChanged = trimmed !== (me?.nickname ?? "");
+  const imageChanged =
+    imageType !== initialType ||
+    (imageType === "AVATAR" && avatarKey !== me?.avatar_key) ||
+    (imageType === "CUSTOM" && customUrl !== me?.profile_image_url);
+  const anyChanged = nickChanged || imageChanged;
+  // A changed nickname needs a passing duplicate check; an unchanged one is fine.
+  const nickOk = !nickChanged || !!checkToken;
+  const canSave = !!me && anyChanged && nickOk && !busy && !uploading && !checking;
 
-  async function check() {
+  function onNicknameChange(v: string) {
+    setNickname(v);
+    // Any edit invalidates a prior successful check.
+    setCheckToken(null);
+    setCheckMsg(null);
+  }
+
+  async function checkNick() {
+    if (checking) return;
+    if (!nickChanged) {
+      setCheckMsg({ ok: true, text: "현재 사용 중인 닉네임이에요." });
+      return;
+    }
+    if (trimmed.length < 2) {
+      setCheckMsg({ ok: false, text: "2자 이상 입력해 주세요." });
+      return;
+    }
     setChecking(true);
+    setCheckToken(null);
     try {
-      const r = await userApi.checkNickname(nickname.trim());
-      if (r.available && r.check_token) {
-        setCheckToken(r.check_token);
-        toast.success("사용 가능한 닉네임이에요");
-      } else toast.error("이미 사용 중인 닉네임이에요");
+      const res = await userApi.checkNickname(trimmed);
+      if (res.available && res.check_token) {
+        setCheckToken(res.check_token);
+        setCheckMsg({ ok: true, text: "사용가능한 닉네임입니다." });
+      } else {
+        setCheckMsg({ ok: false, text: "이미 사용 중인 닉네임이에요." });
+      }
     } catch (e) {
-      toast.error(errorMessage(e));
+      setCheckMsg({ ok: false, text: errorMessage(e) });
     } finally {
       setChecking(false);
     }
   }
 
-  async function save() {
-    if (changed && !checkToken) {
-      toast.error("닉네임 중복확인을 해주세요");
-      return;
+  function selectCharacter(key: AvatarKey) {
+    // Character selection supersedes any unsaved uploaded photo.
+    setAvatarKey(key);
+    setImageType("AVATAR");
+    setCustomUrl(null);
+  }
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-picking the same file
+    if (!file || uploading) return;
+    setUploading(true);
+    try {
+      const res = await userApi.uploadImage(file);
+      setCustomUrl(res.profile_image_url);
+      setImageType("CUSTOM");
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setUploading(false);
     }
+  }
+
+  async function save() {
+    if (!canSave) return;
     setBusy(true);
     try {
       const body: Record<string, unknown> = {
         profile_image_type: imageType,
         avatar_key: imageType === "AVATAR" ? avatarKey : null,
-        profile_image_url: imageType === "CUSTOM" ? me?.profile_image_url : null,
+        profile_image_url: imageType === "CUSTOM" ? customUrl : null,
       };
-      if (changed) {
-        body.nickname = nickname.trim();
+      if (nickChanged) {
+        body.nickname = trimmed;
         body.nickname_check_token = checkToken;
       }
-      let updated = await userApi.updateProfile(body);
-      if (nationality !== me?.nationality) updated = await userApi.updateMe({ nationality });
+      const updated = await userApi.updateProfile(body);
       setMe(updated);
       toast.success("저장했어요");
       nav(-1);
@@ -74,48 +134,131 @@ export function EditProfile() {
     }
   }
 
+  const showCustom = imageType === "CUSTOM" && !!customUrl;
+  const showChar = !showCustom && imageType === "AVATAR";
+
   return (
-    <Screen title="프로필 편집" back>
-      <div className="stack" style={{ gap: 18 }}>
-        <div className="center">
-          <div className="avatar" style={{ width: 80, height: 80, margin: "0 auto", fontSize: 38, background: AVATARS.find((a) => a.key === avatarKey)?.bg }}>
-            {imageType === "CUSTOM" && me?.profile_image_url ? <img src={me.profile_image_url} alt="" /> : AVATARS.find((a) => a.key === avatarKey)?.emoji ?? "🙂"}
+    <div className="screen setupp">
+      <div className="setupp__scroll">
+        <div className="setupp__inner">
+          <button className="setupp__back" onClick={() => nav(-1)} aria-label="뒤로">
+            <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+
+          <h1 className="setupp__title">프로필 변경</h1>
+
+          {/* Profile image */}
+          <div className="setupp__label">프로필 이미지</div>
+          <div className="setupp__preview">
+            <div
+              className="setupp__preview-circle"
+              style={showChar ? { background: avatarBg(avatarKey) } : undefined}
+              role="img"
+              aria-label={
+                showCustom
+                  ? "프로필 이미지: 업로드한 사진"
+                  : showChar
+                    ? `프로필 이미지: ${avatarLabel(avatarKey)}`
+                    : "프로필 이미지: 기본 이미지"
+              }
+            >
+              {showCustom ? (
+                <img src={customUrl!} alt="" className="setupp__preview-img" />
+              ) : showChar ? (
+                <span className="setupp__preview-char">
+                  <CharacterArt variant={avatarKey} fill="80%" />
+                </span>
+              ) : (
+                <ProfilePlaceholder />
+              )}
+            </div>
           </div>
-        </div>
-        <div className="row" style={{ gap: 12, justifyContent: "center" }}>
-          {AVATARS.map((a) => (
-            <button key={a.key} className="avatar" style={{ width: 54, height: 54, fontSize: 26, background: a.bg, outline: imageType === "AVATAR" && avatarKey === a.key ? "3px solid var(--brand-500)" : "none", cursor: "pointer" }} onClick={() => { setImageType("AVATAR"); setAvatarKey(a.key); }}>
-              {a.emoji}
+          <div className="setupp__photo-wrap">
+            <button
+              type="button"
+              className="setupp__photo"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              aria-label="사진 선택, 사진 라이브러리 열기"
+            >
+              {uploading ? (
+                <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+              ) : (
+                <CameraIcon />
+              )}
+              <span>사진 선택</span>
             </button>
-          ))}
-        </div>
-
-        <Field label="닉네임">
-          <div style={{ display: "flex", gap: 8 }}>
-            <TextField value={nickname} maxLength={20} onChange={(e) => { setNickname(e.target.value); setCheckToken(null); }} />
-            {changed && (
-              <Button variant="secondary" size="sm" style={{ height: 50, whiteSpace: "nowrap" }} loading={checking} onClick={check}>중복확인</Button>
-            )}
+            <input ref={fileRef} type="file" accept="image/*" hidden onChange={onFile} />
           </div>
-        </Field>
 
-        <Field label="국적">
-          <select className="input" value={nationality} onChange={(e) => setNationality(e.target.value)}>
-            {NATIONALITIES.map((n) => (
-              <option key={n.code} value={n.code}>{n.flag} {n.label}</option>
-            ))}
-          </select>
-        </Field>
+          {/* Default characters */}
+          <div className="setupp__label">기본 캐릭터 선택</div>
+          <div className="setupp__chars" role="radiogroup" aria-label="기본 캐릭터 선택">
+            {AVATAR_KEYS.map((key) => {
+              const selected = showChar && avatarKey === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className="setupp__char-btn"
+                  role="radio"
+                  aria-checked={selected}
+                  aria-label={avatarLabel(key)}
+                  onClick={() => selectCharacter(key)}
+                >
+                  <CharacterAvatar variant={key} selected={selected} />
+                </button>
+              );
+            })}
+          </div>
 
-        <div className="card card--flat" style={{ background: "var(--surface-2)" }}>
-          <div className="row row--between" style={{ fontSize: 13.5 }}><span className="muted">이름</span><span style={{ fontWeight: 700 }}>{me?.name}</span></div>
-          <div className="divider" />
-          <div className="row row--between" style={{ fontSize: 13.5 }}><span className="muted">이메일</span><span style={{ fontWeight: 700 }}>{me?.email}</span></div>
-          <div className="field__hint" style={{ marginTop: 8 }}>이름과 이메일은 계정 관리에서 변경할 수 있어요.</div>
+          {/* Nickname */}
+          <div className="setupp__label">닉네임</div>
+          <div className="setupp__nick-row">
+            <input
+              className="setupp__nick-input"
+              placeholder="닉네임을 입력하세요"
+              aria-label="닉네임"
+              value={nickname}
+              maxLength={10}
+              autoCapitalize="none"
+              autoCorrect="off"
+              onChange={(e) => onNicknameChange(e.target.value)}
+            />
+            <button
+              type="button"
+              className="setupp__nick-btn"
+              onClick={checkNick}
+              disabled={checking || trimmed.length < 1}
+              aria-label="닉네임 변경 확인"
+            >
+              {checking ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : "변경하기"}
+            </button>
+          </div>
+          <p
+            className={`setupp__nick-msg ${checkMsg ? (checkMsg.ok ? "is-ok" : "is-err") : ""}`}
+            role="status"
+            aria-live="polite"
+          >
+            {checkMsg?.text ?? ""}
+          </p>
+
+          <div className="setupp__spacer" />
+
+          <button
+            type="button"
+            className="setupp__submit"
+            onClick={save}
+            disabled={!canSave}
+            aria-disabled={!canSave}
+            aria-label={canSave ? "저장하기" : "변경 사항이 없거나 닉네임 확인이 필요해 저장할 수 없어요"}
+          >
+            {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : "저장하기"}
+          </button>
         </div>
-
-        <Button size="lg" block loading={busy} onClick={save}>저장</Button>
       </div>
-    </Screen>
+    </div>
   );
 }

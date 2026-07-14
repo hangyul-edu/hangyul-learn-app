@@ -179,3 +179,25 @@ export function NavMore({ active }: { active: boolean }) {
     </svg>
   );
 }
+
+/** Save / bookmark control — a plus in a circle. Filled orange when saved. */
+export function SavePlusIcon({ active = false }: { active?: boolean }) {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+      <circle
+        cx="12"
+        cy="12"
+        r="10.5"
+        fill={active ? "#FF5B00" : "none"}
+        stroke={active ? "#FF5B00" : "#C4CBD1"}
+        strokeWidth="1.6"
+      />
+      <path
+        d="M12 7.4v9.2M7.4 12h9.2"
+        stroke={active ? "#fff" : "#8A929A"}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}

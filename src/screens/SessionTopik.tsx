@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SessionChrome } from "../components/SessionChrome";
 import { SessionCompleteModal } from "../components/SessionCompleteModal";
 import { QuestionView, isAnswered, quizAttemptBody, type AnswerValue } from "../components/QuestionView";
+import { SavePlusIcon } from "../components/brand/HomeIcons";
 import { LoadingState, ErrorState } from "../components/ui/states";
 import { recApi, quizApi, dashboardApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
@@ -190,7 +191,7 @@ export function SessionTopik() {
           <div className="sess__card-top">
             <p className="sess__instr sess__instr--topik">문제를 풀어보세요</p>
             <button className="sess__bookmark" onClick={() => toggleSave(cur)} aria-label={saved[cur.quiz_id] ? "저장 해제" : "저장"} aria-pressed={!!saved[cur.quiz_id]}>
-              {saved[cur.quiz_id] ? "★" : "☆"}
+              <SavePlusIcon active={!!saved[cur.quiz_id]} />
             </button>
           </div>
 

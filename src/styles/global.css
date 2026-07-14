@@ -3693,7 +3693,7 @@ textarea.input {
 }
 .sess__card-top {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
@@ -3744,9 +3744,9 @@ textarea.input {
   border: none;
   background: none;
   cursor: pointer;
-  font-size: 22px;
-  line-height: 1;
-  color: #ffb62b;
+  display: grid;
+  place-items: center;
+  padding: 0;
 }
 .sess__sentence {
   margin-top: 18px;

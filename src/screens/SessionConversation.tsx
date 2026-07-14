@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SessionChrome } from "../components/SessionChrome";
 import { SessionCompleteModal } from "../components/SessionCompleteModal";
+import { SavePlusIcon } from "../components/brand/HomeIcons";
 import { LoadingState, ErrorState } from "../components/ui/states";
 import { recApi, sentenceApi, dashboardApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
@@ -222,7 +223,7 @@ export function SessionConversation() {
                 <span>정답이에요!</span>
               </div>
               <button className="sess__bookmark" onClick={() => toggleSave(cur)} aria-label={saved[cur.sentence_id] ? "저장 해제" : "저장"} aria-pressed={!!saved[cur.sentence_id]}>
-                {saved[cur.sentence_id] ? "★" : "☆"}
+                <SavePlusIcon active={!!saved[cur.sentence_id]} />
               </button>
             </div>
             <div className="sess__sentence sess__sentence--correct" role="status" aria-label={`정답입니다. ${cur.korean}. ${cur.translation}`}>
@@ -250,7 +251,7 @@ export function SessionConversation() {
             <div className="sess__card-top">
               <p className="sess__instr">빈칸을 채워 완성해봐요✨</p>
               <button className="sess__bookmark" onClick={() => toggleSave(cur)} aria-label={saved[cur.sentence_id] ? "저장 해제" : "저장"} aria-pressed={!!saved[cur.sentence_id]}>
-                {saved[cur.sentence_id] ? "★" : "☆"}
+                <SavePlusIcon active={!!saved[cur.sentence_id]} />
               </button>
             </div>
 

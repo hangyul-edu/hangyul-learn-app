@@ -2810,7 +2810,7 @@ textarea.input {
 .home__tab {
   position: relative;
   box-sizing: border-box;
-  --tab-w: clamp(60px, 17vw, 70px);
+  --tab-w: clamp(88px, 25vw, 104px);
   width: var(--tab-w);
   height: clamp(46px, 12.5vw, 54px);
   border: none;

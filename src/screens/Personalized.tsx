@@ -108,9 +108,13 @@ export function Personalized() {
                           {trackIcon(t.category)}
                         </button>
                       ))}
-                      <span className="home__tab home__tab--muted" aria-hidden="true">
+                      <button
+                        className="home__tab home__tab--muted"
+                        onClick={() => nav("/recommend/settings")}
+                        aria-label="맞춤 학습 설정"
+                      >
                         <GearIcon />
-                      </span>
+                      </button>
                     </div>
 
                     {/* Learning card */}

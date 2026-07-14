@@ -545,8 +545,9 @@ textarea.input {
 }
 .optioncard__check {
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
   color: var(--brand-500);
-  font-size: 20px;
   opacity: 0;
 }
 .optioncard.is-selected .optioncard__check {

@@ -4909,3 +4909,59 @@ textarea.input {
 .echg__msg.is-err {
   color: var(--danger);
 }
+
+/* ============================ Password change (비밀번호 변경) ============================ */
+.pwch__field {
+  width: 100%;
+  height: clamp(80px, 22vw, 91px);
+  margin-top: 12px;
+  border: 1.5px solid transparent;
+  border-radius: 20px;
+  background: #f3f5f5;
+  padding: 0 22px;
+  font-size: 16px;
+  color: #272c30;
+  transition: border-color 0.14s, background 0.14s;
+  text-overflow: ellipsis;
+}
+.pwch__field::placeholder {
+  color: #b2bbc3;
+  font-size: clamp(13px, 3.9vw, 15px);
+}
+.pwch__field:focus {
+  outline: none;
+  border-color: #ff5b00;
+  background: #fff;
+  caret-color: #ff5b00;
+}
+.pwch__msg {
+  margin: 14px 2px 0;
+  min-height: 22px;
+  font-size: clamp(13.5px, 3.9vw, 15px);
+  color: var(--danger);
+}
+/* Bottom submit — orange enabled, gray-blue disabled */
+.pwch__submit {
+  height: clamp(80px, 21vw, 91px);
+  width: 100%;
+  border: none;
+  border-radius: 20px;
+  background: #ff5b00;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 18px rgba(255, 91, 0, 0.24);
+  transition: transform 0.08s ease, background 0.15s, box-shadow 0.15s;
+}
+.pwch__submit:active {
+  transform: scale(0.99);
+}
+.pwch__submit:disabled {
+  background: #aeb7be;
+  box-shadow: 0 8px 16px rgba(174, 183, 190, 0.3);
+  cursor: default;
+}

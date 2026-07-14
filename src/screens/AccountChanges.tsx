@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Screen } from "../components/layout/Screen";
-import { Button } from "../components/ui/kit";
-import { PasswordField } from "../components/ui/Field";
 import { authApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
@@ -10,6 +7,13 @@ import { errorMessage } from "../lib/http";
 import { NATIONALITIES } from "../lib/format";
 
 /* ------------------------- Password ------------------------- */
+/**
+ * Password change — single screen matching the reference. Reuses the
+ * authenticated `changePassword(current, new, confirm)` API. The current-password
+ * field is the re-authentication factor; on success the backend revokes sessions,
+ * so we clear all fields and follow the existing hard sign-out → /login flow.
+ * Passwords live only in screen-local state — never persisted, logged, or cached.
+ */
 export function ChangePassword() {
   const nav = useNavigate();
   const toast = useToast();
@@ -19,10 +23,31 @@ export function ChangePassword() {
   const [pw2, setPw2] = useState("");
   const [busy, setBusy] = useState(false);
 
+  // Authoritative policy (matches backend): ≥8 chars, letter + number + special.
+  const policyOk = pw.length >= 8 && /[A-Za-z]/.test(pw) && /\d/.test(pw) && /[^A-Za-z0-9]/.test(pw);
+  const matches = pw2.length > 0 && pw === pw2;
+  const differs = pw.length > 0 && pw !== cur;
+  const canSubmit = cur.length > 0 && policyOk && matches && differs && !busy;
+
+  // Compact single-line feedback (most relevant issue only, stable height).
+  const msg =
+    pw2.length > 0 && pw !== pw2
+      ? "새 비밀번호가 일치하지 않아요."
+      : pw.length > 0 && !policyOk
+        ? "영어, 숫자, 특수문자를 포함해 8자리 이상 입력해 주세요."
+        : cur.length > 0 && pw.length > 0 && pw === cur
+          ? "현재 비밀번호와 다른 비밀번호를 입력해 주세요."
+          : "";
+
   async function submit() {
+    if (!canSubmit) return;
     setBusy(true);
     try {
       await authApi.changePassword(cur, pw, pw2);
+      // Clear sensitive state before leaving.
+      setCur("");
+      setPw("");
+      setPw2("");
       toast.success("비밀번호를 변경했어요. 다시 로그인해 주세요.");
       hardSignOut();
       nav("/login", { replace: true });
@@ -34,15 +59,73 @@ export function ChangePassword() {
   }
 
   return (
-    <Screen title="비밀번호 변경" back>
-      <div className="stack" style={{ gap: 14 }}>
-        <p className="muted">보안을 위해 변경 후 모든 기기에서 다시 로그인해야 해요.</p>
-        <PasswordField label="현재 비밀번호" value={cur} onChange={(e) => setCur(e.target.value)} />
-        <PasswordField label="새 비밀번호" hint="영문·숫자·특수문자 포함 8자 이상" value={pw} onChange={(e) => setPw(e.target.value)} />
-        <PasswordField label="새 비밀번호 확인" error={pw2 && pw !== pw2 ? "일치하지 않아요" : null} value={pw2} onChange={(e) => setPw2(e.target.value)} />
-        <Button size="lg" block loading={busy} disabled={!cur || !pw || pw !== pw2} onClick={submit}>변경하기</Button>
+    <div className="screen setupp pwch">
+      <div className="setupp__scroll">
+        <div className="setupp__inner">
+          <button className="setupp__back" onClick={() => nav(-1)} aria-label="뒤로">
+            <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+
+          <h1 className="setupp__title">비밀번호 변경</h1>
+
+          <label className="setupp__label" htmlFor="pwch-cur">현재 비밀번호</label>
+          <input
+            id="pwch-cur"
+            className="pwch__field"
+            type="password"
+            autoComplete="current-password"
+            autoCapitalize="none"
+            autoCorrect="off"
+            placeholder="현재 비밀번호를 입력하세요"
+            value={cur}
+            onChange={(e) => setCur(e.target.value)}
+          />
+
+          <label className="setupp__label" htmlFor="pwch-new">새 비밀번호</label>
+          <input
+            id="pwch-new"
+            className="pwch__field"
+            type="password"
+            autoComplete="new-password"
+            autoCapitalize="none"
+            autoCorrect="off"
+            placeholder="영어, 숫자, 특수문자 포함 8자리 이상을 입력하세요"
+            value={pw}
+            onChange={(e) => setPw(e.target.value)}
+          />
+
+          <label className="setupp__label" htmlFor="pwch-confirm">새 비밀번호 확인</label>
+          <input
+            id="pwch-confirm"
+            className="pwch__field"
+            type="password"
+            autoComplete="new-password"
+            autoCapitalize="none"
+            autoCorrect="off"
+            placeholder="새 비밀번호를 다시 입력하세요"
+            value={pw2}
+            onChange={(e) => setPw2(e.target.value)}
+          />
+
+          <p className="pwch__msg" role="status" aria-live="polite">{msg}</p>
+
+          <div className="setupp__spacer" />
+
+          <button
+            type="button"
+            className="pwch__submit"
+            onClick={submit}
+            disabled={!canSubmit}
+            aria-disabled={!canSubmit}
+            aria-label={canSubmit ? "변경하기" : "모든 조건을 만족하면 비밀번호를 변경할 수 있어요"}
+          >
+            {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : "변경하기"}
+          </button>
+        </div>
       </div>
-    </Screen>
+    </div>
   );
 }
 

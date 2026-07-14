@@ -4643,3 +4643,193 @@ textarea.input {
 .acct__pw:active {
   transform: scale(0.99);
 }
+
+/* ============================ Phone-number change (휴대폰번호 변경) ============================ */
+.pchg__row {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 2.4vw, 11px);
+}
+/* Compact country selector: flag + chevron, native <select> overlaid for the picker */
+.pchg__country {
+  position: relative;
+  flex: 0 0 auto;
+  height: clamp(52px, 14vw, 58px);
+  width: clamp(80px, 22vw, 88px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1.5px solid #e6e9ea;
+  border-radius: 14px;
+  background: #fff;
+}
+.pchg__country-sel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: none;
+  background: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+.pchg__flag {
+  font-size: 22px;
+  line-height: 1;
+}
+.pchg__phone {
+  flex: 1;
+  min-width: 0;
+  height: clamp(66px, 17vw, 72px);
+  border: 1.5px solid transparent;
+  border-radius: 18px;
+  background: #f3f5f5;
+  padding: 0 20px;
+  font-size: 16px;
+  color: #272c30;
+  transition: border-color 0.14s, background 0.14s;
+}
+.pchg__phone::placeholder {
+  color: #b2bbc3;
+}
+.pchg__phone:focus {
+  outline: none;
+  border-color: #ff5b00;
+  background: #fff;
+  caret-color: #ff5b00;
+}
+/* Outlined resend / request button */
+.pchg__resend {
+  flex: 0 0 auto;
+  width: clamp(104px, 29vw, 116px);
+  height: clamp(52px, 14vw, 58px);
+  border: 2px solid #272c30;
+  border-radius: 12px;
+  background: #fff;
+  color: #272c30;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(13px, 3.9vw, 15px);
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(39, 44, 48, 0.1);
+  transition: transform 0.08s ease, opacity 0.15s;
+  white-space: nowrap;
+}
+.pchg__resend:active {
+  transform: scale(0.98);
+}
+.pchg__resend:disabled {
+  opacity: 0.4;
+  box-shadow: none;
+  cursor: default;
+}
+/* Code input with inline turquoise timer */
+.pchg__code-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.pchg__code {
+  width: 100%;
+  height: clamp(74px, 19vw, 80px);
+  border: 1.5px solid transparent;
+  border-radius: 18px;
+  background: #f3f5f5;
+  padding: 0 78px 0 20px;
+  font-size: 16px;
+  color: #272c30;
+  transition: border-color 0.14s, background 0.14s;
+}
+.pchg__code::placeholder {
+  color: #b2bbc3;
+}
+.pchg__code:focus {
+  outline: none;
+  border-color: #ff5b00;
+  background: #fff;
+  caret-color: #ff5b00;
+}
+.pchg__code:disabled {
+  opacity: 1;
+}
+.pchg__timer {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #45c8c8;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(18px, 5vw, 22px);
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+/* Dark confirm button */
+.pchg__confirm {
+  flex: 0 0 auto;
+  width: clamp(90px, 25vw, 101px);
+  height: clamp(54px, 14vw, 58px);
+  border: none;
+  border-radius: 12px;
+  background: #272c30;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(14px, 4vw, 16px);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 5px 12px rgba(39, 44, 48, 0.18);
+  transition: transform 0.08s ease, opacity 0.15s;
+}
+.pchg__confirm:active {
+  transform: scale(0.98);
+}
+.pchg__confirm:disabled {
+  opacity: 0.4;
+  box-shadow: none;
+  cursor: default;
+}
+.pchg__msg {
+  margin: 12px 0 0;
+  min-height: 20px;
+  font-size: clamp(14px, 4vw, 15.5px);
+}
+.pchg__msg.is-ok {
+  color: #4c78ff;
+}
+.pchg__msg.is-err {
+  color: var(--danger);
+}
+.pchg__spacer {
+  flex: 1 1 auto;
+  min-height: clamp(24px, 8vh, 110px);
+}
+/* Bottom submit — orange when enabled, gray-blue when disabled */
+.pchg__submit {
+  height: clamp(68px, 18vw, 77px);
+  width: 100%;
+  border: none;
+  border-radius: 17px;
+  background: #ff5b00;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 18px rgba(255, 91, 0, 0.24);
+  transition: transform 0.08s ease, background 0.15s, box-shadow 0.15s;
+}
+.pchg__submit:active {
+  transform: scale(0.99);
+}
+.pchg__submit:disabled {
+  background: #aeb7be;
+  box-shadow: 0 8px 16px rgba(174, 183, 190, 0.3);
+  cursor: default;
+}

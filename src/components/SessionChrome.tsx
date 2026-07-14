@@ -75,7 +75,7 @@ export function SessionChrome({
               aria-label={collapsed ? "맞춤 설정 입력창 펼치기" : "맞춤 설정 입력창 접기"}
               aria-expanded={!collapsed}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <svg width="25" height="25" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 {/* Arrow shows the NEXT action: collapsed → expand (points left);
                     expanded → collapse (points right). */}
                 <path

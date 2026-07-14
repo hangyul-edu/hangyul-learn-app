@@ -1,6 +1,7 @@
 import { http } from "../lib/http";
 import type {
   AppSettings,
+  Banner,
   Course,
   DashboardSummary,
   ExamResult,
@@ -151,7 +152,10 @@ export const quizApi = {
 export const learnApi = {
   myLearning: () => http.get<{ tracks: { track_id: string; kind: string; current_level: number; max_level: number }[] }>("/me/learning"),
   courses: (trackId: string, cursor?: string) =>
-    http.get<{ items: Course[]; next_cursor: string | null; has_more: boolean }>(`/tracks/${trackId}/courses`, { cursor, limit: 10, lessons_per_course: 5 }),
+    http.get<{ items: Course[]; next_cursor: string | null; has_more: boolean }>(`/tracks/${trackId}/courses`, { cursor, limit: 6, lessons_per_course: 6 }),
+  // Per-course horizontal lecture pagination (continues each course's lessons_next_cursor).
+  courseLessons: (courseId: string, cursor?: string | null) =>
+    http.get<{ items: Lecture[]; next_cursor: string | null; has_more: boolean }>(`/courses/${courseId}/lessons`, { cursor: cursor ?? undefined, limit: 6 }),
   course: (courseId: string) => http.get<Course>(`/courses/${courseId}`),
   lecture: (lectureId: string) => http.get<Lecture>(`/lectures/${lectureId}`),
   lecturePlay: (lectureId: string) =>
@@ -299,6 +303,10 @@ export const settingsApi = {
   // Reorder: main-screen display order only (ordered category ids).
   updateLearningOrder: (order: string[]) =>
     http.put<LearningPreferences>("/settings/me/learning/order", { order }),
+};
+
+export const bannerApi = {
+  list: () => http.get<{ banners: Banner[] }>("/banners"),
 };
 
 /* ------------------------------ Support ----------------------------- */

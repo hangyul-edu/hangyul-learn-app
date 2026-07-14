@@ -6106,3 +6106,231 @@ textarea.input {
   box-shadow: 0 8px 16px rgba(174, 183, 190, 0.28);
   cursor: default;
 }
+
+/* ============================ Lecture home (강의) ============================ */
+.lechome {
+  background: #fff;
+}
+.lechome__scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(var(--nav-h) + 96px + var(--safe-bottom));
+}
+/* Warm cream backdrop behind the header + banner area */
+.lechome__header,
+.lechome__carousel,
+.lechome__banner-skeleton {
+  background: #fdf8ef;
+}
+.lechome__header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  padding: calc(var(--safe-top) + 10px) 20px 10px;
+}
+.lechome__title {
+  margin: 0;
+  color: #111;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(21px, 6vw, 25px);
+}
+.lechome__streak {
+  position: absolute;
+  right: 18px;
+  top: calc(var(--safe-top) + 8px);
+}
+/* --- Banner carousel --- */
+.lechome__carousel {
+  padding: 4px 0 18px;
+}
+.lechome__banners {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  padding: 0 18px;
+}
+.lechome__banners::-webkit-scrollbar {
+  display: none;
+}
+.lechome__banner {
+  flex: 0 0 100%;
+  scroll-snap-align: center;
+  aspect-ratio: 2.1 / 1;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #eceef0;
+  box-shadow: 0 6px 16px rgba(37, 43, 47, 0.1);
+  border: none;
+  padding: 0;
+  position: relative;
+}
+.lechome__banner.is-link {
+  cursor: pointer;
+}
+.lechome__banner-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.lechome__banner-skeleton {
+  margin: 4px 18px 18px;
+  aspect-ratio: 2.1 / 1;
+  border-radius: 14px;
+  background: #eef0f0;
+}
+.lechome__dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+.lechome__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #d6dadd;
+  transition: background 0.15s, width 0.15s;
+}
+.lechome__dot.is-active {
+  background: #ff5b00;
+  width: 18px;
+  border-radius: 4px;
+}
+/* --- Course sections --- */
+.lechome__sections {
+  background: #fff;
+  padding-top: 8px;
+}
+.lechome__section {
+  margin-top: clamp(20px, 4.5vw, 28px);
+}
+.lechome__section-title {
+  margin: 0 0 14px;
+  padding: 0 20px;
+  color: #17191c;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(18px, 5.2vw, 22px);
+}
+.lechome__row {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px 20px 4px;
+}
+.lechome__row::-webkit-scrollbar {
+  display: none;
+}
+.lechome__card {
+  flex: 0 0 46%;
+  max-width: 220px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+.lechome__thumb {
+  position: relative;
+  aspect-ratio: 1.6 / 1;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #eceef0;
+  box-shadow: 0 5px 14px rgba(37, 43, 47, 0.1);
+}
+.lechome__thumb-img,
+.lechome__thumb-ph {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.lechome__thumb-ph {
+  background: linear-gradient(135deg, #eef0f2, #e3e6e9);
+}
+.lechome__free {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: #ff5b00;
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 8px;
+}
+.lechome__level {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: rgba(30, 34, 38, 0.62);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 8px;
+}
+/* horizontal footer (loader / retry) inside a row */
+.lechome__row-foot {
+  flex: 0 0 auto;
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 40px;
+}
+.lechome__row-retry {
+  flex: 0 0 auto;
+  align-self: center;
+  background: none;
+  border: none;
+  color: #ff5b00;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+/* vertical footer + states */
+.lechome__foot {
+  display: grid;
+  place-items: center;
+  min-height: 48px;
+  padding: 16px 0;
+}
+.lechome__err {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 24px 20px;
+  color: #7a8490;
+  font-size: 14.5px;
+}
+.lechome__retry {
+  background: none;
+  border: none;
+  color: #ff5b00;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.lechome__empty {
+  margin: clamp(40px, 12vw, 70px) 20px;
+  text-align: center;
+  color: #aeb7be;
+  font-size: 15px;
+}
+.lechome__skel-title {
+  height: 22px;
+  width: 55%;
+  background: #eef0f0;
+  border-radius: 8px;
+  color: transparent;
+}

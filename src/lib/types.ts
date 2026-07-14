@@ -221,7 +221,17 @@ export interface Course {
   lesson_count: number;
   completed_lesson_count: number;
   lessons_preview?: Lecture[];
+  /** Cursor for this course's next horizontal lecture page (GET /courses/{id}/lessons). */
+  lessons_next_cursor?: string | null;
   lessons?: Lecture[];
+}
+
+export interface Banner {
+  banner_id: string;
+  image_url: string;
+  alt_text: string;
+  action_url: string | null;
+  sort_order: number;
 }
 
 /* ---- Exams ---- */

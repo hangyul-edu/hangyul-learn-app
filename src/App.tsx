@@ -36,7 +36,8 @@ import { Settings } from "./screens/Settings";
 import { Account } from "./screens/Account";
 import { ChangePassword, ChangePhone, ChangeEmail } from "./screens/AccountChanges";
 import { Support } from "./screens/Support";
-import { Courses, CourseDetail } from "./screens/Courses";
+import { CourseDetail } from "./screens/Courses";
+import { LectureHome } from "./screens/LectureHome";
 import { Lecture } from "./screens/Lecture";
 import { Practice } from "./screens/Practice";
 import { Exams, ExamPlay } from "./screens/Exams";
@@ -120,7 +121,7 @@ const router = createBrowserRouter(
         <Route element={<RequireAuth><AppShell /></RequireAuth>}>
           <Route path="/home" element={<Home />} />
           <Route path="/learn" element={<Learn />} />
-          <Route path="/courses" element={<Courses />} />
+          <Route path="/courses" element={<LectureHome />} />
           <Route path="/recommend" element={<Personalized />} />
           <Route path="/league" element={<League />} />
           <Route path="/social" element={<Social />} />

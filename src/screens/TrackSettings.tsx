@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useBlocker, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SkeletonList } from "../components/ui/states";
 import { UnsavedChangesModal } from "../components/UnsavedChangesModal";
@@ -44,7 +44,7 @@ export function TrackSettings() {
   const [draftGoal, setDraftGoal] = useState<number | null>(null);
   const origRef = useRef<{ level: number; goal: number } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [unsavedOpen, setUnsavedOpen] = useState(false);
+  const leavingRef = useRef(false); // set when we intentionally leave (save / 나가기)
   const seqRef = useRef(0);
 
   // Capture the server-confirmed originals once, then seed the draft.
@@ -60,7 +60,23 @@ export function TrackSettings() {
   const dirty =
     !!orig && draftLevel != null && draftGoal != null && (draftLevel !== orig.level || draftGoal !== orig.goal);
 
-  // Warn on full page unload (reload/close) while dirty.
+  // Block EVERY in-app exit path while dirty (header back, browser/hardware back,
+  // swipe-back, programmatic pop) via the data router. The modal is driven by the
+  // blocker's state; a deliberate leave (save / 나가기) sets leavingRef to bypass.
+  const blocker = useBlocker(
+    useCallback(
+      ({
+        currentLocation,
+        nextLocation,
+      }: {
+        currentLocation: { pathname: string };
+        nextLocation: { pathname: string };
+      }) => dirty && !leavingRef.current && currentLocation.pathname !== nextLocation.pathname,
+      [dirty],
+    ),
+  );
+
+  // Warn on full page unload (reload/close) while dirty — outside the router.
   useEffect(() => {
     if (!dirty) return;
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -70,11 +86,6 @@ export function TrackSettings() {
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [dirty]);
-
-  function requestBack() {
-    if (dirty) setUnsavedOpen(true);
-    else nav(-1);
-  }
 
   async function save() {
     if (!dirty || saving || !q.data || !orig || draftLevel == null || draftGoal == null) return;
@@ -89,6 +100,7 @@ export function TrackSettings() {
       qc.setQueryData(["learning-prefs"], res);
       qc.invalidateQueries({ queryKey: ["dashboard"] }); // Home + Custom Learning
       origRef.current = { level: draftLevel, goal: draftGoal }; // clear dirty
+      leavingRef.current = true; // deliberate exit — don't trip the blocker
       toast.success("저장했어요");
       nav(-1);
     } catch (e) {
@@ -106,7 +118,7 @@ export function TrackSettings() {
       <div className="trkset__scroll">
         <div className="trkset__inner">
           <header className="acct__header">
-            <button className="acct__back" onClick={requestBack} aria-label="뒤로">
+            <button className="acct__back" onClick={() => nav(-1)} aria-label="뒤로">
               <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -204,12 +216,11 @@ export function TrackSettings() {
       </div>
 
       <UnsavedChangesModal
-        open={unsavedOpen}
-        onContinue={() => setUnsavedOpen(false)}
+        open={blocker.state === "blocked"}
+        onContinue={() => blocker.reset?.()}
         onLeave={() => {
-          setUnsavedOpen(false);
-          origRef.current = orig; // draft discarded; local state irrelevant on unmount
-          nav(-1);
+          leavingRef.current = true; // draft discarded; proceed with the blocked nav
+          blocker.proceed?.();
         }}
       />
     </div>

@@ -1,4 +1,12 @@
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import {
+  createBrowserRouter,
+  createRoutesFromElements,
+  Navigate,
+  Outlet,
+  Route,
+  RouterProvider,
+  useLocation,
+} from "react-router-dom";
 import type { ReactNode } from "react";
 import { useAuth } from "./hooks/auth";
 import { AppShell } from "./components/layout/AppShell";
@@ -76,10 +84,18 @@ function RequireGuest({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-export function App() {
+/** Root layout — the phone frame; nested routes render into the outlet. */
+function AppFrame() {
   return (
     <div className="app-frame">
-      <Routes>
+      <Outlet />
+    </div>
+  );
+}
+
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <Route element={<AppFrame />}>
         {/* Public */}
         <Route path="/welcome" element={<RequireGuest><Welcome /></RequireGuest>} />
         <Route path="/login" element={<RequireGuest><Login /></RequireGuest>} />
@@ -142,7 +158,10 @@ export function App() {
         <Route path="/support" element={<RequireAuth><Support /></RequireAuth>} />
 
         <Route path="*" element={<Navigate to="/home" replace />} />
-      </Routes>
-    </div>
-  );
+    </Route>,
+  ),
+);
+
+export function App() {
+  return <RouterProvider router={router} />;
 }

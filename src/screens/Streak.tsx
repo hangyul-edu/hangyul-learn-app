@@ -83,7 +83,7 @@ export function Streak() {
               꾸준히 {streak ?? "…"}일!
             </p>
             <span className="strk__banner-sun" aria-hidden="true">
-              <SunIcon size={78} />
+              <SunIcon size={56} />
             </span>
           </div>
 

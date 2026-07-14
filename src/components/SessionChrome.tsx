@@ -22,6 +22,7 @@ export function SessionChrome({
   progress,
   panel,
   askContext,
+  onBack,
   children,
 }: {
   title: string;
@@ -35,6 +36,9 @@ export function SessionChrome({
   /** Explanation context — present only after a server-confirmed incorrect
    *  answer for the current attempt; null otherwise (mascot inactive). */
   askContext: AskContext | null;
+  /** Back-chevron handler — runs the same completion/exit flow as the CTA so
+   *  exiting via back shows the summary modal when applicable. */
+  onBack?: () => void;
   children: ReactNode;
 }) {
   const nav = useNavigate();
@@ -53,7 +57,7 @@ export function SessionChrome({
       <div className="sess__scroll">
         <div className="sess__inner">
           <header className="sess__header">
-            <button className="sess__back" onClick={() => nav(-1)} aria-label="뒤로">
+            <button className="sess__back" onClick={onBack ?? (() => nav(-1))} aria-label="뒤로">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>

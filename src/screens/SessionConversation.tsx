@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SessionChrome } from "../components/SessionChrome";
+import { SessionCompleteModal } from "../components/SessionCompleteModal";
 import { LoadingState, ErrorState } from "../components/ui/states";
 import { recApi, sentenceApi, dashboardApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
@@ -29,11 +30,14 @@ function useRemaining() {
 export function SessionConversation() {
   const nav = useNavigate();
   const toast = useToast();
+  const qc = useQueryClient();
   const { remaining, level } = useRemaining();
 
   const [prompt, setPrompt] = useState("");
   const [items, setItems] = useState<Sentence[] | null>(null);
   const [idx, setIdx] = useState(0);
+  const [points, setPoints] = useState(0);
+  const [completed, setCompleted] = useState(false);
   const [correctSet, setCorrectSet] = useState<Set<string>>(new Set());
   const [answered, setAnswered] = useState<Set<string>>(new Set());
   const [saved, setSaved] = useState<Record<string, boolean>>({});
@@ -100,6 +104,8 @@ export function SessionConversation() {
   function record(res: SpeechAttempt, s: Sentence) {
     setResult(res);
     setAnswered((a) => new Set(a).add(s.sentence_id));
+    // Points come from the server result; correct count from its `correct` flag.
+    setPoints((p) => p + (res.points_earned ?? 0));
     if (res.correct) setCorrectSet((c) => new Set(c).add(s.sentence_id));
   }
 
@@ -135,11 +141,22 @@ export function SessionConversation() {
     setTyped("");
     setHintOpen(false);
     if (idx >= total - 1) {
-      toast.success("오늘 세트를 완료했어요! 🎉");
-      nav(-1);
+      finishOrExit();
     } else {
       setIdx((i) => i + 1);
     }
+  }
+
+  // Show the summary only if ≥1 item was correct; otherwise return via the
+  // normal exit flow. Used by the CTA at completion AND the back chevron.
+  function finishOrExit() {
+    if (correctSet.size > 0) setCompleted(true);
+    else exitSession();
+  }
+
+  function exitSession() {
+    qc.invalidateQueries({ queryKey: ["dashboard"] });
+    nav(-1);
   }
 
   const incorrect = !!result && cur != null && answered.has(cur.sentence_id) && !result.correct;
@@ -171,6 +188,7 @@ export function SessionConversation() {
   );
 
   return (
+    <>
     <SessionChrome
       title={`회화 Lv.${level}`}
       heading="목표 하루 학습 문장"
@@ -178,6 +196,7 @@ export function SessionConversation() {
       total={total}
       progress={progress}
       panel={panel}
+      onBack={finishOrExit}
       askContext={
         !cur
           ? null
@@ -289,5 +308,9 @@ export function SessionConversation() {
         </>
       )}
     </SessionChrome>
+    {completed && (
+      <SessionCompleteModal mode="conversation" correctCount={correctSet.size} points={points} onConfirm={exitSession} />
+    )}
+    </>
   );
 }

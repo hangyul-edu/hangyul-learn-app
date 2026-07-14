@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SessionChrome } from "../components/SessionChrome";
+import { SessionCompleteModal } from "../components/SessionCompleteModal";
 import { QuestionView, isAnswered, quizAttemptBody, type AnswerValue } from "../components/QuestionView";
 import { LoadingState, ErrorState } from "../components/ui/states";
 import { recApi, quizApi, dashboardApi } from "../api/endpoints";
@@ -14,6 +15,7 @@ const SECTION = "reading"; // reference dropdown shows the reading problem types
 export function SessionTopik() {
   const nav = useNavigate();
   const toast = useToast();
+  const qc = useQueryClient();
 
   const dash = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
   const topik = dash.data?.tracks.find((t) => t.category === "topik");
@@ -34,6 +36,8 @@ export function SessionTopik() {
   const [correctSet, setCorrectSet] = useState<Set<string>>(new Set());
   const [answered, setAnswered] = useState<Set<string>>(new Set());
   const [saved, setSaved] = useState<Record<string, boolean>>({});
+  const [points, setPoints] = useState(0);
+  const [completed, setCompleted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(false);
@@ -79,6 +83,7 @@ export function SessionTopik() {
       const res = await quizApi.attempt(cur.quiz_id, quizAttemptBody(cur, value));
       setResult(res);
       setAnswered((a) => new Set(a).add(cur.quiz_id));
+      setPoints((p) => p + (res.points_earned ?? 0));
       if (res.correct) setCorrectSet((c) => new Set(c).add(cur.quiz_id));
     } catch (e) {
       toast.error(errorMessage(e));
@@ -91,11 +96,21 @@ export function SessionTopik() {
     setResult(null);
     setValue({});
     if (idx >= total - 1) {
-      toast.success("오늘 세트를 완료했어요! 🎉");
-      nav(-1);
+      finishOrExit();
     } else {
       setIdx((i) => i + 1);
     }
+  }
+
+  // Same gate for the CTA at completion and the back chevron.
+  function finishOrExit() {
+    if (correctSet.size > 0) setCompleted(true);
+    else exitSession();
+  }
+
+  function exitSession() {
+    qc.invalidateQueries({ queryKey: ["dashboard"] });
+    nav(-1);
   }
 
   async function toggleSave(q: Quiz) {
@@ -149,6 +164,7 @@ export function SessionTopik() {
   );
 
   return (
+    <>
     <SessionChrome
       title={`토픽 ${grade}급`}
       heading="목표 하루 학습 문제"
@@ -156,6 +172,7 @@ export function SessionTopik() {
       total={total}
       progress={progress}
       panel={panel}
+      onBack={finishOrExit}
       askContext={
         !cur
           ? null
@@ -198,5 +215,9 @@ export function SessionTopik() {
         </div>
       )}
     </SessionChrome>
+    {completed && (
+      <SessionCompleteModal mode="topik" correctCount={correctSet.size} points={points} onConfirm={exitSession} />
+    )}
+    </>
   );
 }

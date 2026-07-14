@@ -211,7 +211,7 @@ export function Profile() {
           ) : (
             <button
               className="more__sub-plan"
-              onClick={() => nav(subState === "paid" ? "/account/billing" : "/subscription")}
+              onClick={() => nav("/subscription")}
             >
               {subState === "trial" && <span className="more__sub-ribbon">무료체험중</span>}
               <span className="more__sub-title-row">

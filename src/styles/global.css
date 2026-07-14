@@ -5258,3 +5258,246 @@ textarea.input {
 .lgo__btn--go:disabled {
   opacity: 0.85;
 }
+
+/* ============================ Subscription management (구독 관리) ============================ */
+.subm {
+  background: #fff;
+}
+.subm__scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.subm__top {
+  background: #fff;
+  padding: calc(var(--safe-top) + 8px) clamp(22px, 6.5vw, 28px) clamp(20px, 5vw, 28px);
+}
+.subm__h {
+  margin: clamp(24px, 5vh, 40px) 0 clamp(16px, 3.5vw, 22px);
+  color: #272c30;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(22px, 6.4vw, 30px);
+}
+/* Active subscription rows */
+.subm__sub {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.subm__srow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+.subm__label {
+  color: #7a8490;
+  font-size: clamp(14px, 4vw, 16px);
+}
+.subm__value {
+  color: #272c30;
+  font-weight: 700;
+  font-size: clamp(15px, 4.2vw, 17px);
+  text-align: right;
+}
+.subm__cancel {
+  align-self: flex-start;
+  margin-top: 6px;
+  min-height: 44px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: #7a8490;
+  font-size: clamp(13.5px, 3.9vw, 15px);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.subm__cancel:disabled {
+  opacity: 0.5;
+}
+/* No-subscription row */
+.subm__nosub {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #f7f8f8;
+  border-radius: 14px;
+  padding: clamp(18px, 4.5vw, 24px) clamp(16px, 4.5vw, 22px);
+}
+.subm__nosub-text {
+  flex: 1;
+  min-width: 0;
+}
+.subm__nosub-1 {
+  margin: 0;
+  color: #4f5760;
+  font-weight: 700;
+  font-size: clamp(14px, 4vw, 16px);
+  line-height: 1.45;
+}
+.subm__nosub-2 {
+  margin: 4px 0 0;
+  color: #8b939b;
+  font-size: clamp(12.5px, 3.7vw, 14px);
+  line-height: 1.45;
+}
+.subm__subscribe {
+  flex: 0 0 auto;
+  padding: 0 clamp(16px, 5vw, 22px);
+  height: clamp(48px, 12.5vw, 56px);
+  border: none;
+  border-radius: 13px;
+  background: #ff5b00;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(14px, 4vw, 16px);
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(255, 91, 0, 0.24);
+  white-space: nowrap;
+}
+.subm__subscribe:active {
+  transform: scale(0.98);
+}
+/* Voucher row */
+.subm__voucher {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: clamp(22px, 5vw, 32px);
+  padding: clamp(16px, 4vw, 20px);
+  background: #f7f8f8;
+  border-radius: 14px;
+}
+.subm__voucher-label {
+  color: #272c30;
+  font-weight: 700;
+  font-size: clamp(14px, 4vw, 16px);
+}
+.subm__voucher-btn {
+  flex: 0 0 auto;
+  height: clamp(46px, 12vw, 54px);
+  padding: 0 clamp(16px, 5vw, 22px);
+  border: none;
+  border-radius: 12px;
+  background: #272c30;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(13.5px, 3.9vw, 15px);
+  cursor: pointer;
+  box-shadow: 0 5px 12px rgba(39, 44, 48, 0.18);
+  white-space: nowrap;
+}
+.subm__voucher-btn:active {
+  transform: scale(0.98);
+}
+/* Payment-information region */
+.subm__pay {
+  background: #f7f8f8;
+  padding: clamp(6px, 2vw, 12px) clamp(22px, 6.5vw, 28px) calc(40px + var(--safe-bottom));
+  min-height: 40vh;
+}
+.subm__thead {
+  display: grid;
+  grid-template-columns: 20% 50% 30%;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #dce1e4;
+}
+.subm__th {
+  color: #7a8490;
+  font-weight: 600;
+  font-size: clamp(12px, 3.5vw, 13.5px);
+}
+.subm__th--amt {
+  text-align: right;
+}
+.subm__plist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.subm__prow {
+  display: grid;
+  grid-template-columns: 20% 50% 30%;
+  gap: 8px;
+  align-items: start;
+  padding: clamp(16px, 4vw, 20px) 0;
+  border-bottom: 1px solid #e6eaec;
+}
+.subm__pdate {
+  color: #7a8490;
+  font-size: clamp(12.5px, 3.6vw, 14px);
+}
+.subm__pdesc {
+  min-width: 0;
+}
+.subm__pname {
+  color: #272c30;
+  font-weight: 600;
+  font-size: clamp(13.5px, 3.9vw, 15px);
+}
+.subm__pperiod {
+  margin-top: 4px;
+  color: #7a8490;
+  font-size: clamp(12px, 3.5vw, 13.5px);
+  line-height: 1.5;
+}
+.subm__pamt {
+  color: #272c30;
+  font-weight: 700;
+  font-size: clamp(13.5px, 3.9vw, 15px);
+  text-align: right;
+}
+.subm__empty-pay {
+  margin: clamp(36px, 9vw, 56px) 0;
+  text-align: center;
+  color: #7a8490;
+  font-weight: 500;
+  font-size: clamp(15px, 4.2vw, 18px);
+}
+.subm__foot {
+  display: grid;
+  place-items: center;
+  min-height: 48px;
+  padding: 10px 0;
+}
+.subm__err {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #7a8490;
+  font-size: clamp(13.5px, 3.9vw, 15px);
+  padding: 16px 0;
+}
+.subm__retry {
+  background: none;
+  border: none;
+  color: #ff5b00;
+  font-weight: 700;
+  font-size: clamp(13.5px, 3.9vw, 15px);
+  cursor: pointer;
+  text-decoration: underline;
+}
+/* Plan sheet rows */
+.subm__plan {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface-2, #f4f6f6);
+  border-radius: 14px;
+}
+.subm__plan-name {
+  font-weight: 800;
+  color: #272c30;
+}
+.subm__plan-sub {
+  margin-top: 2px;
+  color: #7a8490;
+  font-size: 13px;
+}

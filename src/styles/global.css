@@ -5073,3 +5073,50 @@ textarea.input {
 .wd__btn--go:disabled {
   opacity: 0.85;
 }
+
+/* ---- Withdrawal password-confirmation modal (비밀번호 입력) ---- */
+.wdp {
+  width: 100%;
+  max-width: 380px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 14px;
+  padding: clamp(28px, 6vw, 34px) clamp(22px, 6vw, 28px) clamp(22px, 5vw, 28px);
+  box-shadow: 0 20px 48px rgba(20, 22, 25, 0.32);
+  animation: pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  text-align: center;
+}
+.wdp__input {
+  width: 100%;
+  height: clamp(54px, 14vw, 58px);
+  margin-top: clamp(18px, 4vw, 24px);
+  border: 1.5px solid #e1e5e8;
+  border-radius: 14px;
+  background: #fff;
+  padding: 0 18px;
+  font-size: 16px;
+  color: #272c30;
+  transition: border-color 0.14s;
+}
+.wdp__input::placeholder {
+  color: #b2bbc3;
+}
+.wdp__input:focus {
+  outline: none;
+  border-color: #ff5b00;
+  caret-color: #ff5b00;
+}
+.wdp__input.is-error {
+  border-color: var(--danger);
+}
+.wdp__input:disabled {
+  opacity: 0.7;
+}
+.wdp__err {
+  margin: 8px 2px 0;
+  min-height: 18px;
+  text-align: left;
+  font-size: clamp(12.5px, 3.6vw, 14px);
+  color: var(--danger);
+}

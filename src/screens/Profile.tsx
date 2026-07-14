@@ -3,12 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ConfirmDialog } from "../components/ui/Modal";
 import { WithdrawModal } from "../components/WithdrawModal";
+import { WithdrawPasswordModal } from "../components/WithdrawPasswordModal";
 import { CharacterArt, ProfilePlaceholder, type AvatarKey } from "../components/brand/ProfileAssets";
 import { ChevronRight } from "../components/brand/HomeIcons";
 import { subApi, dashboardApi, authApi } from "../api/endpoints";
 import { http, errorMessage } from "../lib/http";
 import { useAuth } from "../hooks/auth";
-import { useToast } from "../hooks/toast";
 import type { Me } from "../lib/types";
 
 const MENU: { label: string; to: string }[] = [
@@ -61,23 +61,33 @@ function StatIcon({ kind }: { kind: "level" | "best" | "current" }) {
 
 export function Profile() {
   const nav = useNavigate();
-  const toast = useToast();
   const { me, logout, hardSignOut } = useAuth();
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
 
-  async function withdraw() {
+  // First warning modal's 탈퇴: NO api — just advance to the password step.
+  function toPasswordStep() {
+    setWithdrawOpen(false);
+    setPwError(null);
+    setPwOpen(true);
+  }
+
+  // Password step's 탈퇴: server verifies the password and withdraws atomically.
+  async function withdraw(password: string) {
     if (withdrawing) return; // guard duplicate taps on the irreversible request
     setWithdrawing(true);
+    setPwError(null);
     try {
-      await authApi.deleteAccount(null);
+      await authApi.deleteAccount(password);
       // hardSignOut clears tokens, current-user, and every user-scoped query cache.
       hardSignOut();
       nav("/welcome", { replace: true });
     } catch (e) {
-      toast.error(errorMessage(e));
-      setWithdrawing(false); // stay on the modal; allow retry (no local deletion)
+      setPwError(errorMessage(e)); // stay on the modal; account untouched, allow retry
+      setWithdrawing(false);
     }
   }
 
@@ -212,9 +222,21 @@ export function Profile() {
 
       <WithdrawModal
         open={withdrawOpen}
+        loading={false}
+        onCancel={() => setWithdrawOpen(false)}
+        onConfirm={toPasswordStep}
+      />
+
+      <WithdrawPasswordModal
+        open={pwOpen}
         loading={withdrawing}
-        onCancel={() => !withdrawing && setWithdrawOpen(false)}
-        onConfirm={withdraw}
+        error={pwError}
+        onCancel={() => {
+          if (withdrawing) return;
+          setPwOpen(false);
+          setPwError(null);
+        }}
+        onSubmit={withdraw}
       />
     </div>
   );

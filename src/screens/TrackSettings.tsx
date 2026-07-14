@@ -1,95 +1,217 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Screen } from "../components/layout/Screen";
-import { Button, Chip } from "../components/ui/kit";
-import { Async, SkeletonList } from "../components/ui/states";
+import { SkeletonList } from "../components/ui/states";
+import { UnsavedChangesModal } from "../components/UnsavedChangesModal";
 import { settingsApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 
-const GOALS = [5, 10, 20, 30, 40];
-const LABEL: Record<string, string> = { conversation: "실전 회화", topik: "TOPIK" };
+const CFG = {
+  conversation: { title: "실전 회화", maxLevel: 10, cols: 5, levelLabel: (n: number) => `Lv.${n}`, srLevel: (n: number) => `회화 레벨 ${n}` },
+  topik: { title: "TOPIK", maxLevel: 6, cols: 3, levelLabel: (n: number) => `${n}급`, srLevel: (n: number) => `TOPIK ${n}급` },
+} as const;
+
+const GOALS: { n: number; mode: string; mint?: boolean }[] = [
+  { n: 5, mode: "기본 모드" },
+  { n: 10, mode: "추천 루틴 모드", mint: true },
+  { n: 20, mode: "집중 모드" },
+  { n: 30, mode: "몰입 모드" },
+  { n: 40, mode: "정복 모드" },
+];
 
 /**
- * Per-category learning settings (conversation / TOPIK), opened from the Custom
- * Learning Settings list. Minimal editor over the same authoritative preferences
- * (settingsApi.learning / updateLearning): shows the current level (read-only)
- * and lets the user change the daily goal. Saving invalidates the dashboard so
- * Home reflects the new goal. The list screen only summarizes these values.
+ * Per-track Custom Learning settings (conversation / TOPIK). Edits the level and
+ * daily goal for one category over the authoritative preferences (settingsApi
+ * .learning / updateLearning). Dirty state = draft ≠ the values captured at load;
+ * leaving while dirty prompts the unsaved-changes modal. Saving invalidates the
+ * dashboard so Home + Custom Learning reflect the new level/goal; the backend
+ * owns the level-change progress reset.
  */
 export function TrackSettings() {
   const { category: raw } = useParams<{ category: string }>();
-  const category = raw === "topik" ? "topik" : "conversation";
+  const category = (raw === "topik" ? "topik" : "conversation") as keyof typeof CFG;
+  const cfg = CFG[category];
   const nav = useNavigate();
   const qc = useQueryClient();
   const toast = useToast();
+
   const q = useQuery({ queryKey: ["learning-prefs"], queryFn: settingsApi.learning });
-
-  const [goal, setGoal] = useState<number | null>(null);
-  const [busy, setBusy] = useState(false);
   const pref = q.data?.categories.find((c) => c.category === category);
+  const maxLevel = pref?.max_level ?? cfg.maxLevel;
 
+  const [draftLevel, setDraftLevel] = useState<number | null>(null);
+  const [draftGoal, setDraftGoal] = useState<number | null>(null);
+  const origRef = useRef<{ level: number; goal: number } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [unsavedOpen, setUnsavedOpen] = useState(false);
+  const seqRef = useRef(0);
+
+  // Capture the server-confirmed originals once, then seed the draft.
   useEffect(() => {
-    if (pref && goal == null) setGoal(pref.daily_goal);
-  }, [pref, goal]);
+    if (pref && origRef.current == null) {
+      origRef.current = { level: pref.level, goal: pref.daily_goal };
+      setDraftLevel(pref.level);
+      setDraftGoal(pref.daily_goal);
+    }
+  }, [pref]);
+
+  const orig = origRef.current;
+  const dirty =
+    !!orig && draftLevel != null && draftGoal != null && (draftLevel !== orig.level || draftGoal !== orig.goal);
+
+  // Warn on full page unload (reload/close) while dirty.
+  useEffect(() => {
+    if (!dirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
+
+  function requestBack() {
+    if (dirty) setUnsavedOpen(true);
+    else nav(-1);
+  }
 
   async function save() {
-    if (!q.data || !pref || goal == null || busy) return;
-    setBusy(true);
-    const categories = q.data.categories.map((c) => (c.category === category ? { ...c, daily_goal: goal } : c));
+    if (!dirty || saving || !q.data || !orig || draftLevel == null || draftGoal == null) return;
+    setSaving(true);
+    const mySeq = ++seqRef.current;
+    const categories = q.data.categories.map((c) =>
+      c.category === category ? { ...c, level: draftLevel, daily_goal: draftGoal } : c,
+    );
     try {
       const res = await settingsApi.updateLearning(categories);
+      if (mySeq !== seqRef.current) return; // superseded
       qc.setQueryData(["learning-prefs"], res);
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] }); // Home + Custom Learning
+      origRef.current = { level: draftLevel, goal: draftGoal }; // clear dirty
       toast.success("저장했어요");
       nav(-1);
     } catch (e) {
-      toast.error(errorMessage(e));
+      if (mySeq !== seqRef.current) return;
+      toast.error(errorMessage(e)); // stay, keep draft + dirty for retry
     } finally {
-      setBusy(false);
+      setSaving(false);
     }
   }
 
-  const levelText = pref ? (category === "topik" ? `${pref.level}급` : `Lv.${pref.level}`) : "-";
-  const changed = !!pref && goal != null && goal !== pref.daily_goal;
+  const loaded = !q.isLoading && !q.isError && !!pref;
 
   return (
-    <Screen title={`${LABEL[category]} 학습 설정`} back>
-      <Async
-        loading={q.isLoading}
-        error={q.error}
-        data={q.data}
-        onRetry={() => q.refetch()}
-        isEmpty={() => !pref}
-        skeleton={<SkeletonList rows={2} height={64} />}
-      >
-        {() => (
-          <div className="stack" style={{ gap: 22 }}>
-            <div className="card card--flat" style={{ background: "var(--surface-2)" }}>
-              <div className="row row--between" style={{ fontSize: 14 }}>
-                <span className="muted">현재 레벨</span>
-                <span style={{ fontWeight: 800 }}>{levelText}</span>
-              </div>
-            </div>
+    <div className="screen trkset">
+      <div className="trkset__scroll">
+        <div className="trkset__inner">
+          <header className="acct__header">
+            <button className="acct__back" onClick={requestBack} aria-label="뒤로">
+              <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <h1 className="acct__title">{cfg.title}</h1>
+          </header>
 
-            <div>
-              <div className="section-title" style={{ marginBottom: 10 }}>하루 목표</div>
-              <div className="chiprow" role="radiogroup" aria-label="하루 목표 선택">
-                {GOALS.map((n) => (
-                  <Chip key={n} active={goal === n} onClick={() => setGoal(n)}>
-                    {n}
-                  </Chip>
-                ))}
-              </div>
+          {q.isError ? (
+            <div className="clset__err" style={{ marginTop: 24 }}>
+              <span>설정을 불러오지 못했어요.</span>
+              <button className="clset__retry" onClick={() => q.refetch()}>다시 시도</button>
             </div>
+          ) : (
+            <>
+              {/* Section 1 — level */}
+              <div className="trkset__section">
+                <div className="trkset__sec-head">
+                  <span className="trkset__num" aria-hidden="true">1</span>
+                  <span className="trkset__sec-label">레벨 선택</span>
+                </div>
+                {loaded ? (
+                  <div
+                    className="trkset__levels"
+                    style={{ gridTemplateColumns: `repeat(${cfg.cols}, 1fr)` }}
+                    role="radiogroup"
+                    aria-label="레벨 선택"
+                  >
+                    {Array.from({ length: maxLevel }, (_, i) => i + 1).map((n) => {
+                      const sel = draftLevel === n;
+                      return (
+                        <button
+                          key={n}
+                          type="button"
+                          role="radio"
+                          aria-checked={sel}
+                          aria-label={`${cfg.srLevel(n)}${sel ? ", 선택됨" : ""}`}
+                          className={`trkset__lv ${sel ? "is-sel" : ""}`}
+                          onClick={() => setDraftLevel(n)}
+                        >
+                          {cfg.levelLabel(n)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <SkeletonList rows={2} height={54} />
+                )}
+              </div>
 
-            <Button size="lg" block loading={busy} disabled={!changed} onClick={save}>
-              저장
-            </Button>
-          </div>
-        )}
-      </Async>
-    </Screen>
+              {/* Section 2 — daily goal */}
+              <div className="trkset__section">
+                <div className="trkset__sec-head">
+                  <span className="trkset__num" aria-hidden="true">2</span>
+                  <span className="trkset__sec-label">하루 목표</span>
+                </div>
+                {loaded ? (
+                  <div className="trkset__goals" role="radiogroup" aria-label="하루 목표">
+                    {GOALS.map((g) => {
+                      const sel = draftGoal === g.n;
+                      return (
+                        <button
+                          key={g.n}
+                          type="button"
+                          role="radio"
+                          aria-checked={sel}
+                          aria-label={`하루 목표 ${g.n}개, ${g.mode}${sel ? ", 선택됨" : ""}`}
+                          className={`trkset__goal ${sel ? "is-sel" : ""}`}
+                          onClick={() => setDraftGoal(g.n)}
+                        >
+                          <span className="trkset__goal-count">{g.n}개</span>
+                          <span className={`trkset__pill ${g.mint ? "trkset__pill--mint" : ""}`}>{g.mode}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <SkeletonList rows={3} height={64} />
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="trkset__save-bar">
+        <button
+          type="button"
+          className="trkset__save"
+          onClick={save}
+          disabled={!dirty || saving}
+          aria-disabled={!dirty || saving}
+        >
+          {saving ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : "저장하기"}
+        </button>
+      </div>
+
+      <UnsavedChangesModal
+        open={unsavedOpen}
+        onContinue={() => setUnsavedOpen(false)}
+        onLeave={() => {
+          setUnsavedOpen(false);
+          origRef.current = orig; // draft discarded; local state irrelevant on unmount
+          nav(-1);
+        }}
+      />
+    </div>
   );
 }

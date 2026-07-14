@@ -5960,3 +5960,149 @@ textarea.input {
   cursor: pointer;
   text-decoration: underline;
 }
+
+/* ============================ Track settings (실전 회화 / TOPIK) ============================ */
+.trkset {
+  background: #fff;
+}
+.trkset__scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.trkset__inner {
+  padding: calc(var(--safe-top) + 8px) clamp(22px, 6.5vw, 28px) 20px;
+}
+.trkset__section {
+  margin-top: clamp(26px, 5.5vh, 40px);
+}
+.trkset__sec-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: clamp(14px, 3.5vw, 20px);
+}
+.trkset__num {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ff5b00;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14px;
+  display: grid;
+  place-items: center;
+}
+.trkset__sec-label {
+  color: #23282c;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(17px, 4.8vw, 19px);
+}
+/* Level grid */
+.trkset__levels {
+  display: grid;
+  gap: 10px;
+}
+.trkset__lv {
+  height: clamp(48px, 12.5vw, 56px);
+  border: 1.5px solid #e1e5e8;
+  border-radius: 13px;
+  background: #fff;
+  color: #6b747c;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(14px, 4vw, 16px);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.trkset__lv:active {
+  transform: scale(0.98);
+}
+.trkset__lv.is-sel {
+  background: #fff3ec;
+  border-color: #ff5b00;
+  color: #ff5b00;
+}
+/* Daily-goal cards */
+.trkset__goals {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.trkset__goal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: clamp(64px, 16.5vw, 74px);
+  padding: 0 20px;
+  border: 1.5px solid #e1e5e8;
+  border-radius: 15px;
+  background: #fff;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.trkset__goal:active {
+  transform: scale(0.995);
+}
+.trkset__goal.is-sel {
+  background: #fff3ec;
+  border-color: #ff5b00;
+}
+.trkset__goal-count {
+  color: #3a3f44;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(16px, 4.6vw, 18px);
+}
+.trkset__goal.is-sel .trkset__goal-count {
+  color: #23282c;
+}
+.trkset__pill {
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: #f4f5f5;
+  color: #9aa3ab;
+  font-size: clamp(12px, 3.5vw, 13.5px);
+  font-weight: 600;
+}
+.trkset__pill--mint {
+  background: #e4f6f6;
+  color: #36c4c8;
+}
+/* Fixed bottom save */
+.trkset__save-bar {
+  flex: 0 0 auto;
+  padding: 12px clamp(22px, 6.5vw, 28px) calc(20px + var(--safe-bottom));
+  background: #fff;
+  box-shadow: 0 -8px 20px rgba(255, 255, 255, 0.9);
+}
+.trkset__save {
+  width: 100%;
+  height: clamp(60px, 15.5vw, 68px);
+  border: none;
+  border-radius: 17px;
+  background: #ff5b00;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 18px rgba(255, 91, 0, 0.24);
+  transition: transform 0.08s ease, background 0.15s, box-shadow 0.15s;
+}
+.trkset__save:active {
+  transform: scale(0.99);
+}
+.trkset__save:disabled {
+  background: #aeb7be;
+  box-shadow: 0 8px 16px rgba(174, 183, 190, 0.28);
+  cursor: default;
+}

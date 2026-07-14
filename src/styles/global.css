@@ -4431,10 +4431,39 @@ textarea.input {
   color: #9aa0a7;
 }
 .more__sub-empty {
-  font-size: 15px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #23282c;
+  margin: 0;
+}
+/* Status row (text + chevron) sits above the CTA with clear separation. */
+.more__sub-emptyrow {
+  margin-bottom: 16px;
+}
+.more__sub-skeleton {
+  height: 46px;
+  border-radius: 12px;
+  background: #eef0f0;
+}
+.more__sub-errrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.more__sub-errrow .more__sub-empty {
   font-weight: 600;
   color: #5f6469;
-  margin: 0 0 16px;
+  font-size: 14.5px;
+}
+.more__sub-retry {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  color: #f2762a;
+  font-weight: 700;
+  font-size: 13.5px;
+  cursor: pointer;
 }
 .more__sub-cta {
   align-self: stretch;

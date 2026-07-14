@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sheet, ConfirmDialog } from "../components/ui/Modal";
 import { Button } from "../components/ui/kit";
@@ -68,10 +68,12 @@ function buildSuccess(applyRes: unknown, fresh: MySubscription): VoucherSuccess 
 
 export function Subscription() {
   const nav = useNavigate();
+  const loc = useLocation();
   const toast = useToast();
   const qc = useQueryClient();
 
-  const [planOpen, setPlanOpen] = useState(false);
+  // Arriving from the More card's 구독하기 CTA opens plan selection straight away.
+  const [planOpen, setPlanOpen] = useState(() => !!(loc.state as { openPlans?: boolean } | null)?.openPlans);
   const [voucherOpen, setVoucherOpen] = useState(false);
   const [voucherError, setVoucherError] = useState<string | null>(null);
   const [voucherSuccess, setVoucherSuccess] = useState<VoucherSuccess | null>(null);

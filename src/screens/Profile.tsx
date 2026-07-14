@@ -148,6 +148,9 @@ export function Profile() {
   const s = sub.data;
   const subState: "trial" | "paid" | "none" = s?.status === "trial" ? "trial" : s?.is_premium ? "paid" : "none";
   const nextBilling = fmtDate(s?.current_period_end ?? s?.trial_end);
+  // While loading or on error the state is unknown — render a neutral (paid-style)
+  // card, never the orange no-subscription CTA.
+  const cardVariant = sub.isLoading || sub.isError ? "paid" : subState;
   const hasUnread = !!unread.data?.has_unread;
 
   return (
@@ -198,13 +201,36 @@ export function Profile() {
           </div>
         </section>
 
-        {/* Subscription plan card — one component, three server-driven states */}
-        <section className={`more__sub more__sub--${subState}`} aria-label="이용 구독 플랜">
+        {/* Subscription plan card — one component, server-driven states.
+            No-subscription state has TWO separate targets: the status row (→
+            Subscription Management) and the 구독하기 CTA (→ plan selection). They
+            are sibling buttons, so a CTA tap never triggers the row's action. */}
+        <section className={`more__sub more__sub--${cardVariant}`} aria-label="이용 구독 플랜">
           <span className="more__sub-label">이용 구독 플랜</span>
-          {subState === "none" ? (
+          {sub.isLoading ? (
+            <div className="more__sub-skeleton" aria-hidden="true" />
+          ) : sub.isError ? (
+            <div className="more__sub-errrow" role="status">
+              <span className="more__sub-empty">구독 정보를 불러오지 못했어요</span>
+              <button className="more__sub-retry" onClick={() => sub.refetch()}>다시 시도</button>
+            </div>
+          ) : subState === "none" ? (
             <>
-              <p className="more__sub-empty">이용 중인 구독 플랜이 없어요.</p>
-              <button className="more__sub-cta" onClick={() => nav("/subscription")}>
+              <button
+                className="more__sub-plan more__sub-emptyrow"
+                onClick={() => nav("/subscription")}
+                aria-label="이용 중인 구독 플랜이 없어요. 구독 관리로 이동"
+              >
+                <span className="more__sub-title-row">
+                  <span className="more__sub-empty">이용 중인 구독 플랜이 없어요</span>
+                  <ChevronRight size={18} color="#9AA0A7" />
+                </span>
+              </button>
+              <button
+                className="more__sub-cta"
+                onClick={() => nav("/subscription", { state: { openPlans: true } })}
+                aria-label="구독하기, 요금제와 가격 보기"
+              >
                 구독하기
               </button>
             </>
@@ -212,6 +238,7 @@ export function Profile() {
             <button
               className="more__sub-plan"
               onClick={() => nav("/subscription")}
+              aria-label={`${s?.plan_name ?? "구독 플랜"}${nextBilling ? `, 다음 결제일 ${nextBilling}` : ""}. 구독 관리로 이동`}
             >
               {subState === "trial" && <span className="more__sub-ribbon">무료체험중</span>}
               <span className="more__sub-title-row">

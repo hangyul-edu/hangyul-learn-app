@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { LogoutModal } from "../components/LogoutModal";
 import { WithdrawModal } from "../components/WithdrawModal";
 import { WithdrawPasswordModal } from "../components/WithdrawPasswordModal";
-import { WithdrawDoneModal } from "../components/WithdrawDoneModal";
+import { SuccessModal } from "../components/SuccessModal";
 import { CharacterArt, ProfilePlaceholder, type AvatarKey } from "../components/brand/ProfileAssets";
 import { ChevronRight } from "../components/brand/HomeIcons";
 import { subApi, dashboardApi, authApi } from "../api/endpoints";
@@ -62,9 +62,11 @@ function StatIcon({ kind }: { kind: "level" | "best" | "current" }) {
 
 export function Profile() {
   const nav = useNavigate();
-  const { me, logout, hardSignOut } = useAuth();
+  const { me, revokeSession, hardSignOut } = useAuth();
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutDoneOpen, setLogoutDoneOpen] = useState(false);
+  const logoutFinishedRef = useRef(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
@@ -72,13 +74,25 @@ export function Profile() {
   const [doneOpen, setDoneOpen] = useState(false);
   const finishedRef = useRef(false);
 
-  // Logout modal's 로그아웃: delegates to the centralized logout() (best-effort
-  // server revocation + hardSignOut). status → signed-out unmounts this tree via
-  // the route guard, so no post-success setState is needed.
+  // Logout modal's 로그아웃: revoke the session server-side, then show the success
+  // modal. Local cleanup (hardSignOut) is deferred until the user dismisses it —
+  // the background More screen stays frozen behind the overlay in the meantime.
   async function doLogout() {
     if (loggingOut) return; // guard duplicate taps / requests
     setLoggingOut(true);
-    await logout();
+    await revokeSession(); // best-effort; resolves even offline/already-revoked
+    setLoggingOut(false);
+    setLogoutOpen(false); // no stacking under the success modal
+    setLogoutDoneOpen(true);
+  }
+
+  // X / 확인 on the logout-success modal: identical terminal action, run once.
+  function finishLogout() {
+    if (logoutFinishedRef.current) return;
+    logoutFinishedRef.current = true;
+    // hardSignOut clears tokens, current-user, and every user-scoped query cache.
+    hardSignOut();
+    nav("/welcome", { replace: true });
   }
 
   // First warning modal's 탈퇴: NO api — just advance to the password step.
@@ -239,6 +253,14 @@ export function Profile() {
         onConfirm={doLogout}
       />
 
+      <SuccessModal
+        open={logoutDoneOpen}
+        title="로그아웃됐습니다"
+        description="학습 기록 및 데이터는 계정에 안전하게 보관됩니다"
+        closeAriaLabel="로그아웃 완료 창 닫기"
+        onClose={finishLogout}
+      />
+
       <WithdrawModal
         open={withdrawOpen}
         loading={false}
@@ -258,7 +280,19 @@ export function Profile() {
         onSubmit={withdraw}
       />
 
-      <WithdrawDoneModal open={doneOpen} onClose={finishWithdrawal} />
+      <SuccessModal
+        open={doneOpen}
+        title="탈퇴가 완료됐습니다"
+        description={
+          <>
+            그동안 이용해 주셔서 감사합니다
+            <br />
+            더 나은 서비스로 다시 찾아뵙겠습니다
+          </>
+        }
+        closeAriaLabel="탈퇴 완료 창 닫기"
+        onClose={finishWithdrawal}
+      />
     </div>
   );
 }

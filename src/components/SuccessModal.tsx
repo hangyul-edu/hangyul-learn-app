@@ -1,16 +1,27 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 /**
- * Account-withdrawal completion modal. Shown ONLY after the backend confirms
- * terminal withdrawal success (deleteAccount resolved). It never calls any API.
- * The X and 확인 perform the identical terminal action (`onClose`): the parent
- * runs the centralized cleanup (hardSignOut → clears tokens + current-user +
- * every user-scoped query cache) and resets navigation to the logged-out root.
+ * Shared terminal-success modal (account-withdrawal complete / logout complete).
+ * Shown ONLY after the backend confirms the terminal operation — it never calls
+ * any API. The top-right X and the orange 확인 perform the identical terminal
+ * action (`onClose`): the parent runs the centralized cleanup + navigation reset.
  *
  * Backdrop is non-dismissable; X / 확인 / Escape all complete the flow. Focus is
  * trapped; there is no authenticated screen to return to.
  */
-export function WithdrawDoneModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function SuccessModal({
+  open,
+  title,
+  description,
+  closeAriaLabel,
+  onClose,
+}: {
+  open: boolean;
+  title: string;
+  description: ReactNode;
+  closeAriaLabel: string;
+  onClose: () => void;
+}) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -57,10 +68,10 @@ export function WithdrawDoneModal({ open, onClose }: { open: boolean; onClose: (
         className="wdd"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="wdd-title"
-        aria-describedby="wdd-desc"
+        aria-labelledby="succ-title"
+        aria-describedby="succ-desc"
       >
-        <button className="wdd__close" onClick={onClose} aria-label="탈퇴 완료 창 닫기">
+        <button className="wdd__close" onClick={onClose} aria-label={closeAriaLabel}>
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M6 6l12 12M18 6L6 18" stroke="#111" strokeWidth="2.2" strokeLinecap="round" />
           </svg>
@@ -72,12 +83,8 @@ export function WithdrawDoneModal({ open, onClose }: { open: boolean; onClose: (
           </svg>
         </div>
 
-        <h2 className="wdd__title" id="wdd-title">탈퇴가 완료됐습니다</h2>
-        <p className="wdd__copy" id="wdd-desc">
-          그동안 이용해 주셔서 감사합니다
-          <br />
-          더 나은 서비스로 다시 찾아뵙겠습니다
-        </p>
+        <h2 className="wdd__title" id="succ-title">{title}</h2>
+        <p className="wdd__copy" id="succ-desc">{description}</p>
 
         <button className="wdd__btn" onClick={onClose}>확인</button>
       </div>

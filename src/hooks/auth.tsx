@@ -16,6 +16,9 @@ interface AuthCtx {
   /** Load /users/me and mark signed-in. Returns the profile. */
   bootstrapMe: () => Promise<Me>;
   setMe: (m: Me | ((prev: Me | null) => Me)) => void;
+  /** Best-effort server-side session revocation only (no local sign-out). Lets a
+   *  caller show a success step before clearing local state via hardSignOut. */
+  revokeSession: () => Promise<void>;
   logout: () => Promise<void>;
   hardSignOut: () => void;
 }
@@ -81,13 +84,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     qc.clear();
   }
 
-  async function logout() {
+  // Server-side revocation only. Best-effort: local sign-out completes the logout
+  // regardless (offline / already-revoked policy), so failures are swallowed.
+  async function revokeSession() {
     const refresh = sessionRef.current?.refreshToken;
     try {
       if (refresh) await http.post("/auth/logout", { refresh_token: refresh });
     } catch {
       /* ignore — we sign out locally regardless */
     }
+  }
+
+  async function logout() {
+    await revokeSession();
     hardSignOut();
   }
 
@@ -116,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthCtx>(
-    () => ({ status, me, applyTokens, bootstrapMe, setMe, logout, hardSignOut }),
+    () => ({ status, me, applyTokens, bootstrapMe, setMe, revokeSession, logout, hardSignOut }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [status, me],
   );

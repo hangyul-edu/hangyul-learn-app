@@ -122,7 +122,7 @@ export function Home() {
             return (
               <>
                 {/* Streak */}
-                <button className="home__streak" onClick={() => nav("/points")}>
+                <button className="home__streak" onClick={() => nav("/streak")}>
                   <SunIcon size={80} />
                   <span className="home__streak-text">연속 학습 {d.streak_days}일째</span>
                   <ChevronRight size={22} />

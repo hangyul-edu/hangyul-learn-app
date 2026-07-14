@@ -2999,6 +2999,195 @@ textarea.input {
   place-items: center;
 }
 
+/* ============================ Consecutive-learning (streak) ============================ */
+.strk {
+  background: #fff;
+}
+.strk__scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.strk__inner {
+  padding: calc(var(--safe-top) + 8px) clamp(22px, 6.5vw, 30px) calc(24px + var(--safe-bottom));
+}
+
+/* Header */
+.strk__header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+}
+.strk__back {
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: none;
+  color: #272c30;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.strk__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #272c30;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(18px, 5.2vw, 21px);
+}
+.strk__title-chev {
+  margin-top: 2px;
+}
+
+/* Banner */
+.strk__banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-top: clamp(16px, 3vh, 24px);
+  min-height: clamp(96px, 24vw, 116px);
+  padding: 16px clamp(18px, 6vw, 26px);
+  border-radius: 20px;
+  background: #5579ee;
+  box-shadow: 0 8px 20px rgba(85, 121, 238, 0.24);
+  overflow: hidden;
+}
+.strk__banner-text {
+  flex: 1;
+  margin: 0;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(15px, 4.4vw, 18px);
+  line-height: 1.5;
+}
+.strk__banner-sun {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.12));
+}
+
+/* Month navigation */
+.strk__monthnav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: clamp(24px, 5vh, 40px);
+  padding: 0 clamp(2px, 3vw, 16px);
+}
+.strk__arrow {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.strk__arrow:disabled {
+  cursor: default;
+}
+.strk__month {
+  text-align: center;
+  line-height: 1;
+}
+.strk__year {
+  color: #7a8490;
+  font-weight: 600;
+  font-size: clamp(16px, 4.6vw, 19px);
+}
+.strk__month-num {
+  color: #272c30;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(48px, 15vw, 66px);
+  line-height: 1.05;
+}
+
+/* Weekday header */
+.strk__weekdays,
+.strk__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.strk__weekdays {
+  margin-top: clamp(18px, 4vh, 30px);
+}
+.strk__weekday {
+  text-align: center;
+  color: #9a9fa4;
+  font-weight: 600;
+  font-size: clamp(13px, 3.8vw, 15px);
+}
+
+/* Calendar grid */
+.strk__grid {
+  margin-top: clamp(10px, 2vh, 18px);
+  row-gap: clamp(10px, 3vh, 26px);
+}
+.strk__cell {
+  min-height: clamp(56px, 14vh, 72px);
+  display: grid;
+  place-items: center;
+}
+.strk__num {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(17px, 5vw, 22px);
+}
+.strk__num--wd {
+  color: #272c30;
+}
+.strk__num--sun {
+  color: #ff4f7b;
+}
+.strk__num--sat {
+  color: #428dff;
+}
+
+/* Completed-day pill */
+.strk__done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: clamp(46px, 13vw, 62px);
+  height: clamp(88px, 24vw, 116px);
+  border-radius: 999px;
+  background: #fff0e4;
+}
+.strk__done-day {
+  color: #ff5b00;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(16px, 4.8vw, 21px);
+}
+.strk__done-label {
+  color: #ff5b00;
+  font-weight: 700;
+  font-size: clamp(12px, 3.6vw, 15px);
+}
+
+.strk__error {
+  margin-top: 28px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
 /* Next button */
 .onbq__next {
   height: clamp(56px, 14vw, 66px);

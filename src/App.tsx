@@ -35,6 +35,7 @@ import { Exams, ExamPlay } from "./screens/Exams";
 import { Recommendations } from "./screens/Recommendations";
 import { PaymentMethods } from "./screens/PaymentMethods";
 import { Billing } from "./screens/Billing";
+import { Streak } from "./screens/Streak";
 import { Policy } from "./screens/Policy";
 import { FindEmailResult } from "./screens/FindEmailResult";
 import { FindEmailNoMatch } from "./screens/FindEmailNoMatch";
@@ -118,6 +119,7 @@ export function App() {
         <Route path="/account/billing" element={<RequireAuth><Billing /></RequireAuth>} />
         <Route path="/saved" element={<RequireAuth><Saved /></RequireAuth>} />
         <Route path="/points" element={<RequireAuth><Points /></RequireAuth>} />
+        <Route path="/streak" element={<RequireAuth><Streak /></RequireAuth>} />
         <Route path="/notifications" element={<RequireAuth><Notifications /></RequireAuth>} />
         <Route path="/ai" element={<RequireAuth><AiChat /></RequireAuth>} />
         <Route path="/subscription" element={<RequireAuth><Subscription /></RequireAuth>} />

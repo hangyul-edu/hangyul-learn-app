@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ConfirmDialog } from "../components/ui/Modal";
+import { ConfirmDialog, Dialog } from "../components/ui/Modal";
+import { Button } from "../components/ui/kit";
+import { PasswordField } from "../components/ui/Field";
 import { CharacterArt, ProfilePlaceholder, type AvatarKey } from "../components/brand/ProfileAssets";
 import { ChevronRight } from "../components/brand/HomeIcons";
-import { subApi, dashboardApi } from "../api/endpoints";
-import { http } from "../lib/http";
+import { subApi, dashboardApi, authApi } from "../api/endpoints";
+import { http, errorMessage } from "../lib/http";
 import { useAuth } from "../hooks/auth";
+import { useToast } from "../hooks/toast";
 import type { Me } from "../lib/types";
 
 const MENU: { label: string; to: string }[] = [
@@ -59,8 +62,25 @@ function StatIcon({ kind }: { kind: "level" | "best" | "current" }) {
 
 export function Profile() {
   const nav = useNavigate();
-  const { me, logout } = useAuth();
+  const toast = useToast();
+  const { me, logout, hardSignOut } = useAuth();
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawPw, setWithdrawPw] = useState("");
+  const [withdrawing, setWithdrawing] = useState(false);
+
+  async function withdraw() {
+    setWithdrawing(true);
+    try {
+      await authApi.deleteAccount(withdrawPw || null);
+      hardSignOut();
+      nav("/welcome", { replace: true });
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setWithdrawing(false);
+    }
+  }
 
   const sub = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
   const streak = useQuery({ queryKey: ["streak"], queryFn: dashboardApi.streak });
@@ -170,7 +190,7 @@ export function Profile() {
         </nav>
 
         <div className="more__account-actions">
-          <button className="more__muted-action" onClick={() => nav("/account")}>
+          <button className="more__muted-action" onClick={() => setWithdrawOpen(true)}>
             탈퇴하기
           </button>
           <button className="more__muted-action" onClick={() => setLogoutOpen(true)}>
@@ -190,6 +210,20 @@ export function Profile() {
           void logout();
         }}
       />
+
+      <Dialog
+        open={withdrawOpen}
+        onClose={() => !withdrawing && setWithdrawOpen(false)}
+        emoji="⚠️"
+        title="정말 탈퇴할까요?"
+        text="모든 학습 기록이 삭제되며 되돌릴 수 없어요."
+      >
+        <div className="stack" style={{ gap: 10 }}>
+          <PasswordField placeholder="비밀번호 확인" value={withdrawPw} onChange={(e) => setWithdrawPw(e.target.value)} />
+          <Button variant="danger" block loading={withdrawing} onClick={withdraw}>탈퇴하기</Button>
+          <Button variant="ghost" block disabled={withdrawing} onClick={() => setWithdrawOpen(false)}>취소</Button>
+        </div>
+      </Dialog>
     </div>
   );
 }

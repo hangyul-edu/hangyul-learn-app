@@ -38,6 +38,23 @@ export function maskPhone(p?: string | null): string {
   return p.replace(/(\d{2,3})\d+(\d{4})$/, "$1****$2");
 }
 
+/**
+ * Display formatter for a stored (canonical, often E.164) phone number. Korean
+ * numbers render as 010-1234-5678; other/unknown formats fall back to the raw
+ * value so nothing is fabricated. The canonical value stays untouched.
+ */
+export function formatPhone(p?: string | null): string {
+  if (!p) return "-";
+  const digits = p.replace(/[^\d+]/g, "");
+  let national = digits;
+  if (digits.startsWith("+82")) national = "0" + digits.slice(3);
+  else if (digits.startsWith("+")) return digits; // non-KR: keep readable E.164
+  national = national.replace(/\D/g, "");
+  if (national.length === 11) return national.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
+  if (national.length === 10) return national.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3");
+  return national || (p ?? "-");
+}
+
 export const NATIONALITIES: { code: string; label: string; dial: string; flag: string }[] = [
   { code: "KR", label: "대한민국", dial: "+82", flag: "🇰🇷" },
   { code: "US", label: "United States", dial: "+1", flag: "🇺🇸" },

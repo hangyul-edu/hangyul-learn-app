@@ -1,77 +1,72 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Screen } from "../components/layout/Screen";
-import { Button, Card } from "../components/ui/kit";
-import { Dialog } from "../components/ui/Modal";
-import { PasswordField } from "../components/ui/Field";
-import { authApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
-import { useToast } from "../hooks/toast";
-import { errorMessage } from "../lib/http";
-import { maskPhone } from "../lib/format";
+import { NATIONALITIES, formatPhone } from "../lib/format";
 
-function Row({ icon, label, value, onClick }: { icon: string; label: string; value?: string; onClick: () => void }) {
-  return (
-    <button className="listrow" onClick={onClick}>
-      <span style={{ fontSize: 20 }}>{icon}</span>
-      <div className="listrow__main">
-        <div className="listrow__title">{label}</div>
-        {value && <div className="listrow__sub">{value}</div>}
-      </div>
-      <span className="listrow__chev">변경 ›</span>
-    </button>
-  );
-}
-
+/**
+ * Account Management ("계정관리") — read-only summary of account-level identity
+ * (name / phone / email) plus a password-change entry point. Each credential is
+ * mutated only through its own existing verified flow (/account/phone, email,
+ * password); this screen never edits values in place and has no Save button.
+ * Profile image + nickname are intentionally NOT here (see Profile Edit).
+ */
 export function Account() {
   const nav = useNavigate();
-  const toast = useToast();
-  const { me, hardSignOut } = useAuth();
-  const [delOpen, setDelOpen] = useState(false);
-  const [pw, setPw] = useState("");
-  const [busy, setBusy] = useState(false);
+  const { me } = useAuth();
 
-  async function del() {
-    setBusy(true);
-    try {
-      await authApi.deleteAccount(pw || null);
-      toast.success("계정이 삭제되었어요");
-      hardSignOut();
-      nav("/welcome", { replace: true });
-    } catch (e) {
-      toast.error(errorMessage(e));
-    } finally {
-      setBusy(false);
-    }
-  }
+  const country = NATIONALITIES.find((n) => n.code === (me?.nationality ?? "KR")) ?? NATIONALITIES[0];
 
   return (
-    <Screen title="계정 관리" back>
-      <Card className="card--flat" style={{ background: "var(--surface-2)", marginBottom: 16 }}>
-        <div className="row row--between" style={{ fontSize: 13.5, padding: "4px 0" }}>
-          <span className="muted">이름</span>
-          <span style={{ fontWeight: 700 }}>{me?.name}</span>
-        </div>
-      </Card>
+    <div className="screen acct">
+      <div className="acct__scroll">
+        <div className="acct__inner">
+          <header className="acct__header">
+            <button className="acct__back" onClick={() => nav(-1)} aria-label="뒤로">
+              <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <h1 className="acct__title">계정관리</h1>
+          </header>
 
-      <div className="stack" style={{ gap: 8 }}>
-        <Row icon="📧" label="이메일 변경" value={me?.email} onClick={() => nav("/account/email")} />
-        <Row icon="📱" label="휴대폰 번호 변경" value={maskPhone(me?.phone)} onClick={() => nav("/account/phone")} />
-        <Row icon="🔒" label="비밀번호 변경" onClick={() => nav("/account/password")} />
+          {/* Name — read-only */}
+          <div className="acct__label" id="acct-name-label">이름</div>
+          <div className="acct__field" role="textbox" aria-readonly="true" aria-labelledby="acct-name-label">
+            {me?.name ?? "-"}
+          </div>
+
+          {/* Phone — country + read-only number + change */}
+          <div className="acct__label" id="acct-phone-label">휴대폰번호</div>
+          <div className="acct__row">
+            <button
+              className="acct__country"
+              onClick={() => nav("/account/phone")}
+              aria-label={`국가 ${country.label}, 번호 변경으로 이동`}
+            >
+              <span className="acct__flag" aria-hidden="true">{country.flag}</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M6 9l6 6 6-6" stroke="#9aa0a7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <div className="acct__field acct__field--flex" role="textbox" aria-readonly="true" aria-labelledby="acct-phone-label">
+              {formatPhone(me?.phone)}
+            </div>
+            <button className="acct__action" onClick={() => nav("/account/phone")}>번호 변경</button>
+          </div>
+
+          {/* Email — read-only + change */}
+          <div className="acct__label" id="acct-email-label">이메일</div>
+          <div className="acct__row">
+            <div className="acct__field acct__field--flex" role="textbox" aria-readonly="true" aria-labelledby="acct-email-label">
+              {me?.email ?? "-"}
+            </div>
+            <button className="acct__action" onClick={() => nav("/account/email")}>변경하기</button>
+          </div>
+
+          {/* Password — outlined full-width action */}
+          <div className="acct__label">비밀번호</div>
+          <button className="acct__pw" onClick={() => nav("/account/password")}>비밀번호 변경</button>
+        </div>
       </div>
-
-      <div style={{ height: 30 }} />
-      <button className="btn btn--danger btn--block" onClick={() => setDelOpen(true)}>
-        회원 탈퇴
-      </button>
-
-      <Dialog open={delOpen} onClose={() => !busy && setDelOpen(false)} emoji="⚠️" title="정말 탈퇴할까요?" text="모든 학습 기록이 삭제되며 되돌릴 수 없어요.">
-        <div className="stack" style={{ gap: 10 }}>
-          <PasswordField placeholder="비밀번호 확인" value={pw} onChange={(e) => setPw(e.target.value)} />
-          <Button variant="danger" block loading={busy} onClick={del}>탈퇴하기</Button>
-          <Button variant="ghost" block disabled={busy} onClick={() => setDelOpen(false)}>취소</Button>
-        </div>
-      </Dialog>
-    </Screen>
+    </div>
   );
 }

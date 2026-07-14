@@ -2792,32 +2792,57 @@ textarea.input {
   font-size: clamp(19px, 5.4vw, 23px);
 }
 
-/* Learning-mode tabs */
+/* Learning-mode tabs — one connected, flowing tab bar.
+   Each tab keeps a soft rounded top; every tab after the first overlaps the
+   previous one and tucks its (squared) left corner *behind* it. So the previous
+   tab's rounded right corner becomes the seam: its neighbour fills that corner,
+   making each junction a smooth rounded transition rather than a cut edge. The
+   first tab's left corner and the last tab's right corner are the bar's rounded
+   ends. */
 .home__tabs {
   display: flex;
-  gap: 6px;
+  align-items: flex-end;
   margin: 22px 0 0 2px;
   width: fit-content;
+  position: relative;
+  z-index: 1;
 }
 .home__tab {
-  width: clamp(56px, 16vw, 66px);
-  height: clamp(48px, 13vw, 56px);
+  position: relative;
+  box-sizing: border-box;
+  --tab-w: clamp(60px, 17vw, 70px);
+  width: var(--tab-w);
+  height: clamp(46px, 12.5vw, 54px);
   border: none;
-  border-radius: 14px 14px 4px 4px;
   /* Unselected Conversation / TOPIK tabs are warm orange. */
   background: #ffa15e;
+  border-radius: 18px 18px 0 0;
   display: grid;
   place-items: center;
   cursor: pointer;
-  box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.02);
+  transition: background 0.2s ease;
 }
-/* Selected tab turns white and connects to the card below (2-class selector
-   wins over the single-class colour rules). */
+/* Overlap the previous tab by one corner-radius; square + pad the tucked-in
+   left corner so it fills the previous tab's rounded corner (icon re-centred).
+   The extra width compensates for the overlap so every visible section is the
+   same width as the first. */
+.home__tab:not(:first-child) {
+  width: calc(var(--tab-w) + 18px);
+  margin-left: -18px;
+  padding-left: 18px;
+  border-top-left-radius: 0;
+}
+/* Earlier tabs paint above later ones, so each rounded right corner sits in
+   front and reveals its neighbour beneath — the smooth connection. */
+.home__tab:nth-child(1) { z-index: 5; }
+.home__tab:nth-child(2) { z-index: 4; }
+.home__tab:nth-child(3) { z-index: 3; }
+.home__tab:nth-child(4) { z-index: 2; }
+/* Selected tab turns white and flows into the card below. */
 .home__tab.is-active {
   background: #fffdf8;
-  box-shadow: 0 -4px 10px rgba(80, 70, 60, 0.06);
 }
-/* The third (feature) tab stays muted gray and is never selected. */
+/* The third (feature) tab stays muted gray, connected like the rest. */
 .home__tab--muted {
   background: #eef0f2;
 }

@@ -6124,25 +6124,35 @@ textarea.input {
 .lechome__banner-skeleton {
   background: #fdf8ef;
 }
+/* Match the Personalized-learning header: centered title, streak pill absolutely
+   pinned right and vertically centered on the same row. */
 .lechome__header {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 56px;
-  padding: calc(var(--safe-top) + 10px) 20px 10px;
+  min-height: 40px;
+  padding: calc(var(--safe-top) + 14px) 20px 14px;
+  margin-bottom: 14px;
 }
 .lechome__title {
   margin: 0;
   color: #111;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: clamp(21px, 6vw, 25px);
+  font-size: clamp(21px, 6vw, 26px);
 }
+/* The reused .plearn__streak sets a definite 37px height, so top+bottom+auto
+   margins centre the pill within the header's content row. */
 .lechome__streak {
   position: absolute;
-  right: 18px;
-  top: calc(var(--safe-top) + 8px);
+  right: 20px;
+  top: calc(var(--safe-top) + 14px);
+  bottom: 14px;
+  /* Reset the .plearn__streak vertical-centering transform so top/bottom + auto
+     margins do the centering (otherwise the pill is shifted up by half its height). */
+  transform: none;
+  margin: auto 0;
 }
 /* --- Banner carousel --- */
 .lechome__carousel {

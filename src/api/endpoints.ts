@@ -291,8 +291,14 @@ export const settingsApi = {
   update: (body: Partial<AppSettings>) => http.put<AppSettings>("/settings/me", body),
   language: () => http.get<{ app_language: string }>("/settings/me/language"),
   setLanguage: (app_language: string) => http.put<{ app_language: string }>("/settings/me/language", { app_language }),
+  // Read: all categories together (for the screen that lists conversation + TOPIK).
   learning: () => http.get<LearningPreferences>("/settings/me/learning"),
-  updateLearning: (categories: unknown[]) => http.put<LearningPreferences>("/settings/me/learning", { categories }),
+  // Update: one category only (its own settings screen) — never sends the others.
+  updateLearningCategory: (category: string, body: { level: number; daily_goal: number }) =>
+    http.patch<LearningPreferences>(`/settings/me/learning/${category}`, body),
+  // Reorder: main-screen display order only (ordered category ids).
+  updateLearningOrder: (order: string[]) =>
+    http.put<LearningPreferences>("/settings/me/learning/order", { order }),
 };
 
 /* ------------------------------ Support ----------------------------- */

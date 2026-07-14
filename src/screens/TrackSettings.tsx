@@ -22,8 +22,8 @@ const GOALS: { n: number; mode: string; mint?: boolean }[] = [
 
 /**
  * Per-track Custom Learning settings (conversation / TOPIK). Edits the level and
- * daily goal for one category over the authoritative preferences (settingsApi
- * .learning / updateLearning). Dirty state = draft ≠ the values captured at load;
+ * daily goal for ONE category via settingsApi.updateLearningCategory (the read
+ * stays whole-list via settingsApi.learning). Dirty state = draft ≠ the values captured at load;
  * leaving while dirty prompts the unsaved-changes modal. Saving invalidates the
  * dashboard so Home + Custom Learning reflect the new level/goal; the backend
  * owns the level-change progress reset.
@@ -91,11 +91,13 @@ export function TrackSettings() {
     if (!dirty || saving || !q.data || !orig || draftLevel == null || draftGoal == null) return;
     setSaving(true);
     const mySeq = ++seqRef.current;
-    const categories = q.data.categories.map((c) =>
-      c.category === category ? { ...c, level: draftLevel, daily_goal: draftGoal } : c,
-    );
     try {
-      const res = await settingsApi.updateLearning(categories);
+      // Update only THIS category; conversation/topik are saved on separate
+      // screens, so the request never carries the other category's values.
+      const res = await settingsApi.updateLearningCategory(category, {
+        level: draftLevel,
+        daily_goal: draftGoal,
+      });
       if (mySeq !== seqRef.current) return; // superseded
       qc.setQueryData(["learning-prefs"], res);
       qc.invalidateQueries({ queryKey: ["dashboard"] }); // Home + Custom Learning

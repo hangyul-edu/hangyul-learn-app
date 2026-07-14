@@ -41,8 +41,9 @@ function HandleIcon() {
  * from the authoritative per-category preferences (settingsApi.learning), lets
  * the user reorder them (drag handle or keyboard) — the top track shows first on
  * Home — and opens each track's detail settings. Order/level/goal are all
- * server-driven; reorder persists via settingsApi.updateLearning (optimistic +
- * rollback), and invalidating the dashboard keeps Home in sync.
+ * server-driven; reorder persists via settingsApi.updateLearningOrder (ordered
+ * category ids only — optimistic + rollback), and invalidating the dashboard
+ * keeps Home in sync. Level/goal are edited on each track's own screen.
  */
 export function PersonalizedSettings() {
   const nav = useNavigate();
@@ -77,7 +78,8 @@ export function PersonalizedSettings() {
     const prev = qc.getQueryData<LearningPreferences>(["learning-prefs"]);
     qc.setQueryData(["learning-prefs"], { categories }); // optimistic
     try {
-      const res = await settingsApi.updateLearning(categories);
+      // Order-only update — sends just the ordered ids, not the full objects.
+      const res = await settingsApi.updateLearningOrder(next.map((c) => c.category));
       if (mySeq !== seqRef.current) return; // a newer reorder superseded this one
       qc.setQueryData(["learning-prefs"], res);
       qc.invalidateQueries({ queryKey: ["dashboard"] }); // Home reorders

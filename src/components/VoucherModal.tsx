@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
  * Course-access code ("수강권 코드") registration modal. Opening it calls no API;
  * only 등록하기 triggers the parent's `onSubmit(code)`, which runs the existing
  * redemption flow (validateCoupon → applyCoupon) and refreshes authoritative
- * entitlement state. The code lives only in this component's local state (never
- * persisted/logged) and is reset on open/close. The server decides validity,
+ * entitlement state. The `code` is controlled by the parent so it survives a swap
+ * to the failure modal and back (edit-and-retry). The server decides validity,
  * eligibility, immediate-vs-scheduled application, and one-time use.
  *
  * Backdrop is non-dismissable; X / Escape close without submitting, both disabled
@@ -15,6 +15,8 @@ export function VoucherModal({
   open,
   loading,
   error,
+  code,
+  onCodeChange,
   onClose,
   onSubmit,
 }: {
@@ -22,18 +24,20 @@ export function VoucherModal({
   loading: boolean;
   /** Server-reported error (user-safe copy) for the last submit, or null. */
   error: string | null;
+  /** Controlled canonical code value (owned by the parent). */
+  code: string;
+  onCodeChange: (v: string) => void;
   onClose: () => void;
   onSubmit: (code: string) => void;
 }) {
-  const [code, setCode] = useState("");
   const [emptyErr, setEmptyErr] = useState(false);
   const [dirty, setDirty] = useState(false); // typed since last submit → hide server error
   const dialogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
 
+  // Reset only transient validation UI on open; the code itself is parent-owned.
   useEffect(() => {
-    setCode("");
     setEmptyErr(false);
     setDirty(false);
   }, [open]);
@@ -130,7 +134,7 @@ export function VoucherModal({
           disabled={loading}
           onChange={(e) => {
             // Canonical charset only: A–Z, 0–9, hyphen (uppercased).
-            setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""));
+            onCodeChange(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""));
             setEmptyErr(false);
             setDirty(true);
           }}

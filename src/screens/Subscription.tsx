@@ -6,9 +6,10 @@ import { Button } from "../components/ui/kit";
 import { SkeletonList } from "../components/ui/states";
 import { VoucherModal } from "../components/VoucherModal";
 import { VoucherSuccessModal, type VoucherSuccess } from "../components/VoucherSuccessModal";
+import { FailModal } from "../components/FailModal";
 import { subApi, billingApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
-import { errorMessage } from "../lib/http";
+import { ApiError, errorMessage } from "../lib/http";
 import { formatMoney } from "../lib/format";
 import type { Invoice, MySubscription, Plan } from "../lib/types";
 
@@ -75,7 +76,9 @@ export function Subscription() {
   // Arriving from the More card's 구독하기 CTA opens plan selection straight away.
   const [planOpen, setPlanOpen] = useState(() => !!(loc.state as { openPlans?: boolean } | null)?.openPlans);
   const [voucherOpen, setVoucherOpen] = useState(false);
+  const [voucherCode, setVoucherCode] = useState(""); // controlled; survives the fail-modal swap
   const [voucherError, setVoucherError] = useState<string | null>(null);
+  const [couponFailOpen, setCouponFailOpen] = useState(false);
   const [voucherSuccess, setVoucherSuccess] = useState<VoucherSuccess | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -143,6 +146,9 @@ export function Subscription() {
   // Redemption is server-authoritative: validate then apply. Entitlement is never
   // updated locally — refresh() re-reads /subscriptions/me on success. The server
   // enforces validity, eligibility, immediate-vs-scheduled application, one-time use.
+  // A code-domain rejection (4xx: invalid / expired / already used) shows the
+  // dedicated failure modal; a temporary failure (network / 5xx / unknown) stays
+  // inline in the voucher modal via the generic error line.
   async function redeem(code: string) {
     if (busy) return;
     setBusy(true);
@@ -159,7 +165,14 @@ export function Subscription() {
       setVoucherOpen(false);
       setVoucherSuccess(buildSuccess(applyRes, fresh)); // → success modal
     } catch (e) {
-      setVoucherError(errorMessage(e)); // keep modal open; allow retry
+      if (e instanceof ApiError && e.status >= 400 && e.status < 500) {
+        // Code-domain rejection — replace the input modal with the failure modal
+        // (code preserved for edit-and-retry). No entitlement change.
+        setVoucherOpen(false);
+        setCouponFailOpen(true);
+      } else {
+        setVoucherError(errorMessage(e)); // temporary — keep modal open, allow retry
+      }
     } finally {
       setBusy(false);
     }
@@ -258,7 +271,16 @@ export function Subscription() {
           {/* Course-access / voucher code */}
           <div className="subm__voucher">
             <span className="subm__voucher-label">수강권 코드 등록</span>
-            <button className="subm__voucher-btn" onClick={() => setVoucherOpen(true)}>등록하기</button>
+            <button
+              className="subm__voucher-btn"
+              onClick={() => {
+                setVoucherCode(""); // fresh entry
+                setVoucherError(null);
+                setVoucherOpen(true);
+              }}
+            >
+              등록하기
+            </button>
           </div>
         </div>
 
@@ -345,12 +367,32 @@ export function Subscription() {
         open={voucherOpen}
         loading={busy}
         error={voucherError}
+        code={voucherCode}
+        onCodeChange={setVoucherCode}
         onClose={() => {
           if (busy) return;
           setVoucherOpen(false);
           setVoucherError(null);
         }}
         onSubmit={redeem}
+      />
+
+      {/* Code-domain failure. 확인 returns to the input modal with the code
+          preserved for edit-and-retry; no API, no entitlement change. */}
+      <FailModal
+        open={couponFailOpen}
+        title="쿠폰 등록에 실패했습니다"
+        description={
+          <>
+            유효하지 않거나 이미 사용된 코드예요
+            <br />
+            코드를 확인하고 다시 시도해 주세요
+          </>
+        }
+        onClose={() => {
+          setCouponFailOpen(false);
+          setVoucherOpen(true); // reopen with preserved code
+        }}
       />
 
       <VoucherSuccessModal open={!!voucherSuccess} data={voucherSuccess} onClose={() => setVoucherSuccess(null)} />

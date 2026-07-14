@@ -4,11 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import { LogoutModal } from "../components/LogoutModal";
 import { WithdrawModal } from "../components/WithdrawModal";
 import { WithdrawPasswordModal } from "../components/WithdrawPasswordModal";
+import { WithdrawFailModal } from "../components/WithdrawFailModal";
 import { SuccessModal } from "../components/SuccessModal";
 import { CharacterArt, ProfilePlaceholder, type AvatarKey } from "../components/brand/ProfileAssets";
 import { ChevronRight } from "../components/brand/HomeIcons";
 import { subApi, dashboardApi, authApi } from "../api/endpoints";
-import { http, errorMessage } from "../lib/http";
+import { http, errorMessage, ApiError, NetworkError } from "../lib/http";
 import { useAuth } from "../hooks/auth";
 import type { Me } from "../lib/types";
 
@@ -71,6 +72,7 @@ export function Profile() {
   const [pwOpen, setPwOpen] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
+  const [withdrawFailOpen, setWithdrawFailOpen] = useState(false);
   const [doneOpen, setDoneOpen] = useState(false);
   const finishedRef = useRef(false);
 
@@ -102,6 +104,16 @@ export function Profile() {
     setPwOpen(true);
   }
 
+  // A temporary / unexpected failure (network, timeout, 5xx, unknown) gets the
+  // dedicated failure modal; a 4xx (wrong password / validation) stays inline in
+  // the password modal. We never assume success on an ambiguous error, so a lost
+  // response biases to "failure → retry" (never a false completion modal).
+  function isTemporaryFailure(e: unknown): boolean {
+    if (e instanceof NetworkError) return true;
+    if (e instanceof ApiError) return e.status >= 500;
+    return true; // unknown, non-ApiError → treat as retryable
+  }
+
   // Password step's 탈퇴: server verifies the password and withdraws atomically.
   // On terminal success we show the completion modal (still a frozen, overlay-
   // blocked background) and defer local cleanup until the user dismisses it.
@@ -115,8 +127,15 @@ export function Profile() {
       setPwOpen(false); // no stacking under the completion modal
       setDoneOpen(true);
     } catch (e) {
-      setPwError(errorMessage(e)); // stay on the modal; account untouched, allow retry
       setWithdrawing(false);
+      if (isTemporaryFailure(e)) {
+        // Replace the password modal with the failure modal (one interactive
+        // layer). Account + session untouched; the user can retry from 확인.
+        setPwOpen(false);
+        setWithdrawFailOpen(true);
+      } else {
+        setPwError(errorMessage(e)); // inline wrong-password / validation feedback
+      }
     }
   }
 
@@ -305,6 +324,16 @@ export function Profile() {
           setPwError(null);
         }}
         onSubmit={withdraw}
+      />
+
+      {/* 확인 returns to the password step in a clean, retry-ready state; no API,
+          no logout, no navigation. */}
+      <WithdrawFailModal
+        open={withdrawFailOpen}
+        onClose={() => {
+          setWithdrawFailOpen(false);
+          setPwOpen(true);
+        }}
       />
 
       <SuccessModal

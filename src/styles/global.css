@@ -5818,7 +5818,7 @@ textarea.input {
   padding: calc(var(--safe-top) + 8px) clamp(22px, 6.5vw, 28px) calc(28px + var(--safe-bottom));
 }
 .clset__heading {
-  margin: clamp(22px, 5vh, 38px) 0 clamp(16px, 3.5vw, 22px);
+  margin: clamp(22px, 5vh, 38px) 0 clamp(10px, 2.5vw, 14px);
   color: #17191c;
   font-family: var(--font-display);
   font-weight: 800;
@@ -5827,7 +5827,7 @@ textarea.input {
 .clset__panel {
   background: #f4f5f5;
   border-radius: 18px;
-  padding: clamp(16px, 4vw, 22px) clamp(16px, 4.5vw, 20px);
+  padding: clamp(10px, 2.6vw, 13px) clamp(16px, 4.5vw, 20px);
 }
 .clset__panel-line {
   display: flex;
@@ -5845,7 +5845,7 @@ textarea.input {
 /* Sortable list */
 .clset__list {
   list-style: none;
-  margin: clamp(18px, 4vw, 26px) 0 0;
+  margin: clamp(10px, 2.5vw, 14px) 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -5862,7 +5862,7 @@ textarea.input {
 .clset__card {
   display: flex;
   align-items: stretch;
-  min-height: clamp(102px, 27vw, 112px);
+  min-height: clamp(76px, 20vw, 86px);
   background: #fff;
   border: 1px solid #e1e5e8;
   border-radius: 15px;

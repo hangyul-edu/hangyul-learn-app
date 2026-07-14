@@ -5194,3 +5194,67 @@ textarea.input {
 .wdd__btn:active {
   transform: scale(0.99);
 }
+
+/* ============================ Logout confirmation modal (로그아웃) ============================ */
+.lgo {
+  width: 100%;
+  max-width: 420px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 16px;
+  padding: clamp(38px, 8.5vw, 50px) clamp(26px, 7vw, 32px) clamp(26px, 6vw, 32px);
+  box-shadow: 0 20px 48px rgba(20, 22, 25, 0.32);
+  animation: pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  text-align: center;
+}
+.lgo__title {
+  margin: 0;
+  color: #272c30;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(21px, 5.9vw, 27px);
+}
+.lgo__copy {
+  margin: clamp(12px, 3vw, 16px) 0 0;
+  color: #7a8490;
+  font-size: clamp(14px, 4vw, 16px);
+  line-height: 1.5;
+}
+.lgo__actions {
+  display: flex;
+  gap: 13px;
+  margin-top: clamp(24px, 5.5vw, 32px);
+}
+.lgo__btn {
+  flex: 1 1 0;
+  min-width: 0;
+  height: clamp(62px, 16.5vw, 78px);
+  border: none;
+  border-radius: 17px;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(15px, 4.4vw, 18px);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 14px rgba(37, 43, 47, 0.14);
+  transition: transform 0.08s ease, opacity 0.15s;
+}
+.lgo__btn:active {
+  transform: scale(0.98);
+}
+.lgo__btn:disabled {
+  cursor: default;
+}
+.lgo__btn--cancel {
+  background: #b8c1c9;
+}
+.lgo__btn--go {
+  background: #ff5b00;
+  box-shadow: 0 6px 14px rgba(255, 91, 0, 0.26);
+}
+.lgo__btn--go:disabled {
+  opacity: 0.85;
+}

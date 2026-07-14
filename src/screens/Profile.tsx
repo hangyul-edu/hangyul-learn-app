@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ConfirmDialog } from "../components/ui/Modal";
+import { LogoutModal } from "../components/LogoutModal";
 import { WithdrawModal } from "../components/WithdrawModal";
 import { WithdrawPasswordModal } from "../components/WithdrawPasswordModal";
 import { WithdrawDoneModal } from "../components/WithdrawDoneModal";
@@ -64,12 +64,22 @@ export function Profile() {
   const nav = useNavigate();
   const { me, logout, hardSignOut } = useAuth();
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
   const [doneOpen, setDoneOpen] = useState(false);
   const finishedRef = useRef(false);
+
+  // Logout modal's 로그아웃: delegates to the centralized logout() (best-effort
+  // server revocation + hardSignOut). status → signed-out unmounts this tree via
+  // the route guard, so no post-success setState is needed.
+  async function doLogout() {
+    if (loggingOut) return; // guard duplicate taps / requests
+    setLoggingOut(true);
+    await logout();
+  }
 
   // First warning modal's 탈퇴: NO api — just advance to the password step.
   function toPasswordStep() {
@@ -222,16 +232,11 @@ export function Profile() {
         </div>
       </div>
 
-      <ConfirmDialog
+      <LogoutModal
         open={logoutOpen}
-        emoji="👋"
-        title="로그아웃 할까요?"
-        confirmLabel="로그아웃"
-        onCancel={() => setLogoutOpen(false)}
-        onConfirm={() => {
-          setLogoutOpen(false);
-          void logout();
-        }}
+        loading={loggingOut}
+        onCancel={() => !loggingOut && setLogoutOpen(false)}
+        onConfirm={doLogout}
       />
 
       <WithdrawModal

@@ -5,11 +5,12 @@ import { Sheet, ConfirmDialog } from "../components/ui/Modal";
 import { Button } from "../components/ui/kit";
 import { SkeletonList } from "../components/ui/states";
 import { VoucherModal } from "../components/VoucherModal";
+import { VoucherSuccessModal, type VoucherSuccess } from "../components/VoucherSuccessModal";
 import { subApi, billingApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import { formatMoney } from "../lib/format";
-import type { Invoice, Plan } from "../lib/types";
+import type { Invoice, MySubscription, Plan } from "../lib/types";
 
 /* ---------------- date helpers (locale ko-KR, timezone-safe) ---------------- */
 function fmtLong(iso?: string | null): string {
@@ -31,6 +32,39 @@ function fmtSlash(iso?: string | null): string {
   if (Number.isNaN(d.getTime())) return "";
   return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
 }
+function fmtDot(iso?: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+}
+/** Read the first present string field from an unknown response object. */
+function str(o: unknown, ...keys: string[]): string | null {
+  if (!o || typeof o !== "object") return null;
+  for (const k of keys) {
+    const v = (o as Record<string, unknown>)[k];
+    if (typeof v === "string" && v) return v;
+  }
+  return null;
+}
+/** Build the applied-subscription detail from the redemption response + refreshed sub. */
+function buildSuccess(applyRes: unknown, fresh: MySubscription): VoucherSuccess {
+  const plan = str(applyRes, "plan_name") ?? fresh.plan_name ?? "프리미엄";
+  const from = str(applyRes, "current_period_start", "valid_from", "starts_at", "start_at");
+  const to =
+    str(applyRes, "current_period_end", "valid_until", "ends_at", "end_at") ?? fresh.current_period_end ?? null;
+  const scheduled =
+    !!applyRes &&
+    typeof applyRes === "object" &&
+    (!!(applyRes as Record<string, unknown>).scheduled || !!(applyRes as Record<string, unknown>).applies_at);
+  const validity = from && to ? `${fmtDot(from)}~${fmtDot(to)}` : to ? `~${fmtDot(to)}` : "-";
+  return {
+    subtitle: scheduled ? `${plan} 구독이 예약되었어요` : `${plan} 구독이 적용되었어요`,
+    plan,
+    type: "수강권 쿠폰 적용",
+    validity,
+  };
+}
 
 export function Subscription() {
   const nav = useNavigate();
@@ -40,6 +74,7 @@ export function Subscription() {
   const [planOpen, setPlanOpen] = useState(false);
   const [voucherOpen, setVoucherOpen] = useState(false);
   const [voucherError, setVoucherError] = useState<string | null>(null);
+  const [voucherSuccess, setVoucherSuccess] = useState<VoucherSuccess | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -112,10 +147,15 @@ export function Subscription() {
     setVoucherError(null);
     try {
       await subApi.validateCoupon(code);
-      await subApi.applyCoupon(code);
-      toast.success("수강권을 등록했어요! 🎁");
+      const applyRes = await subApi.applyCoupon(code);
+      // Authoritative refresh: re-read /subscriptions/me for the applied state,
+      // seed the cache so the screen already reflects it, invalidate related data.
+      const fresh = await subApi.mine();
+      qc.setQueryData(["sub-me"], fresh);
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["invoices-inf"] });
       setVoucherOpen(false);
-      refresh();
+      setVoucherSuccess(buildSuccess(applyRes, fresh)); // → success modal
     } catch (e) {
       setVoucherError(errorMessage(e)); // keep modal open; allow retry
     } finally {
@@ -310,6 +350,8 @@ export function Subscription() {
         }}
         onSubmit={redeem}
       />
+
+      <VoucherSuccessModal open={!!voucherSuccess} data={voucherSuccess} onClose={() => setVoucherSuccess(null)} />
 
       <ConfirmDialog
         open={cancelOpen}

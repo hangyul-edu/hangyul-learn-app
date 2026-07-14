@@ -5501,3 +5501,91 @@ textarea.input {
   color: #7a8490;
   font-size: 13px;
 }
+
+/* ---- Course-access code registration modal (수강권 코드 등록) ---- */
+.vou {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 18px;
+  padding: clamp(42px, 9vw, 54px) clamp(24px, 6.5vw, 30px) clamp(24px, 5vw, 30px);
+  box-shadow: 0 20px 48px rgba(20, 22, 25, 0.32);
+  animation: pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  text-align: center;
+}
+.vou__title {
+  margin: 0;
+  color: #ff5b00;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(21px, 5.9vw, 27px);
+}
+.vou__guide {
+  margin: clamp(12px, 3vw, 18px) 0 0;
+  color: #7a8490;
+  font-size: clamp(14px, 4vw, 16px);
+  line-height: 1.5;
+}
+.vou__input {
+  width: 100%;
+  height: clamp(70px, 18vw, 80px);
+  margin-top: clamp(20px, 4.5vw, 28px);
+  border: 1.5px solid #d9dee2;
+  border-radius: 18px;
+  background: #fff;
+  padding: 0 20px;
+  font-size: 16px;
+  color: #272c30;
+  text-align: center;
+  letter-spacing: 0.04em;
+  transition: border-color 0.14s;
+}
+.vou__input::placeholder {
+  color: #aeb7be;
+  letter-spacing: normal;
+}
+.vou__input:focus {
+  outline: none;
+  border-color: #ff5b00;
+  caret-color: #ff5b00;
+}
+.vou__input.is-error {
+  border-color: var(--danger);
+}
+.vou__input:disabled {
+  opacity: 0.7;
+}
+.vou__err {
+  margin: 8px 2px 0;
+  text-align: left;
+  font-size: clamp(12.5px, 3.6vw, 14px);
+  color: var(--danger);
+}
+.vou__submit {
+  width: 100%;
+  height: clamp(66px, 17vw, 80px);
+  margin-top: clamp(20px, 4.5vw, 26px);
+  border: none;
+  border-radius: 18px;
+  background: #ff5b00;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(16px, 4.6vw, 19px);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 18px rgba(255, 91, 0, 0.24);
+  transition: transform 0.08s ease, opacity 0.15s;
+}
+.vou__submit:active {
+  transform: scale(0.99);
+}
+.vou__submit:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+  cursor: default;
+}

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sheet, Dialog, ConfirmDialog } from "../components/ui/Modal";
+import { Sheet, ConfirmDialog } from "../components/ui/Modal";
 import { Button } from "../components/ui/kit";
-import { TextField } from "../components/ui/Field";
 import { SkeletonList } from "../components/ui/states";
+import { VoucherModal } from "../components/VoucherModal";
 import { subApi, billingApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
@@ -39,8 +39,8 @@ export function Subscription() {
 
   const [planOpen, setPlanOpen] = useState(false);
   const [voucherOpen, setVoucherOpen] = useState(false);
+  const [voucherError, setVoucherError] = useState<string | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
-  const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
 
   const mine = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
@@ -103,18 +103,21 @@ export function Subscription() {
     }
   }
 
-  async function redeem() {
-    if (!code.trim() || busy) return;
+  // Redemption is server-authoritative: validate then apply. Entitlement is never
+  // updated locally — refresh() re-reads /subscriptions/me on success. The server
+  // enforces validity, eligibility, immediate-vs-scheduled application, one-time use.
+  async function redeem(code: string) {
+    if (busy) return;
     setBusy(true);
+    setVoucherError(null);
     try {
-      await subApi.validateCoupon(code.trim());
-      await subApi.applyCoupon(code.trim());
+      await subApi.validateCoupon(code);
+      await subApi.applyCoupon(code);
       toast.success("수강권을 등록했어요! 🎁");
-      setCode("");
       setVoucherOpen(false);
       refresh();
     } catch (e) {
-      toast.error(errorMessage(e));
+      setVoucherError(errorMessage(e)); // keep modal open; allow retry
     } finally {
       setBusy(false);
     }
@@ -296,13 +299,17 @@ export function Subscription() {
       </Sheet>
 
       {/* Voucher / course-code registration (reuses subApi.validateCoupon / applyCoupon) */}
-      <Dialog open={voucherOpen} onClose={() => !busy && setVoucherOpen(false)} emoji="🎁" title="수강권 코드 등록" text="발급받은 코드를 입력해 주세요.">
-        <div className="stack" style={{ gap: 10 }}>
-          <TextField placeholder="XXXX-XXXX-XXXX" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />
-          <Button block loading={busy} disabled={!code.trim()} onClick={redeem}>등록하기</Button>
-          <Button variant="ghost" block disabled={busy} onClick={() => setVoucherOpen(false)}>취소</Button>
-        </div>
-      </Dialog>
+      <VoucherModal
+        open={voucherOpen}
+        loading={busy}
+        error={voucherError}
+        onClose={() => {
+          if (busy) return;
+          setVoucherOpen(false);
+          setVoucherError(null);
+        }}
+        onSubmit={redeem}
+      />
 
       <ConfirmDialog
         open={cancelOpen}

@@ -4233,3 +4233,241 @@ textarea.input {
   opacity: 0.55;
   cursor: default;
 }
+
+/* ============================ More (더보기) ============================ */
+.more {
+  background: #f7f7f6;
+}
+.more__body {
+  padding: 0 18px calc(var(--nav-h) + 24px + var(--safe-bottom));
+}
+.more__header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 52px;
+  padding-top: calc(6px + var(--safe-top, 0px));
+}
+.more__bell {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.more__bell-dot {
+  position: absolute;
+  top: 9px;
+  right: 10px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #f2762a;
+  border: 2px solid #f7f7f6;
+}
+
+/* --- Profile summary card --- */
+.more__profile {
+  background: #fff;
+  border-radius: 26px;
+  padding: 26px 22px 20px;
+  margin-top: 6px;
+  box-shadow: 0 1px 2px rgba(20, 24, 28, 0.04);
+}
+.more__avatar {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #eef0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.more__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.more__avatar svg {
+  width: 100%;
+  height: 100%;
+}
+.more__nick {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 12px auto 0;
+  padding: 4px 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.more__nick-name {
+  font-size: 19px;
+  font-weight: 800;
+  color: #23282c;
+}
+.more__divider {
+  height: 1px;
+  background: #eef0f0;
+  margin: 18px -4px 16px;
+}
+.more__stats {
+  display: flex;
+  align-items: flex-start;
+}
+.more__stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+  padding: 0 4px;
+}
+.more__stat + .more__stat {
+  border-left: 1px solid #f0f1f1;
+}
+.more__stat-label {
+  font-size: 11.5px;
+  color: #9aa0a7;
+  line-height: 1.3;
+}
+.more__stat-val {
+  font-size: 15px;
+  font-weight: 800;
+  color: #23282c;
+}
+
+/* --- Subscription card (3 states) --- */
+.more__sub {
+  border-radius: 24px;
+  padding: 18px 20px 20px;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+}
+.more__sub--trial,
+.more__sub--none {
+  background: #fff9e9;
+  border: 1.5px solid #f2762a;
+}
+.more__sub--paid {
+  background: #fff;
+  border: 1px solid #ececeb;
+}
+.more__sub-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #b28a4d;
+  margin-bottom: 10px;
+}
+.more__sub--paid .more__sub-label {
+  color: #9aa0a7;
+}
+.more__sub-empty {
+  font-size: 15px;
+  font-weight: 600;
+  color: #5f6469;
+  margin: 0 0 16px;
+}
+.more__sub-cta {
+  align-self: stretch;
+  background: #f2762a;
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  padding: 15px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.more__sub-plan {
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.more__sub-ribbon {
+  align-self: flex-start;
+  background: #6a4bd0;
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.more__sub-title-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.more__sub-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #3a2e18;
+}
+.more__sub--paid .more__sub-title {
+  color: #23282c;
+}
+.more__sub-billing {
+  font-size: 12.5px;
+  color: #97836a;
+}
+.more__sub--paid .more__sub-billing {
+  color: #9aa0a7;
+}
+.more__sub-billing b {
+  font-weight: 700;
+}
+
+/* --- Menu list --- */
+.more__menu {
+  display: flex;
+  flex-direction: column;
+  margin-top: 22px;
+}
+.more__menu-row {
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 15px 4px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2b3034;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.more__menu-row:active {
+  opacity: 0.55;
+}
+
+/* --- Withdrawal + logout --- */
+.more__account-actions {
+  display: flex;
+  gap: 22px;
+  padding: 22px 4px 8px;
+}
+.more__muted-action {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  color: #a8adb2;
+  cursor: pointer;
+}
+.more__muted-action:active {
+  opacity: 0.55;
+}

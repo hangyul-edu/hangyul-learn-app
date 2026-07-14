@@ -48,7 +48,7 @@ export function Learn() {
             </div>
             <span className="listrow__chev">›</span>
           </button>
-          <button className="listrow" onClick={() => nav("/recommend")}>
+          <button className="listrow" onClick={() => nav("/recommend/sentences")}>
             <span style={{ fontSize: 24 }}>✨</span>
             <div className="listrow__main">
               <div className="listrow__title">AI 추천 문장</div>

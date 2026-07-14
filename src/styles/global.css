@@ -4833,3 +4833,79 @@ textarea.input {
   box-shadow: 0 8px 16px rgba(174, 183, 190, 0.3);
   cursor: default;
 }
+
+/* ============================ Email change (이메일 변경) ============================ */
+.echg__field {
+  flex: 1;
+  min-width: 0;
+  height: clamp(76px, 20vw, 84px);
+  border: 1.5px solid transparent;
+  border-radius: 18px;
+  background: #f3f5f5;
+  padding: 0 20px;
+  font-size: 16px;
+  color: #272c30;
+  transition: border-color 0.14s, background 0.14s;
+}
+.echg__field::placeholder {
+  color: #b2bbc3;
+}
+.echg__field:focus {
+  outline: none;
+  border-color: #ff5b00;
+  background: #fff;
+  caret-color: #ff5b00;
+}
+.echg__field:disabled {
+  color: #8b939a;
+  -webkit-text-fill-color: #8b939a;
+  opacity: 1;
+}
+.echg__field--code {
+  padding-right: 78px;
+}
+/* Verification action button: dark when active, gray-blue when completed */
+.echg__action {
+  flex: 0 0 auto;
+  width: clamp(122px, 34vw, 139px);
+  height: clamp(54px, 14vw, 59px);
+  border: none;
+  border-radius: 12px;
+  background: #272c30;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(14px, 4vw, 16px);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 5px 12px rgba(39, 44, 48, 0.18);
+  transition: transform 0.08s ease, opacity 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.echg__action:active {
+  transform: scale(0.98);
+}
+.echg__action:disabled {
+  opacity: 0.4;
+  box-shadow: none;
+  cursor: default;
+}
+.echg__action.is-done {
+  background: #aeb7be;
+  opacity: 1;
+  box-shadow: 0 5px 12px rgba(174, 183, 190, 0.28);
+}
+.echg__msg {
+  margin: 14px 0 0;
+  min-height: 22px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(15px, 4.2vw, 17px);
+}
+.echg__msg.is-ok {
+  color: #4e7bff;
+}
+.echg__msg.is-err {
+  color: var(--danger);
+}

@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Screen } from "../components/layout/Screen";
 import { Button } from "../components/ui/kit";
-import { PasswordField, TextField } from "../components/ui/Field";
-import { VerifyStep } from "./VerifyStep";
+import { PasswordField } from "../components/ui/Field";
 import { authApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
@@ -278,39 +277,213 @@ export function ChangePhone() {
 }
 
 /* ------------------------- Email ------------------------- */
+/**
+ * Email change — single screen matching the reference. Reuses the authenticated
+ * email-change OTP APIs (startEmailChange → confirmEmailChange → changeEmail).
+ * The email becomes authoritative only after confirmEmailChange yields a
+ * verification_token AND changeEmail succeeds. Editing the email invalidates a
+ * prior proof; both verification controls show 인증완료 only after server success.
+ */
 export function ChangeEmail() {
   const nav = useNavigate();
   const toast = useToast();
   const { me, setMe } = useAuth();
-  const [step, setStep] = useState(0);
+
   const [email, setEmail] = useState("");
+  const [vid, setVid] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [resendAt, setResendAt] = useState<string | null>(null);
+  const [code, setCode] = useState("");
+  const [token, setToken] = useState<string | null>(null);
+  const [verifiedFor, setVerifiedFor] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+
+  const emailNorm = email.trim();
+  const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailNorm);
+  const sameAsCurrent = !!me?.email && emailNorm.toLowerCase() === me.email.toLowerCase();
+
+  // Timestamp-based countdown; recomputed from server `expires_at`.
+  useEffect(() => {
+    if (!vid || !expiresAt || token) return;
+    setNow(Date.now());
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [vid, expiresAt, token]);
+
+  const remaining = expiresAt ? Math.max(0, Math.floor((new Date(expiresAt).getTime() - now) / 1000)) : 0;
+  const resendIn = resendAt ? Math.max(0, Math.floor((new Date(resendAt).getTime() - now) / 1000)) : 0;
+  const expired = !!vid && remaining <= 0 && !token;
+  const mmss = `${String(Math.floor(remaining / 60)).padStart(2, "0")}:${String(remaining % 60).padStart(2, "0")}`;
+  const verified = !!token && verifiedFor === emailNorm;
+
+  function resetVerification() {
+    setVid(null);
+    setExpiresAt(null);
+    setResendAt(null);
+    setCode("");
+    setToken(null);
+    setVerifiedFor(null);
+  }
+
+  async function send() {
+    if (!emailValid || sending || (vid && resendIn > 0)) return;
+    if (sameAsCurrent) {
+      toast.error("현재 사용 중인 이메일과 같아요");
+      return;
+    }
+    setSending(true);
+    try {
+      const res = await authApi.startEmailChange(emailNorm);
+      setVid(res.verification_id);
+      setExpiresAt(res.expires_at);
+      setResendAt(res.resend_available_at);
+      setCode("");
+      setToken(null);
+      setVerifiedFor(null);
+      toast.success("인증번호를 이메일로 보냈어요");
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setSending(false);
+    }
+  }
+
+  const codeReady = !!vid && code.length === 6 && remaining > 0 && !token;
+
+  async function confirm() {
+    if (!codeReady || confirming) return;
+    setConfirming(true);
+    try {
+      const res = await authApi.confirmEmailChange(vid!, code);
+      setToken(res.verification_token);
+      setVerifiedFor(emailNorm); // bind proof to this exact email
+      toast.success("인증되었습니다.");
+    } catch (e) {
+      toast.error(errorMessage(e));
+      setCode("");
+    } finally {
+      setConfirming(false);
+    }
+  }
+
+  const canSave = !!me && verified && emailValid && !sameAsCurrent && !saving;
+
+  async function save() {
+    if (!canSave) return;
+    setSaving(true);
+    try {
+      const res = await authApi.changeEmail(emailNorm, token!);
+      if (me) setMe({ ...me, email: res.email ?? emailNorm });
+      toast.success("이메일을 변경했어요");
+      nav(-1);
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const emailActionLabel = sending ? null : verified ? "인증완료" : !vid ? "인증하기" : resendIn > 0 ? `재전송 ${resendIn}` : "재전송";
 
   return (
-    <Screen title="이메일 변경" back>
-      {step === 0 ? (
-        <div className="stack" style={{ gap: 14 }}>
-          <p className="muted">새 이메일로 인증번호를 보내 소유를 확인해요.</p>
-          <TextField label="새 이메일" type="email" placeholder="new@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <Button size="lg" block disabled={!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)} onClick={() => setStep(1)}>인증번호 받기</Button>
+    <div className="screen acct echg">
+      <div className="acct__scroll">
+        <div className="acct__inner">
+          <header className="acct__header">
+            <button className="acct__back" onClick={() => nav(-1)} aria-label="뒤로">
+              <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <h1 className="acct__title">이메일 변경</h1>
+          </header>
+
+          {/* Email */}
+          <div className="acct__label" id="echg-email-label">이메일</div>
+          <div className="pchg__row">
+            <input
+              className="echg__field"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="name@naver.com"
+              aria-labelledby="echg-email-label"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                resetVerification();
+              }}
+            />
+            <button
+              type="button"
+              className={`echg__action ${verified ? "is-done" : ""}`}
+              onClick={send}
+              disabled={!emailValid || sending || verified || (!!vid && resendIn > 0)}
+              aria-label={verified ? "이메일 인증 완료" : vid ? "인증번호 재전송" : "인증번호 받기"}
+            >
+              {emailActionLabel ?? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />}
+            </button>
+          </div>
+
+          {/* Verification code */}
+          <div className="acct__label" id="echg-code-label">인증번호 입력</div>
+          <div className="pchg__row">
+            <div className="pchg__code-wrap">
+              <input
+                className="echg__field echg__field--code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="인증번호 6자리를 입력하세요"
+                aria-labelledby="echg-code-label"
+                value={code}
+                maxLength={6}
+                disabled={!vid || verified}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              />
+              {vid && !verified && (
+                <span
+                  className="pchg__timer"
+                  role="timer"
+                  aria-label={`남은 시간 ${Math.floor(remaining / 60)}분 ${remaining % 60}초`}
+                >
+                  {mmss}
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              className={`echg__action ${verified ? "is-done" : ""}`}
+              onClick={confirm}
+              disabled={verified ? true : !codeReady || confirming}
+              aria-label={verified ? "인증 완료됨" : "인증번호 확인"}
+            >
+              {confirming ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : verified ? "인증완료" : "확인"}
+            </button>
+          </div>
+          <p className={`echg__msg ${verified ? "is-ok" : expired ? "is-err" : ""}`} role="status" aria-live="polite">
+            {verified ? "인증되었습니다." : expired ? "인증 시간이 만료되었어요. 재전송해 주세요." : ""}
+          </p>
+
+          <div className="pchg__spacer" />
+
+          <button
+            type="button"
+            className="pchg__submit"
+            onClick={save}
+            disabled={!canSave}
+            aria-disabled={!canSave}
+            aria-label={canSave ? "변경하기" : "인증을 완료하면 이메일을 변경할 수 있어요"}
+          >
+            {saving ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : "변경하기"}
+          </button>
         </div>
-      ) : (
-        <VerifyStep
-          channel="email"
-          target={email}
-          start={() => authApi.startEmailChange(email.trim())}
-          confirm={authApi.confirmEmailChange}
-          onDone={async (token) => {
-            try {
-              const res = await authApi.changeEmail(email.trim(), token);
-              if (me) setMe({ ...me, email: res.email ?? email.trim() });
-              toast.success("이메일을 변경했어요");
-              nav(-1);
-            } catch (e) {
-              toast.error(errorMessage(e));
-            }
-          }}
-        />
-      )}
-    </Screen>
+      </div>
+    </div>
   );
 }

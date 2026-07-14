@@ -34,6 +34,8 @@ import { Practice } from "./screens/Practice";
 import { Exams, ExamPlay } from "./screens/Exams";
 import { Recommendations } from "./screens/Recommendations";
 import { Personalized } from "./screens/Personalized";
+import { SessionConversation } from "./screens/SessionConversation";
+import { SessionTopik } from "./screens/SessionTopik";
 import { PaymentMethods } from "./screens/PaymentMethods";
 import { Billing } from "./screens/Billing";
 import { Streak } from "./screens/Streak";
@@ -113,6 +115,8 @@ export function App() {
         <Route path="/quiz/:quizId" element={<RequireAuth><QuizPlay /></RequireAuth>} />
         <Route path="/courses/:courseId" element={<RequireAuth><CourseDetail /></RequireAuth>} />
         <Route path="/recommend/sentences" element={<RequireAuth><Recommendations /></RequireAuth>} />
+        <Route path="/session/conversation" element={<RequireAuth><SessionConversation /></RequireAuth>} />
+        <Route path="/session/topik" element={<RequireAuth><SessionTopik /></RequireAuth>} />
         <Route path="/lectures/:lectureId" element={<RequireAuth><Lecture /></RequireAuth>} />
         <Route path="/lectures/:lectureId/practice" element={<RequireAuth><Practice /></RequireAuth>} />
         <Route path="/exams" element={<RequireAuth><Exams /></RequireAuth>} />

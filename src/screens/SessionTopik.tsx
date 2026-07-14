@@ -1,0 +1,197 @@
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { SessionChrome } from "../components/SessionChrome";
+import { QuestionView, isAnswered, quizAttemptBody, type AnswerValue } from "../components/QuestionView";
+import { LoadingState, ErrorState } from "../components/ui/states";
+import { recApi, quizApi, dashboardApi } from "../api/endpoints";
+import { useToast } from "../hooks/toast";
+import { errorMessage } from "../lib/http";
+import type { Quiz, QuizAttemptResult } from "../lib/types";
+
+const SECTION = "reading"; // reference dropdown shows the reading problem types
+
+export function SessionTopik() {
+  const nav = useNavigate();
+  const toast = useToast();
+
+  const dash = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
+  const topik = dash.data?.tracks.find((t) => t.category === "topik");
+  const grade = topik?.level ?? 1;
+  const remaining = topik ? Math.max(topik.goal.target - topik.goal.current, 0) : 0;
+
+  const types = useQuery({
+    queryKey: ["topik-question-types", SECTION],
+    queryFn: () => recApi.topikQuestionTypes(SECTION),
+  });
+
+  const [open, setOpen] = useState(false);
+  const [typeCode, setTypeCode] = useState<string | null>(null);
+  const [items, setItems] = useState<Quiz[] | null>(null);
+  const [idx, setIdx] = useState(0);
+  const [value, setValue] = useState<AnswerValue>({});
+  const [result, setResult] = useState<QuizAttemptResult | null>(null);
+  const [correctSet, setCorrectSet] = useState<Set<string>>(new Set());
+  const [answered, setAnswered] = useState<Set<string>>(new Set());
+  const [saved, setSaved] = useState<Record<string, boolean>>({});
+  const [busy, setBusy] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(false);
+
+  async function loadSet(code?: string | null) {
+    if (busy) return;
+    setBusy(true);
+    setError(false);
+    try {
+      const count = Math.max(remaining || 0, 1);
+      const res = await recApi.questions({ section: SECTION, count, ...(code ? { topik_question_type: code } : {}) });
+      setItems(res.items);
+      setIdx(0);
+      setValue({});
+      setResult(null);
+      setCorrectSet(new Set());
+      setAnswered(new Set());
+    } catch (e) {
+      if (items === null) setError(true);
+      else toast.error(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Fetch the initial set once the dashboard (remaining goal) has resolved.
+  const booted = useRef(false);
+  useEffect(() => {
+    if (booted.current || !dash.data) return;
+    booted.current = true;
+    void loadSet();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dash.data]);
+
+  const total = items?.length ?? 0;
+  const cur = items?.[idx];
+  const progress = total ? answered.size / total : 0;
+
+  async function submit() {
+    if (!cur || submitting || result || !isAnswered(cur, value)) return;
+    setSubmitting(true);
+    try {
+      const res = await quizApi.attempt(cur.quiz_id, quizAttemptBody(cur, value));
+      setResult(res);
+      setAnswered((a) => new Set(a).add(cur.quiz_id));
+      if (res.correct) setCorrectSet((c) => new Set(c).add(cur.quiz_id));
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function next() {
+    setResult(null);
+    setValue({});
+    if (idx >= total - 1) {
+      toast.success("오늘 세트를 완료했어요! 🎉");
+      nav(-1);
+    } else {
+      setIdx((i) => i + 1);
+    }
+  }
+
+  async function toggleSave(q: Quiz) {
+    const on = saved[q.quiz_id];
+    setSaved((m) => ({ ...m, [q.quiz_id]: !on }));
+    try {
+      if (on) await quizApi.unbookmark(q.quiz_id);
+      else await quizApi.bookmark(q.quiz_id);
+    } catch (e) {
+      setSaved((m) => ({ ...m, [q.quiz_id]: on }));
+      toast.error(errorMessage(e));
+    }
+  }
+
+  const incorrect = !!result && !result.correct;
+
+  const panel = (
+    <div className="sess__dropdown">
+      <button className="sess__dropdown-field" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="listbox">
+        <span className={typeCode ? "sess__dropdown-val" : "sess__dropdown-ph"}>
+          {typeCode
+            ? (() => {
+                const t = types.data?.items.find((x) => x.code === typeCode);
+                return t ? `[유형${t.number_label}] ${t.title_ko}` : "선택됨";
+              })()
+            : "✨ 더 집중해서 풀어보고 싶은 문제 유형을 선택해보세요"}
+        </span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d={open ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6"} stroke="#8a929a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <ul className="sess__dropdown-list" role="listbox" aria-label="TOPIK 문제 유형">
+          {(types.data?.items ?? []).map((t) => (
+            <li key={t.code} role="option" aria-selected={typeCode === t.code}>
+              <button
+                className={`sess__dropdown-item ${typeCode === t.code ? "is-selected" : ""}`}
+                onClick={() => {
+                  setTypeCode(t.code);
+                  setOpen(false);
+                  void loadSet(t.code);
+                }}
+              >
+                [유형{t.number_label}] {t.title_ko}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+
+  return (
+    <SessionChrome
+      title={`토픽 ${grade}급`}
+      heading="목표 하루 학습 문제"
+      correct={correctSet.size}
+      total={total}
+      progress={progress}
+      panel={panel}
+      incorrect={incorrect}
+      onAskAi={() => nav("/ai")}
+    >
+      {error ? (
+        <ErrorState message="문제를 불러오지 못했어요." onRetry={() => loadSet(typeCode)} />
+      ) : !cur ? (
+        <LoadingState />
+      ) : (
+        <div className="sess__card">
+          <div className="sess__card-top">
+            <p className="sess__instr sess__instr--topik">문제를 풀어보세요</p>
+            <button className="sess__bookmark" onClick={() => toggleSave(cur)} aria-label={saved[cur.quiz_id] ? "저장 해제" : "저장"} aria-pressed={!!saved[cur.quiz_id]}>
+              {saved[cur.quiz_id] ? "★" : "☆"}
+            </button>
+          </div>
+
+          <QuestionView quiz={cur} value={value} onChange={setValue} disabled={!!result} />
+
+          {result ? (
+            <div className="sess__result">
+              <span className={result.correct ? "sess__result-ok" : "sess__result-no"}>
+                {result.correct ? "정답이에요! 🎉" : "아쉬워요 💪"}
+                {!result.correct && result.correct_answer ? ` · 정답: ${result.correct_answer}` : ""}
+              </span>
+              {result.explanation && <p className="sess__explain">{result.explanation}</p>}
+              <button className="sess__next" onClick={next}>
+                {idx >= total - 1 ? "완료" : "다음"}
+              </button>
+            </div>
+          ) : (
+            <button className="sess__submit" onClick={submit} disabled={!isAnswered(cur, value) || submitting}>
+              {submitting ? <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2.5 }} /> : "제출"}
+            </button>
+          )}
+        </div>
+      )}
+    </SessionChrome>
+  );
+}

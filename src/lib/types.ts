@@ -132,6 +132,15 @@ export interface SavedSentencesPage {
   counts: { total: number; favorite: number; auto_wrong: number; both: number };
 }
 
+/** One TOPIK problem-type option (GET /recommendations/topik-question-types). */
+export interface TopikQuestionType {
+  code: string;
+  section: string;
+  number_label: string;
+  title_en: string;
+  title_ko: string;
+}
+
 /* ---- Quizzes (real shape: material + answer) ---- */
 export type AnswerFormat = "single_choice" | "short_answer" | "free_response";
 export interface QuizChoice {

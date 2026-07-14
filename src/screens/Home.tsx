@@ -179,7 +179,7 @@ export function Home() {
                       </div>
                       <button
                         className="home__hero-cta"
-                        onClick={() => nav(active.category === "topik" ? "/learn/topik" : "/learn/conversation")}
+                        onClick={() => nav(active.category === "topik" ? "/session/topik" : "/session/conversation")}
                       >
                         {done ? "이어서 학습하기" : "바로 시작하기"}
                       </button>

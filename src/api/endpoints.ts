@@ -22,6 +22,7 @@ import type {
   Plan,
   PointsBalance,
   Quiz,
+  TopikQuestionType,
   QuizAttemptResult,
   RankingEntry,
   RecQuota,
@@ -165,6 +166,18 @@ export const recApi = {
       "/recommendations/sentences",
       body,
     ),
+  questions: (body: { section?: string; level?: number; topik_question_type?: string; count?: number } = {}) =>
+    http.post<{
+      track_id: string;
+      section: string | null;
+      level: number;
+      topik_question_type: string | null;
+      items: Quiz[];
+      returned_count: number;
+      quota?: RecQuota;
+    }>("/recommendations/questions", body),
+  topikQuestionTypes: (section: string) =>
+    http.get<{ section: string; items: TopikQuestionType[] }>("/recommendations/topik-question-types", { section }),
 };
 export const examApi = {
   list: (params: { section?: string; edition?: number; year?: number } = {}) =>

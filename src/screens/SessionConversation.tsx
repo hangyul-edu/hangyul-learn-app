@@ -178,8 +178,13 @@ export function SessionConversation() {
       total={total}
       progress={progress}
       panel={panel}
-      incorrect={incorrect}
-      onAskAi={() => nav("/ai")}
+      askContext={
+        !cur
+          ? null
+          : incorrect && result
+            ? { contextKind: "speech_attempt", contextId: result.attempt_id, autoExplain: true, bubble: true }
+            : { contextKind: "sentence", contextId: cur.sentence_id, autoExplain: false, bubble: false }
+      }
     >
       {error ? (
         <ErrorState message="문장을 불러오지 못했어요." onRetry={() => loadSet()} />

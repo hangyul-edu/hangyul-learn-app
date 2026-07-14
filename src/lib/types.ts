@@ -132,6 +132,15 @@ export interface SavedSentencesPage {
   counts: { total: number; favorite: number; auto_wrong: number; both: number };
 }
 
+/** One AI chat message (POST /ai/conversations…). */
+export interface ChatMessage {
+  message_id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  created_at: string;
+  suggestion_chips?: string[];
+}
+
 /** One TOPIK problem-type option (GET /recommendations/topik-question-types). */
 export interface TopikQuestionType {
   code: string;

@@ -3532,6 +3532,7 @@ textarea.input {
 
 /* Goal heading + counter + mascot */
 .sess__goalrow {
+  position: relative;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -3562,12 +3563,17 @@ textarea.input {
 }
 .sess__mascot-wrap {
   position: absolute;
-  right: clamp(18px, 5vw, 24px);
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   gap: 8px;
+  z-index: 6;
 }
 .sess__bubble {
+  border: none;
+  cursor: pointer;
   background: #fff4ec;
   color: #5a4a3a;
   font-size: 12.5px;
@@ -3806,6 +3812,207 @@ textarea.input {
 }
 .sess__submit:disabled {
   background: #b0b9c1;
+  box-shadow: none;
+  cursor: default;
+}
+
+/* ============================ Ask-AI explanation sheet ============================ */
+.askai {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.askai__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 20, 24, 0.6);
+  animation: fade 0.2s;
+}
+.askai__sheet {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: var(--app-max);
+  margin: 0 auto;
+  height: 88dvh;
+  background: #fff;
+  border-radius: 26px 26px 0 0;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: var(--safe-bottom);
+  animation: sheet-up 0.28s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.askai__header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px 8px;
+}
+.askai__title {
+  margin: 0;
+  color: #111;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(20px, 6vw, 26px);
+}
+.askai__close {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.askai__identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 22px 14px;
+}
+.askai__id-face {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid #ffc93b;
+  background: #fff6e9;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.askai__id-face > svg {
+  width: 78%;
+}
+.askai__id-name {
+  color: #272c30;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(17px, 5vw, 21px);
+}
+.askai__messages {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 22px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.askai__msg {
+  max-width: 84%;
+  padding: 15px 17px;
+  border-radius: 22px;
+  font-size: clamp(15px, 4.4vw, 17px);
+  line-height: 1.6;
+  color: #222;
+  word-break: break-word;
+}
+.askai__msg--ai {
+  align-self: flex-start;
+  background: #fff0dd;
+  border-top-left-radius: 6px;
+}
+.askai__msg--user {
+  align-self: flex-end;
+  background: #edf1f6;
+  border-top-right-radius: 6px;
+}
+.askai__msg-line {
+  margin: 0;
+}
+.askai__msg-line + .askai__msg-line {
+  margin-top: 8px;
+}
+.askai__msg--loading {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.askai__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #d3a878;
+  animation: askai-dot 1s infinite ease-in-out;
+}
+.askai__dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.askai__dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes askai-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+.askai__retry {
+  margin-top: 8px;
+  border: none;
+  background: none;
+  color: #ff5b00;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+.askai__disclaimer {
+  margin: 0;
+  padding: 9px 16px;
+  background: #f5f5f5;
+  color: #b5bdc5;
+  font-size: 12px;
+  text-align: center;
+  line-height: 1.4;
+}
+.askai__composer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px calc(10px + var(--safe-bottom));
+}
+.askai__input {
+  flex: 1;
+  min-width: 0;
+  height: 50px;
+  border: 1px solid #ececea;
+  border-radius: 14px;
+  background: #fff;
+  padding: 0 16px;
+  font-size: 15px;
+  color: #272c30;
+}
+.askai__input::placeholder {
+  color: #aeb7be;
+}
+.askai__send {
+  flex: 0 0 auto;
+  width: 50px;
+  height: 50px;
+  border: none;
+  border-radius: 13px;
+  background: #ff5b00;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 10px rgba(255, 91, 0, 0.28);
+}
+.askai__send:disabled {
+  opacity: 0.45;
   box-shadow: none;
   cursor: default;
 }

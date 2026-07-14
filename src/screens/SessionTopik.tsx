@@ -156,8 +156,13 @@ export function SessionTopik() {
       total={total}
       progress={progress}
       panel={panel}
-      incorrect={incorrect}
-      onAskAi={() => nav("/ai")}
+      askContext={
+        !cur
+          ? null
+          : incorrect && result
+            ? { contextKind: "quiz_attempt", contextId: result.attempt_id, autoExplain: true, bubble: true }
+            : { contextKind: "quiz", contextId: cur.quiz_id, autoExplain: false, bubble: false }
+      }
     >
       {error ? (
         <ErrorState message="문제를 불러오지 못했어요." onRetry={() => loadSet(typeCode)} />

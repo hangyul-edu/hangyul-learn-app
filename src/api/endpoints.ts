@@ -21,6 +21,7 @@ import type {
   PaymentMethod,
   Plan,
   PointsBalance,
+  ChatMessage,
   Quiz,
   TopikQuestionType,
   QuizAttemptResult,
@@ -210,6 +211,23 @@ export const aiApi = {
   messages: (id: string) => http.get<{ items: unknown[] }>(`/ai/conversations/${id}/messages`),
   send: (id: string, content: string, mode = "tutor") =>
     http.post<{ reply?: string; message?: unknown }>(`/ai/conversations/${id}/messages`, { content, mode }),
+  /** Start a context-anchored conversation (e.g. explain the wrong answer). */
+  startConversation: (body: {
+    topic?: string;
+    initial_message?: string;
+    auto_assistant_reply?: boolean;
+    context?: Record<string, unknown>;
+  }) =>
+    http.post<{ conversation: { conversation_id: string; title: string }; first_assistant_message: ChatMessage | null }>(
+      "/ai/conversations",
+      body,
+    ),
+  /** Follow-up message in an existing conversation. */
+  sendMessage: (id: string, content: string) =>
+    http.post<{ user_message: ChatMessage; assistant_message: ChatMessage }>(
+      `/ai/conversations/${id}/messages`,
+      { content },
+    ),
 };
 
 /* ---------------------------- Gamification -------------------------- */

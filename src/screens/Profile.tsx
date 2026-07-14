@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ConfirmDialog, Dialog } from "../components/ui/Modal";
-import { Button } from "../components/ui/kit";
-import { PasswordField } from "../components/ui/Field";
+import { ConfirmDialog } from "../components/ui/Modal";
+import { WithdrawModal } from "../components/WithdrawModal";
 import { CharacterArt, ProfilePlaceholder, type AvatarKey } from "../components/brand/ProfileAssets";
 import { ChevronRight } from "../components/brand/HomeIcons";
 import { subApi, dashboardApi, authApi } from "../api/endpoints";
@@ -66,19 +65,19 @@ export function Profile() {
   const { me, logout, hardSignOut } = useAuth();
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
-  const [withdrawPw, setWithdrawPw] = useState("");
   const [withdrawing, setWithdrawing] = useState(false);
 
   async function withdraw() {
+    if (withdrawing) return; // guard duplicate taps on the irreversible request
     setWithdrawing(true);
     try {
-      await authApi.deleteAccount(withdrawPw || null);
+      await authApi.deleteAccount(null);
+      // hardSignOut clears tokens, current-user, and every user-scoped query cache.
       hardSignOut();
       nav("/welcome", { replace: true });
     } catch (e) {
       toast.error(errorMessage(e));
-    } finally {
-      setWithdrawing(false);
+      setWithdrawing(false); // stay on the modal; allow retry (no local deletion)
     }
   }
 
@@ -211,19 +210,12 @@ export function Profile() {
         }}
       />
 
-      <Dialog
+      <WithdrawModal
         open={withdrawOpen}
-        onClose={() => !withdrawing && setWithdrawOpen(false)}
-        emoji="⚠️"
-        title="정말 탈퇴할까요?"
-        text="모든 학습 기록이 삭제되며 되돌릴 수 없어요."
-      >
-        <div className="stack" style={{ gap: 10 }}>
-          <PasswordField placeholder="비밀번호 확인" value={withdrawPw} onChange={(e) => setWithdrawPw(e.target.value)} />
-          <Button variant="danger" block loading={withdrawing} onClick={withdraw}>탈퇴하기</Button>
-          <Button variant="ghost" block disabled={withdrawing} onClick={() => setWithdrawOpen(false)}>취소</Button>
-        </div>
-      </Dialog>
+        loading={withdrawing}
+        onCancel={() => !withdrawing && setWithdrawOpen(false)}
+        onConfirm={withdraw}
+      />
     </div>
   );
 }

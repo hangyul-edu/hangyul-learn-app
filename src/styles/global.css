@@ -4965,3 +4965,111 @@ textarea.input {
   box-shadow: 0 8px 16px rgba(174, 183, 190, 0.3);
   cursor: default;
 }
+
+/* ============================ Withdrawal reconfirmation modal (회원 탈퇴) ============================ */
+.wd__overlay {
+  background: rgba(0, 0, 0, 0.68);
+  z-index: 200;
+}
+.wd {
+  width: 100%;
+  max-width: 400px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 20px;
+  padding: clamp(30px, 6vw, 40px) clamp(24px, 6vw, 34px) clamp(24px, 5vw, 34px);
+  box-shadow: 0 20px 48px rgba(20, 22, 25, 0.32);
+  animation: pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  text-align: center;
+}
+.wd__title {
+  margin: 0;
+  color: #272c30;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(22px, 6vw, 26px);
+}
+.wd__guide {
+  margin: clamp(14px, 3vw, 20px) 0 0;
+  color: #7a8490;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(15px, 4.2vw, 17px);
+  line-height: 1.5;
+}
+.wd__panel {
+  margin-top: clamp(20px, 4.5vw, 28px);
+  background: #f4f5f5;
+  border-radius: 15px;
+  padding: clamp(20px, 5vw, 28px) clamp(20px, 5vw, 26px) clamp(18px, 4.5vw, 26px);
+  text-align: left;
+}
+.wd__panel-title {
+  margin: 0 0 clamp(12px, 3vw, 18px);
+  color: #5f6972;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(15px, 4.2vw, 17px);
+}
+.wd__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(11px, 2.6vw, 15px);
+}
+.wd__item {
+  position: relative;
+  padding-left: 15px;
+  color: #272c30;
+  font-size: clamp(13.5px, 3.9vw, 15.5px);
+  line-height: 1.55;
+}
+.wd__item::before {
+  content: "•";
+  position: absolute;
+  left: 2px;
+  top: -0.05em;
+}
+.wd__item--warn {
+  color: #ff4545;
+}
+.wd__actions {
+  display: flex;
+  gap: 14px;
+  margin-top: clamp(20px, 4.5vw, 28px);
+}
+.wd__btn {
+  flex: 1 1 0;
+  min-width: 0;
+  height: clamp(58px, 15vw, 66px);
+  border: none;
+  border-radius: 18px;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(15px, 4.4vw, 17px);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 14px rgba(37, 43, 47, 0.14);
+  transition: transform 0.08s ease, opacity 0.15s;
+}
+.wd__btn:active {
+  transform: scale(0.98);
+}
+.wd__btn:disabled {
+  cursor: default;
+}
+.wd__btn--cancel {
+  background: #b8c1c9;
+}
+.wd__btn--go {
+  background: #ff5b00;
+  box-shadow: 0 6px 14px rgba(255, 91, 0, 0.26);
+}
+.wd__btn--go:disabled {
+  opacity: 0.85;
+}

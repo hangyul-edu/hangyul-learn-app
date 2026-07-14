@@ -1,16 +1,23 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 /**
- * Account-withdrawal FAILURE modal — shown only for a temporary / unexpected
- * error after the withdrawal API was attempted (network failure, timeout, 5xx,
- * or unknown). It calls no API, logs nobody out, and clears no state. The single
- * 확인 action just closes it (onClose) so the user can retry later. Backdrop is
- * non-dismissable; focus is trapped and restored to the opener on close.
- *
- * Not used for wrong-password / validation errors (those stay inline in the
- * password modal) or for success.
+ * Shared temporary-failure alert modal (withdrawal failed / logout failed / …).
+ * Shown only for a retryable failure after the action's API was attempted. It
+ * calls no API, logs nobody out, and clears no state — the single 확인 action
+ * closes it (onClose) so the user can retry later. Backdrop is non-dismissable;
+ * focus is trapped and restored to the opener on close.
  */
-export function WithdrawFailModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function FailModal({
+  open,
+  title,
+  description,
+  onClose,
+}: {
+  open: boolean;
+  title: string;
+  description: ReactNode;
+  onClose: () => void;
+}) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
 
@@ -64,18 +71,14 @@ export function WithdrawFailModal({ open, onClose }: { open: boolean; onClose: (
       >
         <div className="wfa__icon" aria-hidden="true">
           <svg width="46" height="46" viewBox="0 0 48 48" fill="none">
-            <path d="M24 9L43 40H5L24 9z" stroke="#E98282" strokeWidth="2.6" strokeLinejoin="round" />
-            <path d="M24 20v9" stroke="#E98282" strokeWidth="2.8" strokeLinecap="round" />
-            <circle cx="24" cy="34" r="1.7" fill="#E98282" />
+            <path d="M24 9L43 40H5L24 9z" stroke="#FF6F78" strokeWidth="2.6" strokeLinejoin="round" />
+            <path d="M24 20v9" stroke="#FF6F78" strokeWidth="2.8" strokeLinecap="round" />
+            <circle cx="24" cy="34" r="1.7" fill="#FF6F78" />
           </svg>
         </div>
 
-        <h2 className="wfa__title" id="wfa-title">탈퇴에 실패했어요</h2>
-        <p className="wfa__body" id="wfa-desc">
-          일시적인 오류가 발생했어요
-          <br />
-          잠시 후 다시 시도해 주세요
-        </p>
+        <h2 className="wfa__title" id="wfa-title">{title}</h2>
+        <p className="wfa__body" id="wfa-desc">{description}</p>
 
         <button className="wfa__btn" onClick={onClose}>확인</button>
       </div>

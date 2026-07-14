@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { http, setAuthHandlers } from "../lib/http";
+import { http, setAuthHandlers, ApiError, NetworkError } from "../lib/http";
 import { clearSession, loadSession, saveSession } from "../lib/storage";
 import type { StoredSession } from "../lib/storage";
 import type { Me, TokenResponse } from "../lib/types";
@@ -84,19 +84,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     qc.clear();
   }
 
-  // Server-side revocation only. Best-effort: local sign-out completes the logout
-  // regardless (offline / already-revoked policy), so failures are swallowed.
+  // Server-side revocation only (no local sign-out). Resolves on success and on
+  // a definitive 4xx (an already-invalid/expired session is effectively logged
+  // out). THROWS only for temporary/retryable failures (5xx or network), so the
+  // caller can keep the user signed in and surface a failure modal.
   async function revokeSession() {
     const refresh = sessionRef.current?.refreshToken;
+    if (!refresh) return; // nothing to revoke → treat as done
     try {
-      if (refresh) await http.post("/auth/logout", { refresh_token: refresh });
-    } catch {
-      /* ignore — we sign out locally regardless */
+      await http.post("/auth/logout", { refresh_token: refresh });
+    } catch (e) {
+      if (e instanceof NetworkError) throw e;
+      if (e instanceof ApiError && e.status >= 500) throw e;
+      /* 4xx / already-revoked → normalize as effectively logged out (done) */
     }
   }
 
   async function logout() {
-    await revokeSession();
+    // Legacy always-sign-out path: revoke best-effort, sign out locally regardless.
+    try {
+      await revokeSession();
+    } catch {
+      /* ignore */
+    }
     hardSignOut();
   }
 

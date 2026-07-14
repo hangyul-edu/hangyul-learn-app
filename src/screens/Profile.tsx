@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { LogoutModal } from "../components/LogoutModal";
 import { WithdrawModal } from "../components/WithdrawModal";
 import { WithdrawPasswordModal } from "../components/WithdrawPasswordModal";
-import { WithdrawFailModal } from "../components/WithdrawFailModal";
+import { FailModal } from "../components/FailModal";
 import { SuccessModal } from "../components/SuccessModal";
 import { CharacterArt, ProfilePlaceholder, type AvatarKey } from "../components/brand/ProfileAssets";
 import { ChevronRight } from "../components/brand/HomeIcons";
@@ -67,6 +67,7 @@ export function Profile() {
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [logoutDoneOpen, setLogoutDoneOpen] = useState(false);
+  const [logoutFailOpen, setLogoutFailOpen] = useState(false);
   const logoutFinishedRef = useRef(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
@@ -79,13 +80,22 @@ export function Profile() {
   // Logout modal's 로그아웃: revoke the session server-side, then show the success
   // modal. Local cleanup (hardSignOut) is deferred until the user dismisses it —
   // the background More screen stays frozen behind the overlay in the meantime.
+  // revokeSession resolves on success AND on an already-expired session (4xx,
+  // normalized as logged out); it throws only for temporary failures (5xx /
+  // network) → we keep the user signed in and show the failure modal.
   async function doLogout() {
     if (loggingOut) return; // guard duplicate taps / requests
     setLoggingOut(true);
-    await revokeSession(); // best-effort; resolves even offline/already-revoked
-    setLoggingOut(false);
-    setLogoutOpen(false); // no stacking under the success modal
-    setLogoutDoneOpen(true);
+    try {
+      await revokeSession();
+      setLoggingOut(false);
+      setLogoutOpen(false); // no stacking under the success modal
+      setLogoutDoneOpen(true);
+    } catch {
+      setLoggingOut(false);
+      setLogoutOpen(false); // replace confirmation with the failure modal
+      setLogoutFailOpen(true);
+    }
   }
 
   // X / 확인 on the logout-success modal: identical terminal action, run once.
@@ -328,12 +338,34 @@ export function Profile() {
 
       {/* 확인 returns to the password step in a clean, retry-ready state; no API,
           no logout, no navigation. */}
-      <WithdrawFailModal
+      <FailModal
         open={withdrawFailOpen}
+        title="탈퇴에 실패했어요"
+        description={
+          <>
+            일시적인 오류가 발생했어요
+            <br />
+            잠시 후 다시 시도해 주세요
+          </>
+        }
         onClose={() => {
           setWithdrawFailOpen(false);
           setPwOpen(true);
         }}
+      />
+
+      {/* Logout failed (temporary). 확인 just closes → user stays signed in on More. */}
+      <FailModal
+        open={logoutFailOpen}
+        title="로그아웃에 실패했어요"
+        description={
+          <>
+            일시적인 오류가 발생했어요
+            <br />
+            잠시 후 다시 시도해 주세요
+          </>
+        }
+        onClose={() => setLogoutFailOpen(false)}
       />
 
       <SuccessModal

@@ -5752,7 +5752,7 @@ textarea.input {
   height: clamp(82px, 23vw, 94px);
   margin: 0 auto;
   border-radius: 50%;
-  background: #f8ecec;
+  background: #fdefef;
   display: grid;
   place-items: center;
 }

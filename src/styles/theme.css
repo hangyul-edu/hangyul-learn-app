@@ -63,7 +63,7 @@
 
   /* ---- Layout ---- */
   --app-max: 480px;
-  --nav-h: 74px;
+  --nav-h: 84px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }

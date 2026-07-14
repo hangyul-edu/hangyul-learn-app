@@ -5120,3 +5120,77 @@ textarea.input {
   font-size: clamp(12.5px, 3.6vw, 14px);
   color: var(--danger);
 }
+
+/* ---- Withdrawal completion modal (탈퇴가 완료됐습니다) ---- */
+.wdd {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 16px;
+  padding: clamp(40px, 9vw, 54px) clamp(24px, 6vw, 30px) clamp(24px, 5vw, 30px);
+  box-shadow: 0 20px 48px rgba(20, 22, 25, 0.32);
+  animation: pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  text-align: center;
+}
+.wdd__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.wdd__close:active {
+  opacity: 0.6;
+}
+.wdd__icon {
+  width: clamp(84px, 24vw, 98px);
+  height: clamp(84px, 24vw, 98px);
+  margin: 0 auto;
+  border-radius: 50%;
+  background: #e8f8f7;
+  display: grid;
+  place-items: center;
+}
+.wdd__title {
+  margin: clamp(20px, 4.5vw, 28px) 0 0;
+  color: #111;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(21px, 5.8vw, 26px);
+}
+.wdd__copy {
+  margin: clamp(12px, 3vw, 18px) 0 0;
+  color: #7a8490;
+  font-size: clamp(14px, 4vw, 16px);
+  line-height: 1.55;
+}
+.wdd__btn {
+  width: 100%;
+  height: clamp(64px, 17vw, 78px);
+  margin-top: clamp(24px, 5.5vw, 34px);
+  border: none;
+  border-radius: 17px;
+  background: #ff5b00;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(16px, 4.6vw, 19px);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 18px rgba(255, 91, 0, 0.24);
+  transition: transform 0.08s ease;
+}
+.wdd__btn:active {
+  transform: scale(0.99);
+}

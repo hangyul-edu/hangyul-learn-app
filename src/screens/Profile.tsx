@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ConfirmDialog } from "../components/ui/Modal";
 import { WithdrawModal } from "../components/WithdrawModal";
 import { WithdrawPasswordModal } from "../components/WithdrawPasswordModal";
+import { WithdrawDoneModal } from "../components/WithdrawDoneModal";
 import { CharacterArt, ProfilePlaceholder, type AvatarKey } from "../components/brand/ProfileAssets";
 import { ChevronRight } from "../components/brand/HomeIcons";
 import { subApi, dashboardApi, authApi } from "../api/endpoints";
@@ -67,6 +68,8 @@ export function Profile() {
   const [pwOpen, setPwOpen] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
+  const [doneOpen, setDoneOpen] = useState(false);
+  const finishedRef = useRef(false);
 
   // First warning modal's 탈퇴: NO api — just advance to the password step.
   function toPasswordStep() {
@@ -76,19 +79,30 @@ export function Profile() {
   }
 
   // Password step's 탈퇴: server verifies the password and withdraws atomically.
+  // On terminal success we show the completion modal (still a frozen, overlay-
+  // blocked background) and defer local cleanup until the user dismisses it.
   async function withdraw(password: string) {
     if (withdrawing) return; // guard duplicate taps on the irreversible request
     setWithdrawing(true);
     setPwError(null);
     try {
       await authApi.deleteAccount(password);
-      // hardSignOut clears tokens, current-user, and every user-scoped query cache.
-      hardSignOut();
-      nav("/welcome", { replace: true });
+      setWithdrawing(false);
+      setPwOpen(false); // no stacking under the completion modal
+      setDoneOpen(true);
     } catch (e) {
       setPwError(errorMessage(e)); // stay on the modal; account untouched, allow retry
       setWithdrawing(false);
     }
+  }
+
+  // X / 확인 on the completion modal: identical terminal action, run once.
+  function finishWithdrawal() {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    // hardSignOut clears tokens, current-user, and every user-scoped query cache.
+    hardSignOut();
+    nav("/welcome", { replace: true });
   }
 
   const sub = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
@@ -238,6 +252,8 @@ export function Profile() {
         }}
         onSubmit={withdraw}
       />
+
+      <WithdrawDoneModal open={doneOpen} onClose={finishWithdrawal} />
     </div>
   );
 }

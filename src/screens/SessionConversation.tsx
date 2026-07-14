@@ -8,6 +8,16 @@ import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import type { Sentence, SpeechAttempt } from "../lib/types";
 
+/** Blue circular check for the correct-answer feedback card. */
+function CheckIcon() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="12" r="11" fill="#5D7CFF" />
+      <path d="M7 12.5l3.2 3.2L17 8.8" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </svg>
+  );
+}
+
 /** Remaining items to satisfy today's conversation goal (server-derived). */
 function useRemaining() {
   const q = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
@@ -175,9 +185,44 @@ export function SessionConversation() {
         <ErrorState message="문장을 불러오지 못했어요." onRetry={() => loadSet()} />
       ) : !cur ? (
         <LoadingState />
+      ) : result?.correct ? (
+        /* Correct-answer feedback state: interactive controls replaced by the
+           completed blue card. Counter/progress already updated in record(). */
+        <>
+          <div className="sess__card sess__card--conv sess__card--correct">
+            <div className="sess__card-top">
+              <div className="sess__correct-head">
+                <span className="sess__check">
+                  <CheckIcon />
+                </span>
+                <span>정답이에요!</span>
+              </div>
+              <button className="sess__bookmark" onClick={() => toggleSave(cur)} aria-label={saved[cur.sentence_id] ? "저장 해제" : "저장"} aria-pressed={!!saved[cur.sentence_id]}>
+                {saved[cur.sentence_id] ? "★" : "☆"}
+              </button>
+            </div>
+            <div className="sess__sentence sess__sentence--correct" role="status" aria-label={`정답입니다. ${cur.korean}. ${cur.translation}`}>
+              {cur.korean}
+            </div>
+            <div className="sess__trans">{cur.translation}</div>
+          </div>
+
+          <div className="sess__mic-wrap">
+            {/* Item is locked once answered — no second evaluation. */}
+            <button className="sess__mic" disabled aria-label="이 문제는 완료되었어요">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="9" y="3" width="6" height="11" rx="3" fill="#FF5B00" />
+                <path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="#FF5B00" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+          <button className="sess__next" onClick={next}>
+            {idx >= total - 1 ? "완료" : "다음"}
+          </button>
+        </>
       ) : (
         <>
-          <div className="sess__card sess__card--conv">
+          <div className={`sess__card sess__card--conv ${result ? "sess__card--incorrect" : ""}`}>
             <div className="sess__card-top">
               <p className="sess__instr">빈칸을 채워 완성해봐요✨</p>
               <button className="sess__bookmark" onClick={() => toggleSave(cur)} aria-label={saved[cur.sentence_id] ? "저장 해제" : "저장"} aria-pressed={!!saved[cur.sentence_id]}>
@@ -211,8 +256,8 @@ export function SessionConversation() {
 
           {result ? (
             <div className="sess__result">
-              <span className={result.correct ? "sess__result-ok" : "sess__result-no"}>
-                {result.correct ? "훌륭해요! 👏" : "조금 더 연습해요 💪"} · {result.pronunciation_score}점
+              <span className="sess__result-no">
+                조금 더 연습해요 💪 · {result.pronunciation_score}점
               </span>
               <button className="sess__next" onClick={next}>
                 {idx >= total - 1 ? "완료" : "다음"}

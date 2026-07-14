@@ -51,16 +51,26 @@ export function SessionChrome({
             <h1 className="sess__title">{title}</h1>
           </header>
 
-          {/* Collapsible AI-customization control */}
+          {/* Collapsible AI-customization control. Expanded: handle on the left,
+              panel to its right. Collapsed: only the handle, right-aligned. The
+              region keeps a stable height so surrounding content never jumps. */}
           <div className={`sess__ai ${collapsed ? "is-collapsed" : ""}`}>
             <button
               className="sess__ai-handle"
               onClick={() => setCollapsed((c) => !c)}
-              aria-label={collapsed ? "맞춤 설정 펼치기" : "맞춤 설정 접기"}
+              aria-label={collapsed ? "맞춤 설정 입력창 펼치기" : "맞춤 설정 입력창 접기"}
               aria-expanded={!collapsed}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d={collapsed ? "M9 6l6 6-6 6" : "M15 6l-6 6 6 6"} stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                {/* Arrow shows the NEXT action: collapsed → expand (points left);
+                    expanded → collapse (points right). */}
+                <path
+                  d={collapsed ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6"}
+                  stroke="#fff"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </button>
             {!collapsed && <div className="sess__ai-panel">{panel}</div>}

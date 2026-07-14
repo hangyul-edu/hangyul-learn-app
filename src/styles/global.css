@@ -3400,16 +3400,23 @@ textarea.input {
   font-size: clamp(18px, 5vw, 21px);
 }
 
-/* Collapsible AI panel */
+/* Collapsible AI panel — expanded: handle on the left, panel filling to its
+   right. Collapsed: only the handle, right-aligned. Region height stays stable
+   (56px) either way so nothing jumps. */
 .sess__ai {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: 8px;
   margin-top: 16px;
+  min-height: 56px;
+}
+.sess__ai.is-collapsed {
+  justify-content: flex-end;
 }
 .sess__ai-handle {
   flex: 0 0 auto;
   width: 34px;
+  height: 56px;
   border: none;
   border-radius: 12px;
   background: #ffb62b;
@@ -3614,9 +3621,11 @@ textarea.input {
   background: #fff;
   box-shadow: 0 8px 20px rgba(80, 70, 60, 0.08);
 }
+/* Neutral before answering — the transparent 3px reserves space so applying a
+   result colour later doesn't shift the layout. The result colour is added only
+   after a server-confirmed answer via --correct / --incorrect. */
 .sess__card--conv {
-  border: 3px solid #139bff;
-  box-shadow: none;
+  border: 3px solid transparent;
 }
 .sess__card-top {
   display: flex;
@@ -3636,6 +3645,33 @@ textarea.input {
 .sess__instr--topik {
   color: #ff5b00;
   text-align: left;
+}
+/* Correct-answer feedback card */
+.sess__card--correct {
+  padding: 26px 22px;
+  border-color: #139bff;
+  box-shadow: none;
+}
+.sess__card--incorrect {
+  border-color: #ff5b00;
+  box-shadow: none;
+}
+.sess__correct-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #272c30;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(18px, 5.2vw, 22px);
+}
+.sess__check {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.sess__sentence--correct {
+  color: #4e7bff;
+  margin-top: 22px;
 }
 .sess__bookmark {
   flex: 0 0 auto;

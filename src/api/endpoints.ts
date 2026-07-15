@@ -13,6 +13,8 @@ import type {
   PaymentRecovery,
   LeaguePosition,
   LeagueSeason,
+  LeagueHistorySeasonsResponse,
+  LeagueHistoryResponse,
   LearningPreferences,
   Lecture,
   Me,
@@ -303,6 +305,14 @@ export const gameApi = {
   // `/leagues/rankings?season_id=` path did not exist and 404'd.
   currentRankings: () => http.get<RankingResponse>("/leagues/current/rankings", { limit: 30 }),
   friendRankings: () => http.get<RankingResponse>("/leagues/friends/rankings", { limit: 30 }),
+  // League History screen: calendar-quarter dropdown + paginated weekly records.
+  leagueHistorySeasons: () => http.get<LeagueHistorySeasonsResponse>("/leagues/history/seasons"),
+  leagueHistory: (params: { seasonId?: string; cursor?: string; limit?: number } = {}) =>
+    http.get<LeagueHistoryResponse>("/leagues/history", {
+      season_id: params.seasonId,
+      cursor: params.cursor,
+      limit: params.limit ?? 10,
+    }),
   seasons: () => http.get<{ current?: { season_id: string }; items?: { season_id: string }[] }>("/leagues/seasons"),
   attendanceStatus: () => http.get<{ checked_in_today?: boolean; consecutive_days?: number }>("/attendance/me"),
   checkIn: () => http.post<{ points_awarded?: number; consecutive_days?: number }>("/attendance/check-in"),

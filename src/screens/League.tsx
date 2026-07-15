@@ -285,7 +285,7 @@ export function League() {
               My 포인트
             </button>
           </div>
-          <button className="lg__history" onClick={() => nav("/points")} aria-label="리그 히스토리 보기">
+          <button className="lg__history" onClick={() => nav("/league/history")} aria-label="리그 히스토리 보기">
             히스토리
           </button>
         </div>

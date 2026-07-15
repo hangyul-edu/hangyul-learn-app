@@ -367,6 +367,40 @@ export interface RankingResponse {
   me?: RankingEntry | null;
 }
 
+/* ---- League history (calendar-quarter grouping over weekly records) ---- */
+export type LeagueQuarter = "spring" | "summer" | "fall" | "winter";
+export interface LeagueHistorySeason {
+  season_id: string; // e.g. "2026-spring"
+  year: number;
+  quarter: LeagueQuarter;
+  label: string; // e.g. "2026 봄 시즌"
+  starts_at: string;
+  ends_at: string;
+  is_current: boolean;
+}
+export interface LeagueHistorySeasonsResponse {
+  seasons: LeagueHistorySeason[];
+  default_season_id: string;
+}
+export interface LeagueHistoryItem {
+  league_week_id: string; // weekly season id, e.g. "2026-W18"
+  season_id: string; // the calendar quarter it belongs to
+  week_start: string; // ISO date (Monday)
+  week_end: string; // ISO date (Sunday)
+  is_current: boolean;
+  rank: number | null;
+  points: number;
+  tier: string;
+  tier_label: string;
+  league_kind?: string;
+  outcome?: string | null;
+}
+export interface LeagueHistoryResponse {
+  season: LeagueHistorySeason;
+  items: LeagueHistoryItem[];
+  next_cursor: string | null;
+}
+
 /* ---- Friends ---- */
 export interface Friend {
   user_id: string;

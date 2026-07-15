@@ -63,6 +63,7 @@ function renderScreen() {
         <Routes>
           <Route path="/league" element={<League />} />
           <Route path="/points" element={<div>POINTS_SCREEN</div>} />
+          <Route path="/league/history" element={<div>HISTORY_SCREEN</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -188,11 +189,12 @@ describe("League screen", () => {
     expect(await screen.findByText("Yellow 리그")).toBeInTheDocument();
   });
 
-  it("navigates to /points from the 히스토리 button", async () => {
+  it("opens League History (not points) from the 히스토리 button", async () => {
     renderScreen();
     await screen.findByText("Yellow 리그");
     await userEvent.click(screen.getByRole("button", { name: "리그 히스토리 보기" }));
-    expect(await screen.findByText("POINTS_SCREEN")).toBeInTheDocument();
+    expect(await screen.findByText("HISTORY_SCREEN")).toBeInTheDocument();
+    expect(screen.queryByText("POINTS_SCREEN")).not.toBeInTheDocument();
   });
 
   it("switches to the friend league board on the 친구 리그 tab", async () => {

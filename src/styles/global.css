@@ -2770,12 +2770,13 @@ textarea.input {
 }
 .home__bell-dot {
   position: absolute;
-  top: 7px;
-  right: 8px;
-  width: 8px;
-  height: 8px;
+  top: 6px;
+  right: 7px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  background: #ff5b00;
+  background: #ff3b30; /* clear notification red */
+  border: 1.5px solid #ffffff; /* separate the dot from the bell glyph */
 }
 
 /* Streak card */
@@ -7146,7 +7147,7 @@ textarea.input {
   border-radius: var(--r-md, 16px);
   border: 1px solid #e7ddd2;
   background: #ffffff;
-  cursor: pointer;
+  /* Informational only — not interactive (no tap / no navigation). */
 }
 .ntf__card.is-unread {
   background: #fff5ec;
@@ -7154,8 +7155,6 @@ textarea.input {
   box-shadow: 0 4px 14px rgba(255, 91, 0, 0.08);
 }
 .ntf__card.is-read { box-shadow: none; }
-.ntf__card:active { opacity: 0.85; }
-.ntf__card:focus-visible { outline: 2px solid var(--brand-500, #ff5b00); outline-offset: 2px; }
 
 .ntf__card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .ntf__badge {

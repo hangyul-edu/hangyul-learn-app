@@ -9,7 +9,6 @@ import type { NotificationItem } from "../lib/types";
 vi.mock("../api/endpoints", () => ({
   notifApi: {
     list: vi.fn(),
-    markRead: vi.fn(),
     readAll: vi.fn(),
   },
 }));
@@ -95,7 +94,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   ioInstances = [];
   api.list.mockResolvedValue(page([notif()]));
-  api.markRead.mockResolvedValue(undefined);
+  api.readAll.mockResolvedValue(undefined);
 });
 
 /* -------------------------------- tests --------------------------------- */
@@ -145,30 +144,30 @@ describe("Notifications screen", () => {
       ]),
     );
     renderScreen();
-    const unread = (await screen.findByText("미읽음")).closest("button")!;
-    const read = screen.getByText("읽음").closest("button")!;
+    const unread = (await screen.findByText("미읽음")).closest(".ntf__card") as HTMLElement;
+    const read = screen.getByText("읽음").closest(".ntf__card") as HTMLElement;
     expect(unread.className).toContain("is-unread");
     expect(read.className).toContain("is-read");
     expect(within(unread).getByText("학습")).toBeInTheDocument();
     expect(within(read).getByText("소셜")).toBeInTheDocument();
   });
 
-  it("tapping a notification marks it read and navigates to its deep link", async () => {
-    api.list.mockResolvedValue(page([notif({ notification_id: "n1", title: "출석", deep_link: "/points" })]));
+  it("opening the inbox marks all read and clears the bell badge", async () => {
+    api.list.mockResolvedValue(page([notif({ title: "출석", deep_link: "/points" })]));
     renderScreen();
-    await userEvent.click(await screen.findByText("출석"));
-    expect(api.markRead).toHaveBeenCalledWith("n1");
-    await waitFor(() => expect(screen.getByTestId("route")).toHaveTextContent("/points"));
+    await screen.findByText("출석");
+    await waitFor(() => expect(api.readAll).toHaveBeenCalledTimes(1));
   });
 
-  it("informational notifications (no deep link) mark read without navigating", async () => {
-    api.list.mockResolvedValue(page([notif({ notification_id: "n2", title: "정보", deep_link: null })]));
+  it("notification cards are informational only — no navigation on tap", async () => {
+    api.list.mockResolvedValue(page([notif({ notification_id: "n1", title: "출석 알림", deep_link: "/points" })]));
     renderScreen();
-    const card = (await screen.findByText("정보")).closest("button")!;
+    const card = (await screen.findByText("출석 알림")).closest(".ntf__card") as HTMLElement;
+    // Not a button/link, and clicking it does not navigate away.
+    expect(card.tagName).not.toBe("BUTTON");
+    expect(card.tagName).not.toBe("A");
     await userEvent.click(card);
-    expect(api.markRead).toHaveBeenCalledWith("n2");
-    expect(screen.queryByTestId("route")).not.toBeInTheDocument(); // stayed on the screen
-    await waitFor(() => expect(card.className).toContain("is-read")); // optimistic read applied
+    expect(screen.queryByTestId("route")).not.toBeInTheDocument(); // still on /notifications
   });
 
   it("shows the all-notifications empty state", async () => {
@@ -212,17 +211,6 @@ describe("Notifications screen", () => {
     resolveLearning(page([notif({ title: "학습 항목" })]));
     await waitFor(() => expect(screen.queryByText("학습 항목")).not.toBeInTheDocument());
     expect(screen.getByText("공지 항목")).toBeInTheDocument();
-  });
-
-  it("read-state failure restores the unread style", async () => {
-    api.list.mockResolvedValue(page([notif({ notification_id: "n3", title: "실패건", read: false, deep_link: null })]));
-    api.markRead.mockRejectedValue(new Error("boom"));
-    renderScreen();
-    const card = (await screen.findByText("실패건")).closest("button")!;
-    await userEvent.click(card);
-    await waitFor(() => expect(api.markRead).toHaveBeenCalledWith("n3"));
-    // After the definitive failure the card is restored to unread, not stuck read.
-    await waitFor(() => expect(card.className).toContain("is-unread"));
   });
 
   it("scroll near the bottom loads the next page, appending + deduping by id", async () => {

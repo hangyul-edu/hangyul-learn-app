@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { SkeletonList } from "../components/ui/states";
 import { notifApi } from "../api/endpoints";
-import { useToast } from "../hooks/toast";
 import { GROUP_LABEL, bucketKey, bucketLabel, relativeTime } from "../lib/notifications";
 import type { NotificationGroup, NotificationItem } from "../lib/types";
 
@@ -25,14 +24,6 @@ const BADGE_FG: Record<NotificationGroup, string> = {
   announcement: "#2f7a3d",
   social: "#5b4bb0",
 };
-
-/** Map a stored deep link to a real in-app route, or null when there's no
- *  valid destination (informational notification → mark read, don't navigate). */
-function resolveRoute(deepLink?: string | null): string | null {
-  if (!deepLink || !deepLink.startsWith("/")) return null;
-  if (deepLink.startsWith("/leagues")) return "/league"; // season/group deep link → league tab
-  return deepLink; // /points, /learn/*, /social, /subscription, … are real routes
-}
 
 function dedupe(list: NotificationItem[]): NotificationItem[] {
   const seen = new Set<string>();
@@ -56,7 +47,6 @@ const BackChevron = () => (
 export function Notifications() {
   const nav = useNavigate();
   const loc = useLocation();
-  const toast = useToast();
   const qc = useQueryClient();
   const entry = (loc.state as { filter?: Filter } | null) ?? null;
 
@@ -132,23 +122,22 @@ export function Notifications() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [more, cursor, items.length]);
 
-  function openNotification(n: NotificationItem) {
-    if (!n.read) {
-      // Optimistic read; persist server-side with rollback on definitive failure.
-      setItems((prev) => prev.map((x) => (x.notification_id === n.notification_id ? { ...x, read: true } : x)));
-      notifApi
-        .markRead(n.notification_id)
-        .then(() => qc.invalidateQueries({ queryKey: ["notif-unread"] }))
-        .catch(() => {
-          setItems((prev) => prev.map((x) => (x.notification_id === n.notification_id ? { ...x, read: false } : x)));
-          toast.error("읽음 처리에 실패했어요.");
-        });
-    }
-    const route = resolveRoute(n.deep_link);
-    if (route) nav(route);
-    else if (n.deep_link) toast.show("해당 내용을 더 이상 확인할 수 없어요.");
-    // else: informational notification — no navigation.
-  }
+  // Opening the inbox marks EVERY notification read on the server (product
+  // policy — there is no per-item read). Fires once per visit and clears the
+  // bell-icon red dot (invalidate the shared unread query). The currently
+  // rendered list keeps the unread highlight it arrived with; the badge and the
+  // next visit reflect the read state.
+  const markedRef = useRef(false);
+  useEffect(() => {
+    if (markedRef.current) return;
+    markedRef.current = true;
+    notifApi
+      .readAll()
+      .then(() => qc.invalidateQueries({ queryKey: ["notif-unread"] }))
+      .catch(() => {
+        /* best-effort; the badge will reconcile on the next fetch */
+      });
+  }, [qc]);
 
   // Group the loaded (server-ordered, newest-first) items into date buckets,
   // recomputed only when the item list changes.
@@ -221,9 +210,10 @@ export function Notifications() {
                 <ul className="ntf__cards" role="list">
                   {g.items.map((n) => (
                     <li key={n.notification_id}>
-                      <button
+                      {/* Informational only — non-interactive (no tap, no navigation). */}
+                      <div
                         className={`ntf__card ${n.read ? "is-read" : "is-unread"}`}
-                        onClick={() => openNotification(n)}
+                        role="article"
                         aria-label={`${GROUP_LABEL[n.group]} 알림, ${n.read ? "읽음" : "읽지 않음"}. ${n.title}. ${n.body ?? ""} ${relativeTime(n.created_at)}`}
                       >
                         <div className="ntf__card-top">
@@ -234,7 +224,7 @@ export function Notifications() {
                         </div>
                         <div className="ntf__card-title">{n.title}</div>
                         {n.body && <div className="ntf__card-body">{n.body}</div>}
-                      </button>
+                      </div>
                     </li>
                   ))}
                 </ul>

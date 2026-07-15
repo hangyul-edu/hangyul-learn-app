@@ -318,8 +318,7 @@ export const notifApi = {
       "/notifications",
       { limit: 30, tz: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", ...params },
     ),
-  /** Mark a single notification read (on tap). Idempotent; 404 if not owned. */
-  markRead: (id: string) => http.post<void>(`/notifications/${id}/read`),
+  /** Open the inbox → mark every notification read (clears the bell badge). */
   readAll: () => http.post<void>("/notifications/read-all"),
   settings: () => http.get<Record<string, unknown>>("/notifications/settings"),
   updateSettings: (body: Record<string, unknown>) => http.put<Record<string, unknown>>("/notifications/settings", body),

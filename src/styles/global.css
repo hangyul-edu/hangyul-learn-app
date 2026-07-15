@@ -7346,3 +7346,53 @@ textarea.input {
   box-shadow: 0 8px 20px rgba(255, 91, 0, 0.28);
 }
 .lvup__cta:active { background: var(--brand-600, #ea580c); }
+
+/* ===================================================================== */
+/* Language Settings screen (/settings/language)                         */
+/* ===================================================================== */
+.lang {
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+/* Body grows to push the save button to the bottom; scrolls if constrained. */
+.lang__body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: clamp(24px, 7vw, 40px) clamp(20px, 7.5vw, 30px) 8px;
+}
+.lang__list { display: flex; flex-direction: column; gap: 12px; }
+
+.lang__card {
+  width: 100%;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  padding: 18px 20px;
+  border-radius: var(--r-md, 16px);
+  border: 1px solid #e4dccf;
+  background: #ffffff;
+  color: #4a4038;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.lang__card:active { background: #fbf6f0; }
+.lang__card.is-selected {
+  border-color: var(--brand-500, #ff5b00);
+  background: #fff5ec;
+  color: var(--brand-600, #ea580c);
+}
+.lang__card.is-selected:active { background: #ffeede; }
+.lang__card:disabled { opacity: 0.6; cursor: default; }
+.lang__card:focus-visible { outline: 2px solid var(--brand-500, #ff5b00); outline-offset: 2px; }
+
+/* Bottom action — anchored, safe-area aware (no absolute positioning). */
+.lang__foot {
+  padding: 12px clamp(20px, 7.5vw, 30px) calc(20px + var(--safe-bottom));
+  background: #ffffff;
+}

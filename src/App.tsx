@@ -33,6 +33,7 @@ import { Subscription } from "./screens/Subscription";
 import { Profile } from "./screens/Profile";
 import { EditProfile } from "./screens/EditProfile";
 import { Settings } from "./screens/Settings";
+import { LanguageSettings } from "./screens/LanguageSettings";
 import { Account } from "./screens/Account";
 import { ChangePassword, ChangePhone, ChangeEmail } from "./screens/AccountChanges";
 import { Support } from "./screens/Support";
@@ -154,6 +155,7 @@ const router = createBrowserRouter(
         <Route path="/subscription" element={<RequireAuth><Subscription /></RequireAuth>} />
         <Route path="/profile/edit" element={<RequireAuth><EditProfile /></RequireAuth>} />
         <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
+        <Route path="/settings/language" element={<RequireAuth><LanguageSettings /></RequireAuth>} />
         <Route path="/account" element={<RequireAuth><Account /></RequireAuth>} />
         <Route path="/account/password" element={<RequireAuth><ChangePassword /></RequireAuth>} />
         <Route path="/account/phone" element={<RequireAuth><ChangePhone /></RequireAuth>} />

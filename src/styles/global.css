@@ -7356,6 +7356,10 @@ textarea.input {
   flex-direction: column;
   min-height: 100%;
 }
+/* Nudge the shared back button inward so its chevron optically aligns with the
+   content's side margin (the shared .acct__back sits flush-left by default).
+   Scoped to this screen so no other screen using .acct__back is affected. */
+.lang .acct__back { left: calc(clamp(20px, 7.5vw, 30px) - 8px); }
 /* Body grows to push the save button to the bottom; scrolls if constrained. */
 .lang__body {
   flex: 1;

@@ -50,6 +50,7 @@ import { SessionTopik } from "./screens/SessionTopik";
 import { PaymentMethods } from "./screens/PaymentMethods";
 import { Billing } from "./screens/Billing";
 import { Streak } from "./screens/Streak";
+import { LevelUp } from "./screens/LevelUp";
 import { Policy } from "./screens/Policy";
 import { FindEmailResult } from "./screens/FindEmailResult";
 import { FindEmailNoMatch } from "./screens/FindEmailNoMatch";
@@ -138,6 +139,7 @@ const router = createBrowserRouter(
         <Route path="/recommend/settings/:category" element={<RequireAuth><TrackSettings /></RequireAuth>} />
         <Route path="/session/conversation" element={<RequireAuth><SessionConversation /></RequireAuth>} />
         <Route path="/session/topik" element={<RequireAuth><SessionTopik /></RequireAuth>} />
+        <Route path="/level-up" element={<RequireAuth><LevelUp /></RequireAuth>} />
         <Route path="/lectures/:lectureId" element={<RequireAuth><Lecture /></RequireAuth>} />
         <Route path="/lectures/:lectureId/practice" element={<RequireAuth><Practice /></RequireAuth>} />
         <Route path="/exams" element={<RequireAuth><Exams /></RequireAuth>} />

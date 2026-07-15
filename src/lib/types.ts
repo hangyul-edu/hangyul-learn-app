@@ -416,6 +416,25 @@ export interface LearningPreferences {
   categories: CategoryPref[];
 }
 
+/* ---- Learning session finalize (POST /learning/sessions) ---- */
+export interface SessionLevelUp {
+  track_id: string; // "track_conversation" | "track_topik"
+  previous_level: number;
+  current_level: number;
+  seconds_studied_at_previous_level: number;
+  items_studied_at_previous_level: number;
+  points_awarded: number;
+}
+export interface SessionFinalizeResult {
+  session_id: string;
+  session_type: string;
+  duration_seconds: number;
+  today_total_seconds: number;
+  today_total_minutes: number;
+  leveled_up: boolean;
+  level_up: SessionLevelUp | null;
+}
+
 /* ---- Learning analytics ---- */
 export interface RecQuota {
   daily_limit: number | null;

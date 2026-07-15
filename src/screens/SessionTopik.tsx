@@ -110,17 +110,36 @@ export function SessionTopik() {
     else exitSession();
   }
 
-  function exitSession() {
-    // Record the personalized session so the server finalizes leveling AND
-    // creates the "학습 완료! +Np 적립" notification. Best-effort — never block.
-    if (answered.size > 0) {
-      const duration_seconds = Math.max(1, Math.round((Date.now() - startedAt.current) / 1000));
-      learnApi
-        .recordSession({ session_type: "sentence", category: "topik", duration_seconds })
-        .then(() => qc.invalidateQueries({ queryKey: ["notif-unread"] }))
-        .catch(() => {});
+  // Single exit path for 완료 (modal) and the back chevron. Finalizes the
+  // personalized session on the server; a level-up routes to the Level-Up screen
+  // (after the point-reward modal). Single-flight so repeated taps can't
+  // double-finalize.
+  const finalizingRef = useRef(false);
+  async function exitSession() {
+    if (finalizingRef.current) return;
+    if (answered.size === 0) {
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      nav(-1);
+      return;
     }
-    qc.invalidateQueries({ queryKey: ["dashboard"] });
+    finalizingRef.current = true;
+    const duration_seconds = Math.max(1, Math.round((Date.now() - startedAt.current) / 1000));
+    try {
+      const res = await learnApi.recordSession({
+        session_type: "sentence",
+        category: "topik",
+        duration_seconds,
+      });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["notif-unread"] });
+      qc.invalidateQueries({ queryKey: ["my-learning"] });
+      if (res.leveled_up && res.level_up) {
+        nav("/level-up", { replace: true, state: { levelUp: res.level_up } });
+        return;
+      }
+    } catch {
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    }
     nav(-1);
   }
 

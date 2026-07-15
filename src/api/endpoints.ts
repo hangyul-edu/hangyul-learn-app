@@ -16,6 +16,7 @@ import type {
   Lecture,
   Me,
   MySubscription,
+  SessionFinalizeResult,
   NicknameCheck,
   Notice,
   NotificationItem,
@@ -166,7 +167,7 @@ export const learnApi = {
    *  pending level-up and — for a personalized (custom) session that earned
    *  points — creates the "학습 완료! +Np 적립" notification. */
   recordSession: (body: { session_type: "sentence" | "review" | "lecture"; duration_seconds: number; category?: "conversation" | "topik"; lecture_id?: string }) =>
-    http.post<{ leveled_up: boolean; level_up: unknown }>("/learning/sessions", body),
+    http.post<SessionFinalizeResult>("/learning/sessions", body),
   courses: (trackId: string, cursor?: string) =>
     http.get<{ items: Course[]; next_cursor: string | null; has_more: boolean }>(`/tracks/${trackId}/courses`, { cursor, limit: 6, lessons_per_course: 6 }),
   // Per-course horizontal lecture pagination (continues each course's lessons_next_cursor).

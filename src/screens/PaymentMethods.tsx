@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, Sheet } from "../components/ui/Modal";
@@ -6,13 +6,23 @@ import { Button } from "../components/ui/kit";
 import { TextField } from "../components/ui/Field";
 import { SkeletonList } from "../components/ui/states";
 import { NaverPayLogo, TossPayLogo } from "../components/brand/PayBrand";
-import { payApi, type CardRegion } from "../api/endpoints";
+import { billingApi, payApi, type CardRegion } from "../api/endpoints";
+import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
-import { errorMessage } from "../lib/http";
+import { ApiError, errorMessage } from "../lib/http";
+import {
+  NOTICE_GUIDANCE,
+  failureModalCopy,
+  formatRetryAt,
+  noticeReason,
+  successPlanLine,
+} from "../lib/paymentRecovery";
 import type { MethodProvider, PaymentMethod } from "../lib/types";
 
 const QK = ["payment-methods"] as const;
+const RECOVERY_QK = ["payment-recovery"] as const;
 const RETURN_URL = () => window.location.origin + "/account/payment";
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /* --------------------------------- icons -------------------------------- */
 const BackChevron = () => (
@@ -46,6 +56,18 @@ const Radio = ({ checked }: { checked: boolean }) => (
     {checked && <span className="pm__radio-dot" />}
   </span>
 );
+const WarnTriangle = ({ size = 20, color = "#f97316" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M12 3.2l9 15.6H3l9-15.6z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+    <path d="M12 9.5v4.2" stroke={color} strokeWidth="1.9" strokeLinecap="round" />
+    <circle cx="12" cy="16.4" r="1.05" fill={color} />
+  </svg>
+);
+const CheckMark = () => (
+  <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M5 12.5l4.5 4.5L19 7.5" stroke="#137a3f" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
 
 /* -------------------------------- helpers ------------------------------- */
 const EASY_PAY: { provider: MethodProvider; label: string; Logo: (p: { height?: number }) => JSX.Element }[] = [
@@ -68,11 +90,59 @@ type Flow = {
 };
 
 /* -------------------------------- screen -------------------------------- */
+type ResultModal = { kind: "success" } | { kind: "failure"; failureClass?: string | null } | null;
+
+/* Non-dismissable payment-result modal (§8/§9/§10): no outside-tap/back close,
+   scroll locked, focus moved to the action button and restored on close. */
+function PaymentResultModal({
+  variant,
+  planName,
+  failureClass,
+  onConfirm,
+}: {
+  variant: "success" | "failure";
+  planName?: string | null;
+  failureClass?: string | null;
+  onConfirm: () => void;
+}) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    btnRef.current?.focus();
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      previouslyFocused?.focus?.();
+    };
+  }, []);
+  const success = variant === "success";
+  const [l1, l2] = success
+    ? [successPlanLine(planName), "이제 모든 학습 콘텐츠를 계속 이용할 수 있어요"]
+    : failureModalCopy(failureClass);
+  return (
+    <div className="overlay overlay--center pm-result-overlay" role="dialog" aria-modal="true" aria-label={success ? "결제 완료" : "결제 실패"}>
+      <div className="pm-result" onClick={(e) => e.stopPropagation()}>
+        <div className={`pm-result__icon ${success ? "is-ok" : "is-fail"}`}>
+          {success ? <CheckMark /> : <WarnTriangle size={30} color="#d84343" />}
+        </div>
+        <h2 className="pm-result__title">{success ? "결제가 완료됐어요" : "결제에 실패했어요"}</h2>
+        <p className="pm-result__desc">{l1}<br />{l2}</p>
+        <button ref={btnRef} className="pm-result__btn" onClick={onConfirm} aria-label={success ? "결제 완료 확인" : "다른 결제수단 선택하기"}>
+          {success ? "확인" : "다른 결제수단 선택"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function PaymentMethods() {
   const nav = useNavigate();
   const toast = useToast();
   const qc = useQueryClient();
+  const { bootstrapMe } = useAuth();
   const q = useQuery({ queryKey: QK, queryFn: payApi.methods });
+  const recoveryQ = useQuery({ queryKey: RECOVERY_QK, queryFn: billingApi.recovery });
   const methods = q.data?.methods ?? [];
   const cards = methods.filter((m) => m.kind === "card");
 
@@ -81,8 +151,13 @@ export function PaymentMethods() {
   const [token, setToken] = useState("");
   const [starting, setStarting] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [resultModal, setResultModal] = useState<ResultModal>(null);
+  const cardsRef = useRef<HTMLElement>(null);
+  const retryBtnRef = useRef<HTMLButtonElement>(null);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: QK });
+  const invalidateRecovery = () => qc.invalidateQueries({ queryKey: RECOVERY_QK });
+  const scrollToCards = () => cardsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   /* --- primary selection (optimistic, single-flight, reconciled) --- */
   const setDefault = useMutation({
@@ -103,7 +178,8 @@ export function PaymentMethods() {
   });
 
   function selectPrimary(m: PaymentMethod) {
-    if (m.is_default || setDefault.isPending) return;
+    // A primary change mid-retry could invalidate the in-flight charge — block it.
+    if (m.is_default || setDefault.isPending || retry.isPending) return;
     setDefault.mutate(m.method_id);
   }
 
@@ -127,6 +203,100 @@ export function PaymentMethods() {
     },
     onError: (e) => toast.error(errorMessage(e)), // keep the modal open
   });
+
+  /* --- failed-automatic-payment recovery --- */
+  const recovery = recoveryQ.data;
+  const showNotice =
+    !recoveryQ.isLoading &&
+    !!recovery?.recovery_required &&
+    !!recovery.can_retry_immediately &&
+    !!recovery.outstanding_invoice_id;
+  const primaryMethod = methods.find((m) => m.is_default && m.status === "active");
+
+  // Determine the authoritative terminal result: the invoice being paid is the
+  // ONLY success signal; a still-outstanding recovery is a failure; anything
+  // else (e.g. provider timeout → payment_pending) is treated as pending.
+  async function verifyRetry(invoiceId: string): Promise<ResultModal | "pending"> {
+    for (let i = 0; i < 3; i++) {
+      const { invoice } = await billingApi.invoice(invoiceId);
+      if (invoice.status === "paid") return { kind: "success" };
+      if (i < 2) await sleep(300);
+    }
+    const rec = await billingApi.recovery();
+    if (!rec.recovery_required) return { kind: "success" };
+    if (rec.outstanding_invoice_id) return { kind: "failure", failureClass: rec.failure_class };
+    return "pending";
+  }
+
+  const retry = useMutation({
+    mutationFn: async (invoiceId: string): Promise<ResultModal | "pending"> => {
+      try {
+        await billingApi.retryInvoice(invoiceId);
+      } catch (e) {
+        // Already paid (idempotency guard) → verify and treat as recovered.
+        if (e instanceof ApiError && e.status === 409) return verifyRetry(invoiceId);
+        // Outstanding invoice vanished (resolved elsewhere) → refresh & clear.
+        if (e instanceof ApiError && e.status === 404) {
+          invalidateRecovery();
+          throw new Error("resolved");
+        }
+        throw e;
+      }
+      return verifyRetry(invoiceId);
+    },
+    onSuccess: (result) => {
+      if (result === "pending") {
+        toast.show("결제 결과를 확인하고 있어요. 잠시 후 결제 상태가 업데이트됩니다.");
+        invalidateRecovery();
+        return;
+      }
+      if (result?.kind === "success") {
+        setResultModal({ kind: "success" });
+      } else if (result?.kind === "failure") {
+        setResultModal({ kind: "failure", failureClass: result.failureClass });
+      }
+      invalidate();
+      invalidateRecovery();
+    },
+    onError: (e) => {
+      const msg = e instanceof Error && e.message === "resolved"
+        ? "결제가 이미 처리되어 목록을 새로고침했어요."
+        : errorMessage(e);
+      toast.error(msg);
+    },
+  });
+
+  function doRetry() {
+    if (!showNotice || !recovery?.outstanding_invoice_id) return;
+    // Never charge against a stale method id: wait for a pending primary change.
+    if (setDefault.isPending || retry.isPending) return;
+    if (!primaryMethod) {
+      toast.error("결제에 사용할 결제수단을 먼저 선택해 주세요.");
+      scrollToCards();
+      return;
+    }
+    retry.mutate(recovery.outstanding_invoice_id);
+  }
+
+  async function confirmSuccess() {
+    setResultModal(null);
+    // Reconcile everything the success touched: recovery notice, wallet, and the
+    // global premium entitlement (so locked content unlocks without a restart).
+    invalidate();
+    invalidateRecovery();
+    try {
+      await bootstrapMe();
+    } catch {
+      /* entitlement refresh is best-effort; server remains the source of truth */
+    }
+  }
+
+  function closeFailure() {
+    setResultModal(null);
+    invalidateRecovery(); // pull any updated failure reason
+    scrollToCards();
+    retryBtnRef.current?.focus();
+  }
 
   /* --- registration / connection flows --- */
   async function start(key: string, open: () => Promise<Flow>) {
@@ -211,8 +381,43 @@ export function PaymentMethods() {
           </div>
         ) : (
           <>
+            {/* --- Failed automatic payment recovery notice --- */}
+            {showNotice && recovery && (
+              <section className="pm__notice-fail" role="alert" aria-label="자동 결제 실패 안내">
+                <div className="pm__notice-fail-head">
+                  <WarnTriangle size={20} />
+                  <span className="pm__notice-fail-title">결제에 실패했어요</span>
+                </div>
+                <p className="pm__notice-fail-desc">
+                  {noticeReason(recovery.failure_class)} {NOTICE_GUIDANCE}
+                </p>
+                {formatRetryAt(recovery.next_automatic_retry_at) && (
+                  <p className="pm__notice-fail-retry">
+                    다음 자동 결제 시도일: {formatRetryAt(recovery.next_automatic_retry_at)}
+                  </p>
+                )}
+                <button
+                  ref={retryBtnRef}
+                  className="pm__pay-now"
+                  onClick={doRetry}
+                  disabled={retry.isPending || setDefault.isPending}
+                  aria-label="지금 바로 구독료 결제하기"
+                  aria-busy={retry.isPending}
+                >
+                  {retry.isPending ? (
+                    <>
+                      <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />
+                      결제 중...
+                    </>
+                  ) : (
+                    "지금 바로 결제하기"
+                  )}
+                </button>
+              </section>
+            )}
+
             {/* --- Credit / debit cards --- */}
-            <section className="pm__section" aria-label="신용/체크카드">
+            <section className="pm__section" aria-label="신용/체크카드" ref={cardsRef}>
               <h2 className="pm__section-title">신용/체크카드</h2>
               <ul className="pm__list" role="list">
                 {cards.map((m) => (
@@ -244,11 +449,11 @@ export function PaymentMethods() {
                 ))}
               </ul>
 
-              <button className="pm__add" onClick={() => startCard("domestic")} disabled={!!starting} aria-label="국내 카드 추가">
+              <button className="pm__add" onClick={() => startCard("domestic")} disabled={!!starting || retry.isPending} aria-label="국내 카드 추가">
                 <span className="pm__add-plus"><Plus /></span>
                 <span className="pm__add-label">카드 추가(국내 카드)</span>
               </button>
-              <button className="pm__add" onClick={() => startCard("international")} disabled={!!starting} aria-label="해외 카드 추가">
+              <button className="pm__add" onClick={() => startCard("international")} disabled={!!starting || retry.isPending} aria-label="해외 카드 추가">
                 <span className="pm__add-plus"><Plus /></span>
                 <span className="pm__add-label">카드 추가(해외 카드)</span>
               </button>
@@ -286,7 +491,7 @@ export function PaymentMethods() {
                       ) : (
                         <div className="pm__row pm__row--connect">
                           <div className="pm__row-main pm__row-main--logo"><Logo /></div>
-                          <button className="pm__connect" onClick={connect} disabled={!!starting} aria-label={`${label} 연결하기`}>
+                          <button className="pm__connect" onClick={connect} disabled={!!starting || retry.isPending} aria-label={`${label} 연결하기`}>
                             연결하기
                           </button>
                         </div>
@@ -343,7 +548,16 @@ export function PaymentMethods() {
         </div>
       </Dialog>
 
-      {selectDisabled && <span className="pm__sr" role="status">기본 결제수단 변경 중</span>}
+      {resultModal?.kind === "success" && (
+        <PaymentResultModal variant="success" planName={recovery?.plan_name} onConfirm={confirmSuccess} />
+      )}
+      {resultModal?.kind === "failure" && (
+        <PaymentResultModal variant="failure" failureClass={resultModal.failureClass} onConfirm={closeFailure} />
+      )}
+
+      {(selectDisabled || retry.isPending) && (
+        <span className="pm__sr" role="status">{retry.isPending ? "결제를 진행하고 있어요" : "기본 결제수단 변경 중"}</span>
+      )}
     </div>
   );
 }

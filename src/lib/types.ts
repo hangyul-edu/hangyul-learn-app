@@ -285,6 +285,25 @@ export interface Money {
   amount_cents: number;
   currency: string;
 }
+/** Stable payment failure categories the backend reports (FailureClass). */
+export type PaymentFailureClass =
+  | "insufficient_funds"
+  | "card_expired"
+  | "method_revoked"
+  | "declined_generic"
+  | "provider_outage"
+  | "unknown";
+/** Consolidated failed-automatic-payment recovery state (GET /billing/recovery). */
+export interface PaymentRecovery {
+  recovery_required: boolean;
+  can_retry_immediately: boolean;
+  outstanding_invoice_id?: string | null;
+  failure_class?: PaymentFailureClass | string | null;
+  failure_code?: string | null;
+  next_automatic_retry_at?: string | null;
+  plan_id?: string | null;
+  plan_name?: string | null;
+}
 export interface Invoice {
   invoice_id: string;
   plan_name: string;

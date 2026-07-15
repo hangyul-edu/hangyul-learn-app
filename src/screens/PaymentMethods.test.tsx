@@ -20,12 +20,26 @@ vi.mock("../api/endpoints", () => ({
     replace: vi.fn(),
     remove: vi.fn(),
   },
+  billingApi: {
+    recovery: vi.fn(),
+    invoice: vi.fn(),
+    retryInvoice: vi.fn(),
+  },
 }));
 
-import { payApi } from "../api/endpoints";
+const bootstrapMe = vi.fn();
+vi.mock("../hooks/auth", () => ({ useAuth: () => ({ bootstrapMe }) }));
+
+import { billingApi, payApi } from "../api/endpoints";
 import { PaymentMethods } from "./PaymentMethods";
 
 const api = payApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
+const billing = billingApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
+
+const NO_RECOVERY = { recovery_required: false, can_retry_immediately: false };
+function setRecovery(rec: Record<string, unknown>) {
+  billing.recovery.mockResolvedValue(rec);
+}
 
 /* ------------------------------- factories ------------------------------ */
 function card(over: Partial<PaymentMethod> = {}): PaymentMethod {
@@ -77,6 +91,7 @@ function renderScreen() {
 beforeEach(() => {
   vi.clearAllMocks();
   setMethods();
+  setRecovery(NO_RECOVERY);
 });
 
 /* -------------------------------- tests --------------------------------- */
@@ -238,5 +253,170 @@ describe("PaymentMethods screen", () => {
     await userEvent.click(del); // second click while pending must be ignored
     expect(api.remove).toHaveBeenCalledTimes(1);
     resolve();
+  });
+});
+
+/* ------------------ failed-automatic-payment recovery flow ---------------- */
+const RECOVERY = {
+  recovery_required: true,
+  can_retry_immediately: true,
+  outstanding_invoice_id: "inv_1",
+  failure_class: "insufficient_funds",
+  failure_code: "DECLINED",
+  next_automatic_retry_at: "2026-07-16T00:41:00Z",
+  plan_id: "plan_monthly",
+  plan_name: "프리미엄",
+};
+
+describe("PaymentMethods recovery flow", () => {
+  it("R1. shows the notice when recovery is required", async () => {
+    setMethods(card());
+    setRecovery(RECOVERY);
+    renderScreen();
+    expect(await screen.findByRole("alert", { name: "자동 결제 실패 안내" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "지금 바로 구독료 결제하기" })).toBeInTheDocument();
+  });
+
+  it("R2. hides the notice when there is no outstanding payment", async () => {
+    setMethods(card());
+    setRecovery(NO_RECOVERY);
+    renderScreen();
+    await screen.findByText("Shinhan Card");
+    expect(screen.queryByRole("alert", { name: "자동 결제 실패 안내" })).not.toBeInTheDocument();
+  });
+
+  it("R2b. hides the notice when immediate retry is not allowed", async () => {
+    setMethods(card());
+    setRecovery({ ...RECOVERY, can_retry_immediately: false });
+    renderScreen();
+    await screen.findByText("Shinhan Card");
+    expect(screen.queryByRole("alert", { name: "자동 결제 실패 안내" })).not.toBeInTheDocument();
+  });
+
+  it("R3. maps the failure reason to safe Korean copy", async () => {
+    setMethods(card());
+    setRecovery({ ...RECOVERY, failure_class: "card_expired" });
+    renderScreen();
+    expect(
+      await screen.findByText(/유효기간이 만료되어 결제가 되지 않았어요/),
+    ).toBeInTheDocument();
+    // never leaks the raw code
+    expect(screen.queryByText(/DECLINED/)).not.toBeInTheDocument();
+  });
+
+  it("R4/R5. renders the next retry date, omits it when absent", async () => {
+    setMethods(card());
+    setRecovery({ ...RECOVERY, next_automatic_retry_at: null });
+    const { unmount } = renderScreen();
+    await screen.findByRole("alert", { name: "자동 결제 실패 안내" });
+    expect(screen.queryByText(/다음 자동 결제 시도일/)).not.toBeInTheDocument();
+    unmount();
+
+    setRecovery(RECOVERY);
+    renderScreen();
+    expect(await screen.findByText(/다음 자동 결제 시도일:/)).toBeInTheDocument();
+  });
+
+  it("R6. retry targets the outstanding invoice and shows the success modal", async () => {
+    setMethods(card());
+    setRecovery(RECOVERY);
+    billing.retryInvoice.mockResolvedValue({ attempt_id: "pa_1", queued_at: "x" });
+    billing.invoice.mockResolvedValue({ invoice: { status: "paid" }, payments: [] });
+    renderScreen();
+    await userEvent.click(await screen.findByRole("button", { name: "지금 바로 구독료 결제하기" }));
+    expect(billing.retryInvoice).toHaveBeenCalledWith("inv_1");
+    expect(await screen.findByRole("dialog", { name: "결제 완료" })).toBeInTheDocument();
+    expect(screen.getByText("결제가 완료됐어요")).toBeInTheDocument();
+  });
+
+  it("R7. blocks retry while a primary-method change is pending", async () => {
+    setMethods(card(), card({ method_id: "pm_kb", display_name: "KB Card", issuer: "KB Card", masked_card_number: "1111********2222", is_default: false }));
+    setRecovery(RECOVERY);
+    let resolveSet!: () => void;
+    api.setDefault.mockReturnValue(new Promise<void>((r) => { resolveSet = () => r(); }));
+    renderScreen();
+    await userEvent.click(await screen.findByRole("button", { name: /KB Card.*선택 안 됨/ }));
+    // retry button is disabled while the primary change is in flight
+    expect(screen.getByRole("button", { name: "지금 바로 구독료 결제하기" })).toBeDisabled();
+    expect(billing.retryInvoice).not.toHaveBeenCalled();
+    resolveSet();
+  });
+
+  it("R8. prevents duplicate retry submissions", async () => {
+    setMethods(card());
+    setRecovery(RECOVERY);
+    let resolve!: () => void;
+    billing.retryInvoice.mockReturnValue(new Promise((r) => { resolve = () => r({ attempt_id: "pa", queued_at: "x" }); }));
+    renderScreen();
+    const btn = await screen.findByRole("button", { name: "지금 바로 구독료 결제하기" });
+    await userEvent.click(btn);
+    await userEvent.click(btn); // ignored while in-flight
+    expect(billing.retryInvoice).toHaveBeenCalledTimes(1);
+    resolve();
+  });
+
+  it("R9. shows a loading state on the retry button", async () => {
+    setMethods(card());
+    setRecovery(RECOVERY);
+    let resolve!: () => void;
+    billing.retryInvoice.mockReturnValue(new Promise((r) => { resolve = () => r({ attempt_id: "pa", queued_at: "x" }); }));
+    renderScreen();
+    await userEvent.click(await screen.findByRole("button", { name: "지금 바로 구독료 결제하기" }));
+    expect(await screen.findByText("결제 중...")).toBeInTheDocument();
+    resolve();
+  });
+
+  it("R12/R13. confirming success closes the modal and refreshes entitlement", async () => {
+    setMethods(card());
+    // required → then cleared after success
+    billing.recovery.mockResolvedValueOnce(RECOVERY).mockResolvedValue(NO_RECOVERY);
+    billing.retryInvoice.mockResolvedValue({ attempt_id: "pa", queued_at: "x" });
+    billing.invoice.mockResolvedValue({ invoice: { status: "paid" }, payments: [] });
+    renderScreen();
+    await userEvent.click(await screen.findByRole("button", { name: "지금 바로 구독료 결제하기" }));
+    await userEvent.click(await screen.findByRole("button", { name: "결제 완료 확인" }));
+    await waitFor(() => expect(bootstrapMe).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "결제 완료" })).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole("alert", { name: "자동 결제 실패 안내" })).not.toBeInTheDocument(),
+    );
+  });
+
+  it("R14/R15/R16. failed retry shows a safe failure modal and keeps the notice", async () => {
+    setMethods(card());
+    setRecovery({ ...RECOVERY, failure_class: "insufficient_funds" });
+    billing.retryInvoice.mockResolvedValue({ attempt_id: "pa", queued_at: "x" });
+    billing.invoice.mockResolvedValue({ invoice: { status: "open" }, payments: [] });
+    renderScreen();
+    await userEvent.click(await screen.findByRole("button", { name: "지금 바로 구독료 결제하기" }));
+    expect(await screen.findByRole("dialog", { name: "결제 실패" })).toBeInTheDocument();
+    expect(screen.getByText(/잔액 부족으로 결제가 진행되지 않았어요/)).toBeInTheDocument();
+    // action closes the modal without auto-retry or auto primary change
+    await userEvent.click(screen.getByRole("button", { name: "다른 결제수단 선택하기" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "결제 실패" })).not.toBeInTheDocument());
+    expect(billing.retryInvoice).toHaveBeenCalledTimes(1);
+    expect(api.setDefault).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert", { name: "자동 결제 실패 안내" })).toBeInTheDocument();
+  });
+
+  it("R18. retry without a usable primary method does not call the payment API", async () => {
+    // No default among the methods → no usable primary.
+    setMethods(card({ is_default: false }));
+    setRecovery(RECOVERY);
+    renderScreen();
+    await userEvent.click(await screen.findByRole("button", { name: "지금 바로 구독료 결제하기" }));
+    expect(billing.retryInvoice).not.toHaveBeenCalled();
+  });
+
+  it("R20/R21. already-paid (409) is verified and treated as success", async () => {
+    setMethods(card());
+    setRecovery(RECOVERY);
+    const err = Object.assign(new Error("paid"), { status: 409 });
+    Object.setPrototypeOf(err, (await import("../lib/http")).ApiError.prototype);
+    billing.retryInvoice.mockRejectedValue(err);
+    billing.invoice.mockResolvedValue({ invoice: { status: "paid" }, payments: [] });
+    renderScreen();
+    await userEvent.click(await screen.findByRole("button", { name: "지금 바로 구독료 결제하기" }));
+    expect(await screen.findByRole("dialog", { name: "결제 완료" })).toBeInTheDocument();
   });
 });

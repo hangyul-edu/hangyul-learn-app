@@ -10,6 +10,7 @@ import type {
   Friend,
   FriendRequest,
   Invoice,
+  PaymentRecovery,
   LeaguePosition,
   LearningPreferences,
   Lecture,
@@ -246,6 +247,14 @@ export const payApi = {
 };
 export const billingApi = {
   invoices: (cursor?: string) => http.get<{ invoices: Invoice[]; next_cursor: string | null }>("/billing/invoices", { cursor, limit: 20 }),
+  /** Consolidated failed-automatic-payment recovery state (single source of truth). */
+  recovery: () => http.get<PaymentRecovery>("/billing/recovery"),
+  invoice: (invoiceId: string) =>
+    http.get<{ invoice: Invoice; payments: unknown[] }>(`/billing/invoices/${invoiceId}`),
+  /** Retry the outstanding invoice against the user's current default method.
+   *  The invoice id is the idempotency anchor — a paid invoice returns 409. */
+  retryInvoice: (invoiceId: string) =>
+    http.post<{ attempt_id: string; queued_at: string }>(`/billing/invoices/${invoiceId}/retry`, {}),
 };
 export const aiApi = {
   createConversation: () => http.post<{ conversation_id: string }>("/ai/conversations", {}),

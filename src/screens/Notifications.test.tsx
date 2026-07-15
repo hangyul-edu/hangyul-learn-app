@@ -152,10 +152,16 @@ describe("Notifications screen", () => {
     expect(within(read).getByText("소셜")).toBeInTheDocument();
   });
 
-  it("opening the inbox marks all read and clears the bell badge", async () => {
-    api.list.mockResolvedValue(page([notif({ title: "출석", deep_link: "/points" })]));
-    renderScreen();
-    await screen.findByText("출석");
+  it("keeps unread highlight on the visit and marks all read only on LEAVE", async () => {
+    api.list.mockResolvedValue(page([notif({ notification_id: "u", title: "새 알림", read: false })]));
+    const { unmount } = renderScreen();
+    const card = (await screen.findByText("새 알림")).closest(".ntf__card") as HTMLElement;
+    // While the page is open, the unread notification stays highlighted and is
+    // NOT marked read yet.
+    expect(card.className).toContain("is-unread");
+    expect(api.readAll).not.toHaveBeenCalled();
+    // Leaving the page marks everything read (clears the bell badge).
+    unmount();
     await waitFor(() => expect(api.readAll).toHaveBeenCalledTimes(1));
   });
 

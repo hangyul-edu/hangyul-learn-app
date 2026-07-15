@@ -122,21 +122,20 @@ export function Notifications() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [more, cursor, items.length]);
 
-  // Opening the inbox marks EVERY notification read on the server (product
-  // policy — there is no per-item read). Fires once per visit and clears the
-  // bell-icon red dot (invalidate the shared unread query). The currently
-  // rendered list keeps the unread highlight it arrived with; the badge and the
-  // next visit reflect the read state.
-  const markedRef = useRef(false);
+  // Mark everything read when the user LEAVES the page (unmount), NOT on enter —
+  // so the unread highlight stays visible for the whole visit (product policy:
+  // there is no per-item read). On leave we optimistically clear the bell-icon
+  // red dot, then reconcile with the server via read-all + invalidate.
   useEffect(() => {
-    if (markedRef.current) return;
-    markedRef.current = true;
-    notifApi
-      .readAll()
-      .then(() => qc.invalidateQueries({ queryKey: ["notif-unread"] }))
-      .catch(() => {
-        /* best-effort; the badge will reconcile on the next fetch */
-      });
+    return () => {
+      qc.setQueryData(["notif-unread"], { has_unread: false });
+      notifApi
+        .readAll()
+        .catch(() => {
+          /* best-effort */
+        })
+        .finally(() => qc.invalidateQueries({ queryKey: ["notif-unread"] }));
+    };
   }, [qc]);
 
   // Group the loaded (server-ordered, newest-first) items into date buckets,

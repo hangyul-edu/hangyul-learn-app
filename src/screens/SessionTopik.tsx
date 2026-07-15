@@ -6,7 +6,7 @@ import { SessionCompleteModal } from "../components/SessionCompleteModal";
 import { QuestionView, isAnswered, quizAttemptBody, type AnswerValue } from "../components/QuestionView";
 import { SavePlusIcon } from "../components/brand/HomeIcons";
 import { LoadingState, ErrorState } from "../components/ui/states";
-import { recApi, quizApi, dashboardApi } from "../api/endpoints";
+import { recApi, quizApi, dashboardApi, learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import type { Quiz, QuizAttemptResult } from "../lib/types";
@@ -64,6 +64,7 @@ export function SessionTopik() {
     }
   }
 
+  const startedAt = useRef(Date.now());
   // Fetch the initial set once the dashboard (remaining goal) has resolved.
   const booted = useRef(false);
   useEffect(() => {
@@ -110,6 +111,15 @@ export function SessionTopik() {
   }
 
   function exitSession() {
+    // Record the personalized session so the server finalizes leveling AND
+    // creates the "학습 완료! +Np 적립" notification. Best-effort — never block.
+    if (answered.size > 0) {
+      const duration_seconds = Math.max(1, Math.round((Date.now() - startedAt.current) / 1000));
+      learnApi
+        .recordSession({ session_type: "sentence", category: "topik", duration_seconds })
+        .then(() => qc.invalidateQueries({ queryKey: ["notif-unread"] }))
+        .catch(() => {});
+    }
     qc.invalidateQueries({ queryKey: ["dashboard"] });
     nav(-1);
   }

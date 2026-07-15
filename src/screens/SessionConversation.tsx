@@ -5,7 +5,7 @@ import { SessionChrome } from "../components/SessionChrome";
 import { SessionCompleteModal } from "../components/SessionCompleteModal";
 import { SavePlusIcon } from "../components/brand/HomeIcons";
 import { LoadingState, ErrorState } from "../components/ui/states";
-import { recApi, sentenceApi, dashboardApi } from "../api/endpoints";
+import { recApi, sentenceApi, dashboardApi, learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import type { Sentence, SpeechAttempt } from "../lib/types";
@@ -52,6 +52,7 @@ export function SessionConversation() {
   const [error, setError] = useState(false);
   const media = useRef<MediaRecorder | null>(null);
   const chunks = useRef<Blob[]>([]);
+  const startedAt = useRef(Date.now());
 
   // Build (or regenerate) the set for the remaining daily goal. Regeneration
   // replaces the whole active set atomically only on success.
@@ -156,6 +157,16 @@ export function SessionConversation() {
   }
 
   function exitSession() {
+    // Record the personalized session on the way out. This is what finalizes a
+    // pending level-up AND (when the session earned points) creates the
+    // "학습 완료! +Np 적립" notification. Best-effort — never block the exit.
+    if (answered.size > 0) {
+      const duration_seconds = Math.max(1, Math.round((Date.now() - startedAt.current) / 1000));
+      learnApi
+        .recordSession({ session_type: "sentence", category: "conversation", duration_seconds })
+        .then(() => qc.invalidateQueries({ queryKey: ["notif-unread"] }))
+        .catch(() => {});
+    }
     qc.invalidateQueries({ queryKey: ["dashboard"] });
     nav(-1);
   }

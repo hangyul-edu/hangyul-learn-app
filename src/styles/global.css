@@ -1061,26 +1061,38 @@ textarea.input {
   opacity: 0.36;
 }
 
-/* Scroll wrapper: no compression on small screens — scroll instead. */
+/* Scroll wrapper: no compression on small screens — scroll instead. It is a
+   flex column so the content can be vertically centered within the viewport
+   while still scrolling when it outgrows the screen. */
 .login__scroll {
   position: relative;
   z-index: 1;
   flex: 1;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
 }
 .login__inner {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  padding: calc(var(--safe-top) + 12px) clamp(20px, 6vw, 26px) calc(24px + var(--safe-bottom));
+  justify-content: center;
+  /* Reserve room for the pinned back chevron so centered content never hides
+     beneath it; bottom padding kept close to top for a balanced block. */
+  padding: calc(var(--safe-top) + 58px) clamp(20px, 6vw, 26px) calc(40px + var(--safe-bottom));
 }
 
-/* Back chevron — no background, generous touch target. */
+/* Back chevron — pinned top-left, out of flow so it doesn't offset the
+   vertically-centered content. */
 .login__back {
+  position: absolute;
+  top: calc(var(--safe-top) + 10px);
+  left: clamp(8px, 4vw, 16px);
+  z-index: 2;
   width: 44px;
   height: 44px;
-  margin-left: -10px;
   border: none;
   background: none;
   color: #272c30;
@@ -1095,7 +1107,7 @@ textarea.input {
 /* Brand */
 .login__brand {
   text-align: center;
-  margin-top: clamp(36px, 12vh, 104px);
+  margin-top: 0;
 }
 
 /* Heading */

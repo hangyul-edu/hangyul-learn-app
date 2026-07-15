@@ -19,6 +19,31 @@ import { Notifications } from "./Notifications";
 
 const api = notifApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
+/* Controllable IntersectionObserver so tests can drive the scroll-triggered
+   infinite-scroll path (jsdom has none). fireScroll() simulates the sentinel
+   entering the viewport. */
+let ioInstances: { cb: IntersectionObserverCallback; els: Element[]; self: IntersectionObserver }[] = [];
+class ControllableIO {
+  cb: IntersectionObserverCallback;
+  els: Element[] = [];
+  constructor(cb: IntersectionObserverCallback) {
+    this.cb = cb;
+    ioInstances.push({ cb, els: this.els, self: this as unknown as IntersectionObserver });
+  }
+  observe(el: Element) { this.els.push(el); }
+  unobserve(el: Element) { this.els = this.els.filter((e) => e !== el); }
+  disconnect() { ioInstances = ioInstances.filter((i) => i.self !== (this as unknown)); this.els.length = 0; }
+  takeRecords() { return []; }
+}
+globalThis.IntersectionObserver = ControllableIO as unknown as typeof IntersectionObserver;
+function fireScroll() {
+  for (const io of [...ioInstances]) {
+    for (const el of [...io.els]) {
+      io.cb([{ isIntersecting: true, target: el } as IntersectionObserverEntry], io.self);
+    }
+  }
+}
+
 /* ------------------------------- factories ------------------------------ */
 const iso = (d: Date) => d.toISOString();
 const now = () => new Date();
@@ -68,6 +93,7 @@ function renderScreen() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  ioInstances = [];
   api.list.mockResolvedValue(page([notif()]));
   api.markRead.mockResolvedValue(undefined);
 });
@@ -197,5 +223,51 @@ describe("Notifications screen", () => {
     await waitFor(() => expect(api.markRead).toHaveBeenCalledWith("n3"));
     // After the definitive failure the card is restored to unread, not stuck read.
     await waitFor(() => expect(card.className).toContain("is-unread"));
+  });
+
+  it("scroll near the bottom loads the next page, appending + deduping by id", async () => {
+    api.list
+      .mockResolvedValueOnce(page([notif({ notification_id: "A", title: "카드 A" }), notif({ notification_id: "B", title: "카드 B" })], "cur1"))
+      .mockResolvedValueOnce(page([notif({ notification_id: "B", title: "카드 B" }), notif({ notification_id: "C", title: "카드 C" })], null));
+    renderScreen();
+    await screen.findByText("카드 A");
+    expect(api.list).toHaveBeenCalledTimes(1);
+
+    fireScroll(); // sentinel enters viewport → loadMore(cur1)
+    await screen.findByText("카드 C");
+    expect(api.list).toHaveBeenNthCalledWith(2, expect.objectContaining({ cursor: "cur1" }));
+    // Overlapping "B" appears exactly once (dedupe).
+    expect(screen.getAllByText("카드 B")).toHaveLength(1);
+    expect(screen.getByText("카드 A")).toBeInTheDocument();
+  });
+
+  it("repeated scroll triggers do not double-load or duplicate items", async () => {
+    api.list
+      .mockResolvedValueOnce(page([notif({ notification_id: "A", title: "카드 A" })], "cur1"))
+      .mockResolvedValueOnce(page([notif({ notification_id: "Z", title: "카드 Z" })], null));
+    renderScreen();
+    await screen.findByText("카드 A");
+    fireScroll();
+    fireScroll(); // second trigger while the first is in-flight must be ignored
+    await screen.findByText("카드 Z");
+    fireScroll(); // cursor exhausted (done) → no further calls
+    await waitFor(() => expect(api.list).toHaveBeenCalledTimes(2));
+    expect(screen.getAllByText("카드 Z")).toHaveLength(1);
+  });
+
+  it("failed pagination keeps existing items and offers retry", async () => {
+    api.list
+      .mockResolvedValueOnce(page([notif({ notification_id: "A", title: "카드 A" })], "cur1"))
+      .mockRejectedValueOnce(new Error("net"))
+      .mockResolvedValueOnce(page([notif({ notification_id: "B", title: "카드 B" })], null));
+    renderScreen();
+    await screen.findByText("카드 A");
+    fireScroll();
+    // Page-2 failure: existing items stay, a retry control appears.
+    const retry = await screen.findByRole("button", { name: "더 불러오기" });
+    expect(screen.getByText("카드 A")).toBeInTheDocument();
+    await userEvent.click(retry);
+    await screen.findByText("카드 B");
+    expect(screen.getByText("카드 A")).toBeInTheDocument();
   });
 });

@@ -357,16 +357,21 @@ export interface FriendRequest {
 }
 
 /* ---- Notifications ---- */
+export type NotificationGroup = "learning" | "announcement" | "social";
 export interface NotificationItem {
   notification_id: string;
   category: string;
+  /** UI bucket the server derives from category: learning / announcement / social. */
+  group: NotificationGroup;
   title: string;
-  body: string;
+  body?: string | null;
   read: boolean;
   created_at: string;
   deep_link?: string | null;
+  relative_label?: string;
 }
 export interface NotificationSection {
+  key?: string;
   label: string;
   items: NotificationItem[];
 }

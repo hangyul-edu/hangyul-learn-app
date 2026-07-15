@@ -20,3 +20,15 @@ class TestRequest {
   }
 }
 globalThis.Request = TestRequest as unknown as typeof Request;
+
+// jsdom has no IntersectionObserver (used by infinite-scroll sentinels). A no-op
+// stub is enough — tests drive pagination via the API mock, not real scrolling.
+class TestIntersectionObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
+}
+globalThis.IntersectionObserver = TestIntersectionObserver as unknown as typeof IntersectionObserver;

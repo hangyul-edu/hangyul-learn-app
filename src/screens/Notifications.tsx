@@ -1,91 +1,255 @@
-import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Screen } from "../components/layout/Screen";
-import { Chip } from "../components/ui/kit";
-import { Async, EmptyState, SkeletonList } from "../components/ui/states";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { SkeletonList } from "../components/ui/states";
 import { notifApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
-import { timeAgo } from "../lib/format";
-import type { NotificationItem } from "../lib/types";
+import { GROUP_LABEL, bucketKey, bucketLabel, relativeTime } from "../lib/notifications";
+import type { NotificationGroup, NotificationItem } from "../lib/types";
 
-const ICON: Record<string, string> = {
-  learning_reminder: "📚",
-  streak: "🔥",
-  points: "⚡",
-  league: "🏆",
-  friend: "👥",
-  announcement: "📢",
-  system: "⚙️",
+/* -------------------------------- config -------------------------------- */
+type Filter = "all" | NotificationGroup;
+const FILTERS: { v: Filter; l: string; dot: string | null }[] = [
+  { v: "all", l: "전체", dot: null },
+  { v: "learning", l: "학습", dot: "#f6c945" }, // yellow
+  { v: "announcement", l: "공지", dot: "#a8e0b0" }, // pale green
+  { v: "social", l: "소셜", dot: "#c9c2ef" }, // pale lavender
+];
+const BADGE_BG: Record<NotificationGroup, string> = {
+  learning: "#fdf3d0",
+  announcement: "#e3f5e6",
+  social: "#ece8fb",
+};
+const BADGE_FG: Record<NotificationGroup, string> = {
+  learning: "#8a6d10",
+  announcement: "#2f7a3d",
+  social: "#5b4bb0",
 };
 
+/** Map a stored deep link to a real in-app route, or null when there's no
+ *  valid destination (informational notification → mark read, don't navigate). */
+function resolveRoute(deepLink?: string | null): string | null {
+  if (!deepLink || !deepLink.startsWith("/")) return null;
+  if (deepLink.startsWith("/leagues")) return "/league"; // season/group deep link → league tab
+  return deepLink; // /points, /learn/*, /social, /subscription, … are real routes
+}
+
+function dedupe(list: NotificationItem[]): NotificationItem[] {
+  const seen = new Set<string>();
+  const out: NotificationItem[] = [];
+  for (const n of list) {
+    if (!seen.has(n.notification_id)) {
+      seen.add(n.notification_id);
+      out.push(n);
+    }
+  }
+  return out;
+}
+
+const BackChevron = () => (
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M15 5l-7 7 7 7" stroke="#272c30" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+/* -------------------------------- screen -------------------------------- */
 export function Notifications() {
+  const nav = useNavigate();
+  const loc = useLocation();
   const toast = useToast();
   const qc = useQueryClient();
-  const [group, setGroup] = useState("all");
-  const q = useQuery({ queryKey: ["notifications", group], queryFn: () => notifApi.list({ group: group === "all" ? undefined : group }) });
+  const entry = (loc.state as { filter?: Filter } | null) ?? null;
 
-  const items: NotificationItem[] =
-    q.data?.sections?.flatMap((s) => s.items) ?? q.data?.items ?? [];
+  const [filter, setFilter] = useState<Filter>(entry?.filter ?? "all");
+  const [items, setItems] = useState<NotificationItem[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [more, setMore] = useState<"idle" | "loading" | "error" | "done">("idle");
+  const [reloadTick, setReloadTick] = useState(0);
 
-  async function readAll() {
+  const seqRef = useRef(0);
+  const moreLoadingRef = useRef(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const sentinel = useRef<HTMLDivElement>(null);
+
+  async function fetchPage(cur?: string) {
+    const page = await notifApi.list({ group: filter === "all" ? undefined : filter, cursor: cur });
+    const flat = (page.sections ?? []).flatMap((s) => s.items);
+    return { items: (flat.length ? flat : page.items ?? []) as NotificationItem[], next: page.next_cursor ?? null };
+  }
+
+  // Reload page 1 on filter change / retry. Guards against stale responses so a
+  // slow request for an old filter can never overwrite the current one.
+  useEffect(() => {
+    const mySeq = ++seqRef.current;
+    setStatus("loading");
+    setItems([]);
+    setCursor(null);
+    setMore("idle");
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    (async () => {
+      try {
+        const page = await fetchPage(undefined);
+        if (mySeq !== seqRef.current) return;
+        setItems(dedupe(page.items));
+        setCursor(page.next);
+        setMore(page.next ? "idle" : "done");
+        setStatus("ready");
+      } catch {
+        if (mySeq === seqRef.current) setStatus("error");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, reloadTick]);
+
+  async function loadMore() {
+    if (moreLoadingRef.current || cursor == null) return;
+    moreLoadingRef.current = true;
+    const mySeq = seqRef.current;
+    setMore("loading");
     try {
-      await notifApi.readAll();
-      qc.invalidateQueries({ queryKey: ["notifications"] });
-      qc.invalidateQueries({ queryKey: ["notif-unread"] });
-      toast.success("모두 읽음 처리했어요");
+      const page = await fetchPage(cursor);
+      if (mySeq !== seqRef.current) return;
+      setItems((prev) => dedupe([...prev, ...page.items])); // append + dedupe by id
+      setCursor(page.next);
+      setMore(page.next ? "idle" : "done");
     } catch {
-      /* ignore */
+      if (mySeq === seqRef.current) setMore("error"); // keep existing items visible
+    } finally {
+      moreLoadingRef.current = false;
     }
   }
 
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el) return;
+    const ob = new IntersectionObserver(
+      (e) => { if (e[0].isIntersecting && more === "idle") void loadMore(); },
+      { root: scrollRef.current, rootMargin: "300px" },
+    );
+    ob.observe(el);
+    return () => ob.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [more, cursor, items.length]);
+
+  function openNotification(n: NotificationItem) {
+    if (!n.read) {
+      // Optimistic read; persist server-side with rollback on definitive failure.
+      setItems((prev) => prev.map((x) => (x.notification_id === n.notification_id ? { ...x, read: true } : x)));
+      notifApi
+        .markRead(n.notification_id)
+        .then(() => qc.invalidateQueries({ queryKey: ["notif-unread"] }))
+        .catch(() => {
+          setItems((prev) => prev.map((x) => (x.notification_id === n.notification_id ? { ...x, read: false } : x)));
+          toast.error("읽음 처리에 실패했어요.");
+        });
+    }
+    const route = resolveRoute(n.deep_link);
+    if (route) nav(route);
+    else if (n.deep_link) toast.show("해당 내용을 더 이상 확인할 수 없어요.");
+    // else: informational notification — no navigation.
+  }
+
+  // Group the loaded (server-ordered, newest-first) items into date buckets,
+  // recomputed only when the item list changes.
+  const groups = useMemo(() => {
+    const now = new Date();
+    const out: { key: string; label: string; items: NotificationItem[] }[] = [];
+    for (const n of items) {
+      const key = bucketKey(n.created_at, now);
+      const last = out[out.length - 1];
+      if (last && last.key === key) last.items.push(n);
+      else out.push({ key, label: bucketLabel(n.created_at, now), items: [n] });
+    }
+    return out;
+  }, [items]);
+
+  const filtered = filter !== "all";
+  const emptyTitle = filtered ? "해당 알림이 없어요" : "아직 알림이 없어요";
+  const emptyBody = filtered
+    ? "선택한 카테고리에 새로운 알림이 생기면 여기에 표시됩니다."
+    : "학습과 소셜 활동에 대한 새로운 소식이 생기면 알려드릴게요.";
+
   return (
-    <Screen
-      title="알림"
-      back
-      right={
-        <button className="input-affix__btn" style={{ position: "static" }} onClick={readAll}>
-          모두 읽음
+    <div className="screen ntf">
+      <header className="ntf__header">
+        <button className="ntf__back" onClick={() => nav(-1)} aria-label="뒤로 가기">
+          <BackChevron />
         </button>
-      }
-    >
-      <div className="chiprow" style={{ marginBottom: 14 }}>
-        {[
-          { v: "all", l: "전체" },
-          { v: "learning", l: "학습" },
-          { v: "social", l: "소셜" },
-          { v: "announcement", l: "공지" },
-        ].map((g) => (
-          <Chip key={g.v} active={group === g.v} onClick={() => setGroup(g.v)}>
-            {g.l}
-          </Chip>
-        ))}
+        <h1 className="ntf__title">알림</h1>
+      </header>
+
+      <div className="ntf__filters" role="tablist" aria-label="알림 카테고리">
+        {FILTERS.map((f) => {
+          const active = filter === f.v;
+          return (
+            <button
+              key={f.v}
+              role="tab"
+              aria-selected={active}
+              aria-label={`${f.l} 알림 보기`}
+              className={`ntf__chip ${active ? "is-active" : ""}`}
+              onClick={() => filter !== f.v && setFilter(f.v)}
+            >
+              {!active && f.dot && (
+                <span className="ntf__chip-dot" style={{ background: f.dot }} aria-hidden="true" />
+              )}
+              {f.l}
+            </button>
+          );
+        })}
       </div>
 
-      <Async
-        loading={q.isLoading}
-        error={q.error}
-        data={q.data}
-        onRetry={() => q.refetch()}
-        isEmpty={() => items.length === 0}
-        empty={<EmptyState emoji="🔔" title="새 알림이 없어요" text="학습 소식과 친구 활동을 여기서 확인해요." />}
-        skeleton={<SkeletonList rows={5} height={70} />}
-      >
-        {() => (
-          <div className="stack" style={{ gap: 8 }}>
-            {items.map((n) => (
-              <div key={n.notification_id} className="card row" style={{ background: n.read ? undefined : "var(--brand-50)", borderColor: n.read ? undefined : "var(--brand-200)", alignItems: "flex-start" }}>
-                <span style={{ fontSize: 22 }}>{ICON[n.category] ?? "🔔"}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14.5 }}>{n.title}</div>
-                  <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>{n.body}</div>
-                  <div className="dim" style={{ fontSize: 11.5, marginTop: 5 }}>{timeAgo(n.created_at)}</div>
-                </div>
-                {!n.read && <span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--brand-500)", marginTop: 6 }} />}
-              </div>
+      <div className="ntf__scroll" ref={scrollRef}>
+        {status === "loading" ? (
+          <div className="ntf__pad"><SkeletonList rows={5} height={84} /></div>
+        ) : status === "error" ? (
+          <div className="ntf__state">
+            <span>알림을 불러오지 못했어요.</span>
+            <button className="ntf__retry" onClick={() => setReloadTick((t) => t + 1)}>다시 시도</button>
+          </div>
+        ) : items.length === 0 ? (
+          <div className="ntf__empty">
+            <p className="ntf__empty-title">{emptyTitle}</p>
+            <p className="ntf__empty-body">{emptyBody}</p>
+          </div>
+        ) : (
+          <div className="ntf__list">
+            {groups.map((g) => (
+              <section className="ntf__group" key={g.key} aria-label={g.label}>
+                <h2 className="ntf__date">{g.label}</h2>
+                <ul className="ntf__cards" role="list">
+                  {g.items.map((n) => (
+                    <li key={n.notification_id}>
+                      <button
+                        className={`ntf__card ${n.read ? "is-read" : "is-unread"}`}
+                        onClick={() => openNotification(n)}
+                        aria-label={`${GROUP_LABEL[n.group]} 알림, ${n.read ? "읽음" : "읽지 않음"}. ${n.title}. ${n.body ?? ""} ${relativeTime(n.created_at)}`}
+                      >
+                        <div className="ntf__card-top">
+                          <span className="ntf__badge" style={{ background: BADGE_BG[n.group], color: BADGE_FG[n.group] }}>
+                            {GROUP_LABEL[n.group]}
+                          </span>
+                          <span className="ntf__time">{relativeTime(n.created_at)}</span>
+                        </div>
+                        <div className="ntf__card-title">{n.title}</div>
+                        {n.body && <div className="ntf__card-body">{n.body}</div>}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
             ))}
+            <div className="ntf__foot" ref={sentinel}>
+              {more === "loading" ? (
+                <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />
+              ) : more === "error" ? (
+                <button className="ntf__retry" onClick={() => { setMore("idle"); void loadMore(); }}>더 불러오기</button>
+              ) : null}
+            </div>
           </div>
         )}
-      </Async>
-    </Screen>
+      </div>
+    </div>
   );
 }

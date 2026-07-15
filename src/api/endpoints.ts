@@ -19,6 +19,7 @@ import type {
   NicknameCheck,
   Notice,
   NotificationItem,
+  NotificationSection,
   Page,
   PaymentMethod,
   Plan,
@@ -313,10 +314,12 @@ export const friendApi = {
 /* --------------------------- Notifications -------------------------- */
 export const notifApi = {
   list: (params: { group?: string; cursor?: string }) =>
-    http.get<{ sections?: { label: string; items: NotificationItem[] }[]; items?: NotificationItem[]; unread_count?: number; next_cursor?: string | null }>(
+    http.get<{ sections?: NotificationSection[]; items?: NotificationItem[]; unread_count?: number; next_cursor?: string | null }>(
       "/notifications",
       { limit: 30, tz: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", ...params },
     ),
+  /** Mark a single notification read (on tap). Idempotent; 404 if not owned. */
+  markRead: (id: string) => http.post<void>(`/notifications/${id}/read`),
   readAll: () => http.post<void>("/notifications/read-all"),
   settings: () => http.get<Record<string, unknown>>("/notifications/settings"),
   updateSettings: (body: Record<string, unknown>) => http.put<Record<string, unknown>>("/notifications/settings", body),

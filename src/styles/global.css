@@ -7048,3 +7048,162 @@ textarea.input {
   box-shadow: 0 8px 20px rgba(249, 115, 22, 0.28);
 }
 .pm-result__btn:active { background: var(--brand-600, #ea580c); }
+
+/* ===================================================================== */
+/* Notifications screen (/notifications)                                 */
+/* ===================================================================== */
+.ntf {
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+.ntf__header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+  padding-top: var(--safe-top);
+  background: #ffffff;
+  border-bottom: 1px solid var(--line, #eee3d8);
+}
+.ntf__back {
+  position: absolute;
+  left: 8px;
+  top: calc(var(--safe-top) + 6px);
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.ntf__back:active { opacity: 0.55; }
+.ntf__title { margin: 0; font-size: 18px; font-weight: 800; color: #272c30; }
+
+/* Filter pills */
+.ntf__filters {
+  display: flex;
+  gap: 8px;
+  padding: 12px clamp(16px, 5vw, 20px);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.ntf__filters::-webkit-scrollbar { display: none; }
+.ntf__chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 15px;
+  border-radius: 999px;
+  border: 1px solid #e4dccf;
+  background: #ffffff;
+  color: #4a4038;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ntf__chip.is-active {
+  background: var(--brand-500, #ff5b00);
+  border-color: var(--brand-500, #ff5b00);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(255, 91, 0, 0.24);
+}
+.ntf__chip-dot { width: 8px; height: 8px; border-radius: 999px; }
+
+/* Scroll body */
+.ntf__scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(24px + var(--safe-bottom));
+}
+.ntf__pad { padding: 8px clamp(16px, 5vw, 20px); }
+
+.ntf__list { padding: 4px clamp(16px, 5vw, 20px) 0; }
+.ntf__group { margin-bottom: 6px; }
+.ntf__date {
+  margin: 16px 2px 10px;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #2b2019;
+}
+.ntf__cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+
+/* Notification card */
+.ntf__card {
+  width: 100%;
+  display: block;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: var(--r-md, 16px);
+  border: 1px solid #e7ddd2;
+  background: #ffffff;
+  cursor: pointer;
+}
+.ntf__card.is-unread {
+  background: #fff5ec;
+  border-color: var(--brand-200, #ffd7b0);
+  box-shadow: 0 4px 14px rgba(255, 91, 0, 0.08);
+}
+.ntf__card.is-read { box-shadow: none; }
+.ntf__card:active { opacity: 0.85; }
+.ntf__card:focus-visible { outline: 2px solid var(--brand-500, #ff5b00); outline-offset: 2px; }
+
+.ntf__card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.ntf__badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.ntf__time { font-size: 12px; color: #9a8f83; }
+.ntf__card-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #272c30;
+  line-height: 1.4;
+  word-break: break-word;
+}
+.ntf__card.is-read .ntf__card-title { font-weight: 700; color: #3f3830; }
+.ntf__card-body {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #7a7066;
+  word-break: break-word;
+}
+
+/* States */
+.ntf__empty { padding: 72px 32px; text-align: center; }
+.ntf__empty-title { margin: 0 0 8px; font-size: 16px; font-weight: 800; color: #2b2019; }
+.ntf__empty-body { margin: 0; font-size: 13.5px; line-height: 1.6; color: #9a8f83; }
+.ntf__state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 56px 0;
+  color: #8b7f72;
+  font-size: 14px;
+}
+.ntf__retry {
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid #e7ddd2;
+  background: #fff;
+  font-weight: 700;
+  color: #2b2019;
+  cursor: pointer;
+}
+.ntf__foot { min-height: 40px; display: grid; place-items: center; padding: 12px 0; }

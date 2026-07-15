@@ -25,7 +25,7 @@ function countdown(endsAt: string, now = Date.now()): string {
 const MedalIcon = ({ rank }: { rank: number }) => {
   const fill = rank === 1 ? "#f5c518" : rank === 2 ? "#c4ccd4" : "#e08a4a";
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M8 3l2.2 4.4L15 8 8 3zM16 3l-2.2 4.4L9 8l7-5z" fill={fill} opacity="0.85" />
       <circle cx="12" cy="15" r="6" fill={fill} />
       <circle cx="12" cy="15" r="6" fill="url(#medalShine)" />
@@ -72,7 +72,7 @@ function LeagueBadge({ tier, reached, current }: { tier: LeagueTier; reached: bo
 /** Real avatar for a ranking row: uploaded photo → character → initial fallback. */
 function RankAvatar({ entry }: { entry: RankingEntry }) {
   if (entry.profile_image_type === "CUSTOM" && entry.profile_image_url) {
-    return <Avatar url={entry.profile_image_url} name={entry.nickname} size={38} />;
+    return <Avatar url={entry.profile_image_url} name={entry.nickname} size={46} />;
   }
   if (entry.profile_image_type === "AVATAR" && entry.avatar_key) {
     const key = entry.avatar_key as AvatarKey;
@@ -82,7 +82,7 @@ function RankAvatar({ entry }: { entry: RankingEntry }) {
       </span>
     );
   }
-  return <Avatar name={entry.nickname} size={38} />;
+  return <Avatar name={entry.nickname} size={46} />;
 }
 
 /* --------------------------- carousel ---------------------------------- */

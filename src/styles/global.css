@@ -7416,15 +7416,15 @@ textarea.input {
 }
 .lg__tabset {
   display: flex;
-  gap: 18px;
+  gap: 22px;
 }
 .lg__tab {
   position: relative;
   background: none;
   border: none;
-  padding: 4px 0 8px;
-  font-size: 15px;
-  font-weight: 700;
+  padding: 6px 0 11px;
+  font-size: 17.5px;
+  font-weight: 800;
   color: var(--ink-3);
   cursor: pointer;
 }
@@ -7443,12 +7443,12 @@ textarea.input {
 }
 .lg__history {
   flex-shrink: 0;
-  padding: 6px 14px;
-  border: 1.4px solid var(--border-strong);
+  padding: 9px 18px;
+  border: 1.5px solid var(--border-strong);
   border-radius: var(--r-full);
   background: var(--surface);
   color: var(--ink-2);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -7550,8 +7550,8 @@ textarea.input {
 .lg__rank {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
+  gap: 14px;
+  padding: 13px 16px;
   border-radius: var(--r-md);
   background: var(--surface);
   border: 1px solid var(--border);
@@ -7561,11 +7561,11 @@ textarea.input {
   border-color: var(--brand-200);
 }
 .lg__rank-no {
-  width: 24px;
+  width: 28px;
   flex-shrink: 0;
   text-align: center;
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 800;
   color: var(--ink-2);
 }
@@ -7573,8 +7573,8 @@ textarea.input {
   color: var(--brand-600);
 }
 .lg__avatar-char {
-  width: 38px;
-  height: 38px;
+  width: 46px;
+  height: 46px;
   flex-shrink: 0;
   border-radius: var(--r-full);
   display: flex;
@@ -7587,8 +7587,8 @@ textarea.input {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 14.5px;
+  gap: 8px;
+  font-size: 16.5px;
   font-weight: 700;
   color: var(--ink);
   white-space: nowrap;
@@ -7597,17 +7597,17 @@ textarea.input {
 }
 .lg__rank-you {
   flex-shrink: 0;
-  padding: 1px 7px;
+  padding: 2px 9px;
   border-radius: var(--r-full);
   background: var(--brand-500);
   color: #fff;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 700;
 }
 .lg__rank-pts {
   flex-shrink: 0;
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 800;
   color: var(--ink);
 }

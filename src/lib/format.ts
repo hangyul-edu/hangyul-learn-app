@@ -66,19 +66,3 @@ export const NATIONALITIES: { code: string; label: string; dial: string; flag: s
   { code: "FR", label: "France", dial: "+33", flag: "🇫🇷" },
   { code: "DE", label: "Deutschland", dial: "+49", flag: "🇩🇪" },
 ];
-
-export const TIER_COLOR: Record<string, string> = {
-  green: "var(--tier-green)",
-  lime: "var(--tier-lime)",
-  yellow: "var(--tier-yellow)",
-  orange: "var(--tier-orange)",
-  red: "var(--tier-red)",
-};
-
-export const TIER_LABEL: Record<string, string> = {
-  green: "그린 리그",
-  lime: "라임 리그",
-  yellow: "옐로 리그",
-  orange: "오렌지 리그",
-  red: "레드 리그",
-};

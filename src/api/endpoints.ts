@@ -12,6 +12,7 @@ import type {
   Invoice,
   PaymentRecovery,
   LeaguePosition,
+  LeagueSeason,
   LearningPreferences,
   Lecture,
   Me,
@@ -29,7 +30,7 @@ import type {
   Quiz,
   TopikQuestionType,
   QuizAttemptResult,
-  RankingEntry,
+  RankingResponse,
   RecQuota,
   SavedSentencesPage,
   Sentence,
@@ -296,8 +297,12 @@ export const gameApi = {
       { cursor, limit: 30 },
     ),
   myLeague: () => http.get<LeaguePosition>("/leagues/me"),
-  rankings: (season_id: string) =>
-    http.get<{ entries: RankingEntry[]; league_kind?: string }>("/leagues/rankings", { season_id, limit: 30 }),
+  currentSeason: () => http.get<LeagueSeason>("/leagues/current"),
+  // The user's live regular-league leaderboard for the CURRENT season. This is
+  // the always-safe endpoint (dormant → 200 with an empty board); the old
+  // `/leagues/rankings?season_id=` path did not exist and 404'd.
+  currentRankings: () => http.get<RankingResponse>("/leagues/current/rankings", { limit: 30 }),
+  friendRankings: () => http.get<RankingResponse>("/leagues/friends/rankings", { limit: 30 }),
   seasons: () => http.get<{ current?: { season_id: string }; items?: { season_id: string }[] }>("/leagues/seasons"),
   attendanceStatus: () => http.get<{ checked_in_today?: boolean; consecutive_days?: number }>("/attendance/me"),
   checkIn: () => http.post<{ points_awarded?: number; consecutive_days?: number }>("/attendance/check-in"),

@@ -321,23 +321,50 @@ export interface PointsBalance {
   season_id?: string;
 }
 export interface LeaguePosition {
-  league_kind?: string;
-  tier?: string | null;
-  rank: number | null;
-  season_points: number;
-  participants: number;
+  season_id: string;
+  tier: string;
+  tier_label: string;
+  dormant: boolean;
   group_id?: string | null;
-  promote_rank?: number | null;
-  demote_rank?: number | null;
+  group_size?: number;
+  rank: number | null;
+  band?: "promote" | "maintain" | "demote" | null;
+  season_points: number;
+  last_activity_at?: string | null;
+  promote_cutoff_rank?: number | null;
+  demote_cutoff_rank?: number | null;
+  can_promote?: boolean;
+  can_demote?: boolean;
+  previous_tier?: string | null;
+  next_tier?: string | null;
+}
+export interface LeagueSeason {
+  season_id: string;
+  name?: string;
+  timezone?: string;
+  starts_at: string;
+  ends_at: string;
+  is_current?: boolean;
 }
 export interface RankingEntry {
   rank: number;
   user_id: string;
   nickname?: string | null;
+  profile_image_type?: ProfileImageType;
+  avatar_key?: string | null;
+  profile_image_url?: string | null;
   tier?: string;
+  group_id?: string;
   points: number;
   outcome?: string | null;
-  is_me?: boolean;
+}
+export interface RankingResponse {
+  season_id: string;
+  group_id?: string | null;
+  updated_at?: string;
+  league_kind?: string;
+  entries: RankingEntry[];
+  me?: RankingEntry | null;
 }
 
 /* ---- Friends ---- */

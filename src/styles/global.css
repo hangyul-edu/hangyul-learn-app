@@ -7400,3 +7400,365 @@ textarea.input {
   padding: 12px clamp(20px, 7.5vw, 30px) calc(20px + var(--safe-bottom));
   background: #ffffff;
 }
+
+/* ============================ League (정규 리그) ============================ */
+.lg__body {
+  padding-top: calc(var(--safe-top) + 14px);
+}
+
+/* Sub-tabs + 히스토리 button */
+.lg__tabs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.lg__tabset {
+  display: flex;
+  gap: 18px;
+}
+.lg__tab {
+  position: relative;
+  background: none;
+  border: none;
+  padding: 4px 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+.lg__tab.is-active {
+  color: var(--ink);
+}
+.lg__tab.is-active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--brand-500);
+}
+.lg__history {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border: 1.4px solid var(--border-strong);
+  border-radius: var(--r-full);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lg__history:active {
+  background: var(--surface-2);
+}
+
+/* Progress carousel */
+.lg__carousel {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  margin: 4px -18px 0;
+  padding: 4px 0 2px;
+}
+.lg__carousel::-webkit-scrollbar {
+  display: none;
+}
+.lg__carousel-track {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 40%;
+  width: max-content;
+}
+.lg__badge-slot {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  opacity: 0.72;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.lg__badge-slot.is-current {
+  opacity: 1;
+}
+.lg__badge {
+  width: 58px;
+  height: 66px;
+  filter: drop-shadow(0 4px 8px rgba(43, 32, 25, 0.12));
+}
+.lg__badge-slot.is-current .lg__badge {
+  width: 92px;
+  height: 104px;
+  filter: drop-shadow(0 8px 16px rgba(180, 83, 9, 0.22));
+}
+
+/* Fixed title + info + timer */
+.lg__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.lg__title-row--friend {
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+.lg__title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.lg__info-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-full);
+  border: none;
+  background: var(--surface-3);
+  color: var(--ink-3);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 22px;
+  text-align: center;
+  cursor: pointer;
+}
+.lg__info-btn:active {
+  background: var(--border-strong);
+}
+.lg__timer {
+  margin: 6px 0 18px;
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--brand-600);
+}
+
+/* Ranking list */
+.lg__ranks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lg__rank {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.lg__rank.is-me {
+  background: var(--brand-50);
+  border-color: var(--brand-200);
+}
+.lg__rank-no {
+  width: 24px;
+  flex-shrink: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink-2);
+}
+.lg__rank.is-me .lg__rank-no {
+  color: var(--brand-600);
+}
+.lg__avatar-char {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: var(--r-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.lg__rank-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lg__rank-you {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: var(--r-full);
+  background: var(--brand-500);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+.lg__rank-pts {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+/* Dormant / empty state */
+.lg__empty {
+  margin-top: 56px;
+  text-align: center;
+}
+.lg__empty-badge .lg__badge {
+  width: 88px;
+  height: 100px;
+  opacity: 0.9;
+}
+.lg__empty-title {
+  margin: 18px 0 8px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.lg__empty-desc {
+  margin: 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--ink-3);
+  line-height: 1.6;
+}
+
+/* Full-screen info modal */
+.lg-info {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--bg);
+  max-width: var(--app-max);
+  margin: 0 auto;
+}
+.lg-info__scroll {
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.lg-info__hero {
+  position: relative;
+  padding: calc(var(--safe-top) + 56px) 24px 44px;
+  text-align: center;
+  background: var(--brand-gradient);
+  color: #fff;
+  border-radius: 0 0 28px 28px;
+}
+.lg-info__close {
+  position: absolute;
+  top: calc(var(--safe-top) + 14px);
+  right: 16px;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-full);
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.lg-info__hero-title {
+  font-size: 26px;
+  color: #fff;
+}
+.lg-info__hero-desc {
+  margin: 12px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.92);
+}
+.lg-info__flag {
+  display: block;
+  margin-top: 18px;
+  font-size: 40px;
+}
+.lg-info__body {
+  padding: 20px 18px calc(32px + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.lg-info__card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 16px;
+}
+.lg-info__schedule {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.lg-info__schedule .lg__badge {
+  width: 52px;
+  height: 60px;
+  flex-shrink: 0;
+}
+.lg-info__sched-main {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.5;
+}
+.lg-info__sched-sub {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.lg-info__heading {
+  margin: 12px 4px 2px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.lg-info__rule-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.lg-info__rule-label {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.lg-info__rule-points {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--brand-600);
+}
+.lg-info__rule-detail {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.lg-info__promo {
+  background: var(--brand-50);
+  border-color: var(--brand-200);
+}
+.lg-info__promo-main {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.lg-info__promo-sub {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--ink-2);
+}

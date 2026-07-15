@@ -230,11 +230,8 @@ export function Notifications() {
                         aria-label={`${n.read ? "" : "새 알림. "}${GROUP_LABEL[n.group]} 알림, ${n.read ? "읽음" : "읽지 않음"}. ${n.title}. ${n.body ?? ""} ${relativeTime(n.created_at)}`}
                       >
                         <div className="ntf__card-top">
-                          <span className="ntf__card-lead">
-                            {!n.read && <span className="ntf__new-dot" aria-hidden="true" />}
-                            <span className="ntf__badge" style={{ background: BADGE_BG[n.group], color: BADGE_FG[n.group] }}>
-                              {GROUP_LABEL[n.group]}
-                            </span>
+                          <span className="ntf__badge" style={{ background: BADGE_BG[n.group], color: BADGE_FG[n.group] }}>
+                            {GROUP_LABEL[n.group]}
                           </span>
                           <span className="ntf__time">{relativeTime(n.created_at)}</span>
                         </div>

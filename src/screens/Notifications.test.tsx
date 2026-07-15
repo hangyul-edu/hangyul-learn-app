@@ -157,10 +157,9 @@ describe("Notifications screen", () => {
     api.list.mockResolvedValue(page([notif({ notification_id: "u", title: "새 소식", read: false })]));
     const { unmount } = renderScreen();
     const card = (await screen.findByText("새 소식")).closest(".ntf__card") as HTMLElement;
-    // While the page is open, the unread notification stays highlighted, carries
-    // the "새 알림" marker, and is NOT marked read yet.
+    // While the page is open, the unread notification stays highlighted (warm
+    // background, no red dot) and announces "새 알림"; it is NOT marked read yet.
     expect(card.className).toContain("is-unread");
-    expect(card.querySelector(".ntf__new-dot")).not.toBeNull();
     expect(screen.getByRole("article", { name: /새 알림/ })).toBeInTheDocument();
     expect(api.readAll).not.toHaveBeenCalled();
     // Leaving the page marks everything read (clears the bell badge).

@@ -182,6 +182,12 @@ export interface Quiz {
   topik_section?: string | null;
   topik_question_type?: string | null;
   bookmarked?: boolean;
+  // Saved-item state (present in /quizzes/bookmarks responses).
+  save_types?: string[];
+  incorrect_count?: number;
+  is_auto_saved?: boolean;
+  is_favorited?: boolean;
+  saved_at?: string | null;
 }
 export interface QuizAttemptResult {
   attempt_id: string;

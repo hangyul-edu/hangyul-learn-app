@@ -125,9 +125,13 @@ export const sentenceApi = {
   coach: () => http.get<{ targets: unknown[]; summary: string; based_on_attempts: number }>(
     "/sentences/pronunciation-coach",
   ),
-  saved: (params: { save_type?: string; sort?: string; cursor?: string }) =>
+  saved: (params: { save_type?: string; sort?: string; q?: string; cursor?: string }) =>
     http.get<SavedSentencesPage>("/saved-sentences", { limit: 20, ...params }),
   removeSaved: (id: string) => http.del<unknown>(`/saved-sentences/${id}`),
+  // Remove only the incorrect-answer (auto_wrong) record; keeps any bookmark.
+  clearAutoSave: (id: string) => http.del<unknown>(`/saved-sentences/${id}/auto-save`),
+  // Mark a saved sentence reviewed (updates last_reviewed_at) — on audio play.
+  markViewed: (id: string) => http.post<unknown>(`/saved-sentences/${id}/view`),
 };
 
 /* ------------------------------ Quizzes ----------------------------- */
@@ -139,7 +143,12 @@ export const quizApi = {
   attempt: (id: string, body: Record<string, unknown>) => http.post<QuizAttemptResult>(`/quizzes/${id}/attempt`, body),
   bookmark: (id: string) => http.post<unknown>(`/quizzes/${id}/bookmark`),
   unbookmark: (id: string) => http.del<void>(`/quizzes/${id}/bookmark`),
-  bookmarks: (params: { save_type?: string; section?: string; cursor?: string }) =>
+  // Remove only the incorrect-answer (auto_wrong) record; keeps any bookmark.
+  clearAutoSave: (id: string) => http.del<unknown>(`/quizzes/${id}/auto-save`),
+  // Mark a saved question as opened for review (updates last_reviewed_at) —
+  // the question-side mirror of sentenceApi.markViewed.
+  markViewed: (id: string) => http.post<unknown>(`/quizzes/${id}/view`),
+  bookmarks: (params: { save_type?: string; section?: string; sort?: string; q?: string; cursor?: string }) =>
     http.get<{ items: Quiz[]; next_cursor?: string | null }>("/quizzes/bookmarks", { limit: 20, ...params }),
   attempts: (cursor?: string) =>
     http.get<{ items: unknown[]; stats?: Record<string, number>; next_cursor?: string | null }>(

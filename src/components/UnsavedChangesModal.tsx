@@ -1,20 +1,31 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Unsaved-changes confirmation modal. `계속하기` (left, gray) keeps the user on
- * the screen with their draft intact; `나가기` (right, orange) discards and
- * leaves. Calls no API. Backdrop is non-dismissable and Escape maps to 계속하기
- * (never 나가기). Focus is trapped and restored to the opener on close. Reuses
- * the shared two-button dialog styles (.lgo__*).
+ * Unsaved-changes confirmation modal. The left (gray) button keeps the user on
+ * the screen with their draft intact; the right (orange) `나가기` discards and
+ * leaves. Calls no API. Backdrop is non-dismissable and Escape maps to the
+ * cancel action (never 나가기). Focus is trapped and restored to the opener on
+ * close. Reuses the shared two-button dialog styles (.lgo__*).
+ *
+ * Copy is customizable per screen (`title` / `subtitle` / `cancelLabel`); the
+ * defaults preserve the original wording for existing call sites.
  */
 export function UnsavedChangesModal({
   open,
   onContinue,
   onLeave,
+  title = "변경사항을 저장하지 않고 나갈까요?",
+  subtitle = "변경사항이 적용되지 않습니다",
+  cancelLabel = "계속하기",
+  leaveLabel = "나가기",
 }: {
   open: boolean;
   onContinue: () => void;
   onLeave: () => void;
+  title?: string;
+  subtitle?: string;
+  cancelLabel?: string;
+  leaveLabel?: string;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
@@ -60,11 +71,11 @@ export function UnsavedChangesModal({
   return (
     <div className="overlay overlay--center wd__overlay">
       <div ref={dialogRef} className="lgo" role="alertdialog" aria-modal="true" aria-labelledby="unsaved-title" aria-describedby="unsaved-desc">
-        <h2 className="lgo__title" id="unsaved-title">변경사항을 저장하지 않고 나갈까요?</h2>
-        <p className="lgo__copy" id="unsaved-desc">변경사항이 적용되지 않습니다</p>
+        <h2 className="lgo__title" id="unsaved-title">{title}</h2>
+        <p className="lgo__copy" id="unsaved-desc">{subtitle}</p>
         <div className="lgo__actions">
-          <button className="lgo__btn lgo__btn--cancel" onClick={onContinue}>계속하기</button>
-          <button className="lgo__btn lgo__btn--go" onClick={onLeave}>나가기</button>
+          <button className="lgo__btn lgo__btn--cancel" onClick={onContinue}>{cancelLabel}</button>
+          <button className="lgo__btn lgo__btn--go" onClick={onLeave}>{leaveLabel}</button>
         </div>
       </div>
     </div>

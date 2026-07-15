@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useBlocker, useNavigate } from "react-router-dom";
 import {
   ProfilePlaceholder,
   CharacterAvatar,
@@ -10,6 +10,7 @@ import {
   avatarBg,
   type AvatarKey,
 } from "../components/brand/ProfileAssets";
+import { UnsavedChangesModal } from "../components/UnsavedChangesModal";
 import { userApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
@@ -52,6 +53,35 @@ export function EditProfile() {
   // A changed nickname needs a passing duplicate check; an unchanged one is fine.
   const nickOk = !nickChanged || !!checkToken;
   const canSave = !!me && anyChanged && nickOk && !busy && !uploading && !checking;
+
+  // Unsaved-changes guard. Block EVERY in-app exit path while there are edits
+  // (header back, browser/hardware back, swipe-back, programmatic pop) via the
+  // data router; the modal is driven by the blocker's state. A deliberate exit
+  // (successful save, or tapping 나가기) sets leavingRef to bypass the guard.
+  const leavingRef = useRef(false);
+  const blocker = useBlocker(
+    useCallback(
+      ({
+        currentLocation,
+        nextLocation,
+      }: {
+        currentLocation: { pathname: string };
+        nextLocation: { pathname: string };
+      }) => anyChanged && !leavingRef.current && currentLocation.pathname !== nextLocation.pathname,
+      [anyChanged],
+    ),
+  );
+
+  // Warn on full page unload (reload/close) while there are unsaved edits.
+  useEffect(() => {
+    if (!anyChanged) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [anyChanged]);
 
   function onNicknameChange(v: string) {
     setNickname(v);
@@ -125,6 +155,7 @@ export function EditProfile() {
       }
       const updated = await userApi.updateProfile(body);
       setMe(updated);
+      leavingRef.current = true; // saved → deliberate exit, don't trip the guard
       toast.success("저장했어요");
       nav(-1);
     } catch (e) {
@@ -141,7 +172,12 @@ export function EditProfile() {
     <div className="screen setupp">
       <div className="setupp__scroll">
         <div className="setupp__inner">
-          <button className="setupp__back" onClick={() => nav(-1)} aria-label="뒤로">
+          <button
+            className="setupp__back"
+            onClick={() => { if (!busy) nav(-1); }}
+            disabled={busy}
+            aria-label="뒤로"
+          >
             <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -259,6 +295,18 @@ export function EditProfile() {
           </button>
         </div>
       </div>
+
+      <UnsavedChangesModal
+        open={blocker.state === "blocked"}
+        title="프로필 변경을 종료할까요?"
+        subtitle="저장하지 않고 나가면 변경사항이 사라져요"
+        cancelLabel="취소"
+        onContinue={() => blocker.reset?.()}
+        onLeave={() => {
+          leavingRef.current = true; // discard the draft and proceed with the blocked nav
+          blocker.proceed?.();
+        }}
+      />
     </div>
   );
 }

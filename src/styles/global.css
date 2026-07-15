@@ -7150,13 +7150,27 @@ textarea.input {
   /* Informational only — not interactive (no tap / no navigation). */
 }
 .ntf__card.is-unread {
-  background: #fff5ec;
-  border-color: var(--brand-200, #ffd7b0);
-  box-shadow: 0 4px 14px rgba(255, 91, 0, 0.08);
+  background: #fff1e3;
+  border: 1.5px solid var(--brand-300, #fdba74);
+  box-shadow: 0 6px 16px rgba(255, 91, 0, 0.12);
 }
-.ntf__card.is-read { box-shadow: none; }
+.ntf__card.is-read {
+  background: #ffffff;
+  box-shadow: none;
+}
+.ntf__card.is-read .ntf__card-title { color: #3f3830; }
 
 .ntf__card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+/* Leading cluster (new-dot + category badge) on the card's top row. */
+.ntf__card-lead { display: inline-flex; align-items: center; gap: 7px; }
+/* Unmistakable "new" marker on unread notifications. */
+.ntf__new-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff3b30;
+}
 .ntf__badge {
   display: inline-flex;
   align-items: center;

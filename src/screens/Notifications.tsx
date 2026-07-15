@@ -43,6 +43,10 @@ const BackChevron = () => (
   </svg>
 );
 
+// Pending "mark all read on leave" timer, coordinated at module scope so a
+// StrictMode remount can cancel the fake-unmount's scheduled read-all.
+let leaveReadAllTimer: ReturnType<typeof setTimeout> | null = null;
+
 /* -------------------------------- screen -------------------------------- */
 export function Notifications() {
   const nav = useNavigate();
@@ -122,19 +126,29 @@ export function Notifications() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [more, cursor, items.length]);
 
-  // Mark everything read when the user LEAVES the page (unmount), NOT on enter —
-  // so the unread highlight stays visible for the whole visit (product policy:
-  // there is no per-item read). On leave we optimistically clear the bell-icon
-  // red dot, then reconcile with the server via read-all + invalidate.
+  // Mark everything read when the user LEAVES the page — NOT on enter — so the
+  // unread highlight stays visible for the whole visit (product policy: there is
+  // no per-item read). Scheduling via a module-level timer makes this safe under
+  // React StrictMode's dev-only mount→unmount→mount double-invoke: the fake
+  // unmount schedules the read-all, the immediate remount CANCELS it, so the
+  // server is only marked read on a genuine leave. Otherwise the remount would
+  // re-fetch the list as already-read and wipe the highlight.
   useEffect(() => {
+    if (leaveReadAllTimer !== null) {
+      clearTimeout(leaveReadAllTimer);
+      leaveReadAllTimer = null;
+    }
     return () => {
-      qc.setQueryData(["notif-unread"], { has_unread: false });
-      notifApi
-        .readAll()
-        .catch(() => {
-          /* best-effort */
-        })
-        .finally(() => qc.invalidateQueries({ queryKey: ["notif-unread"] }));
+      leaveReadAllTimer = setTimeout(() => {
+        leaveReadAllTimer = null;
+        qc.setQueryData(["notif-unread"], { has_unread: false }); // clear bell dot
+        notifApi
+          .readAll()
+          .catch(() => {
+            /* best-effort */
+          })
+          .finally(() => qc.invalidateQueries({ queryKey: ["notif-unread"] }));
+      }, 0);
     };
   }, [qc]);
 
@@ -213,11 +227,14 @@ export function Notifications() {
                       <div
                         className={`ntf__card ${n.read ? "is-read" : "is-unread"}`}
                         role="article"
-                        aria-label={`${GROUP_LABEL[n.group]} 알림, ${n.read ? "읽음" : "읽지 않음"}. ${n.title}. ${n.body ?? ""} ${relativeTime(n.created_at)}`}
+                        aria-label={`${n.read ? "" : "새 알림. "}${GROUP_LABEL[n.group]} 알림, ${n.read ? "읽음" : "읽지 않음"}. ${n.title}. ${n.body ?? ""} ${relativeTime(n.created_at)}`}
                       >
                         <div className="ntf__card-top">
-                          <span className="ntf__badge" style={{ background: BADGE_BG[n.group], color: BADGE_FG[n.group] }}>
-                            {GROUP_LABEL[n.group]}
+                          <span className="ntf__card-lead">
+                            {!n.read && <span className="ntf__new-dot" aria-hidden="true" />}
+                            <span className="ntf__badge" style={{ background: BADGE_BG[n.group], color: BADGE_FG[n.group] }}>
+                              {GROUP_LABEL[n.group]}
+                            </span>
                           </span>
                           <span className="ntf__time">{relativeTime(n.created_at)}</span>
                         </div>

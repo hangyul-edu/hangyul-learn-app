@@ -1,3 +1,4 @@
+import { StrictMode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -152,17 +153,42 @@ describe("Notifications screen", () => {
     expect(within(read).getByText("소셜")).toBeInTheDocument();
   });
 
-  it("keeps unread highlight on the visit and marks all read only on LEAVE", async () => {
-    api.list.mockResolvedValue(page([notif({ notification_id: "u", title: "새 알림", read: false })]));
+  it("keeps unread highlight + new marker on the visit; marks read only on LEAVE", async () => {
+    api.list.mockResolvedValue(page([notif({ notification_id: "u", title: "새 소식", read: false })]));
     const { unmount } = renderScreen();
-    const card = (await screen.findByText("새 알림")).closest(".ntf__card") as HTMLElement;
-    // While the page is open, the unread notification stays highlighted and is
-    // NOT marked read yet.
+    const card = (await screen.findByText("새 소식")).closest(".ntf__card") as HTMLElement;
+    // While the page is open, the unread notification stays highlighted, carries
+    // the "새 알림" marker, and is NOT marked read yet.
     expect(card.className).toContain("is-unread");
+    expect(card.querySelector(".ntf__new-dot")).not.toBeNull();
+    expect(screen.getByRole("article", { name: /새 알림/ })).toBeInTheDocument();
     expect(api.readAll).not.toHaveBeenCalled();
     // Leaving the page marks everything read (clears the bell badge).
     unmount();
     await waitFor(() => expect(api.readAll).toHaveBeenCalledTimes(1));
+  });
+
+  it("under StrictMode, the highlight survives the double-mount and read-all is NOT fired early", async () => {
+    api.list.mockResolvedValue(page([notif({ notification_id: "s", title: "긴급 소식", read: false })]));
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    render(
+      <StrictMode>
+        <QueryClientProvider client={qc}>
+          <MemoryRouter initialEntries={["/notifications"]}>
+            <ToastProvider>
+              <Routes>
+                <Route path="/notifications" element={<Notifications />} />
+              </Routes>
+            </ToastProvider>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </StrictMode>,
+    );
+    const card = (await screen.findByText("긴급 소식")).closest(".ntf__card") as HTMLElement;
+    expect(card.className).toContain("is-unread"); // still highlighted after mount→unmount→mount
+    // Give the (cancelled) fake-unmount timer a tick; it must have been cleared.
+    await new Promise((r) => setTimeout(r, 5));
+    expect(api.readAll).not.toHaveBeenCalled();
   });
 
   it("notification cards are informational only — no navigation on tap", async () => {

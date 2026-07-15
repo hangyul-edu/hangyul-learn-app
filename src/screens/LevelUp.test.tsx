@@ -23,15 +23,14 @@ const topik: SessionLevelUp = {
   points_awarded: 100,
 };
 
-function renderLevelUp(levelUp?: SessionLevelUp) {
+function renderLevelUp(levelUp?: SessionLevelUp, from?: string) {
   const router = createMemoryRouter(
     [
       { path: "/level-up", element: <LevelUp /> },
-      { path: "/session/conversation", element: <div>SESSION_CONVERSATION</div> },
-      { path: "/session/topik", element: <div>SESSION_TOPIK</div> },
       { path: "/home", element: <div>HOME</div> },
+      { path: "/recommend", element: <div>PERSONALIZED</div> },
     ],
-    { initialEntries: [{ pathname: "/level-up", state: levelUp ? { levelUp } : undefined }], initialIndex: 0 },
+    { initialEntries: [{ pathname: "/level-up", state: levelUp ? { levelUp, from } : undefined }], initialIndex: 0 },
   );
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
@@ -64,16 +63,22 @@ describe("LevelUp screen", () => {
     expect(screen.getByText("00:25")).toBeInTheDocument(); // 1500s → 00:25
   });
 
-  it("button starts the next personalized session for the SAME track (conversation)", async () => {
-    renderLevelUp(conv);
+  it("button returns to Home when the session was started from Home (no auto-restart)", async () => {
+    renderLevelUp(conv, "/home");
     await userEvent.click(screen.getByRole("button", { name: "다음 레벨 학습하기" }));
-    expect(await screen.findByText("SESSION_CONVERSATION")).toBeInTheDocument();
+    expect(await screen.findByText("HOME")).toBeInTheDocument();
   });
 
-  it("button routes to the TOPIK session for a TOPIK level-up", async () => {
-    renderLevelUp(topik);
+  it("button returns to Personalized when the session was started from there", async () => {
+    renderLevelUp(topik, "/recommend");
     await userEvent.click(screen.getByRole("button", { name: "다음 레벨 학습하기" }));
-    expect(await screen.findByText("SESSION_TOPIK")).toBeInTheDocument();
+    expect(await screen.findByText("PERSONALIZED")).toBeInTheDocument();
+  });
+
+  it("button falls back to Home when the source is unknown", async () => {
+    renderLevelUp(conv);
+    await userEvent.click(screen.getByRole("button", { name: "다음 레벨 학습하기" }));
+    expect(await screen.findByText("HOME")).toBeInTheDocument();
   });
 
   it("redirects home when there is no level-up state (refresh / direct nav)", async () => {

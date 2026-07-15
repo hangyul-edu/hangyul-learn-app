@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SessionChrome } from "../components/SessionChrome";
 import { SessionCompleteModal } from "../components/SessionCompleteModal";
@@ -30,8 +30,12 @@ function useRemaining() {
 
 export function SessionConversation() {
   const nav = useNavigate();
+  const loc = useLocation();
   const toast = useToast();
   const qc = useQueryClient();
+  // Where the session was launched from (Home / Personalized), forwarded to the
+  // Level-Up screen so its button returns the user to that source page.
+  const from = (loc.state as { from?: string } | null)?.from ?? "/home";
   const { remaining, level } = useRemaining();
 
   const [prompt, setPrompt] = useState("");
@@ -181,7 +185,7 @@ export function SessionConversation() {
       qc.invalidateQueries({ queryKey: ["notif-unread"] });
       qc.invalidateQueries({ queryKey: ["my-learning"] });
       if (res.leveled_up && res.level_up) {
-        nav("/level-up", { replace: true, state: { levelUp: res.level_up } });
+        nav("/level-up", { replace: true, state: { levelUp: res.level_up, from } });
         return;
       }
     } catch {

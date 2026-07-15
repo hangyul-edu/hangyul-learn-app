@@ -94,7 +94,12 @@ export function LevelUp() {
   const nav = useNavigate();
   const loc = useLocation();
   const qc = useQueryClient();
-  const levelUp = (loc.state as { levelUp?: SessionLevelUp } | null)?.levelUp ?? null;
+  const state = loc.state as { levelUp?: SessionLevelUp; from?: string } | null;
+  const levelUp = state?.levelUp ?? null;
+  // The page the session was launched from (Home / Personalized). The button
+  // returns the user here; they decide what to do next (it does NOT auto-start
+  // another session).
+  const from = state?.from ?? "/home";
 
   // Missing state (direct nav / refresh) → nothing to celebrate; go Home. This
   // also prevents a stale level-up screen from reappearing after a reload.
@@ -123,10 +128,10 @@ export function LevelUp() {
   const duration = fmtDuration(levelUp.seconds_studied_at_previous_level);
 
   function goNextLevel() {
-    // Start a new personalized session for the SAME track that leveled up.
-    // `replace` so the level-up screen isn't in the back stack (and this screen
-    // won't reappear). Never routes to lecture/review.
-    nav(isTopik ? "/session/topik" : "/session/conversation", { replace: true });
+    // Return to the source page (Home / Personalized) — do NOT auto-start a new
+    // session. `replace` so the level-up screen leaves the back stack and can't
+    // reappear. The user chooses what to do next from that page.
+    nav(from, { replace: true });
   }
 
   return (

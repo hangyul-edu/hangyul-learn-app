@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SessionChrome } from "../components/SessionChrome";
 import { SessionCompleteModal } from "../components/SessionCompleteModal";
@@ -15,7 +15,11 @@ const SECTION = "reading"; // reference dropdown shows the reading problem types
 
 export function SessionTopik() {
   const nav = useNavigate();
+  const loc = useLocation();
   const toast = useToast();
+  // Source page (Home / Personalized), forwarded to the Level-Up screen so its
+  // button returns the user there.
+  const from = (loc.state as { from?: string } | null)?.from ?? "/home";
   const qc = useQueryClient();
 
   const dash = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
@@ -134,7 +138,7 @@ export function SessionTopik() {
       qc.invalidateQueries({ queryKey: ["notif-unread"] });
       qc.invalidateQueries({ queryKey: ["my-learning"] });
       if (res.leveled_up && res.level_up) {
-        nav("/level-up", { replace: true, state: { levelUp: res.level_up } });
+        nav("/level-up", { replace: true, state: { levelUp: res.level_up, from } });
         return;
       }
     } catch {

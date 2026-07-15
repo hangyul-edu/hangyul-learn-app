@@ -2,11 +2,12 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Avatar } from "../components/ui/kit";
-import { Async, SkeletonList } from "../components/ui/states";
+import { Async, ErrorState, LoadingState, SkeletonList } from "../components/ui/states";
 import { CharacterArt, avatarBg, type AvatarKey } from "../components/brand/ProfileAssets";
 import { gameApi } from "../api/endpoints";
 import { LEAGUE_POINT_RULES, LEAGUE_TIERS, TIER_META, tierIndex, type LeagueTier } from "../lib/league";
 import type { RankingEntry } from "../lib/types";
+import { LeagueLifecycleModal, useLeagueLifecycle } from "./LeagueLifecycleModals";
 
 type Tab = "regular" | "friend";
 
@@ -254,6 +255,8 @@ export function League() {
   const [info, setInfo] = useState(false);
   const [nowTick, setNowTick] = useState(Date.now());
 
+  // Server-authoritative entry lifecycle gates the whole screen (§1, §17, §23).
+  const lifecycle = useLeagueLifecycle();
   const mine = useQuery({ queryKey: ["league-me"], queryFn: gameApi.myLeague });
   const season = useQuery({ queryKey: ["league-season"], queryFn: gameApi.currentSeason });
   const regular = useQuery({ queryKey: ["league-rankings", "regular"], queryFn: gameApi.currentRankings, enabled: tab === "regular" });
@@ -290,6 +293,15 @@ export function League() {
           </button>
         </div>
 
+        {/* Wait for the authoritative lifecycle before rendering ranking/empty
+            so the correct modal/state shows without flashing the wrong screen. */}
+        {!lifecycle.data ? (
+          lifecycle.error ? (
+            <ErrorState message="리그 정보를 불러오지 못했어요." onRetry={() => lifecycle.refetch()} />
+          ) : (
+            <LoadingState />
+          )
+        ) : (
         <Async
           loading={mine.isLoading}
           error={mine.error}
@@ -351,9 +363,11 @@ export function League() {
             )
           }
         </Async>
+        )}
       </div>
 
       {info && <InfoModal onClose={() => setInfo(false)} />}
+      {lifecycle.data && <LeagueLifecycleModal lifecycle={lifecycle.data} />}
     </div>
   );
 }

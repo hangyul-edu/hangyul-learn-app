@@ -15,6 +15,7 @@ import type {
   LeagueSeason,
   LeagueHistorySeasonsResponse,
   LeagueHistoryResponse,
+  LeagueLifecycleResponse,
   LearningPreferences,
   Lecture,
   Me,
@@ -313,6 +314,11 @@ export const gameApi = {
       cursor: params.cursor,
       limit: params.limit ?? 10,
     }),
+  // League entry lifecycle: server-authoritative state + idempotent mutations.
+  leagueLifecycle: () => http.get<LeagueLifecycleResponse>("/leagues/lifecycle"),
+  ackLeagueResult: (seasonId: string) =>
+    http.post<LeagueLifecycleResponse>(`/leagues/result/${encodeURIComponent(seasonId)}/ack`),
+  joinCurrentLeague: () => http.post<LeagueLifecycleResponse>("/leagues/current/join"),
   seasons: () => http.get<{ current?: { season_id: string }; items?: { season_id: string }[] }>("/leagues/seasons"),
   attendanceStatus: () => http.get<{ checked_in_today?: boolean; consecutive_days?: number }>("/attendance/me"),
   checkIn: () => http.post<{ points_awarded?: number; consecutive_days?: number }>("/attendance/check-in"),

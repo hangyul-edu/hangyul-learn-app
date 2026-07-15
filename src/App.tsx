@@ -26,6 +26,7 @@ import { QuizPlay } from "./screens/QuizPlay";
 import { Saved } from "./screens/Saved";
 import { League } from "./screens/League";
 import { LeagueHistory } from "./screens/LeagueHistory";
+import { LeagueResult } from "./screens/LeagueResult";
 import { Points } from "./screens/Points";
 import { Social } from "./screens/Social";
 import { Notifications } from "./screens/Notifications";
@@ -150,6 +151,7 @@ const router = createBrowserRouter(
         <Route path="/account/billing" element={<RequireAuth><Billing /></RequireAuth>} />
         <Route path="/saved" element={<RequireAuth><Saved /></RequireAuth>} />
         <Route path="/league/history" element={<RequireAuth><LeagueHistory /></RequireAuth>} />
+        <Route path="/league/result" element={<RequireAuth><LeagueResult /></RequireAuth>} />
         <Route path="/points" element={<RequireAuth><Points /></RequireAuth>} />
         <Route path="/streak" element={<RequireAuth><Streak /></RequireAuth>} />
         <Route path="/notifications" element={<RequireAuth><Notifications /></RequireAuth>} />

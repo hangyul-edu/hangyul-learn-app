@@ -401,6 +401,35 @@ export interface LeagueHistoryResponse {
   next_cursor: string | null;
 }
 
+/* ---- League lifecycle (entry flow) ---- */
+export type LeagueLifecycleState =
+  | "RESULT_UNVIEWED"
+  | "RESULT_VIEWED_WAITING_NEXT_LEAGUE"
+  | "NEW_LEAGUE_AVAILABLE_NOT_JOINED"
+  | "ACTIVE_LEAGUE"
+  | "NO_ELIGIBLE_LEAGUE";
+export type LeagueResultOutcome = "promoted" | "retained" | "demoted";
+export interface LeagueResultSummary {
+  season_id: string;
+  previous_tier: string;
+  previous_tier_label: string;
+  resulting_tier: string;
+  resulting_tier_label: string;
+  final_rank: number | null;
+  total_participants: number;
+  outcome: LeagueResultOutcome;
+  promote_cutoff_rank: number;
+  settled_at: string;
+  viewed: boolean;
+}
+export interface LeagueLifecycleResponse {
+  state: LeagueLifecycleState;
+  previous_result: LeagueResultSummary | null;
+  current_season_id: string | null;
+  next_season_starts_at: string | null;
+  can_join_current: boolean;
+}
+
 /* ---- Friends ---- */
 export interface Friend {
   user_id: string;

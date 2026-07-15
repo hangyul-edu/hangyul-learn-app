@@ -1,0 +1,120 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { ToastProvider } from "../hooks/toast";
+import type { LeagueLifecycleResponse, LeagueResultSummary } from "../lib/types";
+
+vi.mock("../api/endpoints", () => ({
+  gameApi: { leagueLifecycle: vi.fn(), ackLeagueResult: vi.fn() },
+}));
+
+import { gameApi } from "../api/endpoints";
+import { LeagueResult } from "./LeagueResult";
+
+const api = gameApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
+
+const promoted: LeagueResultSummary = {
+  season_id: "2026-W27",
+  previous_tier: "green",
+  previous_tier_label: "Green 리그",
+  resulting_tier: "lime",
+  resulting_tier_label: "Lime 리그",
+  final_rank: 5,
+  total_participants: 30,
+  outcome: "promoted",
+  promote_cutoff_rank: 6,
+  settled_at: "2026-07-12T21:00:00Z",
+  viewed: false,
+};
+
+function lifecycle(result: LeagueResultSummary | null): LeagueLifecycleResponse {
+  return {
+    state: result ? "RESULT_UNVIEWED" : "ACTIVE_LEAGUE",
+    previous_result: result,
+    current_season_id: "2026-W28",
+    next_season_starts_at: null,
+    can_join_current: false,
+  };
+}
+
+function renderResult() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={qc}>
+      <ToastProvider>
+        <MemoryRouter initialEntries={["/league/result"]}>
+          <Routes>
+            <Route path="/league/result" element={<LeagueResult />} />
+            <Route path="/league" element={<div>LEAGUE_HOME</div>} />
+          </Routes>
+        </MemoryRouter>
+      </ToastProvider>
+    </QueryClientProvider>,
+  );
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  api.leagueLifecycle.mockResolvedValue(lifecycle(promoted));
+  api.ackLeagueResult.mockResolvedValue(lifecycle(null));
+});
+
+describe("League result screen", () => {
+  it("renders the resulting league icon, promotion title, real rank and outcome copy", async () => {
+    renderResult();
+    // Resulting-league icon (Lime), not the previous league.
+    expect(await screen.findByRole("img", { name: "Lime 리그" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "축하합니다!" })).toBeInTheDocument();
+    // Real threshold + target league, real final rank.
+    expect(screen.getByText(/상위 6위 안에 들어/)).toBeInTheDocument();
+    expect(screen.getByText(/Lime 리그로 승급했어요/)).toBeInTheDocument();
+    expect(screen.getByText("최종 순위 5위 / 30명")).toBeInTheDocument();
+  });
+
+  it("shows the progress ladder reaching the resulting league", async () => {
+    renderResult();
+    await screen.findByRole("heading", { name: "축하합니다!" });
+    const ladder = screen.getByRole("list", { name: "리그 진행" });
+    // The Lime node is the current step.
+    const current = ladder.querySelector(".lgr__node.is-current");
+    expect(current).toBeInTheDocument();
+    // All five leagues are labelled (Green..Gold), responsive/scrollable.
+    ["Green", "Lime", "Yellow", "Orange", "Golden"].forEach((label) =>
+      expect(screen.getByText(label)).toBeInTheDocument(),
+    );
+  });
+
+  it("계속 도전하기 acknowledges exactly once and returns to the league screen", async () => {
+    renderResult();
+    const btn = await screen.findByRole("button", { name: "계속 도전하기" });
+    await userEvent.click(btn);
+    await userEvent.click(btn); // ignored while pending
+    await waitFor(() => expect(api.ackLeagueResult).toHaveBeenCalledTimes(1));
+    expect(api.ackLeagueResult).toHaveBeenCalledWith("2026-W27");
+    expect(await screen.findByText("LEAGUE_HOME")).toBeInTheDocument();
+  });
+
+  it("renders retention copy for a retained result", async () => {
+    api.leagueLifecycle.mockResolvedValue(
+      lifecycle({ ...promoted, outcome: "retained", resulting_tier: "green", resulting_tier_label: "Green 리그" }),
+    );
+    renderResult();
+    expect(await screen.findByRole("heading", { name: "이번 리그도 수고했어요!" })).toBeInTheDocument();
+  });
+
+  it("renders demotion copy for a demoted result", async () => {
+    api.leagueLifecycle.mockResolvedValue(
+      lifecycle({ ...promoted, outcome: "demoted", resulting_tier: "green", resulting_tier_label: "Green 리그" }),
+    );
+    renderResult();
+    expect(await screen.findByRole("heading", { name: "새로운 리그에서 다시 도전해보세요" })).toBeInTheDocument();
+  });
+
+  it("redirects to the league screen when there is no settled result", async () => {
+    api.leagueLifecycle.mockResolvedValue(lifecycle(null));
+    renderResult();
+    expect(await screen.findByText("LEAGUE_HOME")).toBeInTheDocument();
+  });
+});

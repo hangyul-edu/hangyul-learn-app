@@ -12,6 +12,9 @@ vi.mock("../api/endpoints", () => ({
     currentSeason: vi.fn(),
     currentRankings: vi.fn(),
     friendRankings: vi.fn(),
+    leagueLifecycle: vi.fn(),
+    joinCurrentLeague: vi.fn(),
+    ackLeagueResult: vi.fn(),
   },
 }));
 
@@ -83,6 +86,14 @@ beforeEach(() => {
   api.currentSeason.mockResolvedValue(season);
   api.currentRankings.mockResolvedValue(rankings);
   api.friendRankings.mockResolvedValue({ ...rankings, league_kind: "friend" });
+  // Default entry state = ACTIVE so the normal ranking screen renders.
+  api.leagueLifecycle.mockResolvedValue({
+    state: "ACTIVE_LEAGUE",
+    previous_result: null,
+    current_season_id: "2026-W28",
+    next_season_starts_at: null,
+    can_join_current: false,
+  });
 });
 
 describe("League screen", () => {

@@ -16,7 +16,7 @@ import type { Me } from "../lib/types";
 const MENU: { label: string; to: string }[] = [
   { label: "계정 관리", to: "/account" },
   { label: "결제수단 관리", to: "/account/payment" },
-  { label: "언어 설정", to: "/settings" },
+  { label: "언어 설정", to: "/settings/language" },
   { label: "알림 설정", to: "/settings" },
   { label: "친구 관리", to: "/social" },
   { label: "공지 사항", to: "/support" },

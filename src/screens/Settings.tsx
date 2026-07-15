@@ -1,5 +1,4 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
 import { Screen } from "../components/layout/Screen";
 import { Card, Segmented } from "../components/ui/kit";
 import { LoadingState } from "../components/ui/states";
@@ -41,7 +40,6 @@ function ToggleRow({ label, on, onToggle }: { label: string; on: boolean; onTogg
 export function Settings() {
   const toast = useToast();
   const qc = useQueryClient();
-  const nav = useNavigate();
   const q = useQuery({ queryKey: ["settings"], queryFn: settingsApi.get });
   const notif = useQuery({ queryKey: ["notif-settings"], queryFn: notifApi.settings });
 
@@ -69,18 +67,6 @@ export function Settings() {
   return (
     <Screen title="설정" back>
       <div className="stack" style={{ gap: 18 }}>
-        <Card style={{ padding: 0 }}>
-          <button
-            className="row row--between"
-            style={{ width: "100%", padding: "14px 16px", background: "none", border: "none", cursor: "pointer" }}
-            onClick={() => nav("/settings/language")}
-            aria-label="언어 설정"
-          >
-            <span style={{ fontSize: 14.5, fontWeight: 600 }}>언어 설정</span>
-            <span aria-hidden="true" style={{ color: "var(--ink-3, #9a8c7d)", fontSize: 20 }}>›</span>
-          </button>
-        </Card>
-
         <div>
           <div className="field__label" style={{ marginBottom: 8 }}>테마</div>
           <Segmented

@@ -6677,3 +6677,276 @@ textarea.input {
   min-height: 44px;
   padding: 12px 0;
 }
+
+/* ===================================================================== */
+/* Payment Method Management (/account/payment)                          */
+/* ===================================================================== */
+.pm {
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+/* Header — safe-area aware, centered title, back pinned left. */
+.pm__header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+  padding-top: var(--safe-top);
+  background: #ffffff;
+  border-bottom: 1px solid var(--line, #eee3d8);
+}
+.pm__back {
+  position: absolute;
+  left: 8px;
+  top: calc(var(--safe-top) + 6px);
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.pm__back:active { opacity: 0.55; }
+.pm__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #272c30;
+  letter-spacing: -0.01em;
+}
+
+/* Scroll body — ~32px horizontal padding, safe bottom inset. */
+.pm__scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px clamp(20px, 8vw, 32px) calc(32px + var(--safe-bottom));
+}
+
+.pm__section { margin-bottom: 28px; }
+.pm__section-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #2b2019;
+}
+
+.pm__list {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* A registered card / connected easy-pay row. */
+.pm__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1px solid #e7ddd2;
+  border-radius: var(--r-md, 16px);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.pm__row:active { background: #fdf8f2; }
+.pm__row:focus-visible { outline: 2px solid var(--brand-500, #f97316); outline-offset: 2px; }
+.pm__row--connect { cursor: default; justify-content: space-between; }
+
+/* Radio: gray ring, orange filled ring + dot when selected. */
+.pm__radio {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 2px solid #d3cabf;
+  display: grid;
+  place-items: center;
+  background: #fff;
+}
+.pm__radio.is-on { border-color: var(--brand-500, #f97316); }
+.pm__radio-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  background: var(--brand-500, #f97316);
+}
+
+.pm__thumb {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 28px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+}
+
+.pm__row-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+.pm__row-main--logo { align-items: center; }
+.pm__row-name {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #2b2019;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.pm__row-masked {
+  flex: 0 0 auto;
+  font-size: 13.5px;
+  color: #8b7f72;
+}
+
+.pm__del {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  margin: -8px -6px -8px 0;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.pm__del:active { opacity: 0.5; }
+
+/* Add-card rows. */
+.pm__add {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  background: #ffffff;
+  border: 1px solid #e7ddd2;
+  border-radius: var(--r-md, 16px);
+  cursor: pointer;
+  text-align: left;
+}
+.pm__add:active { background: #fdf8f2; }
+.pm__add:disabled { opacity: 0.55; cursor: default; }
+.pm__add-plus {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--brand-500, #f97316);
+  display: grid;
+  place-items: center;
+}
+.pm__add-label { font-size: 14.5px; font-weight: 600; color: #7b7168; }
+
+/* Easy-pay connect button (outlined orange). */
+.pm__connect {
+  flex: 0 0 auto;
+  padding: 9px 18px;
+  border-radius: var(--r-full, 999px);
+  border: 1.5px solid var(--brand-500, #f97316);
+  background: #ffffff;
+  color: var(--brand-600, #ea580c);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pm__connect:active { background: #fff3ea; }
+.pm__connect:disabled { opacity: 0.5; cursor: default; }
+
+/* Notice box. */
+.pm__notice {
+  background: #f6f3ef;
+  border-radius: var(--r-md, 16px);
+  padding: 16px 18px;
+}
+.pm__notice-title {
+  margin: 0 0 8px;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #4a4038;
+}
+.pm__notice-body {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pm__notice-body li {
+  position: relative;
+  padding-left: 12px;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: #9a8f83;
+}
+.pm__notice-body li::before {
+  content: "-";
+  position: absolute;
+  left: 0;
+}
+
+/* Deletion modal buttons (side by side). */
+.pm__modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+.pm__modal-btn {
+  flex: 1 1 0;
+  padding: 13px 0;
+  border: none;
+  border-radius: var(--r-sm, 12px);
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+  cursor: pointer;
+}
+.pm__modal-btn:disabled { opacity: 0.6; cursor: default; }
+.pm__modal-btn--cancel { background: #b9b0a6; }
+.pm__modal-btn--delete { background: var(--brand-500, #f97316); }
+.pm__modal-btn--delete:active { background: var(--brand-600, #ea580c); }
+
+/* Loading / error states. */
+.pm__state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 0;
+  color: #8b7f72;
+  font-size: 14px;
+}
+.pm__retry {
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid #e7ddd2;
+  background: #fff;
+  font-weight: 700;
+  color: #2b2019;
+  cursor: pointer;
+}
+.pm__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

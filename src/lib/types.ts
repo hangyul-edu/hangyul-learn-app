@@ -261,19 +261,25 @@ export interface ExamResult {
 }
 
 /* ---- Payment / billing ---- */
+export type MethodKind = "card" | "toss_pay" | "naver_pay";
+export type MethodProvider = "toss_card" | "toss_pay" | "naver_pay";
 export interface PaymentMethod {
   method_id: string;
-  kind: string;
-  provider: string;
-  status: string;
+  kind: MethodKind;
+  provider: MethodProvider;
+  status: "active" | "inactive" | "revoked";
   is_default: boolean;
   display_name: string;
   brand?: string | null;
   issuer?: string | null;
+  first_four?: string | null;
   last_four?: string | null;
   masked_card_number?: string | null;
+  card_type?: string | null;
   expiry_month?: number | null;
   expiry_year?: number | null;
+  registered_at?: string;
+  revoked_at?: string | null;
 }
 export interface Money {
   amount_cents: number;

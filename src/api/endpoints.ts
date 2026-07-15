@@ -204,16 +204,44 @@ export const practiceApi = {
   start: (lectureId: string, count: number) =>
     http.post<{ practice_set_id: string; items: Quiz[]; count: number }>(`/lectures/${lectureId}/practice`, { count }),
 };
+/** Which Toss MID the card-registration widget launches under. Domestic and
+ *  international cards use different merchants; the issued billing key is
+ *  region-agnostic, so only the launch config differs. */
+export type CardRegion = "domestic" | "international";
+type CardIntent = {
+  intent_id: string;
+  customer_key: string;
+  widget: { client_key: string; success_url: string; fail_url: string; card_region: CardRegion };
+};
+type RedirectIntent = { intent_id: string; authorize_url: string; customer_key: string };
+
 export const payApi = {
   methods: () => http.get<{ methods: PaymentMethod[] }>("/payment-methods"),
-  cardIntent: (return_url: string) =>
-    http.post<{ intent_id: string; customer_key: string; widget: { client_key: string; success_url: string; fail_url: string } }>(
-      "/payment-methods/cards/intent",
-      { client_idempotency_key: crypto.randomUUID(), return_url },
-    ),
+  cardIntent: (return_url: string, card_region: CardRegion = "domestic") =>
+    http.post<CardIntent>("/payment-methods/cards/intent", {
+      client_idempotency_key: crypto.randomUUID(),
+      return_url,
+      card_region,
+    }),
   cardConfirm: (intent_id: string, auth_key: string) =>
     http.post<{ method: PaymentMethod }>("/payment-methods/cards/confirm", { intent_id, auth_key }),
-  setDefault: (id: string) => http.put<{ method: PaymentMethod }>(`/payment-methods/${id}/default`, {}),
+  tosspayIntent: (return_url: string) =>
+    http.post<RedirectIntent>("/payment-methods/tosspay/intent", {
+      client_idempotency_key: crypto.randomUUID(),
+      return_url,
+    }),
+  tosspayConfirm: (intent_id: string, code: string, state: string) =>
+    http.post<{ method: PaymentMethod }>("/payment-methods/tosspay/confirm", { intent_id, code, state }),
+  naverpayIntent: (return_url: string) =>
+    http.post<RedirectIntent>("/payment-methods/naverpay/intent", {
+      client_idempotency_key: crypto.randomUUID(),
+      return_url,
+    }),
+  naverpayConfirm: (intent_id: string, reserve_id: string) =>
+    http.post<{ method: PaymentMethod }>("/payment-methods/naverpay/confirm", { intent_id, reserve_id }),
+  setDefault: (id: string) => http.post<void>(`/payment-methods/${id}/set-default`, {}),
+  replace: (id: string, new_method_id: string) =>
+    http.put<void>(`/payment-methods/${id}/replace`, { new_method_id }),
   remove: (id: string) => http.del<void>(`/payment-methods/${id}`),
 };
 export const billingApi = {

@@ -8082,25 +8082,28 @@ textarea.input {
   cursor: pointer;
 }
 
-/* Season dropdown */
+/* Season dropdown — a compact panel anchored under the season title (top-right),
+   contained within the app frame (absolute, not fixed). */
 .lh-drop {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 60;
-  background: rgba(30, 25, 20, 0.42);
+  background: rgba(30, 25, 20, 0.32);
   max-width: var(--app-max);
   margin: 0 auto;
 }
 .lh-drop__panel {
   position: absolute;
-  top: calc(var(--safe-top) + 120px);
-  left: 18px;
-  right: 18px;
+  top: calc(var(--safe-top) + 150px);
+  right: 16px;
+  width: min(230px, calc(100% - 32px));
+  max-height: 56vh;
+  overflow-y: auto;
   list-style: none;
   margin: 0;
-  padding: 6px 0;
+  padding: 6px;
   background: #ffffff;
-  border-radius: var(--r-lg);
+  border-radius: var(--r-md);
   box-shadow: var(--shadow-lg);
 }
 .lh-drop__option {
@@ -8108,20 +8111,21 @@ textarea.input {
   width: 100%;
   border: none;
   background: none;
-  padding: 16px 22px;
+  padding: 11px 14px;
+  border-radius: var(--r-sm);
   text-align: left;
   font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 700;
   color: #272c30;
   cursor: pointer;
-  border-bottom: 1px solid #eceef1;
 }
-.lh-drop__panel li:last-child .lh-drop__option {
-  border-bottom: none;
+.lh-drop__option:active {
+  background: var(--surface-2);
 }
 .lh-drop__option.is-active {
   color: #ff5b00;
+  background: #fff4ea;
 }
 
 /* ===================== League lifecycle modals ========================== */

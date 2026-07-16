@@ -8037,8 +8037,8 @@ textarea.input {
 .lh__pennant {
   position: relative;
   flex-shrink: 0;
-  width: 28px;
-  height: 36px;
+  width: 30px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -8046,18 +8046,18 @@ textarea.input {
 }
 .lh__pennant-num {
   position: absolute;
-  top: 44%;
+  top: 40%; /* centered in the solid body, clear of the notch */
   left: 50%;
   transform: translate(-50%, -50%);
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   color: #fff;
 }
-/* Top-3 pennants carry a yellow accent; nudge the number below it. */
+/* Top-3 pennants carry a yellow accent at the top; nudge the number below it. */
 .lh__pennant.is-top3 .lh__pennant-num {
-  top: 56%;
-  font-size: 12px;
+  top: 46%;
+  font-size: 13px;
 }
 .lh__row-pts {
   flex-shrink: 0;

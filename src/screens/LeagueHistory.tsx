@@ -142,9 +142,9 @@ function RankPennant({ rank }: { rank: number | null }) {
   const color = rank === 1 ? "#f0483a" : rank === 2 ? "#3b82f6" : rank === 3 ? "#22c55e" : "#aab2ba";
   return (
     <span className={`lh__pennant ${top3 ? "is-top3" : ""}`} aria-hidden="true">
-      <svg viewBox="0 0 28 36" width="28" height="36">
-        <path d="M4 2h20a2 2 0 0 1 2 2v24l-12-6.5L2 28V4a2 2 0 0 1 2-2z" fill={color} />
-        {top3 && <circle cx="14" cy="10" r="5" fill="#ffd23f" />}
+      <svg viewBox="0 0 30 44" width="30" height="44">
+        <path d="M4 2h22a2 2 0 0 1 2 2v30l-13-7-13 7V4a2 2 0 0 1 2-2z" fill={color} />
+        {top3 && <circle cx="15" cy="8" r="3.8" fill="#ffd23f" />}
       </svg>
       <span className="lh__pennant-num">{rank ?? "-"}</span>
     </span>

@@ -95,9 +95,12 @@ function RankAvatar({ entry }: { entry: RankingEntry }) {
  */
 function LeagueCarousel({ currentTier }: { currentTier: LeagueTier }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const currentRef = useRef<HTMLDivElement>(null);
+  const currentRef = useRef<HTMLDivElement | null>(null);
+  const slotsRef = useRef<(HTMLDivElement | null)[]>([]);
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const curIdx = Math.max(0, tierIndex(currentTier));
+  // Which badge is nearest the carousel centre — it scales up ("focused").
+  const [focused, setFocused] = useState(curIdx);
 
   const recenter = (behavior: ScrollBehavior) => {
     const box = scrollRef.current;
@@ -106,14 +109,34 @@ function LeagueCarousel({ currentTier }: { currentTier: LeagueTier }) {
     box.scrollTo({ left: el.offsetLeft - (box.clientWidth - el.clientWidth) / 2, behavior });
   };
 
+  // Highlight whichever slot's centre is closest to the viewport centre.
+  const updateFocused = () => {
+    const box = scrollRef.current;
+    if (!box) return;
+    const center = box.scrollLeft + box.clientWidth / 2;
+    let nearest = 0;
+    let best = Infinity;
+    slotsRef.current.forEach((el, i) => {
+      if (!el) return;
+      const distance = Math.abs(el.offsetLeft + el.clientWidth / 2 - center);
+      if (distance < best) {
+        best = distance;
+        nearest = i;
+      }
+    });
+    setFocused(nearest);
+  };
+
   // Center the user's current league on mount (no animation — it's the anchor).
   useLayoutEffect(() => {
     recenter("auto");
+    updateFocused();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTier]);
 
-  // Snap back once a scroll gesture stops, so the current league re-centers.
-  const scheduleRecenter = () => {
+  // Recompute focus continuously as the user drags; snap back once it settles.
+  const onScroll = () => {
+    updateFocused();
     if (idleTimer.current) clearTimeout(idleTimer.current);
     idleTimer.current = setTimeout(() => recenter("smooth"), 350);
   };
@@ -123,7 +146,7 @@ function LeagueCarousel({ currentTier }: { currentTier: LeagueTier }) {
     <div
       className="lg__carousel"
       ref={scrollRef}
-      onScroll={scheduleRecenter}
+      onScroll={onScroll}
       onTouchEnd={() => recenter("smooth")}
       onPointerUp={() => recenter("smooth")}
       aria-label="리그 진행 상황"
@@ -132,8 +155,11 @@ function LeagueCarousel({ currentTier }: { currentTier: LeagueTier }) {
         {LEAGUE_TIERS.map((tier, i) => (
           <div
             key={tier}
-            ref={i === curIdx ? currentRef : undefined}
-            className={`lg__badge-slot ${i === curIdx ? "is-current" : ""}`}
+            ref={(el) => {
+              slotsRef.current[i] = el;
+              if (i === curIdx) currentRef.current = el;
+            }}
+            className={`lg__badge-slot ${i === curIdx ? "is-current" : ""} ${i === focused ? "is-focused" : ""}`}
             aria-current={i === curIdx ? "true" : undefined}
           >
             <LeagueBadge tier={tier} reached={i <= curIdx} current={i === curIdx} />

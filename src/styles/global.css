@@ -7463,7 +7463,8 @@ textarea.input {
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   margin: 4px -18px 0;
-  padding: 4px 0 2px;
+  /* Extra vertical room so the scaled-up centered badge is never clipped. */
+  padding: 22px 0 12px;
 }
 .lg__carousel::-webkit-scrollbar {
   display: none;
@@ -7479,20 +7480,24 @@ textarea.input {
   flex: 0 0 auto;
   display: flex;
   justify-content: center;
-  opacity: 0.72;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  opacity: 0.7;
+  /* Scaled with transform (not width/height) so the layout box — and thus each
+     slot's measured center — stays fixed while the badge grows/shrinks. */
+  transform: scale(0.78);
+  transform-origin: center bottom;
+  transition: transform 0.18s ease, opacity 0.18s ease;
 }
-.lg__badge-slot.is-current {
+/* The badge nearest the carousel centre is highlighted (larger + opaque). */
+.lg__badge-slot.is-focused {
   opacity: 1;
+  transform: scale(1.32);
 }
 .lg__badge {
-  width: 58px;
-  height: 66px;
+  width: 66px;
+  height: 74px;
   filter: drop-shadow(0 4px 8px rgba(43, 32, 25, 0.12));
 }
-.lg__badge-slot.is-current .lg__badge {
-  width: 92px;
-  height: 104px;
+.lg__badge-slot.is-focused .lg__badge {
   filter: drop-shadow(0 8px 16px rgba(180, 83, 9, 0.22));
 }
 

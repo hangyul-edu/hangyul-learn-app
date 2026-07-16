@@ -466,7 +466,19 @@ export interface FriendRequest {
   user_id: string;
   nickname: string | null;
   profile_image_url?: string | null;
+  avatar_key?: string | null;
+  profile_image_type?: ProfileImageType;
   created_at?: string;
+  /** Server-formatted relative label (English); the client re-formats per locale. */
+  relative_time?: string;
+}
+export interface FriendListResponse {
+  friends: Friend[];
+  count: number;
+}
+export interface FriendRequestsResponse {
+  requests: FriendRequest[];
+  count: number;
 }
 
 /* ---- Notifications ---- */

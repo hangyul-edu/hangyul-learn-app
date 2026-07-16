@@ -8,7 +8,8 @@ import type {
   ExamSet,
   Faq,
   Friend,
-  FriendRequest,
+  FriendListResponse,
+  FriendRequestsResponse,
   Invoice,
   PaymentRecovery,
   LeaguePosition,
@@ -324,9 +325,9 @@ export const gameApi = {
 
 /* ------------------------------ Friends ----------------------------- */
 export const friendApi = {
-  list: () => http.get<{ items?: Friend[]; friends?: Friend[] }>("/friends"),
-  received: () => http.get<{ items?: FriendRequest[] }>("/friends/requests/received"),
-  sent: () => http.get<{ items?: FriendRequest[] }>("/friends/requests/sent"),
+  list: () => http.get<FriendListResponse>("/friends"),
+  received: () => http.get<FriendRequestsResponse>("/friends/requests/received"),
+  sent: () => http.get<FriendRequestsResponse>("/friends/requests/sent"),
   request: (user_id: string) => http.post<unknown>("/friends/requests", { user_id }),
   accept: (id: string) => http.post<unknown>(`/friends/requests/${id}/accept`),
   reject: (id: string) => http.post<void>(`/friends/requests/${id}/reject`),

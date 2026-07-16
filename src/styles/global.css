@@ -8663,3 +8663,193 @@ textarea.input {
   color: var(--ink-2);
   cursor: pointer;
 }
+
+/* ========================= Friend Management (친구 관리) ================= */
+.fm {
+  background: #fff;
+}
+.fm__header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--safe-top) + 12px) 14px 12px;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+.fm__back {
+  position: absolute;
+  left: 8px;
+  top: calc(var(--safe-top) + 8px);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.fm__title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  color: #272c30;
+}
+.fm__add {
+  position: absolute;
+  right: 12px;
+  top: calc(var(--safe-top) + 8px);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 13px;
+  border: 1.4px solid var(--border-strong);
+  border-radius: var(--r-full);
+  background: #fff;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.fm__add:active {
+  background: var(--surface-2);
+}
+
+/* Tabs */
+.fm__tabs {
+  display: flex;
+  gap: 20px;
+  padding: 12px 18px 0;
+  border-bottom: 1px solid var(--border);
+}
+.fm__tab {
+  position: relative;
+  background: none;
+  border: none;
+  padding: 4px 0 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+.fm__tab.is-active {
+  color: var(--ink);
+  font-weight: 800;
+}
+.fm__tab.is-active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--brand-500);
+}
+
+.fm__body {
+  background: #fff;
+}
+.fm__pad {
+  padding: 8px 2px;
+}
+
+/* Rows */
+.fm__list {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+}
+.fm__row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 13px 4px;
+}
+.fm__row-avatar {
+  flex-shrink: 0;
+}
+.fm__row-main {
+  flex: 1;
+  min-width: 0;
+}
+.fm__row-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fm__row-main .fm__row-name {
+  flex: none;
+}
+.fm__row-age {
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.fm__row-actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+}
+.fm__pill {
+  flex-shrink: 0;
+  padding: 7px 15px;
+  border: 1.4px solid var(--border-strong);
+  border-radius: var(--r-full);
+  background: #fff;
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.fm__pill:active {
+  background: var(--surface-2);
+}
+.fm__pill:disabled {
+  opacity: 0.5;
+}
+.fm__pill--primary {
+  background: var(--brand-500);
+  border-color: var(--brand-500);
+  color: #fff;
+}
+.fm__pill--primary:active {
+  background: var(--brand-600);
+}
+
+/* Friends empty state */
+.fm__empty {
+  min-height: 52vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px 16px;
+}
+.fm__empty-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.fm__empty-desc {
+  margin: 12px 0 22px;
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--ink-3);
+}
+
+/* Deletion modal actions */
+.fm__modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}

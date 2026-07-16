@@ -4,7 +4,14 @@
  */
 import { Avatar } from "../ui/kit";
 import { CharacterArt, avatarBg, type AvatarKey } from "./ProfileAssets";
-import type { RankingEntry } from "../../lib/types";
+
+/** Any profile-bearing subject (RankingEntry, Friend, FriendRequest, …). */
+export interface AvatarSubject {
+  nickname?: string | null;
+  profile_image_type?: string;
+  profile_image_url?: string | null;
+  avatar_key?: string | null;
+}
 
 export function MedalIcon({ rank, size = 27 }: { rank: number; size?: number }) {
   const fill = rank === 1 ? "#f5c518" : rank === 2 ? "#c4ccd4" : "#e08a4a";
@@ -25,7 +32,7 @@ export function MedalIcon({ rank, size = 27 }: { rank: number; size?: number }) 
 }
 
 /** Real avatar for a ranking row: uploaded photo → character → initial fallback. */
-export function RankAvatar({ entry, size = 46 }: { entry: RankingEntry; size?: number }) {
+export function RankAvatar({ entry, size = 46 }: { entry: AvatarSubject; size?: number }) {
   if (entry.profile_image_type === "CUSTOM" && entry.profile_image_url) {
     return <Avatar url={entry.profile_image_url} name={entry.nickname} size={size} />;
   }

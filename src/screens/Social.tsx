@@ -1,109 +1,399 @@
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { TopBar } from "../components/layout/Screen";
-import { Avatar, Button, Segmented } from "../components/ui/kit";
-import { Async, EmptyState, SkeletonList } from "../components/ui/states";
+import { Button } from "../components/ui/kit";
+import { Dialog } from "../components/ui/Modal";
+import { EmptyState, ErrorState, SkeletonList } from "../components/ui/states";
 import { TextField } from "../components/ui/Field";
+import { RankAvatar } from "../components/brand/RankBits";
 import { friendApi } from "../api/endpoints";
+import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
-import { NATIONALITIES } from "../lib/format";
-import type { Friend } from "../lib/types";
+import { NATIONALITIES, timeAgo } from "../lib/format";
+import { normalizeLanguage, type AppLanguage } from "../lib/language";
+import type { Friend, FriendRequest } from "../lib/types";
 
+type Tab = "friends" | "received" | "sent" | "find";
+
+const QK = {
+  friends: ["friends"],
+  received: ["friend-requests-received"],
+  sent: ["friend-requests-sent"],
+} as const;
+
+/* ------------------------------ localization ---------------------------- */
+interface FmCopy {
+  title: string;
+  back: string;
+  add: string;
+  tabs: { friends: string; received: string; sent: string };
+  remove: string;
+  reject: string;
+  accept: string;
+  cancel: string;
+  friendsEmptyTitle: string;
+  friendsEmptyDesc: string[];
+  receivedEmptyTitle: string;
+  receivedEmptyDesc: string;
+  sentEmptyTitle: string;
+  sentEmptyDesc: string;
+  listError: string;
+  modalTitle: (n: string) => string;
+  modalDesc: string;
+  modalCancel: string;
+  modalDelete: string;
+  toastAccepted: string;
+  toastRejected: string;
+  toastCancelled: string;
+  toastRemoved: string;
+  requestAge: (iso?: string) => string;
+}
+const FM_COPY: Record<AppLanguage, FmCopy> = {
+  ko: {
+    title: "친구 관리",
+    back: "뒤로 가기",
+    add: "친구 추가",
+    tabs: { friends: "친구", received: "받은 요청", sent: "보낸 요청" },
+    remove: "삭제",
+    reject: "거절",
+    accept: "수락",
+    cancel: "취소",
+    friendsEmptyTitle: "아직 친구가 없어요",
+    friendsEmptyDesc: ["친구를 추가하고", "함께 공부해 보세요!"],
+    receivedEmptyTitle: "받은 친구 요청이 없어요",
+    receivedEmptyDesc: "새로운 친구 요청이 오면 여기에 표시됩니다.",
+    sentEmptyTitle: "보낸 친구 요청이 없어요",
+    sentEmptyDesc: "친구를 추가하면 보낸 요청을 여기에서 확인할 수 있어요.",
+    listError: "목록을 불러오지 못했어요.",
+    modalTitle: (n: string) => `${n}님을 친구에서 삭제할까요?`,
+    modalDesc: "상대방에게 알림은 가지 않습니다.",
+    modalCancel: "취소",
+    modalDelete: "삭제",
+    toastAccepted: "친구가 되었어요!",
+    toastRejected: "요청을 거절했어요",
+    toastCancelled: "요청을 취소했어요",
+    toastRemoved: "친구를 삭제했어요",
+    requestAge: (iso?: string) => `${timeAgo(iso)} 요청`,
+  },
+  en: {
+    title: "Manage Friends",
+    back: "Go back",
+    add: "Add Friend",
+    tabs: { friends: "Friends", received: "Received", sent: "Sent" },
+    remove: "Remove",
+    reject: "Reject",
+    accept: "Accept",
+    cancel: "Cancel",
+    friendsEmptyTitle: "You don't have any friends yet",
+    friendsEmptyDesc: ["Add friends and", "study together!"],
+    receivedEmptyTitle: "No friend requests received",
+    receivedEmptyDesc: "New friend requests will appear here.",
+    sentEmptyTitle: "No friend requests sent",
+    sentEmptyDesc: "Add a friend to see your sent requests here.",
+    listError: "Couldn't load the list.",
+    modalTitle: (n: string) => `Remove ${n} from your friends?`,
+    modalDesc: "They will not be notified.",
+    modalCancel: "Cancel",
+    modalDelete: "Remove",
+    toastAccepted: "You're now friends!",
+    toastRejected: "Request rejected",
+    toastCancelled: "Request cancelled",
+    toastRemoved: "Friend removed",
+    requestAge: (iso?: string) => (iso ? engAge(iso) : ""),
+  },
+};
+
+function engAge(iso: string): string {
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+}
+const nameOf = (u: { nickname?: string | null }) => u.nickname ?? "회원";
+
+const PlusIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M12 5v14M5 12h14" stroke="#8a8f96" strokeWidth="2.3" strokeLinecap="round" />
+  </svg>
+);
+
+/* -------------------------------- rows ---------------------------------- */
+function FriendRow({ friend, copy, onRemove }: { friend: Friend; copy: FmCopy; onRemove: () => void }) {
+  return (
+    <li className="fm__row" aria-label={`${nameOf(friend)}, ${copy.remove}`}>
+      <span className="fm__row-avatar">
+        <RankAvatar entry={friend} size={46} />
+      </span>
+      <span className="fm__row-name">{nameOf(friend)}</span>
+      <button className="fm__pill" onClick={onRemove}>{copy.remove}</button>
+    </li>
+  );
+}
+
+function RequestRow({
+  req,
+  copy,
+  lang,
+  busy,
+  actions,
+}: {
+  req: FriendRequest;
+  copy: FmCopy;
+  lang: AppLanguage;
+  busy: boolean;
+  actions: { label: string; primary?: boolean; onClick: () => void }[];
+}) {
+  const age = lang === "ko" ? copy.requestAge(req.created_at) : req.relative_time ?? copy.requestAge(req.created_at);
+  return (
+    <li className="fm__row" aria-label={`${nameOf(req)}, ${age}, ${actions.map((a) => a.label).join(", ")}`}>
+      <span className="fm__row-avatar">
+        <RankAvatar entry={req} size={46} />
+      </span>
+      <div className="fm__row-main">
+        <div className="fm__row-name">{nameOf(req)}</div>
+        <div className="fm__row-age">{age}</div>
+      </div>
+      <div className="fm__row-actions">
+        {actions.map((a) => (
+          <button
+            key={a.label}
+            className={`fm__pill ${a.primary ? "fm__pill--primary" : ""}`}
+            disabled={busy}
+            onClick={a.onClick}
+          >
+            {a.label}
+          </button>
+        ))}
+      </div>
+    </li>
+  );
+}
+
+/* -------------------------------- screen -------------------------------- */
 export function Social() {
-  const toast = useToast();
+  const nav = useNavigate();
   const qc = useQueryClient();
-  // Optional deep-link to a specific tab, e.g. `/social?tab=find` opens the
-  // friend-search/add flow directly (used by Friend League's 친구 추가).
+  const toast = useToast();
+  const { me } = useAuth();
+  const copy = FM_COPY[normalizeLanguage(me?.app_language)];
+  const lang = normalizeLanguage(me?.app_language);
+
   const [params] = useSearchParams();
   const initialTab = params.get("tab");
-  const [tab, setTab] = useState<"friends" | "requests" | "find">(
-    initialTab === "find" || initialTab === "requests" ? initialTab : "friends",
+  const [tab, setTab] = useState<Tab>(
+    initialTab === "received" || initialTab === "sent" || initialTab === "find" ? initialTab : "friends",
   );
+  const [deleteTarget, setDeleteTarget] = useState<Friend | null>(null);
+  const [busy, setBusy] = useState<Set<string>>(new Set());
 
-  const friends = useQuery({ queryKey: ["friends"], queryFn: friendApi.list, enabled: tab === "friends" });
-  const received = useQuery({ queryKey: ["friend-requests"], queryFn: friendApi.received, enabled: tab === "requests" });
+  // All three lists power the tab counts; they stay small and authoritative.
+  const friends = useQuery({ queryKey: QK.friends, queryFn: friendApi.list });
+  const received = useQuery({ queryKey: QK.received, queryFn: friendApi.received });
+  const sent = useQuery({ queryKey: QK.sent, queryFn: friendApi.sent });
 
-  const friendList = friends.data?.items ?? friends.data?.friends ?? [];
-  const reqList = received.data?.items ?? [];
+  function refreshAll() {
+    [QK.friends, QK.received, QK.sent, ["league-rankings"]].forEach((key) =>
+      qc.invalidateQueries({ queryKey: key }),
+    );
+  }
 
-  async function act(fn: () => Promise<unknown>, msg: string, keys: string[]) {
+  async function act(id: string, fn: () => Promise<unknown>, done: string) {
+    if (busy.has(id)) return; // block duplicate taps
+    setBusy((prev) => new Set(prev).add(id));
     try {
       await fn();
-      toast.success(msg);
-      keys.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+      toast.success(done);
+      refreshAll();
     } catch (e) {
+      // Reconcile in case the state already changed on another device.
       toast.error(errorMessage(e));
+      refreshAll();
+    } finally {
+      setBusy((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   }
 
-  return (
-    <div className="screen">
-      <TopBar title="친구" />
-      <div className="screen__body screen__body--nav">
-        <div style={{ marginBottom: 14 }}>
-          <Segmented
-            value={tab}
-            onChange={setTab}
-            options={[
-              { value: "friends", label: "친구" },
-              { value: "requests", label: `요청${reqList.length ? ` ${reqList.length}` : ""}` },
-              { value: "find", label: "친구 찾기" },
-            ]}
-          />
+  const removing = deleteTarget ? busy.has(deleteTarget.user_id) : false;
+  async function confirmRemove() {
+    if (!deleteTarget) return;
+    await act(deleteTarget.user_id, () => friendApi.remove(deleteTarget.user_id), copy.toastRemoved);
+    setDeleteTarget(null);
+  }
+
+  /* -------------------- friend-add (search) sub-flow -------------------- */
+  if (tab === "find") {
+    return (
+      <div className="screen fm">
+        <header className="fm__header">
+          <button className="fm__back" onClick={() => setTab("friends")} aria-label={copy.back}>
+            <BackChevron />
+          </button>
+          <h1 className="fm__title">{copy.add}</h1>
+        </header>
+        <div className="screen__body fm__body">
+          <FindFriends lang={lang} onAdded={refreshAll} />
         </div>
-
-        {tab === "friends" && (
-          <Async loading={friends.isLoading} error={friends.error} data={friends.data} onRetry={() => friends.refetch()} isEmpty={() => friendList.length === 0} empty={<EmptyState emoji="👋" title="아직 친구가 없어요" text="친구를 추가해 함께 리그에서 경쟁해 보세요." action={<Button size="sm" onClick={() => setTab("find")}>친구 찾기</Button>} />} skeleton={<SkeletonList rows={5} />}>
-            {() => (
-              <div className="stack" style={{ gap: 8 }}>
-                {friendList.map((f) => (
-                  <div key={f.user_id} className="listrow" style={{ cursor: "default" }}>
-                    <Avatar name={f.nickname} url={f.profile_image_url} />
-                    <div className="listrow__main">
-                      <div className="listrow__title">{f.nickname ?? "회원"}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Async>
-        )}
-
-        {tab === "requests" && (
-          <Async loading={received.isLoading} error={received.error} data={received.data} onRetry={() => received.refetch()} isEmpty={() => reqList.length === 0} empty={<EmptyState emoji="📭" title="받은 요청이 없어요" />} skeleton={<SkeletonList rows={4} />}>
-            {() => (
-              <div className="stack" style={{ gap: 8 }}>
-                {reqList.map((r) => (
-                  <div key={r.request_id} className="card row">
-                    <Avatar name={r.nickname} url={r.profile_image_url} />
-                    <div style={{ flex: 1, fontWeight: 700 }}>{r.nickname ?? "회원"}</div>
-                    <Button size="sm" onClick={() => act(() => friendApi.accept(r.request_id), "친구가 되었어요!", ["friend-requests", "friends"])}>수락</Button>
-                    <Button size="sm" variant="ghost" onClick={() => act(() => friendApi.reject(r.request_id), "요청을 거절했어요", ["friend-requests"])}>거절</Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Async>
-        )}
-
-        {tab === "find" && <FindFriends onAdded={() => qc.invalidateQueries({ queryKey: ["friend-requests"] })} />}
       </div>
+    );
+  }
+
+  const activeQuery = tab === "friends" ? friends : tab === "received" ? received : sent;
+
+  return (
+    <div className="screen fm">
+      {/* Header */}
+      <header className="fm__header">
+        <button className="fm__back" onClick={() => nav(-1)} aria-label={copy.back}>
+          <BackChevron />
+        </button>
+        <h1 className="fm__title">{copy.title}</h1>
+        <button className="fm__add" onClick={() => setTab("find")} aria-label={copy.add}>
+          <PlusIcon />
+          <span>{copy.add}</span>
+        </button>
+      </header>
+
+      {/* Tabs */}
+      <div className="fm__tabs" role="tablist" aria-label={copy.title}>
+        {(["friends", "received", "sent"] as const).map((t) => {
+          const count = (t === "friends" ? friends : t === "received" ? received : sent).data?.count ?? 0;
+          return (
+            <button
+              key={t}
+              role="tab"
+              aria-selected={tab === t}
+              className={`fm__tab ${tab === t ? "is-active" : ""}`}
+              onClick={() => setTab(t)}
+            >
+              {copy.tabs[t]} {count}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="screen__body fm__body">
+        {activeQuery.isLoading && !activeQuery.data ? (
+          <div className="fm__pad">
+            <SkeletonList rows={5} height={62} />
+          </div>
+        ) : activeQuery.error && !activeQuery.data ? (
+          <ErrorState message={copy.listError} onRetry={() => activeQuery.refetch()} />
+        ) : tab === "friends" ? (
+          (friends.data?.friends.length ?? 0) === 0 ? (
+            <FriendsEmpty copy={copy} onAdd={() => setTab("find")} />
+          ) : (
+            <ul className="fm__list" role="list">
+              {friends.data!.friends.map((f) => (
+                <FriendRow key={f.user_id} friend={f} copy={copy} onRemove={() => setDeleteTarget(f)} />
+              ))}
+            </ul>
+          )
+        ) : tab === "received" ? (
+          (received.data?.requests.length ?? 0) === 0 ? (
+            <EmptyState emoji="📭" title={copy.receivedEmptyTitle} text={copy.receivedEmptyDesc} />
+          ) : (
+            <ul className="fm__list" role="list">
+              {received.data!.requests.map((r) => (
+                <RequestRow
+                  key={r.request_id}
+                  req={r}
+                  copy={copy}
+                  lang={lang}
+                  busy={busy.has(r.request_id)}
+                  actions={[
+                    { label: copy.reject, onClick: () => act(r.request_id, () => friendApi.reject(r.request_id), copy.toastRejected) },
+                    { label: copy.accept, primary: true, onClick: () => act(r.request_id, () => friendApi.accept(r.request_id), copy.toastAccepted) },
+                  ]}
+                />
+              ))}
+            </ul>
+          )
+        ) : (sent.data?.requests.length ?? 0) === 0 ? (
+          <EmptyState
+            emoji="✈️"
+            title={copy.sentEmptyTitle}
+            text={copy.sentEmptyDesc}
+            action={<Button onClick={() => setTab("find")}>{copy.add}</Button>}
+          />
+        ) : (
+          <ul className="fm__list" role="list">
+            {sent.data!.requests.map((r) => (
+              <RequestRow
+                key={r.request_id}
+                req={r}
+                copy={copy}
+                lang={lang}
+                busy={busy.has(r.request_id)}
+                actions={[{ label: copy.cancel, onClick: () => act(r.request_id, () => friendApi.cancel(r.request_id), copy.toastCancelled) }]}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Friend deletion confirmation — backdrop does not dismiss (no onClose). */}
+      <Dialog
+        open={!!deleteTarget}
+        title={deleteTarget ? copy.modalTitle(nameOf(deleteTarget)) : ""}
+        text={copy.modalDesc}
+      >
+        <div className="fm__modal-actions">
+          <Button variant="secondary" block disabled={removing} onClick={() => setDeleteTarget(null)}>
+            {copy.modalCancel}
+          </Button>
+          <Button block loading={removing} onClick={confirmRemove}>
+            {copy.modalDelete}
+          </Button>
+        </div>
+      </Dialog>
     </div>
   );
 }
 
-function FindFriends({ onAdded }: { onAdded: () => void }) {
+const BackChevron = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M15 5l-7 7 7 7" stroke="#272c30" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+function FriendsEmpty({ copy, onAdd }: { copy: FmCopy; onAdd: () => void }) {
+  return (
+    <div className="fm__empty">
+      <h2 className="fm__empty-title">{copy.friendsEmptyTitle}</h2>
+      <p className="fm__empty-desc">
+        {copy.friendsEmptyDesc[0]}
+        <br />
+        {copy.friendsEmptyDesc[1]}
+      </p>
+      <button className="fm__add" onClick={onAdd}>
+        <PlusIcon />
+        <span>{copy.add}</span>
+      </button>
+    </div>
+  );
+}
+
+/* --------------------------- friend search ------------------------------ */
+function FindFriends({ lang, onAdded }: { lang: AppLanguage; onAdded: () => void }) {
   const toast = useToast();
   const [country, setCountry] = useState("KR");
   const [phone, setPhone] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [state, setState] = useState<"idle" | "searching" | "adding">("idle");
   const [found, setFound] = useState<Friend | null | "none">(null);
   const dial = useMemo(() => NATIONALITIES.find((n) => n.code === country)?.dial ?? "+82", [country]);
+  const t =
+    lang === "ko"
+      ? { hint: "휴대폰 번호로 친구를 찾아 요청을 보낼 수 있어요.", search: "검색", none: "일치하는 회원이 없어요", noneSub: "번호를 다시 확인해 주세요.", request: "친구 요청", sent: "친구 요청을 보냈어요" }
+      : { hint: "Find a friend by phone number and send a request.", search: "Search", none: "No matching member", noneSub: "Please check the number.", request: "Send request", sent: "Friend request sent" };
 
   async function search() {
-    setBusy(true);
+    setState("searching");
     setFound(null);
     try {
       const e164 = `${dial}${phone.replace(/^0+/, "").replace(/\D/g, "")}`;
@@ -112,25 +402,27 @@ function FindFriends({ onAdded }: { onAdded: () => void }) {
     } catch (e) {
       toast.error(errorMessage(e));
     } finally {
-      setBusy(false);
+      setState("idle");
     }
   }
-
   async function add(userId: string) {
+    setState("adding");
     try {
       await friendApi.request(userId);
-      toast.success("친구 요청을 보냈어요");
+      toast.success(t.sent);
       onAdded();
       setFound(null);
       setPhone("");
     } catch (e) {
       toast.error(errorMessage(e));
+    } finally {
+      setState("idle");
     }
   }
 
   return (
     <div className="stack" style={{ gap: 14 }}>
-      <p className="muted">휴대폰 번호로 친구를 찾아 요청을 보낼 수 있어요.</p>
+      <p className="muted">{t.hint}</p>
       <div style={{ display: "flex", gap: 8 }}>
         <select className="input" style={{ width: 120 }} value={country} onChange={(e) => setCountry(e.target.value)}>
           {NATIONALITIES.map((n) => (
@@ -139,14 +431,14 @@ function FindFriends({ onAdded }: { onAdded: () => void }) {
         </select>
         <TextField placeholder="01012345678" inputMode="numeric" value={phone} onChange={(e) => setPhone(e.target.value)} />
       </div>
-      <Button block loading={busy} disabled={!phone} onClick={search}>검색</Button>
+      <Button block loading={state === "searching"} disabled={!phone} onClick={search}>{t.search}</Button>
 
-      {found === "none" && <EmptyState emoji="🔍" title="일치하는 회원이 없어요" text="번호를 다시 확인해 주세요." />}
+      {found === "none" && <EmptyState emoji="🔍" title={t.none} text={t.noneSub} />}
       {found && found !== "none" && (
-        <div className="card row">
-          <Avatar name={found.nickname} url={found.profile_image_url} />
-          <div style={{ flex: 1, fontWeight: 700 }}>{found.nickname ?? "회원"}</div>
-          <Button size="sm" onClick={() => add(found.user_id)}>친구 요청</Button>
+        <div className="fm__row" style={{ padding: "14px 4px" }}>
+          <span className="fm__row-avatar"><RankAvatar entry={found} size={46} /></span>
+          <span className="fm__row-name">{nameOf(found)}</span>
+          <button className="fm__pill fm__pill--primary" disabled={state === "adding"} onClick={() => add(found.user_id)}>{t.request}</button>
         </div>
       )}
     </div>

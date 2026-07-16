@@ -41,8 +41,10 @@ export function LeagueGuideSheet({ onClose }: { onClose: () => void }) {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const prevFocus = document.activeElement as HTMLElement | null;
-    // Move screen-reader focus into the sheet.
-    cardRef.current?.querySelector<HTMLElement>("button")?.focus();
+    // Move screen-reader focus into the sheet. `preventScroll` is essential:
+    // during the slide-up the close button is still off-screen, and a scrolling
+    // focus would drag the (fixed) background along with it.
+    cardRef.current?.querySelector<HTMLElement>("button")?.focus({ preventScroll: true });
     // Hardware / browser back dismisses the sheet instead of leaving /league.
     window.history.pushState({ lgGuide: true }, "");
     const onPop = () => {

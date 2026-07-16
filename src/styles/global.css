@@ -7691,7 +7691,7 @@ textarea.input {
 /* Hero */
 .lgg__hero {
   position: relative;
-  min-height: 232px;
+  min-height: 244px;
   padding: 30px 22px 24px;
   background: var(--brand-500);
   border-bottom: 2px solid rgba(90, 40, 5, 0.28);
@@ -7740,10 +7740,10 @@ textarea.input {
 .lgg__banner {
   position: absolute;
   top: 52px;
-  right: 2px;
+  right: 26px;
   z-index: 1;
-  width: 162px;
-  height: 184px;
+  width: 188px;
+  height: 212px;
   filter: drop-shadow(6px 10px 10px rgba(120, 60, 10, 0.28));
 }
 

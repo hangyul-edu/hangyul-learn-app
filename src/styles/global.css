@@ -7464,7 +7464,7 @@ textarea.input {
   -webkit-overflow-scrolling: touch;
   margin: 4px -18px 0;
   /* Extra vertical room so the scaled-up centered badge is never clipped. */
-  padding: 22px 0 12px;
+  padding: 30px 0 14px;
 }
 .lg__carousel::-webkit-scrollbar {
   display: none;
@@ -7493,8 +7493,8 @@ textarea.input {
   transform: scale(1.32);
 }
 .lg__badge {
-  width: 66px;
-  height: 74px;
+  width: 84px;
+  height: 94px;
   filter: drop-shadow(0 4px 8px rgba(43, 32, 25, 0.12));
 }
 .lg__badge-slot.is-focused .lg__badge {

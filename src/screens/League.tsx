@@ -200,7 +200,6 @@ function RankingList({ entries, meId }: { entries: RankingEntry[]; meId?: string
             <RankAvatar entry={e} />
             <span className="lg__rank-name">
               {e.nickname ?? "회원"}
-              {isMe && <span className="lg__rank-you">나</span>}
             </span>
             {medal && <MedalIcon rank={e.rank} />}
             <span className="lg__rank-pts">{e.points}P</span>

@@ -7600,15 +7600,6 @@ textarea.input {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.lg__rank-you {
-  flex-shrink: 0;
-  padding: 2px 9px;
-  border-radius: var(--r-full);
-  background: var(--brand-500);
-  color: #fff;
-  font-size: 12.5px;
-  font-weight: 700;
-}
 .lg__rank-pts {
   flex-shrink: 0;
   font-family: var(--font-display);

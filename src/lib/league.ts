@@ -20,11 +20,42 @@ export function tierIndex(tier: string | null | undefined): number {
   return LEAGUE_TIERS.indexOf(tier as LeagueTier);
 }
 
-/** Ranked-list reward policy shown in the league info screen (mirrors the
- *  backend POINT_RULES; kept here for display copy only). */
-export const LEAGUE_POINT_RULES = [
-  { label: "출석", points: "5P", details: ["7일 연속 출석 시 +10P"] },
-  { label: "맞춤 학습", points: "10P", details: ["문장/문제당 +10P", "레벨 클리어 시 +100P"] },
-  { label: "강의", points: "100P", details: ["강의 전체 시청 완료 시 +100P"] },
-  { label: "복습", points: "5P", details: ["저장한 문장/문제 복습 완료 시 +5P"] },
+/**
+ * Single source of truth for the League-guide policy copy. The reward values
+ * mirror the backend `POINT_RULES` (attendance 5 / streak +10, customized
+ * learning 10 / level-clear +100, course 100, review 5) so the guide never
+ * drifts from real scoring; the schedule + promotion rules mirror the season
+ * bounds and `PROMOTE_CUTOFF_RANK` (top 20%) with the green floor / golden
+ * ceiling guards in `close_season`.
+ */
+export type RewardIconKind = "attendance" | "learning" | "course" | "review";
+
+export interface LeaguePointRule {
+  id: RewardIconKind;
+  label: string;
+  points: string;
+  details: string[];
+  /** Screen-reader announcement (name, base points, bonus rule). */
+  aria: string;
+}
+
+export const LEAGUE_POINT_RULES: LeaguePointRule[] = [
+  { id: "attendance", label: "출석", points: "5P", details: ["7일 연속 출석 시 +10P"], aria: "출석, 5포인트, 7일 연속 출석 시 10포인트 추가" },
+  { id: "learning", label: "맞춤 학습", points: "10P", details: ["문장/문제당 +10P", "레벨 클리어 시 +100P"], aria: "맞춤 학습, 10포인트, 문장 또는 문제당 10포인트, 레벨 클리어 시 100포인트" },
+  { id: "course", label: "강의", points: "100P", details: ["강의 전체 시청 완료 시 +100P"], aria: "강의, 100포인트, 강의 전체 시청 완료 시 100포인트" },
+  { id: "review", label: "복습", points: "5P", details: ["저장한 문장/문제 복습 완료 시 +5P"], aria: "복습, 5포인트, 저장한 문장 또는 문제 복습 완료 시 5포인트" },
 ];
+
+/** Weekly season bounds (America/New_York, per `_season_bounds_for`). */
+export const LEAGUE_SCHEDULE = {
+  startLabel: "매주 월요일 00:00 시작",
+  endLabel: "~ 일요일 21:00 종료",
+  announceLabel: "(일요일 21시에 결과 발표)",
+};
+
+/** Promotion policy: top 20% promote; Green cannot demote, Golden cannot promote. */
+export const LEAGUE_PROMOTION = {
+  headline: "상위 20%만 다음 리그로 승급",
+  rules: ["Green: 강등 없음", "Golden: 승급 없음"],
+  aria: "상위 20%만 다음 리그로 승급, Green 리그는 강등 없음, Golden 리그는 승급 없음",
+};

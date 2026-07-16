@@ -5,9 +5,10 @@ import { Avatar } from "../components/ui/kit";
 import { Async, ErrorState, LoadingState, SkeletonList } from "../components/ui/states";
 import { CharacterArt, avatarBg, type AvatarKey } from "../components/brand/ProfileAssets";
 import { gameApi } from "../api/endpoints";
-import { LEAGUE_POINT_RULES, LEAGUE_TIERS, TIER_META, tierIndex, type LeagueTier } from "../lib/league";
+import { LEAGUE_TIERS, TIER_META, tierIndex, type LeagueTier } from "../lib/league";
 import type { RankingEntry } from "../lib/types";
 import { LeagueLifecycleModal, useLeagueLifecycle } from "./LeagueLifecycleModals";
+import { LeagueGuideSheet } from "./LeagueGuide";
 
 type Tab = "regular" | "friend";
 
@@ -170,70 +171,6 @@ function LeagueCarousel({ currentTier }: { currentTier: LeagueTier }) {
   );
 }
 
-/* --------------------------- info modal -------------------------------- */
-function InfoModal({ onClose }: { onClose: () => void }) {
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, []);
-  return (
-    <div className="lg-info" role="dialog" aria-modal="true" aria-label="정규 리그 안내">
-      <div className="lg-info__scroll">
-        <div className="lg-info__hero">
-          <button className="lg-info__close" onClick={onClose} aria-label="닫기">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" />
-            </svg>
-          </button>
-          <h1 className="lg-info__hero-title">정규 리그</h1>
-          <p className="lg-info__hero-desc">
-            학습 점수로 경쟁하는 리그예요.
-            <br />
-            공부할수록 점수와 순위가 올라가요
-          </p>
-          <span className="lg-info__flag" aria-hidden="true">🚩</span>
-        </div>
-
-        <div className="lg-info__body">
-          <div className="lg-info__card lg-info__schedule">
-            <LeagueBadge tier="green" reached current={false} />
-            <div>
-              <div className="lg-info__sched-main">
-                매주 월요일 00:00 시작
-                <br />~ 일요일 21:00 종료
-              </div>
-              <div className="lg-info__sched-sub">(일요일 21시에 결과 발표)</div>
-            </div>
-          </div>
-
-          <h2 className="lg-info__heading">학습할수록 리그 점수(P)가 올라가요</h2>
-          {LEAGUE_POINT_RULES.map((r) => (
-            <div className="lg-info__card lg-info__rule" key={r.label}>
-              <div className="lg-info__rule-top">
-                <span className="lg-info__rule-label">{r.label}</span>
-                <span className="lg-info__rule-points">{r.points}</span>
-              </div>
-              {r.details.map((d) => (
-                <div className="lg-info__rule-detail" key={d}>
-                  {d}
-                </div>
-              ))}
-            </div>
-          ))}
-
-          <div className="lg-info__card lg-info__promo">
-            <div className="lg-info__promo-main">상위 20%만 다음 리그로 승급</div>
-            <div className="lg-info__promo-sub">Green: 강등 없음</div>
-            <div className="lg-info__promo-sub">Golden: 승급 없음</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* --------------------------- ranking list ------------------------------ */
 function RankingList({ entries, meId }: { entries: RankingEntry[]; meId?: string }) {
@@ -392,7 +329,7 @@ export function League() {
         )}
       </div>
 
-      {info && <InfoModal onClose={() => setInfo(false)} />}
+      {info && <LeagueGuideSheet onClose={() => setInfo(false)} />}
       {lifecycle.data && <LeagueLifecycleModal lifecycle={lifecycle.data} />}
     </div>
   );

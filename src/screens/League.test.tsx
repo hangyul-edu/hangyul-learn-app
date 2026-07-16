@@ -176,7 +176,7 @@ describe("League screen", () => {
     expect(within(dialog).getByText("상위 20%만 다음 리그로 승급")).toBeInTheDocument();
     expect(within(dialog).getByText("Green: 강등 없음")).toBeInTheDocument();
     // Close it.
-    await userEvent.click(within(dialog).getByRole("button", { name: "닫기" }));
+    await userEvent.click(within(dialog).getByRole("button", { name: "정규 리그 안내 닫기" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 

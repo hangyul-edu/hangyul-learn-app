@@ -7642,130 +7642,258 @@ textarea.input {
   line-height: 1.6;
 }
 
-/* Full-screen info modal */
-.lg-info {
+/* ===================== Regular League guide (bottom sheet) ============== */
+.lgg-overlay {
   position: fixed;
   inset: 0;
-  z-index: 60;
-  background: var(--bg);
+  z-index: 170;
+  background: rgba(28, 22, 16, 0.5);
   max-width: var(--app-max);
   margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fade 0.2s;
 }
-.lg-info__scroll {
-  height: 100%;
+.lgg-overlay.is-closing {
+  animation: lgg-fade-out 0.26s forwards;
+}
+@keyframes lgg-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+.lgg {
+  width: 100%;
+  background: var(--surface);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  box-shadow: var(--shadow-lg);
+  max-height: 92dvh;
+  overflow: hidden; /* clip the hero's rounded top corners */
+  display: flex;
+  flex-direction: column;
+  animation: sheet-up 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.lgg.is-closing {
+  animation: lgg-down 0.26s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+@keyframes lgg-down {
+  to {
+    transform: translateY(100%);
+  }
+}
+.lgg__scroll {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
-.lg-info__hero {
+
+/* Hero */
+.lgg__hero {
   position: relative;
-  padding: calc(var(--safe-top) + 56px) 24px 44px;
-  text-align: center;
-  background: var(--brand-gradient);
-  color: #fff;
-  border-radius: 0 0 28px 28px;
+  min-height: 208px;
+  padding: 30px 22px 24px;
+  background: var(--brand-500);
+  border-bottom: 2px solid rgba(90, 40, 5, 0.28);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
 }
-.lg-info__close {
+.lgg__close {
   position: absolute;
-  top: calc(var(--safe-top) + 14px);
-  right: 16px;
-  width: 34px;
-  height: 34px;
-  border-radius: var(--r-full);
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+  width: 36px;
+  height: 36px;
   border: none;
-  background: rgba(255, 255, 255, 0.2);
+  border-radius: var(--r-full);
+  background: rgba(255, 255, 255, 0.22);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
 }
-.lg-info__hero-title {
-  font-size: 26px;
+.lgg__close:active {
+  background: rgba(255, 255, 255, 0.34);
+}
+.lgg__hero-text {
+  position: relative;
+  z-index: 2;
+  max-width: 64%;
+}
+.lgg__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.08;
   color: #fff;
 }
-.lg-info__hero-desc {
+.lgg__desc {
   margin: 12px 0 0;
   font-size: 14px;
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(255, 255, 255, 0.95);
 }
-.lg-info__flag {
-  display: block;
-  margin-top: 18px;
-  font-size: 40px;
+.lgg__banner {
+  position: absolute;
+  top: 30px;
+  right: 4px;
+  z-index: 1;
+  width: 132px;
+  height: 150px;
+  filter: drop-shadow(6px 10px 10px rgba(120, 60, 10, 0.28));
 }
-.lg-info__body {
-  padding: 20px 18px calc(32px + var(--safe-bottom));
+
+/* Body */
+.lgg__body {
+  background: var(--surface);
+  padding: 18px 18px calc(30px + var(--safe-bottom));
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
-.lg-info__card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  padding: 16px;
-}
-.lg-info__schedule {
+
+/* Schedule card */
+.lgg__sched {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
+  background: var(--brand-50);
+  border-radius: var(--r-lg);
+  padding: 18px 20px;
 }
-.lg-info__schedule .lg__badge {
-  width: 52px;
-  height: 60px;
+.lgg__sched-icon {
   flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--r-full);
+  background: #fff6e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
 }
-.lg-info__sched-main {
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--ink);
-  line-height: 1.5;
+.lgg__sched-text {
+  flex: 1;
+  text-align: center;
 }
-.lg-info__sched-sub {
-  margin-top: 4px;
-  font-size: 12.5px;
-  color: var(--ink-3);
-}
-.lg-info__heading {
-  margin: 12px 4px 2px;
+.lgg__sched-main {
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 800;
-  color: var(--ink);
+  color: var(--brand-600);
+  line-height: 1.5;
 }
-.lg-info__rule-top {
+.lgg__sched-sub {
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+/* Point explanation panel */
+.lgg__panel {
+  background: var(--surface-3);
+  border-radius: var(--r-lg);
+  padding: 18px 16px 20px;
+}
+.lgg__panel-head {
+  margin: 0 4px 16px;
+  padding: 12px 10px;
+  border: 1.6px dashed var(--brand-300);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--brand-600);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+.lgg__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.lgg__reward {
+  background: #fff;
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md);
+  padding: 18px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 7px;
+}
+.lgg__reward-ring {
+  width: 58px;
+  height: 58px;
+  border-radius: var(--r-full);
+  border: 2px dashed #7fd0da;
+  background: #eafbfd;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
 }
-.lg-info__rule-label {
-  font-size: 15px;
+.lgg__reward-label {
+  font-size: 14px;
   font-weight: 800;
   color: var(--ink);
 }
-.lg-info__rule-points {
+.lgg__reward-point {
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--brand-500);
+}
+.lgg__reward-detail {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* Promotion rule card */
+.lgg__promo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--brand-50);
+  border-radius: var(--r-lg);
+  padding: 18px 20px;
+}
+.lgg__promo-icon {
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  border-radius: var(--r-full);
+  background: #35c4c4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 5px 12px rgba(53, 196, 196, 0.4);
+}
+.lgg__promo-text {
+  flex: 1;
+}
+.lgg__promo-head {
+  font-family: var(--font-display);
+  font-size: 16px;
   font-weight: 800;
   color: var(--brand-600);
 }
-.lg-info__rule-detail {
+.lgg__promo-rule {
   margin-top: 6px;
   font-size: 13px;
   color: var(--ink-2);
 }
-.lg-info__promo {
-  background: var(--brand-50);
-  border-color: var(--brand-200);
-}
-.lg-info__promo-main {
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--ink);
-}
-.lg-info__promo-sub {
-  margin-top: 6px;
-  font-size: 13px;
-  color: var(--ink-2);
+
+/* Graceful single-column fallback on very narrow / large-font layouts. */
+@media (max-width: 330px) {
+  .lgg__grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ========================= League History (리그 히스토리) ================= */

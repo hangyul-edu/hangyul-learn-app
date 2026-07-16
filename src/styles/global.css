@@ -7404,6 +7404,10 @@ textarea.input {
 /* ============================ League (정규 리그) ============================ */
 .lg__body {
   padding-top: calc(var(--safe-top) + 14px);
+  /* Flex column so a short body (e.g. the friend empty state) can fill and
+     centre within the area between the tabs and the bottom nav. */
+  display: flex;
+  flex-direction: column;
 }
 
 /* Sub-tabs + 히스토리 button */
@@ -8476,7 +8480,8 @@ textarea.input {
 
 /* Friend League empty state (minimal, illustration-free, centered). */
 .fl-empty {
-  min-height: 54vh;
+  flex: 1;
+  min-height: 54vh; /* fallback if the parent is not a flex column */
   display: flex;
   flex-direction: column;
   align-items: center;

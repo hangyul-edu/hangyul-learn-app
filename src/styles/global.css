@@ -7722,6 +7722,7 @@ textarea.input {
   position: relative;
   z-index: 2;
   max-width: 64%;
+  margin-top: 18px;
 }
 .lgg__title {
   margin: 0;

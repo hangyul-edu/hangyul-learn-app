@@ -2,19 +2,82 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { EmptyState, ErrorState, LoadingState, SkeletonList, Spinner } from "../components/ui/states";
+import { useAuth } from "../hooks/auth";
 import { TIER_META, type LeagueTier } from "../lib/league";
+import { normalizeLanguage, type AppLanguage } from "../lib/language";
 import { gameApi } from "../api/endpoints";
 import type { LeagueHistoryItem, LeagueHistorySeason } from "../lib/types";
-
-const QUARTER_KO: Record<string, string> = { spring: "봄", summer: "여름", fall: "가을", winter: "겨울" };
 
 type Phase = "loading" | "ready" | "error";
 type More = "idle" | "loading" | "done" | "error";
 
+/* ------------------------------ localization ---------------------------- */
+type Quarter = "spring" | "summer" | "fall" | "winter";
+const QUARTER_LABEL: Record<AppLanguage, Record<Quarter, string>> = {
+  ko: { spring: "봄", summer: "여름", fall: "가을", winter: "겨울" },
+  en: { spring: "Spring", summer: "Summer", fall: "Fall", winter: "Winter" },
+};
+const EN_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+const LH_COPY = {
+  ko: {
+    title: "리그 히스토리",
+    back: "뒤로 가기",
+    ongoing: "진행 중",
+    emptyTitle: "이 시즌의 리그 기록이 없어요",
+    emptyDesc: "참여한 리그 기록이 생기면 여기에 표시됩니다.",
+    seasonError: "시즌 정보를 불러오지 못했어요.",
+    listError: "리그 기록을 불러오지 못했어요.",
+    loadMore: "다시 불러오기",
+    listAria: "리그 기록",
+    seasonPickerAria: "시즌 목록",
+    // Hero line 2, e.g. "봄 시즌 리그".
+    heroName: (q: Quarter) => `${QUARTER_LABEL.ko[q]} 시즌 리그`,
+    // Selector option, e.g. "2026 봄 시즌".
+    optionLabel: (year: number, q: Quarter) => `${year} ${QUARTER_LABEL.ko[q]} 시즌`,
+    selectAria: (label: string) => `${label} 선택됨, 시즌 변경`,
+  },
+  en: {
+    title: "League History",
+    back: "Go back",
+    ongoing: "In Progress",
+    emptyTitle: "No league history for this season",
+    emptyDesc: "Your league records will appear here once you participate.",
+    seasonError: "Couldn't load seasons.",
+    listError: "Couldn't load league history.",
+    loadMore: "Load more",
+    listAria: "League history",
+    seasonPickerAria: "Seasons",
+    heroName: (q: Quarter) => `${QUARTER_LABEL.en[q]} League`,
+    optionLabel: (year: number, q: Quarter) => `${year} ${QUARTER_LABEL.en[q]} Season`,
+    selectAria: (label: string) => `${label} selected, change season`,
+  },
+} as const;
+
 /* ------------------------------ formatting ------------------------------ */
-// ISO date "2026-04-27" → "04.27" (display) / "04월 27일" (screen-reader).
+// ISO date "2026-04-27" → "04.27".
 const mmdd = (iso: string) => `${iso.slice(5, 7)}.${iso.slice(8, 10)}`;
-const spokenDate = (iso: string) => `${iso.slice(5, 7)}월 ${iso.slice(8, 10)}일`;
+const spokenDate = (iso: string, lang: AppLanguage) => {
+  const [, m, d] = iso.split("-");
+  return lang === "ko" ? `${m}월 ${Number(d)}일` : `${EN_MONTHS[Number(m) - 1]} ${Number(d)}`;
+};
+
+function rowAria(item: LeagueHistoryItem, lang: AppLanguage): string {
+  const tier = TIER_META[item.tier as LeagueTier]?.label ?? item.tier_label ?? "";
+  const range =
+    lang === "ko"
+      ? `${spokenDate(item.week_start, "ko")}부터 ${spokenDate(item.week_end, "ko")}까지`
+      : `${spokenDate(item.week_start, "en")} to ${spokenDate(item.week_end, "en")}`;
+  const status = item.is_current ? `, ${LH_COPY[lang].ongoing}` : "";
+  const rank =
+    item.rank != null
+      ? lang === "ko"
+        ? `, ${item.is_current ? "현재 " : ""}${item.rank}위`
+        : `, ${item.is_current ? "currently " : ""}rank ${item.rank}`
+      : "";
+  const pts = lang === "ko" ? `, ${item.points}포인트` : `, ${item.points} points`;
+  return `${tier}, ${range}${status}${rank}${pts}`;
+}
 
 function dedupById(items: LeagueHistoryItem[]): LeagueHistoryItem[] {
   const seen = new Set<string>();
@@ -27,19 +90,43 @@ function dedupById(items: LeagueHistoryItem[]): LeagueHistoryItem[] {
   return out;
 }
 
-/* -------------------------------- badges -------------------------------- */
-/** Circular league medal (left of each row) tinted by the week's tier. */
-function LeagueMedal({ tier }: { tier: string }) {
+/* -------------------------------- art ----------------------------------- */
+/** Decorative hanging striped pennant in the season hero (no rank/number). */
+function SeasonBanner() {
+  return (
+    <svg className="lh__banner" viewBox="0 0 96 150" aria-hidden="true" focusable="false">
+      <defs>
+        <clipPath id="lhBannerClip">
+          <path d="M22 30h52v72l-26-13-26 13z" />
+        </clipPath>
+      </defs>
+      <path d="M48 3v25" stroke="#c8ccd2" strokeWidth="3" strokeLinecap="round" />
+      <rect x="14" y="24" width="68" height="9" rx="4.5" fill="#d7dce1" />
+      <circle cx="16" cy="28.5" r="7.5" fill="#c3c9d1" />
+      <circle cx="80" cy="28.5" r="7.5" fill="#c3c9d1" />
+      <g clipPath="url(#lhBannerClip)">
+        <rect x="22" y="30" width="13" height="82" fill="#ffe07a" />
+        <rect x="35" y="30" width="13" height="82" fill="#fff2c2" />
+        <rect x="48" y="30" width="13" height="82" fill="#ffe07a" />
+        <rect x="61" y="30" width="13" height="82" fill="#fff2c2" />
+      </g>
+      <path d="M22 30h52v72l-26-13-26 13z" fill="none" stroke="#f2c94c" strokeWidth="2" />
+    </svg>
+  );
+}
+
+/** Circular citrus league icon, tinted + pale background per tier. */
+function LeagueTierIcon({ tier }: { tier: string }) {
   const color = TIER_META[tier as LeagueTier]?.color ?? "#b8c0c8";
   return (
-    <span className="lh__medal" aria-hidden="true">
-      <svg viewBox="0 0 40 44" width="30" height="33">
-        <path d="M20 3l14 5v12c0 9-6.6 15.4-14 18-7.4-2.6-14-9-14-18V8l14-5z" fill={color} />
-        <path d="M20 3l14 5v12c0 9-6.6 15.4-14 18-7.4-2.6-14-9-14-18V8l14-5z" fill="url(#lhShine)" />
-        <path d="M20 11l2.9 5.9 6.5 1-4.7 4.6 1.1 6.5L20 30l-5.8 3 1.1-6.5-4.7-4.6 6.5-1L20 11z" fill="#fff" opacity="0.92" />
+    <span className="lh__tier" style={{ background: `${color}22` }} aria-hidden="true">
+      <svg viewBox="0 0 40 40" width="30" height="30">
+        <circle cx="20" cy="23" r="12" fill={color} />
+        <circle cx="20" cy="23" r="12" fill="url(#lhCitrus)" />
+        <path d="M20 11c1-3.4 4.2-4.4 6.4-3.7.3 1.7-.7 4.7-3.3 5.6-2 .7-3.6-.5-3.1-1.9z" fill="#5fb65b" />
         <defs>
-          <radialGradient id="lhShine" cx="0.35" cy="0.28" r="0.8">
-            <stop offset="0" stopColor="#fff" stopOpacity="0.4" />
+          <radialGradient id="lhCitrus" cx="0.35" cy="0.3" r="0.75">
+            <stop offset="0" stopColor="#fff" stopOpacity="0.55" />
             <stop offset="0.6" stopColor="#fff" stopOpacity="0" />
           </radialGradient>
         </defs>
@@ -48,41 +135,30 @@ function LeagueMedal({ tier }: { tier: string }) {
   );
 }
 
-/** Numbered rank badge, colored by finishing position (gray for the rest). */
-function RankBadge({ rank }: { rank: number | null }) {
-  const color = rank === 1 ? "#f5b21a" : rank === 2 ? "#3b82f6" : rank === 3 ? "#22c55e" : "#b8c0c8";
+/** Vertical pennant rank badge: colored for ranks 1–3, neutral gray otherwise. */
+function RankPennant({ rank }: { rank: number | null }) {
+  const top3 = rank != null && rank <= 3;
+  const color = rank === 1 ? "#f0483a" : rank === 2 ? "#3b82f6" : rank === 3 ? "#22c55e" : "#aab2ba";
   return (
-    <span className="lh__rankbadge" aria-hidden="true">
-      <svg viewBox="0 0 32 34" width="28" height="30">
-        <path d="M16 2l12 4v11c0 8-5.6 12.8-12 15C9.6 29.8 4 25 4 17V6l12-4z" fill={color} />
-        <path d="M16 2l12 4v11c0 8-5.6 12.8-12 15C9.6 29.8 4 25 4 17V6l12-4z" fill="url(#rbShine)" />
-        <defs>
-          <radialGradient id="rbShine" cx="0.35" cy="0.28" r="0.8">
-            <stop offset="0" stopColor="#fff" stopOpacity="0.45" />
-            <stop offset="0.6" stopColor="#fff" stopOpacity="0" />
-          </radialGradient>
-        </defs>
+    <span className={`lh__pennant ${top3 ? "is-top3" : ""}`} aria-hidden="true">
+      <svg viewBox="0 0 28 36" width="28" height="36">
+        <path d="M4 2h20a2 2 0 0 1 2 2v24l-12-6.5L2 28V4a2 2 0 0 1 2-2z" fill={color} />
+        {top3 && <circle cx="14" cy="10" r="5" fill="#ffd23f" />}
       </svg>
-      <span className="lh__rankbadge-num">{rank ?? "-"}</span>
+      <span className="lh__pennant-num">{rank ?? "-"}</span>
     </span>
   );
 }
 
 /* -------------------------------- rows ---------------------------------- */
-function HistoryRow({ item }: { item: LeagueHistoryItem }) {
-  const rangeLabel = `${mmdd(item.week_start)}~${mmdd(item.week_end)}`;
-  const aria =
-    `${spokenDate(item.week_start)}부터 ${spokenDate(item.week_end)}까지` +
-    `${item.is_current ? ", 진행 중" : ""}` +
-    `${item.rank != null ? `, 순위 ${item.rank}위` : ", 순위 없음"}` +
-    `, ${item.points} 포인트`;
+function HistoryRow({ item, lang }: { item: LeagueHistoryItem; lang: AppLanguage }) {
   return (
-    <li className="lh__row" aria-label={aria}>
-      <LeagueMedal tier={item.tier} />
-      <span className="lh__row-date">{rangeLabel}</span>
-      {item.is_current && <span className="lh__ongoing">진행 중</span>}
+    <li className="lh__row" aria-label={rowAria(item, lang)}>
+      <LeagueTierIcon tier={item.tier} />
+      <span className="lh__row-date">{`${mmdd(item.week_start)}~${mmdd(item.week_end)}`}</span>
+      {item.is_current && <span className="lh__ongoing">{LH_COPY[lang].ongoing}</span>}
       <span className="lh__row-spacer" />
-      <RankBadge rank={item.rank} />
+      <RankPennant rank={item.rank} />
       <span className="lh__row-pts">{item.points}P</span>
     </li>
   );
@@ -92,17 +168,21 @@ function HistoryRow({ item }: { item: LeagueHistoryItem }) {
 function SeasonDropdown({
   seasons,
   selectedId,
+  labelOf,
+  pickerAria,
   onSelect,
   onClose,
 }: {
   seasons: LeagueHistorySeason[];
   selectedId: string;
+  labelOf: (s: LeagueHistorySeason) => string;
+  pickerAria: string;
   onSelect: (id: string) => void;
   onClose: () => void;
 }) {
   return (
-    <div className="lh-drop" role="dialog" aria-label="시즌 선택" onClick={onClose}>
-      <ul className="lh-drop__panel" role="listbox" aria-label="시즌 목록" onClick={(e) => e.stopPropagation()}>
+    <div className="lh-drop" role="dialog" aria-label={pickerAria} onClick={onClose}>
+      <ul className="lh-drop__panel" role="listbox" aria-label={pickerAria} onClick={(e) => e.stopPropagation()}>
         {seasons.map((season) => {
           const active = season.season_id === selectedId;
           return (
@@ -113,7 +193,7 @@ function SeasonDropdown({
                 className={`lh-drop__option ${active ? "is-active" : ""}`}
                 onClick={() => onSelect(season.season_id)}
               >
-                {season.label}
+                {labelOf(season)}
               </button>
             </li>
           );
@@ -126,6 +206,11 @@ function SeasonDropdown({
 /* -------------------------------- screen -------------------------------- */
 export function LeagueHistory() {
   const nav = useNavigate();
+  const { me } = useAuth();
+  const lang = normalizeLanguage(me?.app_language);
+  const copy = LH_COPY[lang];
+  const labelOf = (s: LeagueHistorySeason) => copy.optionLabel(s.year, s.quarter as Quarter);
+
   const seasons = useQuery({ queryKey: ["league-history-seasons"], queryFn: gameApi.leagueHistorySeasons });
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -212,17 +297,17 @@ export function LeagueHistory() {
     <div className="screen lh">
       {/* Header */}
       <header className="lh__header">
-        <button className="lh__back" onClick={() => nav(-1)} aria-label="뒤로 가기">
+        <button className="lh__back" onClick={() => nav(-1)} aria-label={copy.back}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M15 5l-7 7 7 7" stroke="#272c30" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-        <h1 className="lh__title">리그 히스토리</h1>
+        <h1 className="lh__title">{copy.title}</h1>
       </header>
 
       <div className="screen__body lh__body" ref={scrollRef}>
         {seasons.error ? (
-          <ErrorState message="시즌 정보를 불러오지 못했어요." onRetry={() => seasons.refetch()} />
+          <ErrorState message={copy.seasonError} onRetry={() => seasons.refetch()} />
         ) : seasons.isLoading || !selectedSeason ? (
           // Still resolving seasons, or the default season hasn't been adopted
           // yet (one render tick) — show loading, never a spurious error flash.
@@ -231,17 +316,17 @@ export function LeagueHistory() {
           <>
             {/* Season hero + selector */}
             <div className="lh__hero">
-              <span className="lh__flag" aria-hidden="true">🚩</span>
+              <SeasonBanner />
               <button
                 className="lh__season"
                 onClick={() => setDropOpen((v) => !v)}
                 aria-haspopup="listbox"
                 aria-expanded={dropOpen}
-                aria-label={`시즌 선택, 현재 ${selectedSeason.label}`}
+                aria-label={copy.selectAria(labelOf(selectedSeason))}
               >
                 <span className="lh__season-year">{selectedSeason.year}</span>
                 <span className="lh__season-name">
-                  {QUARTER_KO[selectedSeason.quarter] ?? ""} 시즌 리그
+                  {copy.heroName(selectedSeason.quarter as Quarter)}
                   <svg className="lh__chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M6 9l6 6 6-6" stroke="#272c30" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
@@ -253,24 +338,24 @@ export function LeagueHistory() {
             <div className="lh__card">
               {phase === "loading" ? (
                 <div className="lh__pad">
-                  <SkeletonList rows={5} height={56} />
+                  <SkeletonList rows={5} height={60} />
                 </div>
               ) : phase === "error" ? (
-                <ErrorState message="리그 기록을 불러오지 못했어요." onRetry={() => setReloadKey((k) => k + 1)} />
+                <ErrorState message={copy.listError} onRetry={() => setReloadKey((k) => k + 1)} />
               ) : items.length === 0 ? (
-                <EmptyState emoji="🏳️" title="이 시즌의 리그 기록이 아직 없어요" />
+                <EmptyState emoji="🗂️" title={copy.emptyTitle} text={copy.emptyDesc} />
               ) : (
                 <>
-                  <ul className="lh__rows" role="list" aria-label="리그 기록">
+                  <ul className="lh__rows" role="list" aria-label={copy.listAria}>
                     {items.map((item) => (
-                      <HistoryRow key={item.league_week_id} item={item} />
+                      <HistoryRow key={item.league_week_id} item={item} lang={lang} />
                     ))}
                   </ul>
                   <div className="lh__foot" ref={sentinel}>
                     {more === "loading" && <Spinner />}
                     {more === "error" && (
                       <button className="lh__more-retry" onClick={() => { setMore("idle"); void loadMore(); }}>
-                        다시 불러오기
+                        {copy.loadMore}
                       </button>
                     )}
                   </div>
@@ -285,6 +370,8 @@ export function LeagueHistory() {
         <SeasonDropdown
           seasons={seasons.data.seasons}
           selectedId={selectedSeason.season_id}
+          labelOf={labelOf}
+          pickerAria={copy.seasonPickerAria}
           onSelect={(id) => {
             setSelectedId(id);
             setDropOpen(false);

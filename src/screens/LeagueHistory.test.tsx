@@ -12,6 +12,8 @@ vi.mock("../api/endpoints", () => ({
     leagueHistory: vi.fn(),
   },
 }));
+let mockLang = "ko";
+vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: mockLang } }) }));
 
 import { gameApi } from "../api/endpoints";
 import { LeagueHistory } from "./LeagueHistory";
@@ -76,6 +78,7 @@ function routeHistory() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockLang = "ko";
   Element.prototype.scrollIntoView = vi.fn();
   api.leagueHistorySeasons.mockResolvedValue(seasonsResp);
   routeHistory();
@@ -119,7 +122,7 @@ describe("League History screen", () => {
   it("opens the season dropdown with the current season highlighted", async () => {
     renderScreen();
     await screen.findByText("봄 시즌 리그");
-    await userEvent.click(screen.getByRole("button", { name: /시즌 선택/ }));
+    await userEvent.click(screen.getByRole("button", { name: /시즌 변경/ }));
     const listbox = await screen.findByRole("listbox");
     const options = within(listbox).getAllByRole("option");
     expect(options.map((o) => o.textContent)).toEqual(["2026 여름 시즌", "2026 봄 시즌", "2026 겨울 시즌"]);
@@ -131,7 +134,7 @@ describe("League History screen", () => {
   it("reloads only the chosen season's records when the season changes", async () => {
     renderScreen();
     await screen.findByText("04.27~05.03");
-    await userEvent.click(screen.getByRole("button", { name: /시즌 선택/ }));
+    await userEvent.click(screen.getByRole("button", { name: /시즌 변경/ }));
     await userEvent.click(screen.getByRole("option", { name: "2026 여름 시즌" }));
     // Hero updates and the previous season's rows are gone.
     expect(await screen.findByText("여름 시즌 리그")).toBeInTheDocument();
@@ -175,7 +178,8 @@ describe("League History screen", () => {
   it("shows the empty state for a season with no records", async () => {
     api.leagueHistory.mockResolvedValue({ season: seasonsResp.seasons[1], next_cursor: null, items: [] });
     renderScreen();
-    expect(await screen.findByText("이 시즌의 리그 기록이 아직 없어요")).toBeInTheDocument();
+    expect(await screen.findByText("이 시즌의 리그 기록이 없어요")).toBeInTheDocument();
+    expect(screen.getByText("참여한 리그 기록이 생기면 여기에 표시됩니다.")).toBeInTheDocument();
   });
 
   it("shows a retryable error when the list fails to load", async () => {
@@ -192,5 +196,53 @@ describe("League History screen", () => {
     await screen.findByText("봄 시즌 리그");
     await userEvent.click(screen.getByRole("button", { name: "뒤로 가기" }));
     expect(await screen.findByText("LEAGUE_SCREEN")).toBeInTheDocument();
+  });
+
+  it("renders the decorative hanging banner and a circular tier icon per row", async () => {
+    renderScreen();
+    await screen.findByText("04.27~05.03");
+    expect(document.querySelector(".lh__banner")).toBeInTheDocument();
+    // One circular tier icon per row.
+    expect(document.querySelectorAll(".lh__rows .lh__tier")).toHaveLength(2);
+  });
+
+  it("uses a colored top-3 pennant for rank 1-3 and a gray one for rank 4+", async () => {
+    // Page 2 has rank 1; page 1 has rank 30 (gray) and rank 10 (gray).
+    renderScreen();
+    const rank30Row = (await screen.findByText("04.27~05.03")).closest("li")!;
+    expect(within(rank30Row).getByText("30")).toBeInTheDocument();
+    // Rank 30 pennant is not a top-3 (no yellow accent).
+    expect(rank30Row.querySelector(".lh__pennant.is-top3")).not.toBeInTheDocument();
+    expect(rank30Row.querySelector(".lh__pennant")).toBeInTheDocument();
+  });
+
+  it("marks the rank-1 row's pennant as top-3 (colored accent)", async () => {
+    api.leagueHistory.mockResolvedValue({ ...springPage2, next_cursor: null }); // single rank-1 row
+    renderScreen();
+    const row = (await screen.findByText("04.13~04.19")).closest("li")!;
+    expect(within(row).getByText("1")).toBeInTheDocument();
+    expect(row.querySelector(".lh__pennant.is-top3")).toBeInTheDocument();
+  });
+
+  it("exposes an accessible label with tier, dates, status, rank, and points", async () => {
+    renderScreen();
+    const currentRow = (await screen.findByText("04.27~05.03")).closest("li")!;
+    // e.g. "Green 리그, 4월 27일부터 5월 3일까지, 진행 중, 현재 30위, 2000포인트"
+    const label = currentRow.getAttribute("aria-label") ?? "";
+    expect(label).toContain("Green 리그");
+    expect(label).toContain("진행 중");
+    expect(label).toContain("30위");
+    expect(label).toContain("2000포인트");
+  });
+
+  it("renders English chrome for an English user", async () => {
+    mockLang = "en";
+    renderScreen();
+    expect(await screen.findByRole("heading", { name: "League History" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Go back" })).toBeInTheDocument();
+    expect(await screen.findByText("Spring League")).toBeInTheDocument();
+    // Ongoing pill localized.
+    await screen.findByText("04.27~05.03");
+    expect(screen.getByText("In Progress")).toBeInTheDocument();
   });
 });

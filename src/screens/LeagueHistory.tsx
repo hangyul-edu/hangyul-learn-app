@@ -165,45 +165,6 @@ function HistoryRow({ item, lang }: { item: LeagueHistoryItem; lang: AppLanguage
   );
 }
 
-/* ------------------------------ dropdown -------------------------------- */
-function SeasonDropdown({
-  seasons,
-  selectedId,
-  labelOf,
-  pickerAria,
-  onSelect,
-  onClose,
-}: {
-  seasons: LeagueHistorySeason[];
-  selectedId: string;
-  labelOf: (s: LeagueHistorySeason) => string;
-  pickerAria: string;
-  onSelect: (id: string) => void;
-  onClose: () => void;
-}) {
-  return (
-    <div className="lh-drop" role="dialog" aria-label={pickerAria} onClick={onClose}>
-      <ul className="lh-drop__panel" role="listbox" aria-label={pickerAria} onClick={(e) => e.stopPropagation()}>
-        {seasons.map((season) => {
-          const active = season.season_id === selectedId;
-          return (
-            <li key={season.season_id} role="none">
-              <button
-                role="option"
-                aria-selected={active}
-                className={`lh-drop__option ${active ? "is-active" : ""}`}
-                onClick={() => onSelect(season.season_id)}
-              >
-                {labelOf(season)}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
-
 /* -------------------------------- screen -------------------------------- */
 export function LeagueHistory() {
   const nav = useNavigate();
@@ -315,24 +276,50 @@ export function LeagueHistory() {
           <LoadingState />
         ) : (
           <>
-            {/* Season hero + selector */}
+            {/* Season hero + selector — the dropdown opens directly below the
+                season title/chevron; a full-frame backdrop dims + dismisses. */}
             <div className="lh__hero">
               <SeasonBanner />
-              <button
-                className="lh__season"
-                onClick={() => setDropOpen((v) => !v)}
-                aria-haspopup="listbox"
-                aria-expanded={dropOpen}
-                aria-label={copy.selectAria(labelOf(selectedSeason))}
-              >
-                <span className="lh__season-year">{selectedSeason.year}</span>
-                <span className="lh__season-name">
-                  {copy.heroName(selectedSeason.quarter as Quarter)}
-                  <svg className="lh__chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M6 9l6 6 6-6" stroke="#272c30" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </span>
-              </button>
+              <div className="lh__season-anchor">
+                <button
+                  className="lh__season"
+                  onClick={() => setDropOpen((v) => !v)}
+                  aria-haspopup="listbox"
+                  aria-expanded={dropOpen}
+                  aria-label={copy.selectAria(labelOf(selectedSeason))}
+                >
+                  <span className="lh__season-year">{selectedSeason.year}</span>
+                  <span className="lh__season-name">
+                    {copy.heroName(selectedSeason.quarter as Quarter)}
+                    <svg className={`lh__chevron ${dropOpen ? "is-open" : ""}`} width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M6 9l6 6 6-6" stroke="#272c30" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                </button>
+                {dropOpen && seasons.data && (
+                  <ul className="lh-drop__panel" role="listbox" aria-label={copy.seasonPickerAria} onClick={(e) => e.stopPropagation()}>
+                    {seasons.data.seasons.map((season) => {
+                      const active = season.season_id === selectedSeason.season_id;
+                      return (
+                        <li key={season.season_id} role="none">
+                          <button
+                            role="option"
+                            aria-selected={active}
+                            className={`lh-drop__option ${active ? "is-active" : ""}`}
+                            onClick={() => {
+                              setSelectedId(season.season_id);
+                              setDropOpen(false);
+                            }}
+                          >
+                            {labelOf(season)}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+              {dropOpen && <div className="lh-drop" role="presentation" onClick={() => setDropOpen(false)} />}
             </div>
 
             {/* History list card */}
@@ -366,20 +353,6 @@ export function LeagueHistory() {
           </>
         )}
       </div>
-
-      {dropOpen && selectedSeason && seasons.data && (
-        <SeasonDropdown
-          seasons={seasons.data.seasons}
-          selectedId={selectedSeason.season_id}
-          labelOf={labelOf}
-          pickerAria={copy.seasonPickerAria}
-          onSelect={(id) => {
-            setSelectedId(id);
-            setDropOpen(false);
-          }}
-          onClose={() => setDropOpen(false)}
-        />
-      )}
     </div>
   );
 }

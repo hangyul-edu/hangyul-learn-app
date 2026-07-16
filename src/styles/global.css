@@ -7971,6 +7971,10 @@ textarea.input {
 .lh__chevron {
   margin-top: 3px;
   flex-shrink: 0;
+  transition: transform 0.18s ease;
+}
+.lh__chevron.is-open {
+  transform: rotate(180deg);
 }
 
 /* History card */
@@ -8082,21 +8086,24 @@ textarea.input {
   cursor: pointer;
 }
 
-/* Season dropdown — a compact panel anchored under the season title (top-right),
-   contained within the app frame (absolute, not fixed). */
+/* Season dropdown — a compact panel that opens directly beneath the season
+   title/chevron, over a full-frame dismiss backdrop. */
+.lh__season-anchor {
+  position: relative;
+}
 .lh-drop {
+  /* Full-frame dim backdrop (absolute → contained in .app-frame). */
   position: absolute;
   inset: 0;
   z-index: 60;
-  background: rgba(30, 25, 20, 0.32);
-  max-width: var(--app-max);
-  margin: 0 auto;
+  background: rgba(30, 25, 20, 0.28);
 }
 .lh-drop__panel {
   position: absolute;
-  top: calc(var(--safe-top) + 150px);
-  right: 16px;
-  width: min(230px, calc(100% - 32px));
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 62;
+  width: min(230px, 78vw);
   max-height: 56vh;
   overflow-y: auto;
   list-style: none;

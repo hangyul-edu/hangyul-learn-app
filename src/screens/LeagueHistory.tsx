@@ -115,18 +115,19 @@ function SeasonBanner() {
   );
 }
 
-/** Circular citrus league icon, tinted + pale background per tier. */
+/** The user's league badge for that period — the same tier shield the app uses
+ *  elsewhere, tinted per tier on a pale circular background. */
 function LeagueTierIcon({ tier }: { tier: string }) {
   const color = TIER_META[tier as LeagueTier]?.color ?? "#b8c0c8";
   return (
     <span className="lh__tier" style={{ background: `${color}22` }} aria-hidden="true">
-      <svg viewBox="0 0 40 40" width="30" height="30">
-        <circle cx="20" cy="23" r="12" fill={color} />
-        <circle cx="20" cy="23" r="12" fill="url(#lhCitrus)" />
-        <path d="M20 11c1-3.4 4.2-4.4 6.4-3.7.3 1.7-.7 4.7-3.3 5.6-2 .7-3.6-.5-3.1-1.9z" fill="#5fb65b" />
+      <svg viewBox="0 0 64 72" width="30" height="34">
+        <path d="M32 3l25 9v22c0 17-12 28-25 33C19 62 7 51 7 34V12l25-9z" fill={color} />
+        <path d="M32 3l25 9v22c0 17-12 28-25 33C19 62 7 51 7 34V12l25-9z" fill="url(#lhShield)" />
+        <path d="M32 16l4.8 9.7 10.7 1.6-7.7 7.5 1.8 10.6L32 50.9l-9.6 4.9 1.8-10.6-7.7-7.5 10.7-1.6L32 16z" fill="#fff" opacity="0.95" />
         <defs>
-          <radialGradient id="lhCitrus" cx="0.35" cy="0.3" r="0.75">
-            <stop offset="0" stopColor="#fff" stopOpacity="0.55" />
+          <radialGradient id="lhShield" cx="0.35" cy="0.28" r="0.8">
+            <stop offset="0" stopColor="#fff" stopOpacity="0.45" />
             <stop offset="0.6" stopColor="#fff" stopOpacity="0" />
           </radialGradient>
         </defs>

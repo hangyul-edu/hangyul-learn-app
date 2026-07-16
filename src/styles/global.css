@@ -7936,8 +7936,8 @@ textarea.input {
 }
 .lh__banner {
   flex-shrink: 0;
-  width: 96px;
-  height: 150px;
+  width: 128px;
+  height: 200px;
   filter: drop-shadow(5px 8px 9px rgba(120, 90, 20, 0.22));
 }
 .lh__season {
@@ -7992,8 +7992,8 @@ textarea.input {
 .lh__row {
   display: flex;
   align-items: center;
-  gap: 13px;
-  padding: 18px 16px;
+  gap: 11px;
+  padding: 12px 14px;
   border-bottom: 1px solid #eceef1;
 }
 .lh__row:last-child {
@@ -8001,8 +8001,8 @@ textarea.input {
 }
 .lh__tier {
   flex-shrink: 0;
-  width: 46px;
-  height: 46px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;

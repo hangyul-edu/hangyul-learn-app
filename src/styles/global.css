@@ -8072,8 +8072,11 @@ textarea.input {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 8px;
-  padding: 12px;
+  padding: 10px;
+}
+/* No next page → the sentinel has no spinner/retry; don't reserve bottom space. */
+.lh__foot:empty {
+  padding: 0;
 }
 .lh__more-retry {
   border: 1px solid var(--border-strong);

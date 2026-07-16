@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Async, ErrorState, LoadingState, SkeletonList } from "../components/ui/states";
 import { MedalIcon, RankAvatar } from "../components/brand/RankBits";
@@ -9,8 +9,9 @@ import type { RankingEntry } from "../lib/types";
 import { LeagueLifecycleModal, useLeagueLifecycle } from "./LeagueLifecycleModals";
 import { LeagueGuideSheet } from "./LeagueGuide";
 import { FriendLeague } from "./FriendLeague";
+import { MyPoints } from "./MyPoints";
 
-type Tab = "regular" | "friend";
+type Tab = "regular" | "friend" | "points";
 
 /* ------------------------------ helpers -------------------------------- */
 /** Human "Nd Nh Nm" remaining until a season's end (from real backend timing). */
@@ -179,7 +180,12 @@ function RankingList({ entries, meId }: { entries: RankingEntry[]; meId?: string
 /* -------------------------------- screen ------------------------------- */
 export function League() {
   const nav = useNavigate();
-  const [tab, setTab] = useState<Tab>("regular");
+  // Optional deep-link, e.g. `/league?tab=points` (used by the /points route).
+  const [params] = useSearchParams();
+  const initialTab = params.get("tab");
+  const [tab, setTab] = useState<Tab>(
+    initialTab === "friend" || initialTab === "points" ? initialTab : "regular",
+  );
   const [info, setInfo] = useState(false);
   const [nowTick, setNowTick] = useState(Date.now());
 
@@ -210,7 +216,7 @@ export function League() {
             <button role="tab" aria-selected={tab === "friend"} className={`lg__tab ${tab === "friend" ? "is-active" : ""}`} onClick={() => setTab("friend")}>
               친구 리그
             </button>
-            <button role="tab" aria-selected={false} className="lg__tab" onClick={() => nav("/points")}>
+            <button role="tab" aria-selected={tab === "points"} className={`lg__tab ${tab === "points" ? "is-active" : ""}`} onClick={() => setTab("points")}>
               My 포인트
             </button>
           </div>
@@ -225,7 +231,10 @@ export function League() {
           )}
         </div>
 
-        {tab === "friend" ? (
+        {tab === "points" ? (
+          /* My Points: current weekly-league total + month-grouped ledger. */
+          <MyPoints />
+        ) : tab === "friend" ? (
           /* Friend League has its own podium hero + list; it does not use the
              regular-league lifecycle/carousel. */
           <FriendLeague />

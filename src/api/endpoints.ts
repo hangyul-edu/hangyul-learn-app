@@ -29,6 +29,7 @@ import type {
   PaymentMethod,
   Plan,
   PointsBalance,
+  PointsHistoryResponse,
   ChatMessage,
   Quiz,
   TopikQuestionType,
@@ -295,10 +296,7 @@ export const aiApi = {
 export const gameApi = {
   points: () => http.get<PointsBalance>("/points/me"),
   pointsHistory: (cursor?: string) =>
-    http.get<{ items: { reason: string; amount: number; occurred_at: string }[]; next_cursor: string | null }>(
-      "/points/history",
-      { cursor, limit: 30 },
-    ),
+    http.get<PointsHistoryResponse>("/points/history", { cursor, limit: 30 }),
   myLeague: () => http.get<LeaguePosition>("/leagues/me"),
   currentSeason: () => http.get<LeagueSeason>("/leagues/current"),
   // The user's live regular-league leaderboard for the CURRENT season. This is

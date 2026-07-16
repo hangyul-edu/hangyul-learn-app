@@ -401,6 +401,29 @@ export interface LeagueHistoryResponse {
   next_cursor: string | null;
 }
 
+/* ---- My Points (per weekly-league point ledger) ---- */
+export type PointsReason =
+  | "attendance"
+  | "attendance_streak_bonus"
+  | "sentence_complete"
+  | "lecture_complete"
+  | "saved_sentence_review"
+  | "level_up_bonus";
+export interface PointTransaction {
+  event_id: string;
+  reason: PointsReason | string;
+  amount: number;
+  occurred_at: string;
+  /** The weekly-league period this transaction belongs to (never mixed). */
+  league_period_id: string | null;
+  /** Safe display context: {kind, streak_days} | {item_type} | {track} | {level}. */
+  detail: Record<string, unknown> | null;
+}
+export interface PointsHistoryResponse {
+  items: PointTransaction[];
+  next_cursor: string | null;
+}
+
 /* ---- League lifecycle (entry flow) ---- */
 export type LeagueLifecycleState =
   | "RESULT_UNVIEWED"

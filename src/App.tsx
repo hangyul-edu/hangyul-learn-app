@@ -27,7 +27,6 @@ import { Saved } from "./screens/Saved";
 import { League } from "./screens/League";
 import { LeagueHistory } from "./screens/LeagueHistory";
 import { LeagueResult } from "./screens/LeagueResult";
-import { Points } from "./screens/Points";
 import { Social } from "./screens/Social";
 import { Notifications } from "./screens/Notifications";
 import { AiChat } from "./screens/AiChat";
@@ -152,7 +151,8 @@ const router = createBrowserRouter(
         <Route path="/saved" element={<RequireAuth><Saved /></RequireAuth>} />
         <Route path="/league/history" element={<RequireAuth><LeagueHistory /></RequireAuth>} />
         <Route path="/league/result" element={<RequireAuth><LeagueResult /></RequireAuth>} />
-        <Route path="/points" element={<RequireAuth><Points /></RequireAuth>} />
+        {/* My Points lives in the League section (top + bottom nav). */}
+        <Route path="/points" element={<Navigate to="/league?tab=points" replace />} />
         <Route path="/streak" element={<RequireAuth><Streak /></RequireAuth>} />
         <Route path="/notifications" element={<RequireAuth><Notifications /></RequireAuth>} />
         <Route path="/ai" element={<RequireAuth><AiChat /></RequireAuth>} />

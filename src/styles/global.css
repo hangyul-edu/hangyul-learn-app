@@ -7577,9 +7577,7 @@ textarea.input {
 .lg__rank.is-me .lg__rank-no {
   color: var(--brand-600);
 }
-.lg__avatar-char {
-  width: 46px;
-  height: 46px;
+.rank-avatar-char {
   flex-shrink: 0;
   border-radius: var(--r-full);
   display: flex;
@@ -8287,4 +8285,191 @@ textarea.input {
 .lgr__foot {
   padding: 12px 20px calc(20px + var(--safe-bottom));
   background: #fff;
+}
+
+/* ========================= Friend League (podium) ====================== */
+.fl {
+  display: flex;
+  flex-direction: column;
+}
+.fl__hero {
+  position: relative;
+  padding-top: 14px;
+  margin-bottom: 6px;
+}
+.fl__podiums {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 10px;
+}
+.fl__col {
+  flex: 0 1 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+.fl__block {
+  position: relative;
+  width: 100%;
+  max-width: 104px;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 6px 12px;
+  color: #fff;
+  box-shadow: inset 0 -12px 0 rgba(0, 0, 0, 0.08);
+}
+.fl__block--r1 {
+  height: 124px;
+  background: linear-gradient(#ffa64a, #ff8f2c);
+}
+.fl__block--r2 {
+  height: 98px;
+  background: linear-gradient(#ffd76b, #f6c744);
+}
+.fl__block--r3 {
+  height: 82px;
+  background: linear-gradient(#9fd9e4, #7ec8d6);
+}
+.fl__block.is-empty {
+  background: #eceef1;
+  box-shadow: none;
+}
+.fl__block-rank {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
+}
+.fl__block-name {
+  margin-top: 5px;
+  max-width: 100%;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fl__champion {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 8px;
+}
+.fl__champion-avatar {
+  position: relative;
+  z-index: 2;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--r-full);
+  background: #fff4e6;
+  box-shadow: 0 7px 14px rgba(180, 83, 9, 0.24);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fl__confetti {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  width: 122px;
+  height: 92px;
+  transform: translateX(-50%);
+  z-index: 1;
+  overflow: visible;
+}
+.fl__decor {
+  position: absolute;
+  bottom: 28px;
+  z-index: 1;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--r-full);
+  background: #eef0f3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(43, 32, 25, 0.1);
+}
+.fl__decor--left {
+  left: 10px;
+}
+.fl__decor--right {
+  right: 10px;
+}
+.fl__platform {
+  position: relative;
+  z-index: 2;
+  height: 14px;
+  margin: -1px 6px 0;
+  border-radius: 9px;
+  background: #e8eaed;
+  box-shadow: 0 7px 16px rgba(43, 32, 25, 0.1);
+}
+.fl__ranks {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fl__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.fl__row.is-me {
+  background: var(--brand-50);
+  border-color: var(--brand-200);
+}
+.fl__row-no {
+  flex-shrink: 0;
+  width: 22px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink-3);
+}
+.fl__row.is-me .fl__row-no {
+  color: var(--brand-600);
+}
+.fl__row-avatar {
+  flex-shrink: 0;
+}
+.fl__row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.fl__row-name {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fl__row-league {
+  margin-top: 1px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.fl__row-pts {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink);
 }

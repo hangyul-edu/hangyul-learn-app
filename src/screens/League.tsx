@@ -1,14 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Avatar } from "../components/ui/kit";
 import { Async, ErrorState, LoadingState, SkeletonList } from "../components/ui/states";
-import { CharacterArt, avatarBg, type AvatarKey } from "../components/brand/ProfileAssets";
+import { MedalIcon, RankAvatar } from "../components/brand/RankBits";
 import { gameApi } from "../api/endpoints";
 import { LEAGUE_TIERS, TIER_META, tierIndex, type LeagueTier } from "../lib/league";
 import type { RankingEntry } from "../lib/types";
 import { LeagueLifecycleModal, useLeagueLifecycle } from "./LeagueLifecycleModals";
 import { LeagueGuideSheet } from "./LeagueGuide";
+import { FriendLeague } from "./FriendLeague";
 
 type Tab = "regular" | "friend";
 
@@ -23,24 +23,6 @@ function countdown(endsAt: string, now = Date.now()): string {
   const m = mins % 60;
   return `${d}일 ${h}시간 ${m}분`;
 }
-
-const MedalIcon = ({ rank }: { rank: number }) => {
-  const fill = rank === 1 ? "#f5c518" : rank === 2 ? "#c4ccd4" : "#e08a4a";
-  return (
-    <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M8 3l2.2 4.4L15 8 8 3zM16 3l-2.2 4.4L9 8l7-5z" fill={fill} opacity="0.85" />
-      <circle cx="12" cy="15" r="6" fill={fill} />
-      <circle cx="12" cy="15" r="6" fill="url(#medalShine)" />
-      <path d="M12 11.6l1 2 2.2.3-1.6 1.5.4 2.2L12 18.5l-2 1.1.4-2.2L8.8 16l2.2-.3 1-2z" fill="#fff8e0" />
-      <defs>
-        <radialGradient id="medalShine" cx="0.38" cy="0.32" r="0.7">
-          <stop offset="0" stopColor="#ffffff" stopOpacity="0.6" />
-          <stop offset="0.6" stopColor="#ffffff" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-    </svg>
-  );
-};
 
 /** League shield badge — tinted for reached tiers, gray + lock for future ones. */
 function LeagueBadge({ tier, reached, current }: { tier: LeagueTier; reached: boolean; current: boolean }) {
@@ -69,22 +51,6 @@ function LeagueBadge({ tier, reached, current }: { tier: LeagueTier; reached: bo
       </defs>
     </svg>
   );
-}
-
-/** Real avatar for a ranking row: uploaded photo → character → initial fallback. */
-function RankAvatar({ entry }: { entry: RankingEntry }) {
-  if (entry.profile_image_type === "CUSTOM" && entry.profile_image_url) {
-    return <Avatar url={entry.profile_image_url} name={entry.nickname} size={46} />;
-  }
-  if (entry.profile_image_type === "AVATAR" && entry.avatar_key) {
-    const key = entry.avatar_key as AvatarKey;
-    return (
-      <span className="lg__avatar-char" style={{ background: avatarBg(key) }} aria-hidden="true">
-        <CharacterArt variant={key} fill="82%" />
-      </span>
-    );
-  }
-  return <Avatar name={entry.nickname} size={46} />;
 }
 
 /* --------------------------- carousel ---------------------------------- */
@@ -222,7 +188,6 @@ export function League() {
   const mine = useQuery({ queryKey: ["league-me"], queryFn: gameApi.myLeague });
   const season = useQuery({ queryKey: ["league-season"], queryFn: gameApi.currentSeason });
   const regular = useQuery({ queryKey: ["league-rankings", "regular"], queryFn: gameApi.currentRankings, enabled: tab === "regular" });
-  const friend = useQuery({ queryKey: ["league-rankings", "friend"], queryFn: gameApi.friendRankings, enabled: tab === "friend" });
 
   // Live countdown — re-tick once a minute while the screen is open.
   useEffect(() => {
@@ -230,7 +195,6 @@ export function League() {
     return () => clearInterval(id);
   }, []);
 
-  const ranks = tab === "regular" ? regular : friend;
   const dormant = !!mine.data?.dormant;
   const currentTier = (mine.data?.tier ?? "green") as LeagueTier;
 
@@ -250,81 +214,80 @@ export function League() {
               My 포인트
             </button>
           </div>
-          <button className="lg__history" onClick={() => nav("/league/history")} aria-label="리그 히스토리 보기">
-            히스토리
-          </button>
+          {tab === "friend" ? (
+            <button className="lg__history" onClick={() => nav("/social")} aria-label="친구 관리">
+              친구 관리
+            </button>
+          ) : (
+            <button className="lg__history" onClick={() => nav("/league/history")} aria-label="리그 히스토리 보기">
+              히스토리
+            </button>
+          )}
         </div>
 
-        {/* Wait for the authoritative lifecycle before rendering ranking/empty
-            so the correct modal/state shows without flashing the wrong screen. */}
-        {!lifecycle.data ? (
+        {tab === "friend" ? (
+          /* Friend League has its own podium hero + list; it does not use the
+             regular-league lifecycle/carousel. */
+          <FriendLeague />
+        ) : !lifecycle.data ? (
+          /* Wait for the authoritative lifecycle before rendering ranking/empty
+             so the correct modal/state shows without flashing the wrong screen. */
           lifecycle.error ? (
             <ErrorState message="리그 정보를 불러오지 못했어요." onRetry={() => lifecycle.refetch()} />
           ) : (
             <LoadingState />
           )
         ) : (
-        <Async
-          loading={mine.isLoading}
-          error={mine.error}
-          data={mine.data}
-          onRetry={() => mine.refetch()}
-          skeleton={<SkeletonList rows={4} height={64} />}
-        >
-          {(m) =>
-            tab === "regular" && dormant ? (
-              <div className="lg__empty">
-                <div className="lg__empty-badge" aria-hidden="true">
-                  <LeagueBadge tier="green" reached={false} current={false} />
-                </div>
-                <p className="lg__empty-title">아직 참가 중인 리그가 없어요</p>
-                <p className="lg__empty-desc">
-                  학습을 시작하고
-                  <br />
-                  리그에 도전해보세요!
-                </p>
-              </div>
-            ) : (
-              <>
-                {tab === "regular" && (
-                  <>
-                    <LeagueCarousel currentTier={currentTier} />
-                    <div className="lg__title-row">
-                      <span className="lg__title">{TIER_META[currentTier]?.label ?? m.tier_label}</span>
-                      <button className="lg__info-btn" onClick={() => setInfo(true)} aria-label="리그 안내 열기">
-                        ?
-                      </button>
-                    </div>
-                    {season.data?.ends_at && <p className="lg__timer">남은 시간: {countdown(season.data.ends_at, nowTick)}</p>}
-                  </>
-                )}
-                {tab === "friend" && (
-                  <div className="lg__title-row lg__title-row--friend">
-                    <span className="lg__title">친구 리그</span>
+          <Async
+            loading={mine.isLoading}
+            error={mine.error}
+            data={mine.data}
+            onRetry={() => mine.refetch()}
+            skeleton={<SkeletonList rows={4} height={64} />}
+          >
+            {(m) =>
+              dormant ? (
+                <div className="lg__empty">
+                  <div className="lg__empty-badge" aria-hidden="true">
+                    <LeagueBadge tier="green" reached={false} current={false} />
                   </div>
-                )}
+                  <p className="lg__empty-title">아직 참가 중인 리그가 없어요</p>
+                  <p className="lg__empty-desc">
+                    학습을 시작하고
+                    <br />
+                    리그에 도전해보세요!
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <LeagueCarousel currentTier={currentTier} />
+                  <div className="lg__title-row">
+                    <span className="lg__title">{TIER_META[currentTier]?.label ?? m.tier_label}</span>
+                    <button className="lg__info-btn" onClick={() => setInfo(true)} aria-label="리그 안내 열기">
+                      ?
+                    </button>
+                  </div>
+                  {season.data?.ends_at && <p className="lg__timer">남은 시간: {countdown(season.data.ends_at, nowTick)}</p>}
 
-                <Async
-                  loading={ranks.isLoading}
-                  error={ranks.error}
-                  data={ranks.data}
-                  onRetry={() => ranks.refetch()}
-                  skeleton={<SkeletonList rows={6} height={56} />}
-                >
-                  {(r) =>
-                    r.entries.length === 0 ? (
-                      <p className="lg__empty-desc" style={{ marginTop: 32 }}>
-                        {tab === "friend" ? "함께 학습할 친구를 추가해보세요" : "아직 순위가 없어요"}
-                      </p>
-                    ) : (
-                      <RankingList entries={r.entries} meId={r.me?.user_id} />
-                    )
-                  }
-                </Async>
-              </>
-            )
-          }
-        </Async>
+                  <Async
+                    loading={regular.isLoading}
+                    error={regular.error}
+                    data={regular.data}
+                    onRetry={() => regular.refetch()}
+                    skeleton={<SkeletonList rows={6} height={56} />}
+                  >
+                    {(r) =>
+                      r.entries.length === 0 ? (
+                        <p className="lg__empty-desc" style={{ marginTop: 32 }}>아직 순위가 없어요</p>
+                      ) : (
+                        <RankingList entries={r.entries} meId={r.me?.user_id} />
+                      )
+                    }
+                  </Async>
+                </>
+              )
+            }
+          </Async>
         )}
       </div>
 

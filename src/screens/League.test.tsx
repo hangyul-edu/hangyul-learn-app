@@ -208,14 +208,14 @@ describe("League screen", () => {
     expect(screen.queryByText("POINTS_SCREEN")).not.toBeInTheDocument();
   });
 
-  it("switches to the friend league board on the 친구 리그 tab", async () => {
+  it("switches to the Friend League (podium) on the 친구 리그 tab", async () => {
     renderScreen();
     await screen.findByText("Yellow 리그");
     await userEvent.click(screen.getByRole("tab", { name: "친구 리그" }));
     await waitFor(() => expect(api.friendRankings).toHaveBeenCalled());
-    // The friend board replaces the tier title; the carousel/timer are gone.
-    expect(screen.getByText("친구 리그", { selector: ".lg__title" })).toBeInTheDocument();
+    // The regular-league carousel is gone and the right button becomes 친구 관리.
     expect(screen.queryByLabelText("리그 진행 상황")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "친구 관리" })).toBeInTheDocument();
   });
 
   it("shows a retryable error when the league fails to load", async () => {

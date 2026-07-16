@@ -7644,12 +7644,12 @@ textarea.input {
 
 /* ===================== Regular League guide (bottom sheet) ============== */
 .lgg-overlay {
-  position: fixed;
+  /* Absolute (not fixed) so the sheet is contained within — and clipped to the
+     rounded corners of — the .app-frame, matching the .bottomnav convention. */
+  position: absolute;
   inset: 0;
   z-index: 170;
   background: rgba(28, 22, 16, 0.5);
-  max-width: var(--app-max);
-  margin: 0 auto;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -7668,7 +7668,7 @@ textarea.input {
   background: var(--surface);
   border-radius: var(--r-xl) var(--r-xl) 0 0;
   box-shadow: var(--shadow-lg);
-  max-height: 92dvh;
+  max-height: 92%; /* relative to the .app-frame, leaving the dim visible on top */
   overflow: hidden; /* clip the hero's rounded top corners */
   display: flex;
   flex-direction: column;

@@ -14,6 +14,14 @@ export function GuideBanner() {
         <clipPath id="lgBannerClip">
           <path d="M30 26h68v82l-34-16-34 16z" />
         </clipPath>
+        {/* One sword, pointing up (tip at y=-32, hilt at y=+20). */}
+        <g id="lgSword">
+          <path d="M0 -32 L3.4 8 L-3.4 8 Z" fill="#eef2f6" stroke="#b7c0ca" strokeWidth="1" strokeLinejoin="round" />
+          <path d="M0 -30v36" stroke="#c7ced6" strokeWidth="0.9" />
+          <rect x="-10" y="7.5" width="20" height="4.5" rx="2.2" fill="#c9902f" />
+          <rect x="-2.4" y="11" width="4.8" height="11" rx="2.2" fill="#7a5326" />
+          <circle cx="0" cy="23.5" r="3.2" fill="#c9902f" />
+        </g>
       </defs>
       {/* soft ground shadow to the right/below */}
       <ellipse cx="70" cy="126" rx="42" ry="9" fill="rgba(120,60,10,0.28)" />
@@ -29,12 +37,11 @@ export function GuideBanner() {
         <rect x="81" y="26" width="17" height="90" fill="#ffd75e" />
       </g>
       <path d="M30 26h68v82l-34-16-34 16z" fill="none" stroke="#f2c246" strokeWidth="2" />
-      {/* crossed-swords emblem */}
-      <g stroke="#8a6a2e" strokeWidth="4" strokeLinecap="round">
-        <path d="M50 52l28 28" />
-        <path d="M78 52L50 80" />
+      {/* crossed-swords emblem (two swords crossed in an X) */}
+      <g transform="translate(64 66)">
+        <use href="#lgSword" transform="rotate(42)" />
+        <use href="#lgSword" transform="rotate(-42)" />
       </g>
-      <path d="M47 49l7 7M81 49l-7 7" stroke="#6f5322" strokeWidth="4" strokeLinecap="round" />
     </svg>
   );
 }

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { TopBar } from "../components/layout/Screen";
 import { Avatar, Button, Segmented } from "../components/ui/kit";
@@ -13,7 +14,13 @@ import type { Friend } from "../lib/types";
 export function Social() {
   const toast = useToast();
   const qc = useQueryClient();
-  const [tab, setTab] = useState<"friends" | "requests" | "find">("friends");
+  // Optional deep-link to a specific tab, e.g. `/social?tab=find` opens the
+  // friend-search/add flow directly (used by Friend League's 친구 추가).
+  const [params] = useSearchParams();
+  const initialTab = params.get("tab");
+  const [tab, setTab] = useState<"friends" | "requests" | "find">(
+    initialTab === "find" || initialTab === "requests" ? initialTab : "friends",
+  );
 
   const friends = useQuery({ queryKey: ["friends"], queryFn: friendApi.list, enabled: tab === "friends" });
   const received = useQuery({ queryKey: ["friend-requests"], queryFn: friendApi.received, enabled: tab === "requests" });

@@ -8473,3 +8473,45 @@ textarea.input {
   font-weight: 800;
   color: var(--ink);
 }
+
+/* Friend League empty state (minimal, illustration-free, centered). */
+.fl-empty {
+  min-height: 54vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px 16px;
+}
+.fl-empty__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.fl-empty__desc {
+  margin: 12px 0 0;
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--ink-3);
+}
+.fl-empty__add {
+  margin-top: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 20px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--r-full);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.fl-empty__add:active {
+  background: var(--surface-2);
+}

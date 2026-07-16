@@ -17,6 +17,8 @@ vi.mock("../api/endpoints", () => ({
     ackLeagueResult: vi.fn(),
   },
 }));
+// FriendLeague (rendered on the 친구 리그 tab) reads the app language via useAuth.
+vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: "ko" } }) }));
 
 import { gameApi } from "../api/endpoints";
 import { League } from "./League";

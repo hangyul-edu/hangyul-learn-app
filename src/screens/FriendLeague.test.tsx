@@ -2,17 +2,25 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useSearchParams } from "react-router-dom";
 import type { RankingResponse } from "../lib/types";
 
 vi.mock("../api/endpoints", () => ({
   gameApi: { friendRankings: vi.fn() },
 }));
+let mockLang = "ko";
+vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: mockLang } }) }));
 
 import { gameApi } from "../api/endpoints";
 import { FriendLeague } from "./FriendLeague";
 
 const api = gameApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
+
+/** Renders the destination tab so we can assert `친구 추가` opens the add flow. */
+function SocialStub() {
+  const [params] = useSearchParams();
+  return <div>SOCIAL:{params.get("tab") ?? "friends"}</div>;
+}
 
 const entry = (rank: number, id: string, name: string, tier: string, points: number) => ({
   rank,
@@ -43,7 +51,7 @@ function renderFriend() {
       <MemoryRouter initialEntries={["/league"]}>
         <Routes>
           <Route path="/league" element={<FriendLeague />} />
-          <Route path="/social" element={<div>SOCIAL_SCREEN</div>} />
+          <Route path="/social" element={<SocialStub />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -52,6 +60,7 @@ function renderFriend() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockLang = "ko";
   api.friendRankings.mockResolvedValue(full);
 });
 
@@ -113,13 +122,45 @@ describe("Friend League screen", () => {
     expect(list.querySelectorAll(".fl__row.is-me")).toHaveLength(1);
   });
 
-  it("navigates to friend management (/social) from the 친구 관리 empty-state action", async () => {
-    // Only the caller participates → empty state with a 친구 관리 CTA.
+  it("renders the minimal empty state (heading + two-line desc + 친구 추가) with no friends", async () => {
+    // Only the caller participates → confirmed empty result.
     api.friendRankings.mockResolvedValue({ ...full, entries: [full.entries[3]], me: full.entries[3] });
     renderFriend();
-    expect(await screen.findByText("아직 친구 리그에 참가한 친구가 없어요")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "친구 관리로 이동" }));
-    expect(await screen.findByText("SOCIAL_SCREEN")).toBeInTheDocument();
+    const heading = await screen.findByRole("heading", { name: "친구 리그에 참가할 친구가 없어요" });
+    expect(heading).toBeInTheDocument();
+    // Two-line description (one <p> split by <br/>).
+    const desc = document.querySelector(".fl-empty__desc") as HTMLElement;
+    expect(desc.textContent).toContain("친구를 추가하고");
+    expect(desc.textContent).toContain("함께 경쟁해보세요!");
+    expect(desc.querySelector("br")).toBeInTheDocument();
+    // Outlined add button with a plus icon (SVG, not a raw '+').
+    const add = screen.getByRole("button", { name: "친구 추가" });
+    expect(add.querySelector("svg")).toBeInTheDocument();
+    // No podium in the empty state.
+    expect(document.querySelector(".fl__podiums")).not.toBeInTheDocument();
+  });
+
+  it("친구 추가 opens the friend-search (add) flow, not the manage list", async () => {
+    api.friendRankings.mockResolvedValue({ ...full, entries: [full.entries[3]], me: full.entries[3] });
+    renderFriend();
+    await userEvent.click(await screen.findByRole("button", { name: "친구 추가" }));
+    expect(await screen.findByText("SOCIAL:find")).toBeInTheDocument();
+  });
+
+  it("renders English empty-state copy for an English user", async () => {
+    mockLang = "en";
+    api.friendRankings.mockResolvedValue({ ...full, entries: [full.entries[3]], me: full.entries[3] });
+    renderFriend();
+    expect(await screen.findByRole("heading", { name: "No friends can join your Friend League yet" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add Friend" })).toBeInTheDocument();
+  });
+
+  it("does not show the empty state for a real fetch error (retryable)", async () => {
+    api.friendRankings.mockReset();
+    api.friendRankings.mockRejectedValue(new Error("network"));
+    renderFriend();
+    expect(await screen.findByRole("button", { name: "다시 시도" })).toBeInTheDocument();
+    expect(screen.queryByText("친구 리그에 참가할 친구가 없어요")).not.toBeInTheDocument();
   });
 
   it("supports a 2-participant fallback (no rank-3 podium)", async () => {

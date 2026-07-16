@@ -1,14 +1,63 @@
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Async, EmptyState, SkeletonList } from "../components/ui/states";
-import { Button } from "../components/ui/kit";
+import { Async, SkeletonList } from "../components/ui/states";
 import { MedalIcon, RankAvatar } from "../components/brand/RankBits";
 import { gameApi } from "../api/endpoints";
+import { useAuth } from "../hooks/auth";
 import { TIER_META, type LeagueTier } from "../lib/league";
+import { normalizeLanguage, type AppLanguage } from "../lib/language";
 import type { RankingEntry } from "../lib/types";
 
 const tierLabel = (tier?: string) => (tier ? TIER_META[tier as LeagueTier]?.label : undefined);
 const displayName = (e: RankingEntry) => e.nickname ?? "회원";
+
+/* ------------------------------ empty state ----------------------------- */
+// Localized per the app's copy-object convention (keyed by app_language).
+const EMPTY_COPY: Record<AppLanguage, { title: string; line1: string; line2: string; addFriend: string }> = {
+  ko: {
+    title: "친구 리그에 참가할 친구가 없어요",
+    line1: "친구를 추가하고",
+    line2: "함께 경쟁해보세요!",
+    addFriend: "친구 추가",
+  },
+  en: {
+    title: "No friends can join your Friend League yet",
+    line1: "Add friends and",
+    line2: "compete together!",
+    addFriend: "Add Friend",
+  },
+};
+
+function PlusIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" stroke="#8a8f96" strokeWidth="2.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Minimal, illustration-free empty state — shown only for a confirmed empty
+ *  friend-league result (no eligible friends). The 친구 추가 button opens the
+ *  friend-search flow; 친구 관리 stays in the League top nav. */
+function FriendLeagueEmptyState() {
+  const nav = useNavigate();
+  const { me } = useAuth();
+  const copy = EMPTY_COPY[normalizeLanguage(me?.app_language)];
+  return (
+    <div className="fl-empty">
+      <h2 className="fl-empty__title">{copy.title}</h2>
+      <p className="fl-empty__desc">
+        {copy.line1}
+        <br />
+        {copy.line2}
+      </p>
+      <button className="fl-empty__add" onClick={() => nav("/social?tab=find")}>
+        <PlusIcon />
+        <span>{copy.addFriend}</span>
+      </button>
+    </div>
+  );
+}
 
 /* ------------------------------- decor ---------------------------------- */
 /** Pale gray default-friend placeholder — purely decorative balance. */
@@ -105,8 +154,14 @@ function FriendRow({ entry, meId }: { entry: RankingEntry; meId?: string }) {
 
 /* ------------------------------- screen --------------------------------- */
 export function FriendLeague() {
-  const nav = useNavigate();
-  const q = useQuery({ queryKey: ["league-rankings", "friend"], queryFn: gameApi.friendRankings });
+  // Refetch on (re)entry + when the tab regains focus so eligibility refreshes
+  // after the user returns from friend search / management.
+  const q = useQuery({
+    queryKey: ["league-rankings", "friend"],
+    queryFn: gameApi.friendRankings,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+  });
 
   return (
     <Async
@@ -119,20 +174,9 @@ export function FriendLeague() {
       {(data) => {
         const entries = data.entries;
         const meId = data.me?.user_id;
-        // The caller is always a participant; fewer than 2 means "no friends".
+        // The caller is always a participant; fewer than 2 = no eligible friends.
         if (entries.length < 2) {
-          return (
-            <EmptyState
-              emoji="🤝"
-              title="아직 친구 리그에 참가한 친구가 없어요"
-              text="친구를 추가하고 함께 학습하면 친구 리그에서 순위를 볼 수 있어요."
-              action={
-                <Button onClick={() => nav("/social")} aria-label="친구 관리로 이동">
-                  친구 관리
-                </Button>
-              }
-            />
-          );
+          return <FriendLeagueEmptyState />;
         }
         return (
           <div className="fl">

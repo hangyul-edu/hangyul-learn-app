@@ -7692,7 +7692,7 @@ textarea.input {
 .lgg__hero {
   position: relative;
   min-height: 244px;
-  padding: 30px 22px 24px;
+  padding: 30px 22px 42px;
   background: var(--brand-500);
   border-bottom: 2px solid rgba(90, 40, 5, 0.28);
   display: flex;
@@ -7739,7 +7739,7 @@ textarea.input {
 }
 .lgg__banner {
   position: absolute;
-  top: 52px;
+  top: 38px;
   right: 26px;
   z-index: 1;
   width: 188px;

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { LEAGUE_POINT_RULES, LEAGUE_PROMOTION } from "../lib/league";
+import { LEAGUE_POINT_RULES, LEAGUE_PROMOTION, LEAGUE_SCHEDULE } from "../lib/league";
 import { LeagueGuideSheet } from "./LeagueGuide";
 
 function renderGuide() {
@@ -30,7 +30,8 @@ describe("Regular League guide sheet", () => {
     renderGuide();
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByRole("heading", { name: "정규 리그" })).toBeInTheDocument();
-    expect(within(dialog).getByText(/학습 점수로 경쟁하는 리그예요/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/전 세계 학습자들과 경쟁하며/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/도전할수록 더 빠르게 성장할 수 있어요/)).toBeInTheDocument();
     // Banner illustration on the right of the hero.
     expect(dialog.querySelector(".lgg__banner svg")).toBeInTheDocument();
   });
@@ -38,41 +39,49 @@ describe("Regular League guide sheet", () => {
   it("renders the schedule card with the authoritative season copy", () => {
     renderGuide();
     const dialog = screen.getByRole("dialog");
-    expect(within(dialog).getByText(/매주 월요일 00:00 시작/)).toBeInTheDocument();
-    expect(within(dialog).getByText(/일요일 21:00 종료/)).toBeInTheDocument();
+    expect(within(dialog).getByText(LEAGUE_SCHEDULE.rangeLabel)).toBeInTheDocument();
     expect(within(dialog).getByText("(일요일 21시에 결과 발표)")).toBeInTheDocument();
+    expect(within(dialog).getByText(/미국 동부 시간\(ET\) 기준/)).toBeInTheDocument();
   });
 
-  it("renders the dashed point-panel heading and the 2x2 reward grid in order", () => {
+  it("renders the promotion headline and the five tier ladder with boundary notes", () => {
+    renderGuide();
+    const dialog = screen.getByRole("dialog");
+    const tiers = dialog.querySelector(".lgg__tiers") as HTMLElement;
+    expect(within(tiers).getByText(LEAGUE_PROMOTION.headline)).toBeInTheDocument();
+    expect(tiers).toHaveAttribute("aria-label", LEAGUE_PROMOTION.aria);
+    // Exactly five tiers in reference order (Green..Golden).
+    const names = Array.from(tiers.querySelectorAll(".lgg__tier-name")).map((n) => n.textContent);
+    expect(names).toEqual(["Green", "Lime", "Yellow", "Orange", "Golden"]);
+    // Boundary notes only on the first (Green) and last (Golden) tiers.
+    const greenTier = within(tiers).getByText("Green").closest(".lgg__tier") as HTMLElement;
+    const goldenTier = within(tiers).getByText("Golden").closest(".lgg__tier") as HTMLElement;
+    expect(within(greenTier).getByText("(강등 없음)")).toBeInTheDocument();
+    expect(within(goldenTier).getByText("(승급 없음)")).toBeInTheDocument();
+    expect(tiers.querySelectorAll(".lgg__tier-badge svg")).toHaveLength(5);
+  });
+
+  it("renders the dashed point-section title and the 2x2 point grid in order", () => {
     renderGuide();
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByText("학습할수록 리그 점수(P)가 올라가요")).toBeInTheDocument();
-    // Exactly four reward cards, in reference order.
+    // Exactly four point cards, in reference order.
     const grid = dialog.querySelector(".lgg__grid") as HTMLElement;
-    const labels = Array.from(grid.querySelectorAll(".lgg__reward-label")).map((n) => n.textContent);
+    const labels = Array.from(grid.querySelectorAll(".lgg__pt-label")).map((n) => n.textContent);
     expect(labels).toEqual(["출석", "맞춤 학습", "강의", "복습"]);
   });
 
-  it("shows each reward's real point value and bonus copy from the policy source", () => {
+  it("shows each point card's real value and bonus copy from the policy source", () => {
     renderGuide();
     const dialog = screen.getByRole("dialog");
     // Values come straight from LEAGUE_POINT_RULES (mirrors backend POINT_RULES).
     LEAGUE_POINT_RULES.forEach((rule) => {
-      const card = within(dialog).getByText(rule.label).closest(".lgg__reward") as HTMLElement;
+      const card = within(dialog).getByText(rule.label).closest(".lgg__pt") as HTMLElement;
       expect(within(card).getByText(rule.points)).toBeInTheDocument();
       rule.details.forEach((detail) => expect(within(card).getByText(detail)).toBeInTheDocument());
       // Card announces the full activity for screen readers.
       expect(card).toHaveAttribute("aria-label", rule.aria);
     });
-  });
-
-  it("renders the promotion card matching the real league rules", () => {
-    renderGuide();
-    const dialog = screen.getByRole("dialog");
-    expect(within(dialog).getByText(LEAGUE_PROMOTION.headline)).toBeInTheDocument();
-    LEAGUE_PROMOTION.rules.forEach((line) => expect(within(dialog).getByText(line)).toBeInTheDocument());
-    const promo = dialog.querySelector(".lgg__promo") as HTMLElement;
-    expect(promo).toHaveAttribute("aria-label", LEAGUE_PROMOTION.aria);
   });
 
   it("scrolls as a single vertical surface (no nested scroll containers)", () => {

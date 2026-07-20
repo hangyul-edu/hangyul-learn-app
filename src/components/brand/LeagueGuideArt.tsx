@@ -4,7 +4,7 @@
  * the hero banner, schedule medal, reward-card glyphs, and promotion swords are
  * drawn here to match the reference composition.
  */
-import type { RewardIconKind } from "../../lib/league";
+import { TIER_CITRUS, type LeagueTier, type RewardIconKind } from "../../lib/league";
 
 /* ------------------------------ hero banner ----------------------------- */
 export function GuideBanner() {
@@ -37,6 +37,9 @@ export function GuideBanner() {
         <rect x="81" y="26" width="17" height="90" fill="#ffd75e" />
       </g>
       <path d="M30 26h68v82l-34-16-34 16z" fill="none" stroke="#f2c246" strokeWidth="2" />
+      {/* white central medal disc with a thin dashed orange ring */}
+      <circle cx="64" cy="66" r="25" fill="#fffdf6" />
+      <circle cx="64" cy="66" r="21" fill="none" stroke="#f0a23a" strokeWidth="1.4" strokeDasharray="3 3.4" />
       {/* crossed-swords emblem (two swords crossed in an X) */}
       <g transform="translate(64 66)">
         <use href="#lgSword" transform="rotate(42)" />
@@ -46,19 +49,31 @@ export function GuideBanner() {
   );
 }
 
-/* ---------------------------- schedule medal ---------------------------- */
-export function ScheduleMedal() {
+/* ------------------------------ citrus badge ---------------------------- */
+/** Colourful segmented fruit badge for a league tier (green → golden). */
+export function CitrusBadge({ tier }: { tier: LeagueTier }) {
+  const c = TIER_CITRUS[tier];
+  const cx = 32;
+  const cy = 37;
+  const r = 15.5;
+  const segments = Array.from({ length: 8 }, (_, i) => {
+    const a = Math.PI / 8 + (i * Math.PI) / 4;
+    return `M${cx} ${cy}L${(cx + r * Math.cos(a)).toFixed(1)} ${(cy + r * Math.sin(a)).toFixed(1)}`;
+  }).join(" ");
   return (
-    <svg viewBox="0 0 48 48" width="34" height="34" aria-hidden="true" focusable="false">
-      <defs>
-        <radialGradient id="lgMedal" cx="0.35" cy="0.3" r="0.75">
-          <stop offset="0" stopColor="#ffde84" />
-          <stop offset="1" stopColor="#f5b02a" />
-        </radialGradient>
-      </defs>
-      <circle cx="24" cy="24" r="18" fill="url(#lgMedal)" />
-      <circle cx="24" cy="24" r="18" fill="none" stroke="#e79a1c" strokeWidth="2" />
-      <path d="M24 12l3.7 7.5 8.3 1.2-6 5.8 1.4 8.2L24 32l-7.4 3.9 1.4-8.2-6-5.8 8.3-1.2L24 12z" fill="#fff6df" />
+    <svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden="true" focusable="false">
+      <ellipse cx="33" cy="58" rx="17" ry="3.4" fill="rgba(120,80,10,0.14)" />
+      {/* leaf + sprig at the top */}
+      <path d="M32 15c1-6 7-9 12.5-8 0.2 6.4-5.2 10.4-12 10z" fill="#7cc44a" />
+      <path d="M31 18c-2.4-1-4-3.2-4-5.8 3.4 0.2 5.6 2.6 5.4 5.8z" fill="#63ac39" />
+      {/* rind (thick coloured outline) → body → segmented flesh */}
+      <circle cx={cx} cy={cy} r="20" fill={c.rind} />
+      <circle cx={cx} cy={cy} r="17.4" fill={c.fill} />
+      <circle cx={cx} cy={cy} r={r} fill={c.flesh} />
+      <path d={segments} stroke={c.fill} strokeWidth="1.4" strokeLinecap="round" />
+      <circle cx={cx} cy={cy} r="2.1" fill={c.fill} />
+      {/* soft top-left highlight */}
+      <ellipse cx="25.5" cy="30.5" rx="5.4" ry="3" fill="#ffffff" opacity="0.5" />
     </svg>
   );
 }
@@ -96,21 +111,6 @@ export function RewardIcon({ kind }: { kind: RewardIconKind }) {
   return (
     <svg viewBox="0 0 48 48" width="30" height="30" aria-hidden="true" focusable="false">
       {glyph}
-    </svg>
-  );
-}
-
-/* ----------------------------- crossed swords --------------------------- */
-export function CrossedSwords() {
-  return (
-    <svg viewBox="0 0 48 48" width="32" height="32" aria-hidden="true" focusable="false">
-      <g stroke="#ffffff" strokeWidth="3.4" strokeLinecap="round">
-        <path d="M14 14l20 20" />
-        <path d="M34 14L14 34" />
-      </g>
-      <g stroke="#e4fbfb" strokeWidth="3.4" strokeLinecap="round">
-        <path d="M11 12l5 5M37 12l-5 5" />
-      </g>
     </svg>
   );
 }

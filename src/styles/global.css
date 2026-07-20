@@ -7684,10 +7684,10 @@ textarea.input {
 /* Hero */
 .lgg__hero {
   position: relative;
-  min-height: 244px;
-  padding: 30px 22px 42px;
-  background: var(--brand-500);
-  border-bottom: 2px solid rgba(90, 40, 5, 0.28);
+  min-height: 250px;
+  padding: 30px 20px 40px;
+  /* Bright orange horizontal gradient: yellow-orange (left) → deep orange (right). */
+  background: linear-gradient(100deg, #ffb122 0%, #ff8f22 52%, #f5711a 100%);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -7695,198 +7695,217 @@ textarea.input {
 }
 .lgg__close {
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: 10px;
+  right: 12px;
   z-index: 3;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: var(--r-full);
-  background: rgba(255, 255, 255, 0.22);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
 }
 .lgg__close:active {
-  background: rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.2);
 }
 .lgg__hero-text {
   position: relative;
   z-index: 2;
-  max-width: 64%;
-  margin-top: 18px;
+  max-width: 62%;
+  margin-top: 20px;
 }
 .lgg__title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 34px;
+  font-size: 46px;
   font-weight: 800;
-  line-height: 1.08;
+  line-height: 1.05;
   color: #fff;
 }
 .lgg__desc {
-  margin: 12px 0 0;
-  font-size: 14px;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.95);
+  margin: 16px 0 0;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #fff;
 }
 .lgg__banner {
   position: absolute;
-  top: 38px;
-  right: 26px;
+  top: 30px;
+  right: 14px;
   z-index: 1;
-  width: 188px;
-  height: 212px;
-  filter: drop-shadow(6px 10px 10px rgba(120, 60, 10, 0.28));
+  width: 190px;
+  height: 216px;
+  filter: drop-shadow(7px 12px 11px rgba(120, 55, 8, 0.32));
 }
 
 /* Body */
 .lgg__body {
-  background: var(--surface);
-  padding: 18px 18px calc(30px + var(--safe-bottom));
+  background: #fffdfa;
+  padding: 19px 10px calc(30px + var(--safe-bottom));
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 11px;
 }
 
-/* Schedule card */
+/* Weekly schedule card */
 .lgg__sched {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: var(--brand-50);
-  border-radius: var(--r-lg);
-  padding: 18px 20px;
+  background: #fbf1df;
+  border-radius: 9px;
+  padding: 15px 21px;
+  text-align: left;
 }
-.lgg__sched-icon {
-  flex-shrink: 0;
-  width: 56px;
-  height: 56px;
-  border-radius: var(--r-full);
-  background: #fff6e0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-sm);
-}
-.lgg__sched-text {
-  flex: 1;
-  text-align: center;
-}
-.lgg__sched-main {
-  font-family: var(--font-display);
-  font-size: 16px;
+.lgg__sched-range {
+  font-size: 17px;
   font-weight: 800;
-  color: var(--brand-600);
-  line-height: 1.5;
+  line-height: 1.45;
+  color: #ef5f2b;
 }
-.lgg__sched-sub {
-  margin-top: 6px;
-  font-size: 12.5px;
-  color: var(--ink-2);
+.lgg__sched-note {
+  margin-top: 5px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: #b6875a;
+}
+.lgg__sched-note:first-of-type {
+  margin-top: 8px;
 }
 
-/* Point explanation panel */
-.lgg__panel {
-  background: var(--surface-3);
-  border-radius: var(--r-lg);
-  padding: 18px 16px 20px;
+/* Promotion + tier ladder card */
+.lgg__tiers {
+  background: #f1f2f4;
+  border-radius: 9px;
+  padding: 11px;
 }
-.lgg__panel-head {
-  margin: 0 4px 16px;
-  padding: 12px 10px;
-  border: 1.6px dashed var(--brand-300);
-  border-radius: var(--r-md);
-  background: rgba(255, 255, 255, 0.72);
-  color: var(--brand-600);
+.lgg__tiers-head {
+  margin: 3px 0 11px;
+  font-size: 17px;
+  font-weight: 800;
+  text-align: center;
+  color: var(--brand-500);
+}
+.lgg__tiers-inner {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: start;
+  background: #fff;
+  border-radius: 7px;
+  padding: 13px 4px 12px;
+}
+.lgg__tier {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 0 2px;
+}
+.lgg__tier-badge {
+  width: 58px;
+  height: 58px;
+}
+.lgg__tier-name {
   font-size: 14px;
   font-weight: 700;
+  color: var(--ink);
+}
+.lgg__tier-note {
+  min-height: 14px;
+  font-size: 11.5px;
+  line-height: 1.2;
+  color: #c07f45;
+  white-space: nowrap;
+}
+
+/* League point earning section */
+.lgg__points {
+  background: #fbf1df;
+  border-radius: 9px;
+  padding: 26px 22px 16px;
+}
+.lgg__points-title {
+  width: 83%;
+  margin: 0 auto 24px;
+  padding: 12px 14px;
+  border: 1.8px dashed var(--brand-400, #f7a44a);
+  border-radius: var(--r-full);
+  background: #fffdf6;
+  color: var(--brand-500);
+  font-size: 16px;
+  font-weight: 700;
   text-align: center;
+  line-height: 1.4;
 }
 .lgg__grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  column-gap: 11px;
+  row-gap: 21px;
 }
-.lgg__reward {
+.lgg__pt {
   background: #fff;
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-md);
-  padding: 18px 12px 16px;
+  border-radius: 22px;
+  box-shadow: 0 8px 20px rgba(90, 60, 20, 0.1);
+  padding: 20px 12px 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 7px;
+  gap: 6px;
 }
-.lgg__reward-ring {
-  width: 58px;
-  height: 58px;
+.lgg__pt-ring {
+  width: 62px;
+  height: 62px;
+  margin-bottom: 2px;
   border-radius: var(--r-full);
-  border: 2px dashed #7fd0da;
-  background: #eafbfd;
+  border: 2px dashed #86d4de;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.lgg__reward-label {
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--ink);
+.lgg__pt-center {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-full);
+  background: #fff2c4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.lgg__reward-point {
-  font-family: var(--font-display);
-  font-size: 26px;
+.lgg__pt-label {
+  font-size: 20px;
   font-weight: 800;
+  color: #6b7a8d;
+}
+.lgg__pt-value {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
   line-height: 1;
   color: var(--brand-500);
 }
-.lgg__reward-detail {
-  font-size: 11.5px;
+.lgg__pt-desc {
+  font-size: 12px;
   line-height: 1.5;
-  color: var(--ink-2);
+  color: #5a5550;
 }
 
-/* Promotion rule card */
-.lgg__promo {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: var(--brand-50);
-  border-radius: var(--r-lg);
-  padding: 18px 20px;
-}
-.lgg__promo-icon {
-  flex-shrink: 0;
-  width: 60px;
-  height: 60px;
-  border-radius: var(--r-full);
-  background: #35c4c4;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 5px 12px rgba(53, 196, 196, 0.4);
-}
-.lgg__promo-text {
-  flex: 1;
-}
-.lgg__promo-head {
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--brand-600);
-}
-.lgg__promo-rule {
-  margin-top: 6px;
-  font-size: 13px;
-  color: var(--ink-2);
-}
-
-/* Graceful single-column fallback on very narrow / large-font layouts. */
-@media (max-width: 330px) {
-  .lgg__grid {
-    grid-template-columns: 1fr;
+/* Narrow / large-font layouts: keep tiers on one row (shrink badges), keep
+   the point cards two-up. */
+@media (max-width: 340px) {
+  .lgg__tier-badge {
+    width: 48px;
+    height: 48px;
+  }
+  .lgg__tiers-inner {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .lgg__tier-note {
+    font-size: 10.5px;
   }
 }
 

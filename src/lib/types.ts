@@ -481,6 +481,39 @@ export interface FriendRequestsResponse {
   count: number;
 }
 
+/** The caller's relationship to a discovered user — drives the row CTA. */
+export type FriendRelationship =
+  | "none"
+  | "friends"
+  | "request_sent"
+  | "request_received";
+
+/** A safe, discovery-time view of a user (phone search / recommendation / invite). */
+export interface RecommendedUser {
+  user_id: string;
+  nickname: string | null;
+  profile_image_type?: ProfileImageType;
+  profile_image_url?: string | null;
+  avatar_key?: string | null;
+  relationship: FriendRelationship;
+  /** Pending request id for request_sent (cancel) / request_received (accept). */
+  request_id?: string | null;
+}
+export interface ContactRecommendationsResponse {
+  recommendations: RecommendedUser[];
+}
+export interface PhoneSearchResult {
+  user: RecommendedUser | null;
+}
+export interface FriendInvitationResponse {
+  token: string;
+  expires_at?: string | null;
+}
+export interface ResolvedInvitationResponse {
+  inviter: RecommendedUser;
+  is_self: boolean;
+}
+
 /* ---- Notifications ---- */
 export type NotificationGroup = "learning" | "announcement" | "social";
 export interface NotificationItem {

@@ -16,10 +16,10 @@ import { FriendLeague } from "./FriendLeague";
 
 const api = gameApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
-/** Renders the destination tab so we can assert `친구 추가` opens the add flow. */
+/** Renders the destination so we can assert `친구 추가` opens the Add Friend sheet. */
 function SocialStub() {
   const [params] = useSearchParams();
-  return <div>SOCIAL:{params.get("tab") ?? "friends"}</div>;
+  return <div>SOCIAL:{params.get("add") === "1" ? "add" : params.get("tab") ?? "friends"}</div>;
 }
 
 const entry = (rank: number, id: string, name: string, tier: string, points: number) => ({
@@ -140,11 +140,11 @@ describe("Friend League screen", () => {
     expect(document.querySelector(".fl__podiums")).not.toBeInTheDocument();
   });
 
-  it("친구 추가 opens the friend-search (add) flow, not the manage list", async () => {
+  it("친구 추가 opens the Add Friend sheet (via ?add=1), not the manage list", async () => {
     api.friendRankings.mockResolvedValue({ ...full, entries: [full.entries[3]], me: full.entries[3] });
     renderFriend();
     await userEvent.click(await screen.findByRole("button", { name: "친구 추가" }));
-    expect(await screen.findByText("SOCIAL:find")).toBeInTheDocument();
+    expect(await screen.findByText("SOCIAL:add")).toBeInTheDocument();
   });
 
   it("renders English empty-state copy for an English user", async () => {

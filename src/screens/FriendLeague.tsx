@@ -51,7 +51,7 @@ function FriendLeagueEmptyState() {
         <br />
         {copy.line2}
       </p>
-      <button className="fl-empty__add" onClick={() => nav("/social?tab=find")}>
+      <button className="fl-empty__add" onClick={() => nav("/social?add=1")}>
         <PlusIcon />
         <span>{copy.addFriend}</span>
       </button>

@@ -16,7 +16,11 @@ vi.mock("../api/endpoints", () => ({
     cancel: vi.fn(),
     remove: vi.fn(),
     request: vi.fn(),
+    getRequest: vi.fn(),
     searchPhone: vi.fn(),
+    recommendations: vi.fn(),
+    createInvitation: vi.fn(),
+    resolveInvitation: vi.fn(),
   },
 }));
 let mockLang = "ko";
@@ -63,6 +67,15 @@ beforeEach(() => {
   api.reject.mockResolvedValue(undefined);
   api.cancel.mockResolvedValue(undefined);
   api.remove.mockResolvedValue(undefined);
+  api.recommendations.mockResolvedValue({ recommendations: [] });
+  api.getRequest.mockResolvedValue({
+    request_id: "r1",
+    user_id: "u1",
+    nickname: "Hana",
+    profile_image_type: "NONE",
+    created_at: new Date().toISOString(),
+    relative_time: "2h ago",
+  });
 });
 
 describe("Friend Management (Social)", () => {
@@ -98,11 +111,30 @@ describe("Friend Management (Social)", () => {
     expect(screen.getAllByRole("button", { name: "친구 추가" }).length).toBeGreaterThanOrEqual(1);
   });
 
-  it("opens the friend-search flow from the add-friend button", async () => {
+  it("opens the Add Friend bottom sheet from the add-friend button", async () => {
     renderSocial();
     await screen.findByText("Tara");
     await userEvent.click(screen.getByRole("button", { name: "친구 추가" }));
-    expect(await screen.findByRole("button", { name: "검색" })).toBeInTheDocument();
+    // Modal sheet with header + info box + search field.
+    expect(await screen.findByRole("dialog", { name: "친구 추가" })).toBeInTheDocument();
+    expect(screen.getByText("친구가 신청을 수락하면 서로 친구가 됩니다.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "검색" })).toBeInTheDocument();
+    expect(screen.getByLabelText("전화번호로 친구 찾기")).toBeInTheDocument();
+  });
+
+  it("opens the Add Friend sheet automatically from a ?add=1 deep link", async () => {
+    renderSocial("/social?add=1");
+    expect(await screen.findByRole("dialog", { name: "친구 추가" })).toBeInTheDocument();
+  });
+
+  it("opens the incoming-request sheet when a received row is tapped", async () => {
+    renderSocial();
+    await userEvent.click(await screen.findByRole("tab", { name: "받은 요청 1" }));
+    const row = (await screen.findByText("Hana")).closest("li")!;
+    await userEvent.click(within(row).getByRole("button", { name: /요청 열기/ }));
+    expect(await screen.findByRole("dialog", { name: "친구 요청" })).toBeInTheDocument();
+    expect(await screen.findByText("Hana님이 친구를 신청했어요")).toBeInTheDocument();
+    await waitFor(() => expect(api.getRequest).toHaveBeenCalledWith("r1"));
   });
 
   it("received tab: shows requester, relative time, and orange Accept + Reject", async () => {

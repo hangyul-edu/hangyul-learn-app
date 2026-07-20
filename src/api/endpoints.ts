@@ -9,7 +9,12 @@ import type {
   Faq,
   Friend,
   FriendListResponse,
+  FriendRequest,
   FriendRequestsResponse,
+  ContactRecommendationsResponse,
+  PhoneSearchResult,
+  FriendInvitationResponse,
+  ResolvedInvitationResponse,
   Invoice,
   PaymentRecovery,
   LeaguePosition,
@@ -328,13 +333,21 @@ export const friendApi = {
   list: () => http.get<FriendListResponse>("/friends"),
   received: () => http.get<FriendRequestsResponse>("/friends/requests/received"),
   sent: () => http.get<FriendRequestsResponse>("/friends/requests/sent"),
-  request: (user_id: string) => http.post<unknown>("/friends/requests", { user_id }),
-  accept: (id: string) => http.post<unknown>(`/friends/requests/${id}/accept`),
+  request: (user_id: string) => http.post<{ request_id: string }>("/friends/requests", { user_id }),
+  getRequest: (id: string) => http.get<FriendRequest>(`/friends/requests/${id}`),
+  accept: (id: string) => http.post<Friend>(`/friends/requests/${id}/accept`),
   reject: (id: string) => http.post<void>(`/friends/requests/${id}/reject`),
-  cancel: (id: string) => http.post<void>(`/friends/requests/${id}/cancel`),
-  searchPhone: (phone: string) => http.post<{ user?: Friend | null; found?: boolean }>("/friends/search/phone", { phone }),
-  recommendations: () => http.get<{ items?: unknown[] }>("/friends/recommendations", { limit: 10 }),
+  // Cancel a pending outgoing request (by request id). Distinct from remove().
+  cancel: (id: string) => http.del<void>(`/friends/requests/${id}`),
+  // Privacy-first discovery — the client sends SHA-256 phone hashes, never raw numbers.
+  searchPhone: (phone_hash: string) =>
+    http.post<PhoneSearchResult>("/friends/search/phone", { phone_hash }),
+  recommendations: (phone_hashes: string[]) =>
+    http.post<ContactRecommendationsResponse>("/friends/recommendations/contacts", { phone_hashes }),
   remove: (id: string) => http.del<void>(`/friends/${id}`),
+  createInvitation: () => http.post<FriendInvitationResponse>("/friend-invitations"),
+  resolveInvitation: (token: string) =>
+    http.get<ResolvedInvitationResponse>(`/friend-invitations/${token}`),
 };
 
 /* --------------------------- Notifications -------------------------- */

@@ -8750,6 +8750,8 @@ textarea.input {
 
 .fm__body {
   background: #fff;
+  display: flex;
+  flex-direction: column;
 }
 .fm__pad {
   padding: 8px 2px;
@@ -8823,28 +8825,54 @@ textarea.input {
   background: var(--brand-600);
 }
 
-/* Friends empty state */
+/* Friends empty state — fills the tab body and centers exactly, mirroring the
+   Friend League empty view. */
 .fm__empty {
-  min-height: 52vh;
+  flex: 1;
+  min-height: 54vh; /* fallback if the parent is not a flex column */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 24px 16px;
+  /* Extra bottom padding biases the centered group (text + Add Friend button)
+     slightly upward while keeping it centered as a whole. */
+  padding: 24px 16px calc(24px + 9vh);
 }
 .fm__empty-title {
   margin: 0;
+  width: 100%;
+  text-align: center;
   font-family: var(--font-display);
   font-size: 19px;
   font-weight: 800;
+  line-height: 1.4;
   color: var(--ink);
 }
 .fm__empty-desc {
-  margin: 12px 0 22px;
+  margin: 12px 0 0;
+  width: 100%;
+  text-align: center;
   font-size: 14.5px;
   line-height: 1.7;
   color: var(--ink-3);
+}
+.fm__empty-add {
+  margin-top: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 20px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--r-full);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.fm__empty-add:active {
+  background: var(--surface-2);
 }
 
 /* Deletion modal actions */
@@ -8852,4 +8880,257 @@ textarea.input {
   display: flex;
   gap: 10px;
   margin-top: 4px;
+}
+
+/* ===================== Add Friend / Incoming Request sheets ============== */
+.sheet--bare {
+  padding-top: 0;
+}
+.afs {
+  display: flex;
+  flex-direction: column;
+}
+.afs__header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin: 4px 0 14px;
+}
+.afs__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink);
+  text-align: center;
+}
+.afs__close {
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+/* Info box */
+.afs__info {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.afs__info li {
+  position: relative;
+  padding-left: 14px;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--ink-3);
+}
+.afs__info li + li {
+  margin-top: 4px;
+}
+.afs__info li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: var(--ink-3);
+}
+/* Phone search field */
+.afs__search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 10px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-full);
+  transition: border-color 0.15s;
+}
+.afs__search:focus-within,
+.afs__search.is-filled {
+  border-color: var(--brand-500);
+}
+.afs__dial {
+  border: none;
+  background: transparent;
+  font-size: 13.5px;
+  color: var(--ink-2);
+  padding: 8px 2px;
+  max-width: 84px;
+}
+.afs__phone {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 15px;
+  color: var(--ink);
+  padding: 10px 2px;
+}
+.afs__phone::placeholder {
+  color: var(--ink-3);
+}
+.afs__search-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+.afs__search-btn:disabled {
+  opacity: 0.45;
+}
+.afs__search:focus-within .afs__search-btn,
+.afs__search.is-filled .afs__search-btn {
+  color: var(--brand-500);
+}
+/* Rounded panels (empty / not-found / search result) */
+.afs__panel {
+  margin-top: 14px;
+  padding: 28px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  text-align: center;
+}
+.afs__panel--empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.afs__panel-title {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+.afs__panel-sub {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+/* Phone search result card */
+.afs__result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 26px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.afs__result-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.afs__result .btn {
+  margin-top: 4px;
+}
+.afs__friends-tag {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-3);
+}
+.afs__friends-tag--pill {
+  flex-shrink: 0;
+  padding: 7px 15px;
+  font-size: 13px;
+}
+/* Recommendations */
+.afs__section {
+  margin-top: 22px;
+}
+.afs__section-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.afs__section-sub {
+  margin: 4px 0 12px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.afs__recs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.afs__rec {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.afs__rec-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.afs__rec-cta {
+  flex-shrink: 0;
+  padding: 8px 15px;
+  border: 1.4px solid var(--brand-500);
+  border-radius: var(--r-full);
+  background: var(--surface);
+  color: var(--brand-500);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.afs__rec-cta--primary {
+  background: var(--brand-500);
+  color: #fff;
+}
+.afs__rec-cta:active {
+  background: var(--surface-2);
+}
+.afs__rec-cta--primary:active {
+  background: var(--brand-600);
+}
+.afs__rec-cta:disabled {
+  opacity: 0.5;
+}
+/* Invite button spacing */
+.afs > .btn--block {
+  margin-top: 20px;
+}
+/* Incoming request accept/reject */
+.afs__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
 }

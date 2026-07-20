@@ -28,6 +28,7 @@ import { League } from "./screens/League";
 import { LeagueHistory } from "./screens/LeagueHistory";
 import { LeagueResult } from "./screens/LeagueResult";
 import { Social } from "./screens/Social";
+import { InviteLanding } from "./screens/InviteLanding";
 import { Notifications } from "./screens/Notifications";
 import { AiChat } from "./screens/AiChat";
 import { Subscription } from "./screens/Subscription";
@@ -165,6 +166,7 @@ const router = createBrowserRouter(
         <Route path="/account/phone" element={<RequireAuth><ChangePhone /></RequireAuth>} />
         <Route path="/account/email" element={<RequireAuth><ChangeEmail /></RequireAuth>} />
         <Route path="/support" element={<RequireAuth><Support /></RequireAuth>} />
+        <Route path="/friend/invite/:token" element={<RequireAuth><InviteLanding /></RequireAuth>} />
 
         <Route path="*" element={<Navigate to="/home" replace />} />
     </Route>,

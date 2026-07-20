@@ -1,20 +1,20 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../components/ui/kit";
 import { Dialog } from "../components/ui/Modal";
 import { EmptyState, ErrorState, SkeletonList } from "../components/ui/states";
-import { TextField } from "../components/ui/Field";
 import { RankAvatar } from "../components/brand/RankBits";
+import { AddFriendSheet, IncomingFriendRequestSheet } from "../components/social/AddFriendSheet";
 import { friendApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
-import { NATIONALITIES, timeAgo } from "../lib/format";
+import { timeAgo } from "../lib/format";
 import { normalizeLanguage, type AppLanguage } from "../lib/language";
 import type { Friend, FriendRequest } from "../lib/types";
 
-type Tab = "friends" | "received" | "sent" | "find";
+type Tab = "friends" | "received" | "sent";
 
 const QK = {
   friends: ["friends"],
@@ -32,6 +32,7 @@ interface FmCopy {
   reject: string;
   accept: string;
   cancel: string;
+  openRequest: string;
   friendsEmptyTitle: string;
   friendsEmptyDesc: string[];
   receivedEmptyTitle: string;
@@ -59,6 +60,7 @@ const FM_COPY: Record<AppLanguage, FmCopy> = {
     reject: "거절",
     accept: "수락",
     cancel: "취소",
+    openRequest: "요청 열기",
     friendsEmptyTitle: "아직 친구가 없어요",
     friendsEmptyDesc: ["친구를 추가하고", "함께 공부해 보세요!"],
     receivedEmptyTitle: "받은 친구 요청이 없어요",
@@ -85,6 +87,7 @@ const FM_COPY: Record<AppLanguage, FmCopy> = {
     reject: "Reject",
     accept: "Accept",
     cancel: "Cancel",
+    openRequest: "open request",
     friendsEmptyTitle: "You don't have any friends yet",
     friendsEmptyDesc: ["Add friends and", "study together!"],
     receivedEmptyTitle: "No friend requests received",
@@ -138,16 +141,19 @@ function RequestRow({
   lang,
   busy,
   actions,
+  onOpen,
 }: {
   req: FriendRequest;
   copy: FmCopy;
   lang: AppLanguage;
   busy: boolean;
   actions: { label: string; primary?: boolean; onClick: () => void }[];
+  /** When set, the avatar + name open the full request sheet (received tab). */
+  onOpen?: () => void;
 }) {
   const age = lang === "ko" ? copy.requestAge(req.created_at) : req.relative_time ?? copy.requestAge(req.created_at);
-  return (
-    <li className="fm__row" aria-label={`${nameOf(req)}, ${age}, ${actions.map((a) => a.label).join(", ")}`}>
+  const identity = (
+    <>
       <span className="fm__row-avatar">
         <RankAvatar entry={req} size={46} />
       </span>
@@ -155,6 +161,17 @@ function RequestRow({
         <div className="fm__row-name">{nameOf(req)}</div>
         <div className="fm__row-age">{age}</div>
       </div>
+    </>
+  );
+  return (
+    <li className="fm__row" aria-label={`${nameOf(req)}, ${age}, ${actions.map((a) => a.label).join(", ")}`}>
+      {onOpen ? (
+        <button className="fm__row-open" onClick={onOpen} aria-label={`${nameOf(req)} ${copy.openRequest}`}>
+          {identity}
+        </button>
+      ) : (
+        identity
+      )}
       <div className="fm__row-actions">
         {actions.map((a) => (
           <button
@@ -183,10 +200,15 @@ export function Social() {
   const [params] = useSearchParams();
   const initialTab = params.get("tab");
   const [tab, setTab] = useState<Tab>(
-    initialTab === "received" || initialTab === "sent" || initialTab === "find" ? initialTab : "friends",
+    initialTab === "received" || initialTab === "sent" ? initialTab : "friends",
   );
   const [deleteTarget, setDeleteTarget] = useState<Friend | null>(null);
   const [busy, setBusy] = useState<Set<string>>(new Set());
+  // Add Friend opens from the header / empty states / a ?add=1 or ?tab=find deep
+  // link (from the Friend League empty state). The incoming-request sheet opens
+  // from a received-tab row or a ?request=<id> deep link.
+  const [addOpen, setAddOpen] = useState(initialTab === "find" || params.get("add") === "1");
+  const [incomingId, setIncomingId] = useState<string | null>(params.get("request"));
 
   // All three lists power the tab counts; they stay small and authoritative.
   const friends = useQuery({ queryKey: QK.friends, queryFn: friendApi.list });
@@ -226,23 +248,6 @@ export function Social() {
     setDeleteTarget(null);
   }
 
-  /* -------------------- friend-add (search) sub-flow -------------------- */
-  if (tab === "find") {
-    return (
-      <div className="screen fm">
-        <header className="fm__header">
-          <button className="fm__back" onClick={() => setTab("friends")} aria-label={copy.back}>
-            <BackChevron />
-          </button>
-          <h1 className="fm__title">{copy.add}</h1>
-        </header>
-        <div className="screen__body fm__body">
-          <FindFriends lang={lang} onAdded={refreshAll} />
-        </div>
-      </div>
-    );
-  }
-
   const activeQuery = tab === "friends" ? friends : tab === "received" ? received : sent;
 
   return (
@@ -253,7 +258,7 @@ export function Social() {
           <BackChevron />
         </button>
         <h1 className="fm__title">{copy.title}</h1>
-        <button className="fm__add" onClick={() => setTab("find")} aria-label={copy.add}>
+        <button className="fm__add" onClick={() => setAddOpen(true)} aria-label={copy.add}>
           <PlusIcon />
           <span>{copy.add}</span>
         </button>
@@ -286,7 +291,7 @@ export function Social() {
           <ErrorState message={copy.listError} onRetry={() => activeQuery.refetch()} />
         ) : tab === "friends" ? (
           (friends.data?.friends.length ?? 0) === 0 ? (
-            <FriendsEmpty copy={copy} onAdd={() => setTab("find")} />
+            <FriendsEmpty copy={copy} onAdd={() => setAddOpen(true)} />
           ) : (
             <ul className="fm__list" role="list">
               {friends.data!.friends.map((f) => (
@@ -306,6 +311,7 @@ export function Social() {
                   copy={copy}
                   lang={lang}
                   busy={busy.has(r.request_id)}
+                  onOpen={() => setIncomingId(r.request_id)}
                   actions={[
                     { label: copy.reject, onClick: () => act(r.request_id, () => friendApi.reject(r.request_id), copy.toastRejected) },
                     { label: copy.accept, primary: true, onClick: () => act(r.request_id, () => friendApi.accept(r.request_id), copy.toastAccepted) },
@@ -319,7 +325,7 @@ export function Social() {
             emoji="✈️"
             title={copy.sentEmptyTitle}
             text={copy.sentEmptyDesc}
-            action={<Button onClick={() => setTab("find")}>{copy.add}</Button>}
+            action={<Button onClick={() => setAddOpen(true)}>{copy.add}</Button>}
           />
         ) : (
           <ul className="fm__list" role="list">
@@ -352,6 +358,13 @@ export function Social() {
           </Button>
         </div>
       </Dialog>
+
+      <AddFriendSheet open={addOpen} onClose={() => setAddOpen(false)} />
+      <IncomingFriendRequestSheet
+        open={!!incomingId}
+        requestId={incomingId}
+        onClose={() => setIncomingId(null)}
+      />
     </div>
   );
 }
@@ -371,7 +384,7 @@ function FriendsEmpty({ copy, onAdd }: { copy: FmCopy; onAdd: () => void }) {
         <br />
         {copy.friendsEmptyDesc[1]}
       </p>
-      <button className="fm__add" onClick={onAdd}>
+      <button className="fm__empty-add" onClick={onAdd}>
         <PlusIcon />
         <span>{copy.add}</span>
       </button>
@@ -379,68 +392,3 @@ function FriendsEmpty({ copy, onAdd }: { copy: FmCopy; onAdd: () => void }) {
   );
 }
 
-/* --------------------------- friend search ------------------------------ */
-function FindFriends({ lang, onAdded }: { lang: AppLanguage; onAdded: () => void }) {
-  const toast = useToast();
-  const [country, setCountry] = useState("KR");
-  const [phone, setPhone] = useState("");
-  const [state, setState] = useState<"idle" | "searching" | "adding">("idle");
-  const [found, setFound] = useState<Friend | null | "none">(null);
-  const dial = useMemo(() => NATIONALITIES.find((n) => n.code === country)?.dial ?? "+82", [country]);
-  const t =
-    lang === "ko"
-      ? { hint: "휴대폰 번호로 친구를 찾아 요청을 보낼 수 있어요.", search: "검색", none: "일치하는 회원이 없어요", noneSub: "번호를 다시 확인해 주세요.", request: "친구 요청", sent: "친구 요청을 보냈어요" }
-      : { hint: "Find a friend by phone number and send a request.", search: "Search", none: "No matching member", noneSub: "Please check the number.", request: "Send request", sent: "Friend request sent" };
-
-  async function search() {
-    setState("searching");
-    setFound(null);
-    try {
-      const e164 = `${dial}${phone.replace(/^0+/, "").replace(/\D/g, "")}`;
-      const res = await friendApi.searchPhone(e164);
-      setFound(res.user ?? (res.found ? (res as unknown as Friend) : "none"));
-    } catch (e) {
-      toast.error(errorMessage(e));
-    } finally {
-      setState("idle");
-    }
-  }
-  async function add(userId: string) {
-    setState("adding");
-    try {
-      await friendApi.request(userId);
-      toast.success(t.sent);
-      onAdded();
-      setFound(null);
-      setPhone("");
-    } catch (e) {
-      toast.error(errorMessage(e));
-    } finally {
-      setState("idle");
-    }
-  }
-
-  return (
-    <div className="stack" style={{ gap: 14 }}>
-      <p className="muted">{t.hint}</p>
-      <div style={{ display: "flex", gap: 8 }}>
-        <select className="input" style={{ width: 120 }} value={country} onChange={(e) => setCountry(e.target.value)}>
-          {NATIONALITIES.map((n) => (
-            <option key={n.code} value={n.code}>{n.flag} {n.dial}</option>
-          ))}
-        </select>
-        <TextField placeholder="01012345678" inputMode="numeric" value={phone} onChange={(e) => setPhone(e.target.value)} />
-      </div>
-      <Button block loading={state === "searching"} disabled={!phone} onClick={search}>{t.search}</Button>
-
-      {found === "none" && <EmptyState emoji="🔍" title={t.none} text={t.noneSub} />}
-      {found && found !== "none" && (
-        <div className="fm__row" style={{ padding: "14px 4px" }}>
-          <span className="fm__row-avatar"><RankAvatar entry={found} size={46} /></span>
-          <span className="fm__row-name">{nameOf(found)}</span>
-          <button className="fm__pill fm__pill--primary" disabled={state === "adding"} onClick={() => add(found.user_id)}>{t.request}</button>
-        </div>
-      )}
-    </div>
-  );
-}

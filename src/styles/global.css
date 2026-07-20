@@ -7679,7 +7679,9 @@ textarea.input {
 .lgg__scroll {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
+  /* Disable overscroll chaining AND the top/bottom bounce so the sheet can't be
+     pulled past its edges. */
+  overscroll-behavior: none;
 }
 
 /* Hero */

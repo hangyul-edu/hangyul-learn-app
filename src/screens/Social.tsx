@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../components/ui/kit";
 import { Dialog } from "../components/ui/Modal";
-import { EmptyState, ErrorState, SkeletonList } from "../components/ui/states";
+import { ErrorState, SkeletonList } from "../components/ui/states";
 import { RankAvatar } from "../components/brand/RankBits";
 import { AddFriendSheet, IncomingFriendRequestSheet } from "../components/social/AddFriendSheet";
 import { friendApi } from "../api/endpoints";
@@ -36,9 +36,9 @@ interface FmCopy {
   friendsEmptyTitle: string;
   friendsEmptyDesc: string[];
   receivedEmptyTitle: string;
-  receivedEmptyDesc: string;
+  receivedEmptyDesc: string[];
   sentEmptyTitle: string;
-  sentEmptyDesc: string;
+  sentEmptyDesc: string[];
   listError: string;
   modalTitle: (n: string) => string;
   modalDesc: string;
@@ -64,9 +64,9 @@ const FM_COPY: Record<AppLanguage, FmCopy> = {
     friendsEmptyTitle: "아직 친구가 없어요",
     friendsEmptyDesc: ["친구를 추가하고", "함께 공부해 보세요!"],
     receivedEmptyTitle: "받은 친구 요청이 없어요",
-    receivedEmptyDesc: "새로운 친구 요청이 오면 여기에 표시됩니다.",
+    receivedEmptyDesc: ["친구가 요청을 보내면", "이곳에 표시돼요"],
     sentEmptyTitle: "보낸 친구 요청이 없어요",
-    sentEmptyDesc: "친구를 추가하면 보낸 요청을 여기에서 확인할 수 있어요.",
+    sentEmptyDesc: ["함께 공부하고 싶은 친구에게", "요청을 보내보세요"],
     listError: "목록을 불러오지 못했어요.",
     modalTitle: (n: string) => `${n}님을 친구에서 삭제할까요?`,
     modalDesc: "상대방에게 알림은 가지 않습니다.",
@@ -91,9 +91,9 @@ const FM_COPY: Record<AppLanguage, FmCopy> = {
     friendsEmptyTitle: "You don't have any friends yet",
     friendsEmptyDesc: ["Add friends and", "study together!"],
     receivedEmptyTitle: "No friend requests received",
-    receivedEmptyDesc: "New friend requests will appear here.",
+    receivedEmptyDesc: ["When a friend sends you a request,", "it will appear here"],
     sentEmptyTitle: "No friend requests sent",
-    sentEmptyDesc: "Add a friend to see your sent requests here.",
+    sentEmptyDesc: ["Send a request to a friend", "you'd like to study with"],
     listError: "Couldn't load the list.",
     modalTitle: (n: string) => `Remove ${n} from your friends?`,
     modalDesc: "They will not be notified.",
@@ -291,7 +291,7 @@ export function Social() {
           <ErrorState message={copy.listError} onRetry={() => activeQuery.refetch()} />
         ) : tab === "friends" ? (
           (friends.data?.friends.length ?? 0) === 0 ? (
-            <FriendsEmpty copy={copy} onAdd={() => setAddOpen(true)} />
+            <FmEmpty title={copy.friendsEmptyTitle} desc={copy.friendsEmptyDesc} onAdd={() => setAddOpen(true)} addLabel={copy.add} />
           ) : (
             <ul className="fm__list" role="list">
               {friends.data!.friends.map((f) => (
@@ -301,7 +301,7 @@ export function Social() {
           )
         ) : tab === "received" ? (
           (received.data?.requests.length ?? 0) === 0 ? (
-            <EmptyState emoji="📭" title={copy.receivedEmptyTitle} text={copy.receivedEmptyDesc} />
+            <FmEmpty title={copy.receivedEmptyTitle} desc={copy.receivedEmptyDesc} />
           ) : (
             <ul className="fm__list" role="list">
               {received.data!.requests.map((r) => (
@@ -321,12 +321,7 @@ export function Social() {
             </ul>
           )
         ) : (sent.data?.requests.length ?? 0) === 0 ? (
-          <EmptyState
-            emoji="✈️"
-            title={copy.sentEmptyTitle}
-            text={copy.sentEmptyDesc}
-            action={<Button onClick={() => setAddOpen(true)}>{copy.add}</Button>}
-          />
+          <FmEmpty title={copy.sentEmptyTitle} desc={copy.sentEmptyDesc} onAdd={() => setAddOpen(true)} addLabel={copy.add} />
         ) : (
           <ul className="fm__list" role="list">
             {sent.data!.requests.map((r) => (
@@ -375,19 +370,39 @@ const BackChevron = () => (
   </svg>
 );
 
-function FriendsEmpty({ copy, onAdd }: { copy: FmCopy; onAdd: () => void }) {
+/**
+ * Shared, centered empty state for every Friend Management tab — same heading /
+ * body styles and vertical placement as the Friends tab. `onAdd` adds the
+ * compact outlined "+ 친구 추가" button (Friends + Sent tabs); Received omits it.
+ */
+function FmEmpty({
+  title,
+  desc,
+  onAdd,
+  addLabel,
+}: {
+  title: string;
+  desc: string[];
+  onAdd?: () => void;
+  addLabel?: string;
+}) {
   return (
     <div className="fm__empty">
-      <h2 className="fm__empty-title">{copy.friendsEmptyTitle}</h2>
+      <h2 className="fm__empty-title">{title}</h2>
       <p className="fm__empty-desc">
-        {copy.friendsEmptyDesc[0]}
-        <br />
-        {copy.friendsEmptyDesc[1]}
+        {desc.map((line, i) => (
+          <span key={line}>
+            {i > 0 && <br />}
+            {line}
+          </span>
+        ))}
       </p>
-      <button className="fm__empty-add" onClick={onAdd}>
-        <PlusIcon />
-        <span>{copy.add}</span>
-      </button>
+      {onAdd && (
+        <button className="fm__empty-add" onClick={onAdd} aria-label={addLabel}>
+          <PlusIcon />
+          <span>{addLabel}</span>
+        </button>
+      )}
     </div>
   );
 }

@@ -162,6 +162,29 @@ describe("Friend Management (Social)", () => {
     await waitFor(() => expect(api.reject).toHaveBeenCalledWith("r1"));
   });
 
+  it("received empty state: centered heading + two-line desc, and no CTA", async () => {
+    api.received.mockResolvedValue({ requests: [], count: 0 });
+    renderSocial();
+    await userEvent.click(await screen.findByRole("tab", { name: "받은 요청 0" }));
+    const empty = (await screen.findByText("받은 친구 요청이 없어요")).closest(".fm__empty") as HTMLElement;
+    expect(within(empty).getByText(/친구가 요청을 보내면/)).toBeInTheDocument();
+    expect(within(empty).getByText(/이곳에 표시돼요/)).toBeInTheDocument();
+    // Received empty state has no add-friend CTA.
+    expect(within(empty).queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("sent empty state: heading + desc + compact add button that opens the sheet", async () => {
+    api.sent.mockResolvedValue({ requests: [], count: 0 });
+    renderSocial();
+    await userEvent.click(await screen.findByRole("tab", { name: "보낸 요청 0" }));
+    const empty = (await screen.findByText("보낸 친구 요청이 없어요")).closest(".fm__empty") as HTMLElement;
+    expect(within(empty).getByText(/함께 공부하고 싶은 친구에게/)).toBeInTheDocument();
+    expect(within(empty).getByText(/요청을 보내보세요/)).toBeInTheDocument();
+    // The CTA opens the Add Friend sheet in place (no navigation).
+    await userEvent.click(within(empty).getByRole("button", { name: "친구 추가" }));
+    expect(await screen.findByRole("dialog", { name: "친구 추가" })).toBeInTheDocument();
+  });
+
   it("sent tab: cancel calls the cancel API (not reject/remove)", async () => {
     renderSocial();
     await userEvent.click(await screen.findByRole("tab", { name: "보낸 요청 1" }));

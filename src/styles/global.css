@@ -7921,16 +7921,18 @@ textarea.input {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: calc(var(--safe-top) + 12px) 16px 12px;
+  /* Shared sub-page app bar — identical to .fm__header (see note there). */
+  padding: calc(var(--safe-top) + 14px) 18px 14px;
   background: #ffffff;
   border-bottom: 1px solid var(--border);
 }
 .lh__back {
   position: absolute;
-  left: 10px;
-  top: calc(var(--safe-top) + 8px);
-  width: 40px;
-  height: 40px;
+  left: 6px;
+  top: calc(var(--safe-top) + 26px);
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -7942,6 +7944,7 @@ textarea.input {
   font-family: var(--font-display);
   font-size: 17px;
   font-weight: 800;
+  line-height: 24px;
   color: #272c30;
 }
 .lh__body {
@@ -8635,16 +8638,23 @@ textarea.input {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: calc(var(--safe-top) + 12px) 14px 12px;
+  /* Shared sub-page app bar (identical to .lh__header). Symmetric vertical
+     padding around a 24px title row → 52px bar below the safe area; the top
+     offset + 18px horizontal padding line up with the main League page
+     (.lg__body / .screen__body). Controls are centred on the title's vertical
+     axis (safe-top + 14 + 12 = safe-top + 26) so the back chevron and the
+     centered title always align. */
+  padding: calc(var(--safe-top) + 14px) 18px 14px;
   background: #fff;
   border-bottom: 1px solid var(--border);
 }
 .fm__back {
   position: absolute;
-  left: 8px;
-  top: calc(var(--safe-top) + 8px);
-  width: 40px;
-  height: 40px;
+  left: 6px;
+  top: calc(var(--safe-top) + 26px);
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -8656,12 +8666,14 @@ textarea.input {
   font-family: var(--font-display);
   font-size: 17px;
   font-weight: 800;
+  line-height: 24px;
   color: #272c30;
 }
 .fm__add {
   position: absolute;
-  right: 12px;
-  top: calc(var(--safe-top) + 8px);
+  right: 14px;
+  top: calc(var(--safe-top) + 26px);
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   gap: 5px;

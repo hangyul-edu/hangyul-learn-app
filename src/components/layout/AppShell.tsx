@@ -1,6 +1,4 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { http } from "../../lib/http";
 import { NavHome, NavLecture, NavFlag, NavMedal, NavMore } from "../brand/HomeIcons";
 
 type TabId = "home" | "lecture" | "personalized" | "league" | "more";
@@ -15,13 +13,6 @@ const TABS: { id: TabId; to: string; label: string; icon: (a: boolean) => JSX.El
 export function AppShell() {
   const nav = useNavigate();
   const loc = useLocation();
-
-  const { data: unread } = useQuery({
-    queryKey: ["notif-unread"],
-    queryFn: () => http.get<{ has_unread: boolean }>("/notifications/unread"),
-    refetchInterval: 60_000,
-    staleTime: 30_000,
-  });
 
   const active = (to: string) => loc.pathname === to || loc.pathname.startsWith(to + "/");
 
@@ -40,7 +31,6 @@ export function AppShell() {
             >
               <span className="bottomnav__icon">{t.icon(on)}</span>
               {t.label}
-              {t.id === "more" && unread?.has_unread && <span className="bottomnav__badge" />}
             </button>
           );
         })}

@@ -164,16 +164,6 @@
 .bottomnav__item.is-active .bottomnav__icon {
   transform: translateY(-1px);
 }
-.bottomnav__badge {
-  position: absolute;
-  top: 6px;
-  right: calc(50% - 20px);
-  min-width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--danger);
-  border: 2px solid var(--surface);
-}
 
 /* ============================ Buttons ============================ */
 .btn {
@@ -4347,14 +4337,16 @@ textarea.input {
   -webkit-tap-highlight-color: transparent;
 }
 .more__bell-dot {
+  /* Sit at the bell's top-right corner, matching the Home screen's bell + dot
+     spacing (it was overlapping the glyph). */
   position: absolute;
-  top: 9px;
-  right: 10px;
+  top: 6px;
+  right: 7px;
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: #f2762a;
-  border: 2px solid #f7f7f6;
+  background: #ff3b30;
+  border: 1.5px solid #ffffff;
 }
 
 /* --- Profile summary card --- */

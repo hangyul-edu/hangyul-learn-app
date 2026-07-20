@@ -2,11 +2,21 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter, Route, Routes, useSearchParams } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { ToastProvider } from "../hooks/toast";
 import type { RankingResponse } from "../lib/types";
 
 vi.mock("../api/endpoints", () => ({
   gameApi: { friendRankings: vi.fn() },
+  // AddFriendSheet (opened from the empty state) talks to friendApi.
+  friendApi: {
+    recommendations: vi.fn().mockResolvedValue({ recommendations: [] }),
+    searchPhone: vi.fn(),
+    request: vi.fn(),
+    cancel: vi.fn(),
+    accept: vi.fn(),
+    createInvitation: vi.fn(),
+  },
 }));
 let mockLang = "ko";
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: mockLang } }) }));
@@ -15,12 +25,6 @@ import { gameApi } from "../api/endpoints";
 import { FriendLeague } from "./FriendLeague";
 
 const api = gameApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
-
-/** Renders the destination so we can assert `친구 추가` opens the Add Friend sheet. */
-function SocialStub() {
-  const [params] = useSearchParams();
-  return <div>SOCIAL:{params.get("add") === "1" ? "add" : params.get("tab") ?? "friends"}</div>;
-}
 
 const entry = (rank: number, id: string, name: string, tier: string, points: number) => ({
   rank,
@@ -48,12 +52,13 @@ function renderFriend() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={["/league"]}>
-        <Routes>
-          <Route path="/league" element={<FriendLeague />} />
-          <Route path="/social" element={<SocialStub />} />
-        </Routes>
-      </MemoryRouter>
+      <ToastProvider>
+        <MemoryRouter initialEntries={["/league"]}>
+          <Routes>
+            <Route path="/league" element={<FriendLeague />} />
+          </Routes>
+        </MemoryRouter>
+      </ToastProvider>
     </QueryClientProvider>,
   );
 }
@@ -140,11 +145,13 @@ describe("Friend League screen", () => {
     expect(document.querySelector(".fl__podiums")).not.toBeInTheDocument();
   });
 
-  it("친구 추가 opens the Add Friend sheet (via ?add=1), not the manage list", async () => {
+  it("친구 추가 opens the Add Friend bottom sheet in place (no navigation)", async () => {
     api.friendRankings.mockResolvedValue({ ...full, entries: [full.entries[3]], me: full.entries[3] });
     renderFriend();
     await userEvent.click(await screen.findByRole("button", { name: "친구 추가" }));
-    expect(await screen.findByText("SOCIAL:add")).toBeInTheDocument();
+    // Opens the Add Friend sheet over the League page — stays on /league.
+    expect(await screen.findByRole("dialog", { name: "친구 추가" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "친구 추가 닫기" })).toBeInTheDocument();
   });
 
   it("renders English empty-state copy for an English user", async () => {

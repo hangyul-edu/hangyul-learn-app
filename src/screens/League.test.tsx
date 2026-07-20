@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { ToastProvider } from "../hooks/toast";
 import type { LeaguePosition, LeagueSeason, RankingResponse } from "../lib/types";
 
 /* -------------------------------- mocks --------------------------------- */
@@ -16,6 +17,8 @@ vi.mock("../api/endpoints", () => ({
     joinCurrentLeague: vi.fn(),
     ackLeagueResult: vi.fn(),
   },
+  // The Friend League tab mounts AddFriendSheet, which talks to friendApi.
+  friendApi: { recommendations: vi.fn().mockResolvedValue({ recommendations: [] }) },
 }));
 // FriendLeague (rendered on the 친구 리그 tab) reads the app language via useAuth.
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: "ko" } }) }));
@@ -64,13 +67,15 @@ function renderScreen() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={["/league"]}>
-        <Routes>
-          <Route path="/league" element={<League />} />
-          <Route path="/points" element={<div>POINTS_SCREEN</div>} />
-          <Route path="/league/history" element={<div>HISTORY_SCREEN</div>} />
-        </Routes>
-      </MemoryRouter>
+      <ToastProvider>
+        <MemoryRouter initialEntries={["/league"]}>
+          <Routes>
+            <Route path="/league" element={<League />} />
+            <Route path="/points" element={<div>POINTS_SCREEN</div>} />
+            <Route path="/league/history" element={<div>HISTORY_SCREEN</div>} />
+          </Routes>
+        </MemoryRouter>
+      </ToastProvider>
     </QueryClientProvider>,
   );
 }

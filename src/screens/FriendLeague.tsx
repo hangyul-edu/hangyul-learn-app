@@ -1,7 +1,8 @@
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Async, SkeletonList } from "../components/ui/states";
 import { MedalIcon, RankAvatar } from "../components/brand/RankBits";
+import { AddFriendSheet } from "../components/social/AddFriendSheet";
 import { gameApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
 import { TIER_META, type LeagueTier } from "../lib/league";
@@ -38,9 +39,8 @@ function PlusIcon() {
 
 /** Minimal, illustration-free empty state — shown only for a confirmed empty
  *  friend-league result (no eligible friends). The 친구 추가 button opens the
- *  friend-search flow; 친구 관리 stays in the League top nav. */
-function FriendLeagueEmptyState() {
-  const nav = useNavigate();
+ *  Add Friend bottom sheet in place (it does not leave the League page). */
+function FriendLeagueEmptyState({ onAdd }: { onAdd: () => void }) {
   const { me } = useAuth();
   const copy = EMPTY_COPY[normalizeLanguage(me?.app_language)];
   return (
@@ -51,7 +51,7 @@ function FriendLeagueEmptyState() {
         <br />
         {copy.line2}
       </p>
-      <button className="fl-empty__add" onClick={() => nav("/social?add=1")}>
+      <button className="fl-empty__add" onClick={onAdd}>
         <PlusIcon />
         <span>{copy.addFriend}</span>
       </button>
@@ -154,6 +154,7 @@ function FriendRow({ entry, meId }: { entry: RankingEntry; meId?: string }) {
 
 /* ------------------------------- screen --------------------------------- */
 export function FriendLeague() {
+  const [addOpen, setAddOpen] = useState(false);
   // Refetch on (re)entry + when the tab regains focus so eligibility refreshes
   // after the user returns from friend search / management.
   const q = useQuery({
@@ -164,31 +165,35 @@ export function FriendLeague() {
   });
 
   return (
-    <Async
-      loading={q.isLoading}
-      error={q.error}
-      data={q.data}
-      onRetry={() => q.refetch()}
-      skeleton={<SkeletonList rows={6} height={64} />}
-    >
-      {(data) => {
-        const entries = data.entries;
-        const meId = data.me?.user_id;
-        // The caller is always a participant; fewer than 2 = no eligible friends.
-        if (entries.length < 2) {
-          return <FriendLeagueEmptyState />;
-        }
-        return (
-          <div className="fl">
-            <FriendLeagueHero top3={entries.slice(0, 3)} />
-            <ul className="fl__ranks" role="list" aria-label="친구 리그 순위">
-              {entries.map((entry) => (
-                <FriendRow key={entry.user_id} entry={entry} meId={meId} />
-              ))}
-            </ul>
-          </div>
-        );
-      }}
-    </Async>
+    <>
+      <Async
+        loading={q.isLoading}
+        error={q.error}
+        data={q.data}
+        onRetry={() => q.refetch()}
+        skeleton={<SkeletonList rows={6} height={64} />}
+      >
+        {(data) => {
+          const entries = data.entries;
+          const meId = data.me?.user_id;
+          // The caller is always a participant; fewer than 2 = no eligible friends.
+          if (entries.length < 2) {
+            return <FriendLeagueEmptyState onAdd={() => setAddOpen(true)} />;
+          }
+          return (
+            <div className="fl">
+              <FriendLeagueHero top3={entries.slice(0, 3)} />
+              <ul className="fl__ranks" role="list" aria-label="친구 리그 순위">
+                {entries.map((entry) => (
+                  <FriendRow key={entry.user_id} entry={entry} meId={meId} />
+                ))}
+              </ul>
+            </div>
+          );
+        }}
+      </Async>
+      {/* Add Friend opens as a bottom sheet on this page — no navigation away. */}
+      <AddFriendSheet open={addOpen} onClose={() => setAddOpen(false)} />
+    </>
   );
 }

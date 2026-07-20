@@ -50,9 +50,32 @@ export function GuideBanner() {
 }
 
 /* ------------------------------ citrus badge ---------------------------- */
-/** Colourful segmented fruit badge for a league tier (green → golden). */
-export function CitrusBadge({ tier }: { tier: LeagueTier }) {
-  const c = TIER_CITRUS[tier];
+/** Neutral palette for an unknown tier or a not-yet-reached ("locked") tier. */
+const CITRUS_LOCKED = { rind: "#b4b0a8", fill: "#cdcac2", flesh: "#e9e7e1" };
+
+/**
+ * The official league tier image: a colourful segmented citrus badge
+ * (green → golden). Used everywhere a league tier is shown — the guide, the
+ * League carousel, league results, and league history.
+ *
+ * - `locked` renders a greyed-out fruit with a padlock (future/unreached tiers).
+ * - `label` makes it an accessible `img`; otherwise it is decorative.
+ * - `className` lets callers size it (the square 0–64 viewBox scales to fit).
+ */
+export function CitrusBadge({
+  tier,
+  locked = false,
+  label,
+  className,
+}: {
+  tier: string;
+  locked?: boolean;
+  label?: string;
+  className?: string;
+}) {
+  const c = locked ? CITRUS_LOCKED : (TIER_CITRUS[tier as LeagueTier] ?? CITRUS_LOCKED);
+  const leaf = locked ? "#b4b0a8" : "#7cc44a";
+  const leafDark = locked ? "#a09c94" : "#63ac39";
   const cx = 32;
   const cy = 37;
   const r = 15.5;
@@ -60,12 +83,15 @@ export function CitrusBadge({ tier }: { tier: LeagueTier }) {
     const a = Math.PI / 8 + (i * Math.PI) / 4;
     return `M${cx} ${cy}L${(cx + r * Math.cos(a)).toFixed(1)} ${(cy + r * Math.sin(a)).toFixed(1)}`;
   }).join(" ");
+  const a11y = label
+    ? { role: "img" as const, "aria-label": label }
+    : { "aria-hidden": true as const, focusable: false as const };
   return (
-    <svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden="true" focusable="false">
+    <svg viewBox="0 0 64 64" width="100%" height="100%" className={className} {...a11y}>
       <ellipse cx="33" cy="58" rx="17" ry="3.4" fill="rgba(120,80,10,0.14)" />
       {/* leaf + sprig at the top */}
-      <path d="M32 15c1-6 7-9 12.5-8 0.2 6.4-5.2 10.4-12 10z" fill="#7cc44a" />
-      <path d="M31 18c-2.4-1-4-3.2-4-5.8 3.4 0.2 5.6 2.6 5.4 5.8z" fill="#63ac39" />
+      <path d="M32 15c1-6 7-9 12.5-8 0.2 6.4-5.2 10.4-12 10z" fill={leaf} />
+      <path d="M31 18c-2.4-1-4-3.2-4-5.8 3.4 0.2 5.6 2.6 5.4 5.8z" fill={leafDark} />
       {/* rind (thick coloured outline) → body → segmented flesh */}
       <circle cx={cx} cy={cy} r="20" fill={c.rind} />
       <circle cx={cx} cy={cy} r="17.4" fill={c.fill} />
@@ -74,6 +100,13 @@ export function CitrusBadge({ tier }: { tier: LeagueTier }) {
       <circle cx={cx} cy={cy} r="2.1" fill={c.fill} />
       {/* soft top-left highlight */}
       <ellipse cx="25.5" cy="30.5" rx="5.4" ry="3" fill="#ffffff" opacity="0.5" />
+      {locked && (
+        <g>
+          <rect x="25.5" y="35" width="13" height="10" rx="2.2" fill="#8f8b83" />
+          <path d="M28 35v-2.4a4 4 0 018 0V35" stroke="#8f8b83" strokeWidth="2" fill="none" />
+          <circle cx="32" cy="40" r="1.7" fill="#fff" />
+        </g>
+      )}
     </svg>
   );
 }

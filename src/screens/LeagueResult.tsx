@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../components/ui/kit";
 import { LoadingState } from "../components/ui/states";
 import { TIER_META, type LeagueTier } from "../lib/league";
+import { CitrusBadge } from "../components/brand/LeagueGuideArt";
 import { gameApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
@@ -12,21 +13,13 @@ import { LIFECYCLE_KEY, useLeagueLifecycle } from "./LeagueLifecycleModals";
 
 /* --------------------------------- icon --------------------------------- */
 function ResultBadge({ tier }: { tier: string }) {
-  const color = TIER_META[tier as LeagueTier]?.color ?? "#b8c0c8";
   return (
     <div className="lgr__badge-wrap">
-      <svg viewBox="0 0 96 108" width="132" height="148" role="img" aria-label={TIER_META[tier as LeagueTier]?.label ?? "리그"}>
-        <path d="M48 6l36 13v30c0 24-16 40-36 47C28 89 12 73 12 49V19L48 6z" fill={color} />
-        <path d="M48 6l36 13v30c0 24-16 40-36 47C28 89 12 73 12 49V19L48 6z" fill="url(#lgrShine)" />
-        <path d="M48 26l6.9 14 15.4 2.2-11.1 10.8 2.6 15.3L48 75.1l-13.8 7.2 2.6-15.3-11.1-10.8L41.1 40 48 26z" fill="#fff" opacity="0.94" />
-        <defs>
-          <radialGradient id="lgrShine" cx="0.35" cy="0.28" r="0.8">
-            <stop offset="0" stopColor="#fff" stopOpacity="0.45" />
-            <stop offset="0.6" stopColor="#fff" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-      </svg>
-      <span className="lgr__ground" aria-hidden="true" />
+      <CitrusBadge
+        tier={tier}
+        className="lgr__badge"
+        label={TIER_META[tier as LeagueTier]?.label ?? "리그"}
+      />
     </div>
   );
 }

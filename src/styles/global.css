@@ -7467,8 +7467,9 @@ textarea.input {
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   margin: 4px -18px 0;
-  /* Extra vertical room so the scaled-up centered badge is never clipped. */
-  padding: 30px 0 14px;
+  /* Extra top room so the scaled-up centered badge is never clipped; tight
+     bottom so the tier label sits close under the badge. */
+  padding: 40px 0 4px;
 }
 .lg__carousel::-webkit-scrollbar {
   display: none;
@@ -7497,8 +7498,8 @@ textarea.input {
   transform: scale(1.32);
 }
 .lg__badge {
-  width: 84px;
-  height: 94px;
+  width: 108px;
+  height: 116px;
   filter: drop-shadow(0 4px 8px rgba(43, 32, 25, 0.12));
 }
 .lg__badge-slot.is-focused .lg__badge {
@@ -7511,7 +7512,7 @@ textarea.input {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-top: 14px;
+  margin-top: 6px;
 }
 .lg__title-row--friend {
   margin-top: 4px;
@@ -8032,6 +8033,10 @@ textarea.input {
   border-radius: var(--r-full);
   box-shadow: 0 3px 7px rgba(43, 32, 25, 0.16);
 }
+.lh__citrus {
+  width: 36px;
+  height: 36px;
+}
 .lh__row-date {
   font-family: var(--font-display);
   font-size: 15.5px;
@@ -8240,14 +8245,9 @@ textarea.input {
 .lgr__badge-wrap svg {
   filter: drop-shadow(0 10px 18px rgba(180, 83, 9, 0.22));
 }
-.lgr__ground {
-  display: block;
-  width: 96px;
-  height: 14px;
-  margin: 6px auto 0;
-  border-radius: 50%;
-  background: rgba(43, 32, 25, 0.12);
-  filter: blur(3px);
+.lgr__badge {
+  width: 196px;
+  height: 196px;
 }
 .lgr__title {
   font-family: var(--font-display);

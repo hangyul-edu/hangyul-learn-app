@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Async, ErrorState, LoadingState, SkeletonList } from "../components/ui/states";
 import { MedalIcon, RankAvatar } from "../components/brand/RankBits";
+import { CitrusBadge } from "../components/brand/LeagueGuideArt";
 import { gameApi } from "../api/endpoints";
 import { LEAGUE_TIERS, TIER_META, tierIndex, type LeagueTier } from "../lib/league";
 import type { RankingEntry } from "../lib/types";
@@ -25,32 +26,16 @@ function countdown(endsAt: string, now = Date.now()): string {
   return `${d}일 ${h}시간 ${m}분`;
 }
 
-/** League shield badge — tinted for reached tiers, gray + lock for future ones. */
+/** Official league tier image — colourful citrus for reached tiers, greyed +
+ *  padlocked for future ones. */
 function LeagueBadge({ tier, reached, current }: { tier: LeagueTier; reached: boolean; current: boolean }) {
-  const color = reached ? TIER_META[tier].color : "#cdccc9";
   return (
-    <svg
-      viewBox="0 0 64 72"
+    <CitrusBadge
+      tier={tier}
+      locked={!reached}
       className={`lg__badge ${current ? "is-current" : ""}`}
-      role="img"
-      aria-label={`${TIER_META[tier].label}${current ? ", 현재 리그" : reached ? "" : ", 잠김"}`}
-    >
-      <path d="M32 3l25 9v22c0 17-12 28-25 33C19 62 7 51 7 34V12l25-9z" fill={color} />
-      <path d="M32 3l25 9v22c0 17-12 28-25 33C19 62 7 51 7 34V12l25-9z" fill="url(#lgShine)" />
-      <path
-        d="M32 16l4.8 9.7 10.7 1.6-7.7 7.5 1.8 10.6L32 50.9l-9.6 4.9 1.8-10.6-7.7-7.5 10.7-1.6L32 16z"
-        fill="#ffffff"
-        opacity={reached ? 0.92 : 0.7}
-      />
-      {!reached && <circle cx="32" cy="34" r="7.5" fill="#9a958d" />}
-      {!reached && <path d="M28.6 32.5v-1.8a3.4 3.4 0 016.8 0v1.8M27.2 32.5h9.6v5.5h-9.6z" stroke="#fff" strokeWidth="1.5" fill="none" />}
-      <defs>
-        <radialGradient id="lgShine" cx="0.35" cy="0.28" r="0.8">
-          <stop offset="0" stopColor="#ffffff" stopOpacity="0.45" />
-          <stop offset="0.6" stopColor="#ffffff" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-    </svg>
+      label={`${TIER_META[tier].label}${current ? ", 현재 리그" : reached ? "" : ", 잠김"}`}
+    />
   );
 }
 

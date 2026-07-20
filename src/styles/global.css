@@ -8692,6 +8692,7 @@ textarea.input {
   transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   padding: 8px 13px;
   border: 1.4px solid var(--border-strong);
@@ -8700,7 +8701,20 @@ textarea.input {
   color: var(--ink);
   font-size: 13px;
   font-weight: 700;
+  line-height: 1;
   cursor: pointer;
+}
+/* Block-level icon + label so the SVG's inline baseline gap doesn't lift it off
+   the text's optical centre; the glyph + label share one centre. */
+.fm__add svg,
+.fm__empty-add svg {
+  display: block;
+  flex-shrink: 0;
+}
+.fm__add span,
+.fm__empty-add span {
+  display: block;
+  line-height: 1;
 }
 .fm__add:active {
   background: var(--surface-2);
@@ -8851,6 +8865,7 @@ textarea.input {
   margin-top: 24px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
   padding: 11px 20px;
   border: 1.5px solid var(--border-strong);
@@ -8859,6 +8874,7 @@ textarea.input {
   color: var(--ink);
   font-size: 14.5px;
   font-weight: 700;
+  line-height: 1;
   cursor: pointer;
 }
 .fm__empty-add:active {

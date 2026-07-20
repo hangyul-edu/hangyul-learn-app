@@ -68,6 +68,7 @@ beforeEach(() => {
   api.cancel.mockResolvedValue(undefined);
   api.remove.mockResolvedValue(undefined);
   api.recommendations.mockResolvedValue({ recommendations: [] });
+  api.createInvitation.mockResolvedValue({ token: "tok-1" });
   api.getRequest.mockResolvedValue({
     request_id: "r1",
     user_id: "u1",

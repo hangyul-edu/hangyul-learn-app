@@ -15,7 +15,7 @@ vi.mock("../api/endpoints", () => ({
     request: vi.fn(),
     cancel: vi.fn(),
     accept: vi.fn(),
-    createInvitation: vi.fn(),
+    createInvitation: vi.fn().mockResolvedValue({ token: "tok" }),
   },
 }));
 let mockLang = "ko";

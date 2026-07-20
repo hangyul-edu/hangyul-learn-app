@@ -46,8 +46,7 @@ interface AddCopy {
   requestCancelled: string;
   requestAccepted: string;
   linkCopied: string;
-  shareTitle: string;
-  shareText: string;
+  linkCopyFailed: string;
   ctaState: (name: string, rel: RecommendedUser["relationship"]) => string;
 }
 
@@ -74,9 +73,8 @@ const ADD_COPY: Record<AppLanguage, AddCopy> = {
     requestSent: "친구 신청을 보냈어요",
     requestCancelled: "요청을 취소했어요",
     requestAccepted: "친구가 되었어요!",
-    linkCopied: "초대 링크를 복사했어요",
-    shareTitle: "한결에서 친구해요",
-    shareText: "한결에서 함께 공부해요! 아래 링크로 친구를 추가해 주세요.",
+    linkCopied: "링크가 복사되었어요. 친구에게 링크를 보내보세요!",
+    linkCopyFailed: "링크를 복사하지 못했어요. 다시 시도해 주세요.",
     ctaState: (name, rel) =>
       rel === "friends"
         ? `${name}, 이미 친구`
@@ -108,9 +106,8 @@ const ADD_COPY: Record<AppLanguage, AddCopy> = {
     requestSent: "Friend request sent",
     requestCancelled: "Request cancelled",
     requestAccepted: "You're now friends!",
-    linkCopied: "Invitation link copied",
-    shareTitle: "Be friends on Hangyul",
-    shareText: "Study with me on Hangyul! Add me as a friend with the link below.",
+    linkCopied: "Link copied. Send it to your friend!",
+    linkCopyFailed: "Couldn't copy the link. Please try again.",
     ctaState: (name, rel) =>
       rel === "friends"
         ? `${name}, already friends`
@@ -229,6 +226,16 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
     staleTime: Infinity,
   });
 
+  // Prefetch the (idempotent) invitation token as soon as the sheet opens and
+  // keep it cached, so tapping "친구 신청 링크 보내기" copies instantly instead of
+  // waiting on a round-trip. Reused across taps until the sheet is discarded.
+  const invite = useQuery({
+    queryKey: ["friend-invitation-token"],
+    queryFn: friendApi.createInvitation,
+    enabled: open,
+    staleTime: Infinity,
+  });
+
   function refreshDiscovery() {
     qc.invalidateQueries({ queryKey: ["friend-recommendations"] });
     if (result && result !== "none") void runSearch();
@@ -271,25 +278,16 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
     if (sharing) return;
     setSharing(true);
     try {
-      const { token } = await friendApi.createInvitation();
+      // Prefer the prefetched token; only fall back to a fetch if it isn't ready.
+      const token = invite.data?.token ?? (await friendApi.createInvitation()).token;
       const url = `${window.location.origin}/friend/invite/${token}`;
-      const nav = navigator as Navigator & {
-        share?: (data: { title?: string; text?: string; url?: string }) => Promise<void>;
-      };
-      if (typeof nav.share === "function") {
-        try {
-          await nav.share({ title: copy.shareTitle, text: copy.shareText, url });
-        } catch (e) {
-          if ((e as Error)?.name !== "AbortError") throw e; // user cancelled the share
-        }
-      } else if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(url);
-        toast.success(copy.linkCopied);
-      } else {
-        toast.success(url);
-      }
+      await navigator.clipboard.writeText(url);
+      // Icon-less dark confirmation snackbar (repeat taps restart, never stack).
+      toast.show(copy.linkCopied, "default", { icon: false });
     } catch (e) {
-      toast.error(errorMessage(e));
+      // Log the real error; show the user a generic retry message.
+      console.error("Failed to copy the friend invitation link", e);
+      toast.error(copy.linkCopyFailed);
     } finally {
       setSharing(false);
     }

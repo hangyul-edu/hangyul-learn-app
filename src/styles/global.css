@@ -618,6 +618,17 @@ textarea.input {
 .toast--error {
   background: #7f1d1d;
 }
+/* Icon-less confirmation message: dark charcoal, centered, softly rounded
+   rectangle (e.g. the "link copied" snackbar). */
+.toast--plain {
+  justify-content: center;
+  text-align: center;
+  background: #26282c;
+  border-radius: 18px;
+  padding: 14px 20px;
+  font-weight: 600;
+  line-height: 1.4;
+}
 .toast__icon {
   font-size: 16px;
 }

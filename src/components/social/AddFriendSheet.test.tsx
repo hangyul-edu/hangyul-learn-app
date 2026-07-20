@@ -135,15 +135,26 @@ describe("AddFriendSheet", () => {
     expect(screen.getByRole("button", { name: "친구 신청 링크 공유하기" })).toBeInTheDocument();
   });
 
-  it("shares an opaque invitation link via the native share sheet", async () => {
-    const share = vi.fn().mockResolvedValue(undefined);
-    (navigator as unknown as { share: typeof share }).share = share;
+  it("copies the invitation link and shows the confirmation snackbar", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    wrap(<AddFriendSheet open onClose={() => {}} />);
+    // The token is prefetched on open, so copying is instant on tap.
+    await waitFor(() => expect(api.createInvitation).toHaveBeenCalled());
+    await userEvent.click(await screen.findByRole("button", { name: "친구 신청 링크 공유하기" }));
+    await waitFor(() => expect(writeText).toHaveBeenCalled());
+    expect(writeText.mock.calls[0][0]).toContain("/friend/invite/tok-123");
+    expect(await screen.findByText("링크가 복사되었어요. 친구에게 링크를 보내보세요!")).toBeInTheDocument();
+  });
+
+  it("shows an error snackbar (not success) when copying fails", async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error("clipboard denied"));
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    vi.spyOn(console, "error").mockImplementation(() => {});
     wrap(<AddFriendSheet open onClose={() => {}} />);
     await userEvent.click(await screen.findByRole("button", { name: "친구 신청 링크 공유하기" }));
-    await waitFor(() => expect(api.createInvitation).toHaveBeenCalled());
-    await waitFor(() => expect(share).toHaveBeenCalled());
-    expect(share.mock.calls[0][0].url).toContain("/friend/invite/tok-123");
-    delete (navigator as unknown as { share?: unknown }).share;
+    expect(await screen.findByText("링크를 복사하지 못했어요. 다시 시도해 주세요.")).toBeInTheDocument();
+    expect(screen.queryByText("링크가 복사되었어요. 친구에게 링크를 보내보세요!")).not.toBeInTheDocument();
   });
 
   it("shows a search result card with only the nickname, never a phone number", async () => {

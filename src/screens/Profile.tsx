@@ -40,7 +40,7 @@ function fmtDate(iso?: string | null): string {
 }
 
 /** Small muted stat icons for the profile summary row. */
-function StatIcon({ kind }: { kind: "level" | "best" | "current" }) {
+function StatIcon({ kind }: { kind: "total" | "best" | "current" }) {
   if (kind === "best")
     return (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -54,9 +54,11 @@ function StatIcon({ kind }: { kind: "level" | "best" | "current" }) {
         <path d="M8 3v4M16 3v4M9 14l2 2 4-4" stroke="#9AA0A7" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
+  // "total" — stacked layers implying accumulated study days.
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 3l2.5 5.2 5.5.6-4 3.9 1 5.6L12 21l-5-2.7 1-5.6-4-3.9 5.5-.6L12 3z" stroke="#9AA0A7" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M12 3l9 4.5-9 4.5-9-4.5L12 3z" stroke="#9AA0A7" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M3 12l9 4.5 9-4.5M3 16.5l9 4.5 9-4.5" stroke="#9AA0A7" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -160,7 +162,6 @@ export function Profile() {
 
   const sub = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
   const streak = useQuery({ queryKey: ["streak"], queryFn: dashboardApi.streak });
-  const dash = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
   const unread = useQuery({
     queryKey: ["notif-unread"],
     queryFn: () => http.get<{ has_unread: boolean }>("/notifications/unread"),
@@ -168,7 +169,9 @@ export function Profile() {
   });
 
   const nickname = me?.nickname ?? me?.name ?? "회원";
-  const level = dash.data?.tracks.length ? Math.max(...dash.data.tracks.map((t) => t.level)) : null;
+  // Separate Conversation/TOPIK levels make a single "learning level" ambiguous,
+  // so the More page shows total learning days instead.
+  const totalDays = streak.data?.total_days;
   const best = streak.data?.best;
   const current = streak.data?.current;
 
@@ -213,9 +216,9 @@ export function Profile() {
 
           <div className="more__stats">
             <div className="more__stat">
-              <StatIcon kind="level" />
-              <span className="more__stat-label">학습 레벨</span>
-              <span className="more__stat-val">{level != null ? `Lv. ${level}` : "-"}</span>
+              <StatIcon kind="total" />
+              <span className="more__stat-label">총 학습일</span>
+              <span className="more__stat-val">{totalDays != null ? `${totalDays}일` : "-"}</span>
             </div>
             <div className="more__stat">
               <StatIcon kind="best" />

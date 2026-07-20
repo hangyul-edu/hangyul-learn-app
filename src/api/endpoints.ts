@@ -116,7 +116,7 @@ export const onboardingApi = {
 /* ---------------------------- Dashboard ----------------------------- */
 export const dashboardApi = {
   summary: () => http.get<DashboardSummary>("/dashboard/summary"),
-  streak: () => http.get<{ current: number; best: number; freeze_tokens: number; last_study_date: string | null }>(
+  streak: () => http.get<{ current: number; best: number; freeze_tokens: number; last_study_date: string | null; total_days: number }>(
     "/dashboard/streak",
   ),
 };

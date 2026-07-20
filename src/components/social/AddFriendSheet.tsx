@@ -128,7 +128,7 @@ interface IncomingCopy {
   accept: string;
   loadError: string;
   retry: string;
-  accepted: string;
+  accepted: (name: string) => string;
   rejected: string;
 }
 
@@ -142,7 +142,7 @@ const INCOMING_COPY: Record<AppLanguage, IncomingCopy> = {
     accept: "수락",
     loadError: "요청을 불러오지 못했어요.",
     retry: "다시 시도",
-    accepted: "친구가 되었어요!",
+    accepted: (name) => `${name}님과 친구가 되었어요!`,
     rejected: "요청을 거절했어요",
   },
   en: {
@@ -154,7 +154,7 @@ const INCOMING_COPY: Record<AppLanguage, IncomingCopy> = {
     accept: "Accept",
     loadError: "Couldn't load the request.",
     retry: "Try again",
-    accepted: "You're now friends!",
+    accepted: (name) => `You're now friends with ${name}!`,
     rejected: "Request rejected",
   },
 };
@@ -449,12 +449,13 @@ export function IncomingFriendRequestSheet({
   const request = q.data;
   const requesterName = useMemo(() => (request ? nameOf(request, "회원") : ""), [request]);
 
-  async function respond(fn: () => Promise<unknown>, done: string) {
+  async function respond(fn: () => Promise<unknown>, done: string, plain = false) {
     if (busy || !requestId) return;
     setBusy(true);
     try {
       await fn();
-      toast.success(done);
+      if (plain) toast.show(done, "default", { icon: false });
+      else toast.success(done);
       onClose();
     } catch (e) {
       toast.error(errorMessage(e));
@@ -499,7 +500,7 @@ export function IncomingFriendRequestSheet({
               <Button
                 block
                 loading={busy}
-                onClick={() => respond(() => friendApi.accept(requestId as string), copy.accepted)}
+                onClick={() => respond(() => friendApi.accept(requestId as string), copy.accepted(requesterName), true)}
               >
                 {copy.accept}
               </Button>

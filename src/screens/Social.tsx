@@ -44,7 +44,7 @@ interface FmCopy {
   modalDesc: string;
   modalCancel: string;
   modalDelete: string;
-  toastAccepted: string;
+  toastAccepted: (name: string) => string;
   toastRejected: string;
   toastCancelled: string;
   toastRemoved: string;
@@ -72,7 +72,7 @@ const FM_COPY: Record<AppLanguage, FmCopy> = {
     modalDesc: "상대방에게 알림은 가지 않습니다.",
     modalCancel: "취소",
     modalDelete: "삭제",
-    toastAccepted: "친구가 되었어요!",
+    toastAccepted: (name) => `${name}님과 친구가 되었어요!`,
     toastRejected: "요청을 거절했어요",
     toastCancelled: "요청을 취소했어요",
     toastRemoved: "친구를 삭제했어요",
@@ -99,7 +99,7 @@ const FM_COPY: Record<AppLanguage, FmCopy> = {
     modalDesc: "They will not be notified.",
     modalCancel: "Cancel",
     modalDelete: "Remove",
-    toastAccepted: "You're now friends!",
+    toastAccepted: (name) => `You're now friends with ${name}!`,
     toastRejected: "Request rejected",
     toastCancelled: "Request cancelled",
     toastRemoved: "Friend removed",
@@ -221,12 +221,15 @@ export function Social() {
     );
   }
 
-  async function act(id: string, fn: () => Promise<unknown>, done: string) {
+  async function act(id: string, fn: () => Promise<unknown>, done: string, plain = false) {
     if (busy.has(id)) return; // block duplicate taps
     setBusy((prev) => new Set(prev).add(id));
     try {
       await fn();
-      toast.success(done);
+      // `plain` uses the icon-less charcoal snackbar (same as the invite-copy
+      // confirmation) — e.g. the "…님과 친구가 되었어요!" acceptance message.
+      if (plain) toast.show(done, "default", { icon: false });
+      else toast.success(done);
       refreshAll();
     } catch (e) {
       // Reconcile in case the state already changed on another device.
@@ -314,7 +317,7 @@ export function Social() {
                   onOpen={() => setIncomingId(r.request_id)}
                   actions={[
                     { label: copy.reject, onClick: () => act(r.request_id, () => friendApi.reject(r.request_id), copy.toastRejected) },
-                    { label: copy.accept, primary: true, onClick: () => act(r.request_id, () => friendApi.accept(r.request_id), copy.toastAccepted) },
+                    { label: copy.accept, primary: true, onClick: () => act(r.request_id, () => friendApi.accept(r.request_id), copy.toastAccepted(nameOf(r)), true) },
                   ]}
                 />
               ))}

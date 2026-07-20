@@ -228,5 +228,7 @@ describe("IncomingFriendRequestSheet", () => {
     expect(api.accept).toHaveBeenCalledTimes(1);
     resolve();
     await waitFor(() => expect(onClose).toHaveBeenCalled());
+    // Named success toast using the requester's fetched nickname.
+    expect(await screen.findByText("Beam님과 친구가 되었어요!")).toBeInTheDocument();
   });
 });

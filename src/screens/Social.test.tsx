@@ -149,11 +149,13 @@ describe("Friend Management (Social)", () => {
     within(row).getByRole("button", { name: "거절" });
   });
 
-  it("accepting a request calls the accept API", async () => {
+  it("accepting a request calls the accept API and shows a named success toast", async () => {
     renderSocial();
     await userEvent.click(await screen.findByRole("tab", { name: "받은 요청 1" }));
     await userEvent.click(await screen.findByRole("button", { name: "수락" }));
     await waitFor(() => expect(api.accept).toHaveBeenCalledWith("r1"));
+    // Dynamic name from the request item (fixture nickname "Hana").
+    expect(await screen.findByText("Hana님과 친구가 되었어요!")).toBeInTheDocument();
   });
 
   it("rejecting a request calls the reject API", async () => {

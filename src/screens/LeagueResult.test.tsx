@@ -73,16 +73,12 @@ describe("League result screen", () => {
     expect(screen.getByText("최종 순위 5위 / 30명")).toBeInTheDocument();
   });
 
-  it("shows the progress ladder reaching the resulting league", async () => {
+  it("no longer renders the node-based league progression", async () => {
     renderResult();
     await screen.findByRole("heading", { name: "축하합니다!" });
-    const ladder = screen.getByRole("list", { name: "리그 진행" });
-    // The Lime node is the current step.
-    const current = ladder.querySelector(".lgr__node.is-current");
-    expect(current).toBeInTheDocument();
-    // All five leagues are labelled (Green..Gold), responsive/scrollable.
+    expect(screen.queryByRole("list", { name: "리그 진행" })).not.toBeInTheDocument();
     ["Green", "Lime", "Yellow", "Orange", "Golden"].forEach((label) =>
-      expect(screen.getByText(label)).toBeInTheDocument(),
+      expect(screen.queryByText(label)).not.toBeInTheDocument(),
     );
   });
 

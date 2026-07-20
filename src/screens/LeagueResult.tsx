@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../components/ui/kit";
 import { LoadingState } from "../components/ui/states";
-import { LEAGUE_TIERS, TIER_META, tierIndex, type LeagueTier } from "../lib/league";
+import { TIER_META, type LeagueTier } from "../lib/league";
 import { gameApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
@@ -27,31 +27,6 @@ function ResultBadge({ tier }: { tier: string }) {
         </defs>
       </svg>
       <span className="lgr__ground" aria-hidden="true" />
-    </div>
-  );
-}
-
-/* ------------------------------ progress -------------------------------- */
-function ProgressLadder({ resultingTier }: { resultingTier: string }) {
-  const reachedIndex = Math.max(0, tierIndex(resultingTier));
-  return (
-    <div className="lgr__ladder" role="list" aria-label="리그 진행">
-      {LEAGUE_TIERS.map((tier, i) => {
-        const reached = i <= reachedIndex;
-        const current = i === reachedIndex;
-        return (
-          <div className="lgr__step" role="listitem" key={tier}>
-            {i > 0 && <span className={`lgr__line ${i <= reachedIndex ? "is-done" : ""}`} aria-hidden="true" />}
-            <span
-              className={`lgr__node ${reached ? "is-reached" : ""} ${current ? "is-current" : ""}`}
-              aria-current={current ? "step" : undefined}
-            />
-            <span className={`lgr__node-label ${reached ? "is-reached" : ""}`}>
-              {TIER_META[tier].label.replace(" 리그", "")}
-            </span>
-          </div>
-        );
-      })}
     </div>
   );
 }
@@ -121,7 +96,6 @@ export function LeagueResult() {
             최종 순위 {result.final_rank}위 / {result.total_participants}명
           </p>
         )}
-        <ProgressLadder resultingTier={result.resulting_tier} />
       </div>
       <div className="lgr__foot">
         <Button

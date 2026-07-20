@@ -7233,16 +7233,19 @@ textarea.input {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  padding: calc(var(--safe-top) + 40px) clamp(20px, 6vw, 32px) 12px;
+  padding: calc(var(--safe-top) + 38px) clamp(20px, 6vw, 32px) 12px;
   text-align: center;
 }
 
-/* Mascot + speech bubble */
-.lvup__mascot { position: relative; width: min(78%, 300px); margin: 0 auto 18px; }
+/* Mascot + speech bubble. The top margin reserves room for the bubble, which
+   sits fully above the mascot (bottom:100%) so it never overlaps the artwork;
+   the small bottom margin keeps the text close under the image. */
+.lvup__mascot { position: relative; width: min(78%, 300px); margin: 44px auto 2px; }
 .lvup__mascot-svg { width: 100%; height: auto; display: block; }
 .lvup__bubble {
   position: absolute;
-  top: -6px;
+  top: auto;
+  bottom: calc(100% + 2px);
   left: 50%;
   transform: translateX(-50%);
   background: #fdeede;
@@ -7266,13 +7269,13 @@ textarea.input {
 }
 
 .lvup__eyebrow {
-  margin: 4px 0 8px;
+  margin: 0 0 4px;
   color: var(--brand-600, #ea580c);
   font-size: clamp(14px, 4vw, 16px);
   font-weight: 800;
 }
 .lvup__heading {
-  margin: 0 0 22px;
+  margin: 0 0 12px;
   color: #272c30;
   font-family: var(--font-display);
   font-weight: 800;
@@ -7306,7 +7309,9 @@ textarea.input {
 .lvup__pill-arrow { color: #b7ada3; }
 .lvup__pill-next { color: var(--brand-500, #ff5b00); }
 
-.lvup__medal { width: clamp(96px, 30vw, 128px); height: auto; }
+/* Pull the reward text up under the medal (the medal SVG carries bottom
+   whitespace) — tighter card frees room to drop the mascot + bubble lower. */
+.lvup__medal { width: clamp(96px, 30vw, 128px); height: auto; margin-bottom: -12px; }
 
 .lvup__reward {
   font-size: clamp(30px, 9vw, 40px);

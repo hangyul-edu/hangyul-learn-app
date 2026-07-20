@@ -6,6 +6,64 @@
  */
 import { TIER_CITRUS, type LeagueTier, type RewardIconKind } from "../../lib/league";
 
+/* --------------------------------- star --------------------------------- */
+/** Points of a 5-point star (top point first), as an SVG path string. */
+function starPath(cx: number, cy: number, outer: number, inner: number): string {
+  const pts = Array.from({ length: 10 }, (_, i) => {
+    const rad = (Math.PI / 180) * (-90 + i * 36);
+    const rr = i % 2 === 0 ? outer : inner;
+    return `${(cx + rr * Math.cos(rad)).toFixed(1)} ${(cy + rr * Math.sin(rad)).toFixed(1)}`;
+  });
+  return `M${pts.join("L")}Z`;
+}
+
+/** Cute, plump star: a thick round-joined outline rounds the tips + valleys so
+ *  it reads friendly rather than sharp. */
+function CuteStar({
+  cx,
+  cy,
+  outer,
+  inner,
+  fill,
+  edge,
+  puff,
+}: {
+  cx: number;
+  cy: number;
+  outer: number;
+  inner: number;
+  fill: string;
+  edge: string;
+  puff: number;
+}) {
+  const d = starPath(cx, cy, outer, inner);
+  return (
+    <g>
+      <path d={d} fill={fill} stroke={fill} strokeWidth={puff} strokeLinejoin="round" strokeLinecap="round" />
+      <path d={d} fill="none" stroke={edge} strokeWidth={puff * 0.32} strokeLinejoin="round" strokeLinecap="round" />
+    </g>
+  );
+}
+
+/* --------------------------------- sword -------------------------------- */
+/** One cute sword pointing up, centred on the origin: a chunky rounded blade
+ *  with a soft gold guard, brown grip, and round pommel. */
+function CuteSword() {
+  return (
+    <g>
+      {/* blade — thick with a rounded tip, plus a soft centre highlight */}
+      <path d="M0 -17V4" stroke="#e6ecf2" strokeWidth="5.6" strokeLinecap="round" />
+      <path d="M0 -13.5V1.5" stroke="#c9d3dd" strokeWidth="1.4" strokeLinecap="round" />
+      {/* crossguard */}
+      <rect x="-7.6" y="3" width="15.2" height="4" rx="2" fill="#f4b73c" />
+      {/* grip */}
+      <rect x="-2" y="6.4" width="4" height="8.4" rx="2" fill="#b97b3c" />
+      {/* pommel */}
+      <circle cx="0" cy="16.4" r="2.8" fill="#f4b73c" />
+    </g>
+  );
+}
+
 /* ------------------------------ hero banner ----------------------------- */
 export function GuideBanner() {
   return (
@@ -14,14 +72,6 @@ export function GuideBanner() {
         <clipPath id="lgBannerClip">
           <path d="M30 26h68v82l-34-16-34 16z" />
         </clipPath>
-        {/* One sword, pointing up (tip at y=-32, hilt at y=+20). */}
-        <g id="lgSword">
-          <path d="M0 -32 L3.4 8 L-3.4 8 Z" fill="#eef2f6" stroke="#b7c0ca" strokeWidth="1" strokeLinejoin="round" />
-          <path d="M0 -30v36" stroke="#c7ced6" strokeWidth="0.9" />
-          <rect x="-10" y="7.5" width="20" height="4.5" rx="2.2" fill="#c9902f" />
-          <rect x="-2.4" y="11" width="4.8" height="11" rx="2.2" fill="#7a5326" />
-          <circle cx="0" cy="23.5" r="3.2" fill="#c9902f" />
-        </g>
       </defs>
       {/* soft ground shadow to the right/below */}
       <ellipse cx="70" cy="126" rx="42" ry="9" fill="rgba(120,60,10,0.28)" />
@@ -40,10 +90,14 @@ export function GuideBanner() {
       {/* white central medal disc with a thin dashed orange ring */}
       <circle cx="64" cy="66" r="25" fill="#fffdf6" />
       <circle cx="64" cy="66" r="21" fill="none" stroke="#f0a23a" strokeWidth="1.4" strokeDasharray="3 3.4" />
-      {/* crossed-swords emblem (two swords crossed in an X) */}
-      <g transform="translate(64 66)">
-        <use href="#lgSword" transform="rotate(42)" />
-        <use href="#lgSword" transform="rotate(-42)" />
+      {/* cute crossed-swords emblem on the medal */}
+      <g transform="translate(64 67)">
+        <g transform="rotate(40)">
+          <CuteSword />
+        </g>
+        <g transform="rotate(-40)">
+          <CuteSword />
+        </g>
       </g>
     </svg>
   );
@@ -116,7 +170,12 @@ const YELLOW = "#ffd23f";
 const YELLOW_EDGE = "#f0b400";
 
 function StarGlyph() {
-  return <path d="M24 9l4.6 9.3 10.3 1.5-7.4 7.2 1.7 10.2L24 42.4l-9.2 4.9 1.7-10.2-7.4-7.2 10.3-1.5L24 9z" fill={YELLOW} stroke={YELLOW_EDGE} strokeWidth="1.5" strokeLinejoin="round" />;
+  return (
+    <>
+      <CuteStar cx={24} cy={25} outer={15} inner={7.6} fill={YELLOW} edge={YELLOW_EDGE} puff={5} />
+      <ellipse cx="19" cy="20" rx="3.4" ry="2" fill="#ffffff" opacity="0.55" />
+    </>
+  );
 }
 function FlagGlyph() {
   return (

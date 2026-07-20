@@ -9132,3 +9132,90 @@ textarea.input {
   gap: 10px;
   margin-top: 18px;
 }
+
+/* ===================== Notification Settings (알림 설정) ================== */
+.nset {
+  background: #fff;
+}
+/* Borderless sub-page app bar — same geometry as the other More-section
+   headers (.fm__header / .lh__header) but no divider (per the reference). */
+.nset__header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--safe-top) + 14px) 18px 14px;
+  background: #fff;
+}
+.nset__back {
+  position: absolute;
+  left: 6px;
+  top: calc(var(--safe-top) + 26px);
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.nset__title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 24px;
+  color: #272c30;
+}
+.nset__body {
+  background: #fff;
+  padding-top: 8px;
+  /* Rows sit near the top; the empty area below just grows. No bounce. */
+  overscroll-behavior: none;
+}
+.nset__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 8px;
+}
+.nset__label {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+/* Switch — orange ON / cool-gray OFF, white thumb, pill, soft shadow. */
+.nset__switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 52px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: #d5d9df;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.nset__switch.is-on {
+  background: var(--brand-500);
+}
+.nset__switch:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.nset__thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease;
+}
+.nset__switch.is-on .nset__thumb {
+  transform: translateX(22px);
+}

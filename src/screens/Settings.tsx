@@ -1,104 +1,144 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Screen } from "../components/layout/Screen";
-import { Card, Segmented } from "../components/ui/kit";
-import { LoadingState } from "../components/ui/states";
-import { notifApi, settingsApi } from "../api/endpoints";
+import { notifApi } from "../api/endpoints";
+import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
-import { errorMessage } from "../lib/http";
-import type { AppSettings } from "../lib/types";
+import { normalizeLanguage, type AppLanguage } from "../lib/language";
 
-function Switch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+/**
+ * Notification Settings (알림 설정) — two push-preference toggles.
+ *
+ * Both switches control **push delivery only**: the backend always writes the
+ * in-app notification record and gates only the external push on these fields
+ * (see NotificationService._fanout_push). This screen never touches the
+ * in-app notification list, history, or unread state.
+ */
+type PushKey = "service_notifications" | "marketing";
+
+interface SetCopy {
+  title: string;
+  back: string;
+  service: string;
+  marketing: string;
+  error: string;
+}
+const COPY: Record<AppLanguage, SetCopy> = {
+  ko: {
+    title: "알림 설정",
+    back: "뒤로 가기",
+    service: "서비스 알림",
+    marketing: "광고성 알림",
+    error: "설정을 변경하지 못했어요.",
+  },
+  en: {
+    title: "Notification Settings",
+    back: "Go back",
+    service: "Service Notifications",
+    marketing: "Marketing Notifications",
+    error: "Couldn't update the setting.",
+  },
+};
+
+const BackChevron = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M15 5l-7 7 7 7" stroke="#272c30" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+function Switch({
+  on,
+  disabled,
+  label,
+  onToggle,
+}: {
+  on: boolean;
+  disabled: boolean;
+  label: string;
+  onToggle: () => void;
+}) {
   return (
     <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      className={`nset__switch ${on ? "is-on" : ""}`}
+      disabled={disabled}
       onClick={onToggle}
-      style={{
-        width: 48,
-        height: 28,
-        borderRadius: 999,
-        border: "none",
-        cursor: "pointer",
-        background: on ? "var(--brand-500)" : "var(--border-strong)",
-        position: "relative",
-        transition: "background 0.15s",
-        flexShrink: 0,
-      }}
     >
-      <span style={{ position: "absolute", top: 3, left: on ? 23 : 3, width: 22, height: 22, borderRadius: 999, background: "#fff", transition: "left 0.15s", boxShadow: "0 1px 3px rgba(0,0,0,.2)" }} />
+      <span className="nset__thumb" aria-hidden="true" />
     </button>
   );
 }
 
-function ToggleRow({ label, on, onToggle }: { label: string; on: boolean; onToggle: () => void }) {
-  return (
-    <div className="row row--between" style={{ padding: "10px 2px" }}>
-      <span style={{ fontSize: 14.5, fontWeight: 600 }}>{label}</span>
-      <Switch on={on} onToggle={onToggle} />
-    </div>
-  );
-}
-
 export function Settings() {
-  const toast = useToast();
+  const nav = useNavigate();
   const qc = useQueryClient();
-  const q = useQuery({ queryKey: ["settings"], queryFn: settingsApi.get });
-  const notif = useQuery({ queryKey: ["notif-settings"], queryFn: notifApi.settings });
+  const toast = useToast();
+  const { me } = useAuth();
+  const copy = COPY[normalizeLanguage(me?.app_language)];
 
-  async function update(patch: Partial<AppSettings>) {
+  const q = useQuery({ queryKey: ["notif-settings"], queryFn: notifApi.settings });
+  const settings = q.data as Record<string, boolean> | undefined;
+  const [pending, setPending] = useState<Set<PushKey>>(new Set());
+
+  async function toggle(key: PushKey) {
+    if (!settings || pending.has(key)) return; // block rapid repeat taps per switch
+    const previous = settings;
+    const next = { ...settings, [key]: !settings[key] };
+    // Optimistic: flip immediately, keeping the other toggle untouched.
+    qc.setQueryData(["notif-settings"], next);
+    setPending((p) => new Set(p).add(key));
     try {
-      const next = await settingsApi.update(patch);
-      qc.setQueryData(["settings"], next);
-    } catch (e) {
-      toast.error(errorMessage(e));
+      const saved = await notifApi.updateSettings(next);
+      qc.setQueryData(["notif-settings"], saved);
+    } catch {
+      qc.setQueryData(["notif-settings"], previous); // roll back to the server value
+      toast.error(copy.error);
+    } finally {
+      setPending((p) => {
+        const n = new Set(p);
+        n.delete(key);
+        return n;
+      });
     }
   }
-  async function updateNotif(patch: Record<string, unknown>) {
-    try {
-      const next = await notifApi.updateSettings({ ...(notif.data ?? {}), ...patch });
-      qc.setQueryData(["notif-settings"], next);
-    } catch (e) {
-      toast.error(errorMessage(e));
-    }
-  }
-
-  if (q.isLoading) return <Screen title="설정" back><LoadingState /></Screen>;
-  const s = q.data!;
-  const n = (notif.data ?? {}) as Record<string, boolean>;
 
   return (
-    <Screen title="설정" back>
-      <div className="stack" style={{ gap: 18 }}>
-        <div>
-          <div className="field__label" style={{ marginBottom: 8 }}>테마</div>
-          <Segmented
-            value={s.theme}
-            onChange={(theme) => update({ theme })}
-            options={[
-              { value: "system", label: "시스템" },
-              { value: "light", label: "라이트" },
-              { value: "dark", label: "다크" },
-            ]}
-          />
-        </div>
+    <div className="screen nset">
+      <header className="nset__header">
+        <button className="nset__back" onClick={() => nav(-1)} aria-label={copy.back}>
+          <BackChevron />
+        </button>
+        <h1 className="nset__title">{copy.title}</h1>
+      </header>
 
-        <Card>
-          <div className="eyebrow" style={{ marginBottom: 4 }}>학습</div>
-          <ToggleRow label="효과음" on={s.sound_effects} onToggle={() => update({ sound_effects: !s.sound_effects })} />
-          <ToggleRow label="진동" on={s.vibration} onToggle={() => update({ vibration: !s.vibration })} />
-          <ToggleRow label="오디오 자동 재생" on={s.autoplay_audio} onToggle={() => update({ autoplay_audio: !s.autoplay_audio })} />
-          <ToggleRow label="발음(로마자) 표시" on={s.show_romanization} onToggle={() => update({ show_romanization: !s.show_romanization })} />
-        </Card>
-
-        {notif.data && (
-          <Card>
-            <div className="eyebrow" style={{ marginBottom: 4 }}>알림</div>
-            <ToggleRow label="푸시 알림" on={!!n.push_enabled} onToggle={() => updateNotif({ push_enabled: !n.push_enabled })} />
-            <ToggleRow label="학습 리마인더" on={!!n.learning_reminder} onToggle={() => updateNotif({ learning_reminder: !n.learning_reminder })} />
-            <ToggleRow label="친구 활동" on={!!n.friend_alerts} onToggle={() => updateNotif({ friend_alerts: !n.friend_alerts })} />
-            <ToggleRow label="리그 소식" on={!!n.league_alerts} onToggle={() => updateNotif({ league_alerts: !n.league_alerts })} />
-            <ToggleRow label="마케팅 정보 수신" on={!!n.marketing} onToggle={() => updateNotif({ marketing: !n.marketing })} />
-          </Card>
+      <div className="screen__body nset__body">
+        {/* Render only once the saved values are loaded — never flash defaults. */}
+        {settings && (
+          <>
+            <div className="nset__row">
+              <span className="nset__label">{copy.service}</span>
+              <Switch
+                on={!!settings.service_notifications}
+                disabled={pending.has("service_notifications")}
+                label={copy.service}
+                onToggle={() => toggle("service_notifications")}
+              />
+            </div>
+            <div className="nset__row">
+              <span className="nset__label">{copy.marketing}</span>
+              <Switch
+                on={!!settings.marketing}
+                disabled={pending.has("marketing")}
+                label={copy.marketing}
+                onToggle={() => toggle("marketing")}
+              />
+            </div>
+          </>
         )}
       </div>
-    </Screen>
+    </div>
   );
 }

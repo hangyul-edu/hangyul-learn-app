@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import { Button } from "./kit";
 
@@ -48,6 +49,7 @@ export function Sheet({
   children,
   bare = false,
   label,
+  contained = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -57,22 +59,27 @@ export function Sheet({
   bare?: boolean;
   /** Accessible name for the modal when there is no visible title element. */
   label?: string;
+  /** Render inside the phone frame (absolute, clipped to its rounded corners),
+   *  matching the League guide, instead of a viewport-fixed overlay. */
+  contained?: boolean;
 }) {
   const sheetRef = useRef<HTMLDivElement>(null);
   useLockScroll(open);
   useHardwareBackClose(open, onClose);
 
   // Move focus into the sheet on open; restore it to the trigger on close.
+  // `preventScroll` is essential: the sheet starts off-screen (sliding up), so a
+  // scrolling focus would drag the fixed background along with it.
   useEffect(() => {
     if (!open) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
-    sheetRef.current?.focus();
-    return () => previouslyFocused?.focus?.();
+    sheetRef.current?.focus({ preventScroll: true });
+    return () => previouslyFocused?.focus?.({ preventScroll: true });
   }, [open]);
 
   if (!open) return null;
-  return (
-    <div className="overlay" onClick={onClose}>
+  const overlay = (
+    <div className={`overlay ${contained ? "overlay--contained" : ""}`} onClick={onClose}>
       <div
         ref={sheetRef}
         className={`sheet ${bare ? "sheet--bare" : ""}`}
@@ -90,6 +97,13 @@ export function Sheet({
       </div>
     </div>
   );
+  // Contained sheets portal into the phone frame so its overflow clips them to
+  // the rounded corners regardless of where the trigger lives in the tree.
+  if (contained) {
+    const host = document.querySelector(".app-frame") ?? document.body;
+    return createPortal(overlay, host);
+  }
+  return overlay;
 }
 
 export function Dialog({

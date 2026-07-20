@@ -655,6 +655,11 @@ textarea.input {
   align-items: center;
   padding: 20px;
 }
+/* Contained within the phone frame (absolute, not fixed) so the sheet is
+   clipped to the frame's rounded corners — same as the League guide sheet. */
+.overlay--contained {
+  position: absolute;
+}
 @keyframes fade {
   from {
     opacity: 0;

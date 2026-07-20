@@ -311,7 +311,7 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
   const recommendations = recs.data?.recommendations ?? [];
 
   return (
-    <Sheet open={open} onClose={onClose} bare label={copy.title}>
+    <Sheet open={open} onClose={onClose} bare contained label={copy.title}>
       <div className="afs">
         <SheetHeader title={copy.title} closeLabel={copy.close} onClose={onClose} />
         <InfoBox lines={[copy.infoAcceptance, copy.infoVisibility]} />
@@ -466,7 +466,7 @@ export function IncomingFriendRequestSheet({
   }
 
   return (
-    <Sheet open={open} onClose={onClose} bare label={copy.title}>
+    <Sheet open={open} onClose={onClose} bare contained label={copy.title}>
       <div className="afs">
         <SheetHeader title={copy.title} closeLabel={copy.close} onClose={onClose} />
 

@@ -4170,18 +4170,18 @@ textarea.input {
   padding: 17px 22px; /* generous internal spacing */
   min-height: 30px;
 }
-/* Sharp, thin pointed tail starting at the bubble's top-left corner and
-   pointing up-left toward the avatar. Same cream, merged into the body. */
+/* Sharp pointed line at the bubble's top-left corner, its outer edge curving
+   gently toward the bottom-left. Same cream, merged into the bubble. */
 .askai__msg--ai::before {
   content: "";
   position: absolute;
   z-index: -1;
-  top: -9px;
+  top: -11px;
   left: -3px;
-  width: 15px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
   background: #fff1de;
-  clip-path: polygon(0 0, 100% 100%, 45% 100%);
+  clip-path: path("M 17 17 L 3 1 Q 0 7 7 17 Z");
 }
 .askai__msg--user {
   align-self: flex-end;

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { SunIcon } from "../components/brand/HomeIcons";
 import { CharacterArt } from "../components/brand/ProfileAssets";
 import { SkeletonList } from "../components/ui/states";
+import { ChatbotBottomSheet } from "../components/ChatbotBottomSheet";
 import { bannerApi, dashboardApi, learnApi, subApi } from "../api/endpoints";
 import type { Banner, Course, Lecture } from "../lib/types";
 
@@ -207,6 +208,7 @@ function CourseSection({ course, isPremium }: { course: Course; isPremium: boole
 /* ------------------------------ Screen --------------------------------- */
 export function LectureHome() {
   const nav = useNavigate();
+  const [chatOpen, setChatOpen] = useState(false);
   const dash = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
   const sub = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
   // Premium lecture access (paid, trial, or voucher all set is_premium server-side).
@@ -327,12 +329,15 @@ export function LectureHome() {
         )}
       </div>
 
-      {/* Floating chatbot button (reused) */}
-      <button className="plearn__fab" onClick={() => nav("/ai")} aria-label="AI 챗봇과 자유롭게 대화하기">
+      {/* Floating chatbot button — opens the shared chatbot bottom sheet in
+          place (same component as Personalized Learning), not a separate route. */}
+      <button className="plearn__fab" onClick={() => setChatOpen(true)} aria-label="AI 챗봇과 자유롭게 대화하기">
         <span className="plearn__fab-face">
           <CharacterArt variant="AVATAR_01" fill="100%" />
         </span>
       </button>
+
+      <ChatbotBottomSheet open={chatOpen} source="lecture" onClose={() => setChatOpen(false)} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { aiApi } from "../api/endpoints";
-import { CharacterArt } from "./brand/ProfileAssets";
+import { ChatSheetView } from "./ChatSheetView";
 import { errorMessage } from "../lib/http";
 import type { ChatMessage } from "../lib/types";
 
@@ -39,7 +39,6 @@ export function AskAiSheet({ open, context, onClose }: { open: boolean; context:
   const [sending, setSending] = useState(false);
   const started = useRef(false);
   const alive = useRef(true);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     alive.current = true;
@@ -85,11 +84,6 @@ export function AskAiSheet({ open, context, onClose }: { open: boolean; context:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // Keep the latest message in view.
-  useEffect(() => {
-    if (open) scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [messages, loading, open]);
-
   async function send() {
     const text = draft.trim();
     if (!text || sending || !convId) return;
@@ -112,80 +106,18 @@ export function AskAiSheet({ open, context, onClose }: { open: boolean; context:
   if (!open) return null;
 
   return (
-    <div className="askai" role="dialog" aria-modal="true" aria-label="물어보기">
-      <div className="askai__backdrop" onClick={onClose} />
-      <div className="askai__sheet">
-        <header className="askai__header">
-          <h2 className="askai__title">물어보기</h2>
-          <button className="askai__close" onClick={onClose} aria-label="물어보기 창 닫기">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18" stroke="#111" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </button>
-        </header>
-
-        <div className="askai__identity">
-          <span className="askai__id-face" aria-hidden="true">
-            <CharacterArt variant="AVATAR_01" fill="100%" />
-          </span>
-          <span className="askai__id-name">한귤AI</span>
-        </div>
-
-        <div className="askai__messages" ref={scrollRef}>
-          {messages.map((m) => (
-            <div key={m.message_id} className={`askai__msg askai__msg--${m.role === "user" ? "user" : "ai"}`}>
-              {m.content.split("\n").map((line, i) => (
-                <p key={i} className="askai__msg-line">
-                  {line}
-                </p>
-              ))}
-            </div>
-          ))}
-          {loading && (
-            <div className="askai__msg askai__msg--ai askai__msg--loading" aria-label="설명을 불러오는 중">
-              <span className="askai__dot" />
-              <span className="askai__dot" />
-              <span className="askai__dot" />
-            </div>
-          )}
-          {initError && !loading && (
-            <div className="askai__msg askai__msg--ai">
-              <p className="askai__msg-line">설명을 불러오지 못했어요.</p>
-              <button className="askai__retry" onClick={startThread}>
-                다시 시도
-              </button>
-            </div>
-          )}
-        </div>
-
-        <p className="askai__disclaimer">AI 답변은 완벽하지 않거나 실수할 수 있어요. 참고용으로 활용해주세요.</p>
-
-        <div className="askai__composer">
-          <input
-            className="askai__input"
-            placeholder="채팅을 입력하세요."
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.nativeEvent.isComposing) {
-                e.preventDefault();
-                void send();
-              }
-            }}
-            maxLength={2000}
-            aria-label="채팅 입력"
-          />
-          <button className="askai__send" onClick={send} disabled={!draft.trim() || sending || !convId} aria-label="메시지 보내기">
-            {sending ? (
-              <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />
-            ) : (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M12 20V5M6 11l6-6 6 6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
+    <ChatSheetView
+      messages={messages}
+      loading={loading}
+      errorText={initError ? "설명을 불러오지 못했어요." : null}
+      onRetry={startThread}
+      draft={draft}
+      sending={sending}
+      canSend={convId != null}
+      onDraft={setDraft}
+      onSend={() => void send()}
+      onClose={onClose}
+      dataSource="session"
+    />
   );
 }

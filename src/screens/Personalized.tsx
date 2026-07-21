@@ -5,6 +5,7 @@ import { Async, SkeletonList } from "../components/ui/states";
 import { dashboardApi } from "../api/endpoints";
 import { CharacterArt } from "../components/brand/ProfileAssets";
 import { SunIcon, SpeakingIcon, PencilIcon, GearIcon, BookIcon, ChevronRight } from "../components/brand/HomeIcons";
+import { ChatbotBottomSheet } from "../components/ChatbotBottomSheet";
 import type { DashboardSummary, DashboardTrack } from "../lib/types";
 
 /** Open horseshoe gauge with the percentage centered (yellow when complete). */
@@ -60,6 +61,7 @@ function trackIcon(category: string) {
 
 export function Personalized() {
   const nav = useNavigate();
+  const [chatOpen, setChatOpen] = useState(false);
   const q = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
   const [tab, setTab] = useState(0);
 
@@ -194,12 +196,15 @@ export function Personalized() {
         </Async>
       </div>
 
-      {/* Floating chatbot button (fixed above the bottom nav) */}
-      <button className="plearn__fab" onClick={() => nav("/ai")} aria-label="AI 챗봇과 자유롭게 대화하기">
+      {/* Floating chatbot button (fixed above the bottom nav) — opens the
+          shared chatbot bottom sheet in place, not a separate route. */}
+      <button className="plearn__fab" onClick={() => setChatOpen(true)} aria-label="AI 챗봇과 자유롭게 대화하기">
         <span className="plearn__fab-face">
           <CharacterArt variant="AVATAR_01" fill="100%" />
         </span>
       </button>
+
+      <ChatbotBottomSheet open={chatOpen} source="personalized_learning" onClose={() => setChatOpen(false)} />
     </div>
   );
 }

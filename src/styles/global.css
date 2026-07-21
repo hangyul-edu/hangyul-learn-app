@@ -1553,6 +1553,150 @@ textarea.input {
   line-height: 1.65;
   margin: 0 0 6px;
 }
+.policy__list {
+  list-style: none;
+  margin: 0 0 6px;
+  padding: 0;
+}
+.policy__bullet {
+  position: relative;
+  padding-left: 14px;
+  color: var(--ink-2);
+  font-size: 13.5px;
+  line-height: 1.65;
+  margin: 0 0 3px;
+}
+.policy__bullet::before {
+  content: "•";
+  position: absolute;
+  left: 2px;
+  color: var(--ink-3);
+}
+.policy__table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 6px 0 8px;
+  font-size: 12.5px;
+}
+.policy__table th,
+.policy__table td {
+  border: 1px solid var(--border);
+  padding: 7px 8px;
+  text-align: left;
+  line-height: 1.5;
+  vertical-align: top;
+  color: var(--ink-2);
+}
+.policy__table th {
+  background: #f4f4f3;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* ===================== Terms & Policies (약관 및 정책) ==================== */
+/* Give the page a definite viewport height (the app frame only sets min-height,
+   which lets flex children grow to full content and defeats the inner scroll).
+   With a fixed height, .pol__body becomes a real bounded scroll container. */
+.pol {
+  flex: none;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #fff;
+}
+@media (min-width: 620px) {
+  /* Match the framed desktop layout (.app-frame has 24px top/bottom margin). */
+  .pol {
+    height: calc(100dvh - 48px);
+  }
+}
+/* Borderless sub-page app bar — same geometry as the other More-section
+   headers (.nset__header / .fm__header), no divider. */
+.pol__header {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--safe-top) + 14px) 18px 14px;
+  background: #fff;
+}
+.pol__back {
+  position: absolute;
+  left: 6px;
+  top: calc(var(--safe-top) + 26px);
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.pol__title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 24px;
+  color: #272c30;
+}
+/* Detail body — a bounded flex scroll container so long legal docs scroll. */
+.pol__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  background: #fff;
+}
+/* List page — menu at the top, business-info panel pinned to the bottom. */
+.pol__list-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.pol__menu {
+  padding: 8px 20px 0;
+}
+.pol__item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 18px 0;
+  border: none;
+  background: none;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+}
+.pol__item:active {
+  color: var(--ink-3);
+}
+.pol__biz {
+  margin-top: auto;
+  background: #f4f4f3;
+  padding: 22px 20px calc(22px + var(--safe-bottom));
+}
+.pol__biz-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+.pol__biz-line {
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: var(--ink-3);
+}
 
 /* ============================ Profile registration ============================ */
 .setupp {

@@ -21,7 +21,7 @@ const MENU: { label: string; to: string }[] = [
   { label: "친구 관리", to: "/social" },
   { label: "공지 사항", to: "/support" },
   { label: "FAQ", to: "/support" },
-  { label: "약관 및 정책", to: "/policy/terms" },
+  { label: "약관 및 정책", to: "/policy" },
 ];
 
 function ProfileAvatar({ me }: { me: Me | null }) {

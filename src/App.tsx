@@ -54,7 +54,7 @@ import { PaymentMethods } from "./screens/PaymentMethods";
 import { Billing } from "./screens/Billing";
 import { Streak } from "./screens/Streak";
 import { LevelUp } from "./screens/LevelUp";
-import { Policy } from "./screens/Policy";
+import { Policy, PolicyList } from "./screens/Policy";
 import { FindEmailResult } from "./screens/FindEmailResult";
 import { FindEmailNoMatch } from "./screens/FindEmailNoMatch";
 import { ResetPassword } from "./screens/ResetPassword";
@@ -109,6 +109,7 @@ const router = createBrowserRouter(
         <Route path="/reset-password" element={<RequireGuest><ResetPassword /></RequireGuest>} />
 
         {/* Legal documents — viewable by guests and signed-in users */}
+        <Route path="/policy" element={<PolicyList />} />
         <Route path="/policy/:doc" element={<Policy />} />
 
         {/* Find-email success result (masked email via navigation state) */}

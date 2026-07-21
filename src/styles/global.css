@@ -4095,23 +4095,25 @@ textarea.input {
   display: grid;
   place-items: center;
 }
-/* 한귤AI message group — a stepped, overlapped composition: a large foreground
-   avatar and sender name overlay the upper-left, while the wide cream bubble
-   begins lower and indented to the right. Stacking: avatar (3) > name (2) >
-   bubble + organic tail (1). Avatar/name are absolute; the bubble is the only
-   in-flow child (a flex item establishes a BFC, so its top margin offsets the
-   bubble within the group rather than collapsing out). */
+/* 한귤AI message group — normal-flow stack so heights always add up and
+   messages never overlap: an avatar + name header row, then the cream bubble
+   below (left edge aligned under the name). */
 .askai__ai {
-  position: relative;
   align-self: flex-start;
   max-width: min(90%, 460px);
-  min-height: 60px; /* room for the avatar even behind a one-line bubble */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.askai__ai-head {
+  display: flex;
+  align-items: center; /* name centered on the avatar */
+  gap: 14px;
 }
 .askai__ai-face {
-  position: absolute;
-  top: 0;
-  left: 2px;
-  z-index: 3; /* foreground — never covered by the bubble */
+  position: relative;
+  z-index: 3; /* stays above the bubble's tail */
+  flex-shrink: 0;
   width: 58px;
   height: 58px;
   border-radius: 50%;
@@ -4128,11 +4130,6 @@ textarea.input {
   display: block;
 }
 .askai__ai-name {
-  position: absolute;
-  top: 29px; /* avatar vertical center (58 / 2) */
-  transform: translateY(-50%);
-  left: 74px; /* just right of the avatar; bubble aligns to this edge */
-  z-index: 2;
   color: #23282c;
   font-family: var(--font-display);
   font-weight: 700;
@@ -4165,8 +4162,8 @@ textarea.input {
 .askai__msg--ai {
   position: relative;
   z-index: 1; /* bubble body + tail sit behind the avatar */
-  margin-top: 54px; /* begin below the avatar/name, with a small gap */
-  margin-left: 74px; /* left edge aligns with the 한귤AI text */
+  margin-top: 8px; /* small, consistent gap below the header row */
+  margin-left: 72px; /* left edge aligns with the 한귤AI text (58 avatar + 14 gap) */
   background: #fff1de;
   border-radius: 28px;
   border-top-left-radius: 14px;

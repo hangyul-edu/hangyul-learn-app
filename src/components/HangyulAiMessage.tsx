@@ -27,10 +27,12 @@ export function HangyulAiMessage({
 }) {
   return (
     <div className="askai__ai">
-      <span className="askai__ai-face" aria-hidden="true">
-        <CharacterArt variant="AVATAR_01" fill="100%" />
-      </span>
-      <span className="askai__ai-name">{senderName}</span>
+      <div className="askai__ai-head">
+        <span className="askai__ai-face" aria-hidden="true">
+          <CharacterArt variant="AVATAR_01" fill="100%" />
+        </span>
+        <span className="askai__ai-name">{senderName}</span>
+      </div>
       <div
         className={`askai__msg askai__msg--ai${bubbleClassName ? ` ${bubbleClassName}` : ""}`}
         aria-label={bubbleAriaLabel}

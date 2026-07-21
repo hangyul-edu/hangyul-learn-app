@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useBlocker, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../components/ui/kit";
+import { UnsavedChangesModal } from "../components/UnsavedChangesModal";
 import { LoadingState } from "../components/ui/states";
 import { settingsApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
@@ -57,7 +58,8 @@ export function LanguageSettings() {
       qc.setQueryData(["settings-language"], { app_language: applied });
       qc.invalidateQueries({ queryKey: ["settings"] }); // derived explanation/AI language
       toast.success(LANGUAGE_SETTINGS_COPY[applied].savedToast);
-      nav(-1);
+      leavingRef.current = true; // deliberate exit after a successful save — bypass the guard
+      nav("/profile");
     },
     onError: (e) => {
       // Keep the previous global language and the pending selection for retry.
@@ -75,12 +77,43 @@ export function LanguageSettings() {
     save.mutate(pending); // idempotent server-side, so a no-change save is a safe no-op
   }
 
+  // Unsaved-change guard. Dirty = the pending selection differs from the
+  // persisted value (comparing actual values, so reverting to the original
+  // clears it; a successful save updates the persisted cache and clears it too).
+  const leavingRef = useRef(false); // set on a deliberate exit (save / 나가기)
+  const dirty = pending !== null && persisted !== null && pending !== persisted;
+
+  // Block every in-app exit path while dirty — header back, browser/hardware
+  // back, swipe-back, and programmatic pop — via the data router. The modal is
+  // driven by the blocker's state; the pending navigation is held until the user
+  // confirms 나가기.
+  const blocker = useBlocker(
+    useCallback(
+      ({
+        currentLocation,
+        nextLocation,
+      }: {
+        currentLocation: { pathname: string };
+        nextLocation: { pathname: string };
+      }) => dirty && !leavingRef.current && currentLocation.pathname !== nextLocation.pathname,
+      [dirty],
+    ),
+  );
+
   const loading = persisted === null || pending === null;
+
+  // Leave to the parent (More) page via an explicit in-app route rather than a
+  // history pop. A route navigation is always same-document, so the router's
+  // unsaved-changes blocker can reliably intercept it and show the confirmation
+  // modal first — a cross-document history back (e.g. after a reload) cannot be
+  // blocked and would navigate away immediately. This also never triggers a
+  // full-document reload or the browser's native unload prompt.
+  const goBack = () => nav("/profile");
 
   return (
     <div className="screen lang">
       <header className="acct__header">
-        <button className="acct__back" onClick={() => nav(-1)} aria-label={copy.back}>
+        <button className="acct__back" onClick={goBack} aria-label={copy.back}>
           <BackChevron />
         </button>
         <h1 className="acct__title">{copy.title}</h1>
@@ -123,6 +156,15 @@ export function LanguageSettings() {
           {copy.save}
         </Button>
       </div>
+
+      <UnsavedChangesModal
+        open={blocker.state === "blocked"}
+        onContinue={() => blocker.reset?.()}
+        onLeave={() => {
+          leavingRef.current = true; // draft discarded; proceed with the blocked nav
+          blocker.proceed?.();
+        }}
+      />
     </div>
   );
 }

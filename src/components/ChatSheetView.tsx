@@ -52,6 +52,9 @@ export function ChatSheetView({
     };
   }, []);
 
+  // Rendered inside the current screen (a viewport-height, position: relative
+  // box) so the absolute overlay attaches to it — like the League Guide sheet —
+  // and the sheet stays fully visible regardless of the page's scroll position.
   return (
     <div className="askai" role="dialog" aria-modal="true" aria-label="물어보기" data-source={dataSource}>
       <div className="askai__backdrop" onClick={onClose} />

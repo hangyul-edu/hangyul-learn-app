@@ -4039,12 +4039,16 @@ textarea.input {
 
 /* ============================ Ask-AI explanation sheet ============================ */
 .askai {
+  /* Fixed to the visual viewport so the sheet is always anchored to the visible
+     screen — independent of the page's scroll position and of the app frame's
+     (growable) height. With interactive-widget=resizes-content the viewport
+     shrinks for the virtual keyboard, keeping the composer above it. */
   position: fixed;
   inset: 0;
-  z-index: 150;
+  z-index: 170;
   display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
+  align-items: flex-end;
+  justify-content: center;
 }
 .askai__backdrop {
   position: absolute;
@@ -4057,8 +4061,10 @@ textarea.input {
   z-index: 1;
   width: 100%;
   max-width: var(--app-max);
-  margin: 0 auto;
-  height: 88dvh;
+  /* Dynamic-viewport height: tracks the visible area (and shrinks for the
+     keyboard) so the whole sheet — including the composer — always fits. */
+  height: 84dvh;
+  max-height: 100%;
   background: #fff;
   border-radius: 26px 26px 0 0;
   /* Thin blue accent along the rounded top edge (matches the reference). */
@@ -4066,7 +4072,7 @@ textarea.input {
   display: flex;
   flex-direction: column;
   padding-bottom: var(--safe-bottom);
-  animation: sheet-up 0.28s cubic-bezier(0.2, 0.9, 0.3, 1);
+  animation: sheet-up 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 .askai__header {
   position: relative;
@@ -6330,6 +6336,7 @@ textarea.input {
 
 /* ============================ Lecture home (강의) ============================ */
 .lechome {
+  position: relative; /* anchors the chatbot bottom sheet to this screen */
   background: #fff;
 }
 .lechome__scroll {

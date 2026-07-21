@@ -400,6 +400,7 @@ export const bannerApi = {
 export const supportApi = {
   faqs: (params: { category?: string; q?: string; cursor?: string }) =>
     http.get<{ items: Faq[]; next_cursor: string | null }>("/support/faqs", { limit: 50, ...params }, { auth: false }),
+  faq: (faqId: string) => http.get<Faq>(`/support/faqs/${encodeURIComponent(faqId)}`, undefined, { auth: false }),
   notices: (cursor?: string) =>
     http.get<{ items: Notice[]; next_cursor: string | null }>("/support/notices", { cursor, limit: 20 }, { auth: false }),
 };

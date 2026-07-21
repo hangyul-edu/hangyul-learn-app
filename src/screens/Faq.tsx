@@ -1,0 +1,244 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { supportApi } from "../api/endpoints";
+import { FAQ_CATEGORIES, findFaqCategory } from "../lib/faqCategories";
+import { errorMessage } from "../lib/http";
+import { EmptyState, ErrorState, SkeletonList } from "../components/ui/states";
+import { ChevronRight } from "../components/brand/HomeIcons";
+import { FaqHeader, LoadMoreSentinel, QuestionCard } from "../components/faq/FaqPieces";
+import { SupportChatButton } from "../components/faq/SupportChatButton";
+import type { Faq as FaqItem } from "../lib/types";
+
+/** Remembers each list's scroll offset so returning from a detail restores it.
+ * Keyed by the URL search string (category / query), which fully identifies a
+ * list state. Module-scoped so it survives the screen unmounting on navigation. */
+const scrollPositions = new Map<string, number>();
+
+function useDebouncedValue<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
+
+/** Flatten paginated FAQ pages, dropping any duplicate ids across pages. */
+function dedupe(pages: { items: FaqItem[] }[] | undefined): FaqItem[] {
+  const seen = new Set<string>();
+  const out: FaqItem[] = [];
+  for (const page of pages ?? []) {
+    for (const item of page.items) {
+      if (seen.has(item.faq_id)) continue;
+      seen.add(item.faq_id);
+      out.push(item);
+    }
+  }
+  return out;
+}
+
+export function Faq() {
+  const nav = useNavigate();
+  const [params, setParams] = useSearchParams();
+  const categorySlug = params.get("category") ?? undefined;
+  const category = findFaqCategory(categorySlug);
+  const urlQuery = (params.get("q") ?? "").trim();
+
+  const [input, setInput] = useState(params.get("q") ?? "");
+  const [focused, setFocused] = useState(false);
+  const debounced = useDebouncedValue(input.trim(), 300);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Reflect the debounced search box into the URL. Entering search mode pushes
+  // a history entry (so Back leaves search); edits within search — and clearing
+  // it — replace, to avoid history spam and navigation loops.
+  useEffect(() => {
+    const current = (params.get("q") ?? "").trim();
+    if (debounced === current) return;
+    const next = new URLSearchParams(params);
+    if (debounced) next.set("q", debounced);
+    else next.delete("q");
+    const enteringSearch = !!debounced && !current;
+    setParams(next, { replace: !enteringSearch });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debounced]);
+
+  const mode: "landing" | "category" | "search" = urlQuery ? "search" : category ? "category" : "landing";
+
+  const categoryList = useInfiniteQuery({
+    queryKey: ["faqs", "category", categorySlug],
+    queryFn: ({ pageParam }) => supportApi.faqs({ category: categorySlug, cursor: pageParam }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.next_cursor ?? undefined,
+    enabled: mode === "category" && !!categorySlug,
+  });
+
+  const searchList = useInfiniteQuery({
+    queryKey: ["faqs", "search", urlQuery],
+    queryFn: ({ pageParam }) => supportApi.faqs({ q: urlQuery, cursor: pageParam }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.next_cursor ?? undefined,
+    enabled: mode === "search",
+  });
+
+  const active = mode === "search" ? searchList : categoryList;
+  const items = useMemo(() => dedupe(active.data?.pages), [active.data]);
+
+  // Restore the saved scroll offset for this list once its content is present.
+  const scrollKey = params.toString();
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onScroll = () => scrollPositions.set(scrollKey, el.scrollTop);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [scrollKey]);
+  const contentReady = mode === "landing" || (!active.isLoading && active.data !== undefined);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !contentReady) return;
+    const saved = scrollPositions.get(scrollKey);
+    if (saved != null) el.scrollTop = saved;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scrollKey, contentReady]);
+
+  const hasText = input.trim().length > 0;
+  const searchActive = focused || hasText;
+
+  function openDetail(faqId: string) {
+    nav(`/faq/${encodeURIComponent(faqId)}`);
+  }
+
+  return (
+    <div className={`faq ${focused ? "faq--searching" : ""}`}>
+      <FaqHeader />
+
+      <div className="faq__scroll" ref={scrollRef}>
+        {/* Search area — warm cream band behind a white search field. */}
+        <div className="faq__searchbar">
+          <div className={`faq__search ${searchActive ? "faq__search--active" : ""} ${hasText ? "faq__search--filled" : ""}`}>
+            <input
+              className="faq__search-input"
+              type="search"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              placeholder="무엇이든 물어보세요"
+              aria-label="FAQ 검색"
+              enterKeyHint="search"
+            />
+            <span className="faq__search-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.8" />
+                <path d="M20 20l-3.2-3.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            </span>
+          </div>
+        </div>
+
+        <div className="faq__content">
+          {mode === "landing" && (
+            <div className="faq__cats">
+              {FAQ_CATEGORIES.map((c) => (
+                <button
+                  key={c.slug}
+                  type="button"
+                  className="faq__cat-card"
+                  onClick={() => setParams({ category: c.slug })}
+                >
+                  <span className="faq__cat-emoji" aria-hidden="true">{c.emoji}</span>
+                  <span className="faq__cat-label">{c.label}</span>
+                  <ChevronRight size={20} color="#c3b9ab" />
+                </button>
+              ))}
+            </div>
+          )}
+
+          {mode === "category" && category && (
+            <>
+              <h2 className="faq__heading">
+                <span aria-hidden="true">{category.emoji}</span> {category.label}
+              </h2>
+              <ListBody
+                loading={categoryList.isLoading}
+                error={categoryList.error}
+                items={items}
+                onRetry={() => categoryList.refetch()}
+                onOpen={openDetail}
+                empty={<EmptyState emoji="💭" title="등록된 질문이 없어요" />}
+                hasNext={!!categoryList.hasNextPage}
+                isFetchingNext={categoryList.isFetchingNextPage}
+                loadMore={categoryList.fetchNextPage}
+              />
+            </>
+          )}
+
+          {mode === "search" && (
+            <>
+              <h2 className="faq__heading" role="status" aria-live="polite">
+                <span aria-hidden="true">🔎</span> 검색 결과 {searchList.isLoading ? "" : items.length}
+              </h2>
+              <ListBody
+                loading={searchList.isLoading}
+                error={searchList.error}
+                items={items}
+                onRetry={() => searchList.refetch()}
+                onOpen={openDetail}
+                empty={
+                  <EmptyState
+                    emoji="🔍"
+                    title="검색 결과가 없어요"
+                    text="다른 검색어로 다시 찾아보세요"
+                  />
+                }
+                hasNext={!!searchList.hasNextPage}
+                isFetchingNext={searchList.isFetchingNextPage}
+                loadMore={searchList.fetchNextPage}
+              />
+            </>
+          )}
+        </div>
+      </div>
+
+      <SupportChatButton />
+    </div>
+  );
+}
+
+/** Loading / error / empty / list for a paginated question list. */
+function ListBody({
+  loading,
+  error,
+  items,
+  onRetry,
+  onOpen,
+  empty,
+  hasNext,
+  isFetchingNext,
+  loadMore,
+}: {
+  loading: boolean;
+  error: unknown;
+  items: FaqItem[];
+  onRetry: () => void;
+  onOpen: (faqId: string) => void;
+  empty: React.ReactNode;
+  hasNext: boolean;
+  isFetchingNext: boolean;
+  loadMore: () => void;
+}) {
+  if (loading && items.length === 0) return <SkeletonList rows={6} height={62} />;
+  if (error && items.length === 0)
+    return <ErrorState message={errorMessage(error)} onRetry={onRetry} />;
+  if (items.length === 0) return <>{empty}</>;
+  return (
+    <div className="faq__list">
+      {items.map((f) => (
+        <QuestionCard key={f.faq_id} question={f.question} onClick={() => onOpen(f.faq_id)} />
+      ))}
+      <LoadMoreSentinel hasNext={hasNext} isFetching={isFetchingNext} onLoadMore={loadMore} />
+    </div>
+  );
+}

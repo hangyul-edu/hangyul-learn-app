@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useBlocker, useNavigate } from "react-router-dom";
 import {
   ProfilePlaceholder,
@@ -71,17 +71,6 @@ export function EditProfile() {
       [anyChanged],
     ),
   );
-
-  // Warn on full page unload (reload/close) while there are unsaved edits.
-  useEffect(() => {
-    if (!anyChanged) return;
-    const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [anyChanged]);
 
   function onNicknameChange(v: string) {
     setNickname(v);
@@ -157,7 +146,7 @@ export function EditProfile() {
       setMe(updated);
       leavingRef.current = true; // saved → deliberate exit, don't trip the guard
       toast.success("저장했어요");
-      nav(-1);
+      nav("/profile");
     } catch (e) {
       toast.error(errorMessage(e));
     } finally {
@@ -174,7 +163,7 @@ export function EditProfile() {
         <div className="setupp__inner">
           <button
             className="setupp__back"
-            onClick={() => { if (!busy) nav(-1); }}
+            onClick={() => { if (!busy) nav("/profile"); }}
             disabled={busy}
             aria-label="뒤로"
           >

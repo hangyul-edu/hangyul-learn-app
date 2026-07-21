@@ -76,16 +76,14 @@ export function TrackSettings() {
     ),
   );
 
-  // Warn on full page unload (reload/close) while dirty — outside the router.
-  useEffect(() => {
-    if (!dirty) return;
-    const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [dirty]);
+  // Leave by popping history (return to the page we came from — the settings
+  // list) rather than pushing a fresh /recommend/settings entry, which would
+  // duplicate it and make the list's own Back button loop back here. Fall back
+  // to the parent route only when opened directly (no in-app entry to pop to).
+  const goBack = () => {
+    if ((window.history.state?.idx ?? 0) > 0) nav(-1);
+    else nav("/recommend/settings");
+  };
 
   async function save() {
     if (!dirty || saving || !q.data || !orig || draftLevel == null || draftGoal == null) return;
@@ -104,7 +102,7 @@ export function TrackSettings() {
       origRef.current = { level: draftLevel, goal: draftGoal }; // clear dirty
       leavingRef.current = true; // deliberate exit — don't trip the blocker
       toast.success("저장했어요");
-      nav(-1);
+      goBack();
     } catch (e) {
       if (mySeq !== seqRef.current) return;
       toast.error(errorMessage(e)); // stay, keep draft + dirty for retry
@@ -120,7 +118,7 @@ export function TrackSettings() {
       <div className="trkset__scroll">
         <div className="trkset__inner">
           <header className="acct__header">
-            <button className="acct__back" onClick={() => nav(-1)} aria-label="뒤로">
+            <button className="acct__back" onClick={goBack} aria-label="뒤로">
               <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>

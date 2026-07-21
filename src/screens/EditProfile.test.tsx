@@ -45,10 +45,11 @@ const api = userApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 function renderEdit() {
   const router = createMemoryRouter(
     [
-      { path: "/prev", element: <div>PREV_SCREEN</div> },
+      // Edit Profile is reached from the More/Profile page and leaves back to it.
+      { path: "/profile", element: <div>PROFILE_SCREEN</div> },
       { path: "/edit", element: <EditProfile /> },
     ],
-    { initialEntries: ["/prev", "/edit"], initialIndex: 1 },
+    { initialEntries: ["/profile", "/edit"], initialIndex: 1 },
   );
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   render(
@@ -70,7 +71,7 @@ describe("EditProfile unsaved-changes guard", () => {
   it("leaves immediately when there are no changes", async () => {
     renderEdit();
     await userEvent.click(backBtn());
-    expect(await screen.findByText("PREV_SCREEN")).toBeInTheDocument();
+    expect(await screen.findByText("PROFILE_SCREEN")).toBeInTheDocument();
     expect(modal()).not.toBeInTheDocument();
   });
 
@@ -85,7 +86,7 @@ describe("EditProfile unsaved-changes guard", () => {
     expect(screen.getByText("저장하지 않고 나가면 변경사항이 사라져요")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "취소" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "나가기" })).toBeInTheDocument();
-    expect(screen.queryByText("PREV_SCREEN")).not.toBeInTheDocument();
+    expect(screen.queryByText("PROFILE_SCREEN")).not.toBeInTheDocument();
   });
 
   it("취소 keeps the user on the screen with edits intact", async () => {
@@ -96,7 +97,7 @@ describe("EditProfile unsaved-changes guard", () => {
     await screen.findByRole("alertdialog");
     await userEvent.click(screen.getByRole("button", { name: "취소" }));
     await waitFor(() => expect(modal()).not.toBeInTheDocument());
-    expect(screen.queryByText("PREV_SCREEN")).not.toBeInTheDocument();
+    expect(screen.queryByText("PROFILE_SCREEN")).not.toBeInTheDocument();
     expect(input.value).toBe("곰돌이2"); // edits preserved
   });
 
@@ -106,7 +107,7 @@ describe("EditProfile unsaved-changes guard", () => {
     await userEvent.click(backBtn());
     await screen.findByRole("alertdialog");
     await userEvent.click(screen.getByRole("button", { name: "나가기" }));
-    expect(await screen.findByText("PREV_SCREEN")).toBeInTheDocument();
+    expect(await screen.findByText("PROFILE_SCREEN")).toBeInTheDocument();
   });
 
   it("reverting a change back to the original clears the dirty state", async () => {
@@ -115,7 +116,7 @@ describe("EditProfile unsaved-changes guard", () => {
     await userEvent.type(input, "2");
     await userEvent.type(input, "{backspace}"); // back to 곰돌이
     await userEvent.click(backBtn());
-    expect(await screen.findByText("PREV_SCREEN")).toBeInTheDocument();
+    expect(await screen.findByText("PROFILE_SCREEN")).toBeInTheDocument();
     expect(modal()).not.toBeInTheDocument();
   });
 
@@ -134,7 +135,7 @@ describe("EditProfile unsaved-changes guard", () => {
     await userEvent.click(screen.getAllByRole("radio")[0]);
     await userEvent.click(screen.getByRole("button", { name: "저장하기" }));
     await waitFor(() => expect(api.updateProfile).toHaveBeenCalledTimes(1));
-    expect(await screen.findByText("PREV_SCREEN")).toBeInTheDocument();
+    expect(await screen.findByText("PROFILE_SCREEN")).toBeInTheDocument();
     expect(modal()).not.toBeInTheDocument();
   });
 });

@@ -3,6 +3,7 @@ import { useBlocker, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../components/ui/kit";
 import { UnsavedChangesModal } from "../components/UnsavedChangesModal";
+import { LanguageSavedModal } from "../components/LanguageSavedModal";
 import { LoadingState } from "../components/ui/states";
 import { settingsApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
@@ -48,18 +49,22 @@ export function LanguageSettings() {
   // pending selection — the app language changes only after Save.
   const copy = LANGUAGE_SETTINGS_COPY[persisted ?? "en"];
 
+  // Shown only after the backend confirms the save; gates the return navigation
+  // on the user tapping 확인.
+  const [savedOpen, setSavedOpen] = useState(false);
+
   const save = useMutation({
     mutationFn: (lang: AppLanguage) => settingsApi.setLanguage(lang),
     onSuccess: (res) => {
       // Reconcile with the authoritative server value, then apply app-wide:
-      // update the authenticated-user cache + the language query cache.
+      // update the authenticated-user cache + the language query cache. This
+      // also makes the persisted value equal the pending one, so the form is no
+      // longer dirty and the unsaved-changes guard won't fire.
       const applied = normalizeLanguage(res.app_language);
       if (me) setMe({ ...me, app_language: applied });
       qc.setQueryData(["settings-language"], { app_language: applied });
       qc.invalidateQueries({ queryKey: ["settings"] }); // derived explanation/AI language
-      toast.success(LANGUAGE_SETTINGS_COPY[applied].savedToast);
-      leavingRef.current = true; // deliberate exit after a successful save — bypass the guard
-      nav("/profile");
+      setSavedOpen(true); // success feedback; navigation waits for 확인
     },
     onError: (e) => {
       // Keep the previous global language and the pending selection for retry.
@@ -163,6 +168,20 @@ export function LanguageSettings() {
         onLeave={() => {
           leavingRef.current = true; // draft discarded; proceed with the blocked nav
           blocker.proceed?.();
+        }}
+      />
+
+      <LanguageSavedModal
+        open={savedOpen}
+        title={copy.savedModalTitle}
+        description={copy.savedModalDesc}
+        confirmLabel={copy.confirm}
+        onConfirm={() => {
+          // Close once, then return to the previous screen (the current
+          // post-save flow). No re-save, no reload; the form is already clean.
+          setSavedOpen(false);
+          leavingRef.current = true;
+          nav("/profile");
         }}
       />
     </div>

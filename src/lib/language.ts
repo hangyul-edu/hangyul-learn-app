@@ -26,7 +26,9 @@ export const LANGUAGE_SETTINGS_COPY: Record<
     save: string;
     saveA11y: string;
     back: string;
-    savedToast: string;
+    savedModalTitle: string;
+    savedModalDesc: string;
+    confirm: string;
     errorToast: string;
     networkErrorToast: string;
   }
@@ -36,7 +38,9 @@ export const LANGUAGE_SETTINGS_COPY: Record<
     save: "Save",
     saveA11y: "Save language setting",
     back: "Go back",
-    savedToast: "Language setting saved",
+    savedModalTitle: "Language settings have been saved",
+    savedModalDesc: "You can now use the app in your selected language",
+    confirm: "Confirm",
     errorToast: "Unable to save the language setting. Please try again shortly.",
     networkErrorToast: "Check your network connection and try again.",
   },
@@ -45,7 +49,9 @@ export const LANGUAGE_SETTINGS_COPY: Record<
     save: "저장",
     saveA11y: "언어 설정 저장",
     back: "뒤로 가기",
-    savedToast: "언어 설정을 저장했어요",
+    savedModalTitle: "언어 설정이 저장됐습니다",
+    savedModalDesc: "이제부터 선택하신 언어로 이용하실 수 있어요",
+    confirm: "확인",
     errorToast: "언어 설정을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
     networkErrorToast: "네트워크 연결을 확인한 후 다시 시도해 주세요.",
   },

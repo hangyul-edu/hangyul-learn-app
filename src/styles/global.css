@@ -5483,6 +5483,26 @@ textarea.input {
   transform: scale(0.99);
 }
 
+/* ---- Language-saved success modal (reuses .wdd; no X, softer separation) ---- */
+/* Medium gray semi-transparent overlay — the reference leans on the dim, not a
+   heavy modal shadow. */
+.lsm__overlay {
+  background: rgba(28, 31, 37, 0.46);
+  z-index: 200;
+}
+.lsm {
+  /* Subtle, soft shadow; separation comes mainly from the overlay. */
+  box-shadow: 0 12px 32px rgba(20, 22, 25, 0.16);
+  /* Quick, restrained entrance: fade + slight scale, no bounce. */
+  animation: lsm-rise 0.2s ease-out;
+}
+@keyframes lsm-rise {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
 /* ============================ Logout confirmation modal (로그아웃) ============================ */
 .lgo {
   width: 100%;

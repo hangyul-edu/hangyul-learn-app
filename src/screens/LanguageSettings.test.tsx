@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
@@ -116,12 +116,28 @@ describe("LanguageSettings screen", () => {
     resolve({ app_language: "ko" });
   });
 
-  it("successful save updates the auth cache and returns to the previous screen", async () => {
+  it("successful save updates the auth cache and shows the success modal with exact copy", async () => {
     renderScreen();
     await userEvent.click(card("한국어"));
     await userEvent.click(screen.getByRole("button", { name: "Save language setting" }));
     await waitFor(() => expect(setMe).toHaveBeenCalledWith(expect.objectContaining({ app_language: "ko" })));
+    // Success modal appears (localized to the newly applied language, ko).
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("언어 설정이 저장됐습니다")).toBeInTheDocument();
+    expect(within(dialog).getByText("이제부터 선택하신 언어로 이용하실 수 있어요")).toBeInTheDocument();
+    // Does not navigate until the user confirms.
+    expect(screen.queryByText("PROFILE_SCREEN")).not.toBeInTheDocument();
+  });
+
+  it("확인 on the success modal closes it and returns to the previous screen (no re-save)", async () => {
+    renderScreen();
+    await userEvent.click(card("한국어"));
+    await userEvent.click(screen.getByRole("button", { name: "Save language setting" }));
+    const dialog = await screen.findByRole("dialog");
+    await userEvent.click(within(dialog).getByRole("button", { name: "확인" }));
     expect(await screen.findByText("PROFILE_SCREEN")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(api.setLanguage).toHaveBeenCalledTimes(1); // 확인 must not save again
   });
 
   it("failed save preserves the pending selection, keeps the screen, and allows retry", async () => {
@@ -130,8 +146,9 @@ describe("LanguageSettings screen", () => {
     await userEvent.click(card("한국어"));
     await userEvent.click(screen.getByRole("button", { name: "Save language setting" }));
     await waitFor(() => expect(api.setLanguage).toHaveBeenCalledTimes(1));
-    // Stayed on the screen, pending kept, global not changed.
+    // Stayed on the screen, pending kept, global not changed, no success modal.
     expect(screen.queryByText("PROFILE_SCREEN")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(card("한국어")).toHaveAttribute("aria-checked", "true");
     expect(setMe).not.toHaveBeenCalled();
     // Retry works.
@@ -212,11 +229,15 @@ describe("LanguageSettings screen", () => {
     expect(modal()).not.toBeInTheDocument();
   });
 
-  it("no modal after a successful save (dirty state cleared)", async () => {
+  it("a successful save clears the dirty state — the unsaved-changes guard never fires", async () => {
     renderScreen();
     await userEvent.click(card("한국어"));
     await userEvent.click(screen.getByRole("button", { name: "Save language setting" }));
-    // Save navigates back itself; the guard must not intercept it.
+    // Success dialog shows; the unsaved-changes guard (alertdialog) must NOT.
+    const dialog = await screen.findByRole("dialog");
+    expect(modal()).not.toBeInTheDocument();
+    // 확인 returns to the previous screen without the guard intercepting.
+    await userEvent.click(within(dialog).getByRole("button", { name: "확인" }));
     expect(await screen.findByText("PROFILE_SCREEN")).toBeInTheDocument();
     expect(modal()).not.toBeInTheDocument();
   });

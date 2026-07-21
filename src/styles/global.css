@@ -4100,6 +4100,7 @@ textarea.input {
    below (left edge aligned under the name). */
 .askai__ai {
   align-self: flex-start;
+  flex-shrink: 0; /* never let the column compress the group */
   max-width: min(90%, 460px);
   display: flex;
   flex-direction: column;
@@ -4151,12 +4152,14 @@ textarea.input {
   gap: 12px;
 }
 .askai__msg {
+  box-sizing: border-box; /* keep padding inside max-width so text never clips */
   max-width: 84%;
   padding: 15px 17px;
   border-radius: 22px;
   font-size: clamp(15px, 4.4vw, 17px);
   line-height: 1.6;
   color: #222;
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 .askai__msg--ai {
@@ -4184,9 +4187,29 @@ textarea.input {
   clip-path: path("M 17 17 L 3 1 Q 0 7 7 17 Z");
 }
 .askai__msg--user {
+  position: relative;
+  z-index: 1;
   align-self: flex-end;
+  flex-shrink: 0; /* keep full content height so text never spills out */
   background: #edf1f6;
-  border-top-right-radius: 6px;
+  border-radius: 28px;
+  border-top-right-radius: 14px;
+  padding: 17px 22px; /* match the 한귤AI bubble */
+  min-height: 30px;
+}
+/* Mirror of the 한귤AI tail — sharp point at the top-right corner curving
+   gently toward the bottom-right. Same gray as the user bubble. */
+.askai__msg--user::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -11px;
+  right: -3px;
+  width: 17px;
+  height: 17px;
+  background: #edf1f6;
+  clip-path: path("M 17 17 L 3 1 Q 0 7 7 17 Z");
+  transform: scaleX(-1);
 }
 .askai__msg-line {
   margin: 0;

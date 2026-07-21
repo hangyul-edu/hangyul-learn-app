@@ -173,8 +173,6 @@ export function PersonalizedSettings() {
             <h1 className="acct__title">맞춤 학습 설정</h1>
           </header>
 
-          <h2 className="clset__heading">맞춤 학습 설정</h2>
-
           <div className="clset__panel">
             <p className="clset__panel-line">맨 위 학습이 홈에 먼저 표시돼요</p>
             <p className="clset__panel-line">

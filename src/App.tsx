@@ -38,9 +38,10 @@ import { Settings } from "./screens/Settings";
 import { LanguageSettings } from "./screens/LanguageSettings";
 import { Account } from "./screens/Account";
 import { ChangePassword, ChangePhone, ChangeEmail } from "./screens/AccountChanges";
-import { Support } from "./screens/Support";
 import { Faq } from "./screens/Faq";
 import { FaqDetail } from "./screens/FaqDetail";
+import { NoticeList } from "./screens/NoticeList";
+import { NoticeDetail } from "./screens/NoticeDetail";
 import { CourseDetail } from "./screens/Courses";
 import { LectureHome } from "./screens/LectureHome";
 import { Lecture } from "./screens/Lecture";
@@ -168,9 +169,10 @@ const router = createBrowserRouter(
         <Route path="/account/password" element={<RequireAuth><ChangePassword /></RequireAuth>} />
         <Route path="/account/phone" element={<RequireAuth><ChangePhone /></RequireAuth>} />
         <Route path="/account/email" element={<RequireAuth><ChangeEmail /></RequireAuth>} />
-        <Route path="/support" element={<RequireAuth><Support /></RequireAuth>} />
         <Route path="/faq" element={<RequireAuth><Faq /></RequireAuth>} />
         <Route path="/faq/:faqId" element={<RequireAuth><FaqDetail /></RequireAuth>} />
+        <Route path="/more/notices" element={<RequireAuth><NoticeList /></RequireAuth>} />
+        <Route path="/more/notices/:noticeId" element={<RequireAuth><NoticeDetail /></RequireAuth>} />
         <Route path="/friend/invite/:token" element={<RequireAuth><InviteLanding /></RequireAuth>} />
 
         <Route path="*" element={<Navigate to="/home" replace />} />

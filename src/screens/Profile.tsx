@@ -19,7 +19,7 @@ const MENU: { label: string; to: string }[] = [
   { label: "언어 설정", to: "/settings/language" },
   { label: "알림 설정", to: "/settings" },
   { label: "친구 관리", to: "/social" },
-  { label: "공지 사항", to: "/support" },
+  { label: "공지 사항", to: "/more/notices" },
   { label: "FAQ", to: "/faq" },
   { label: "약관 및 정책", to: "/policy" },
 ];

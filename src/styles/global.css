@@ -9687,3 +9687,223 @@ textarea.input {
 }
 /* Keep the floating button clear of the on-screen keyboard while searching. */
 .faq--searching .faq__support { display: none; }
+
+/* ============================ Notices (공지사항) ============================ */
+.ntc {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #ffffff;
+}
+
+/* List header — centered title, back pinned left, subtle bottom boundary. */
+.ntc__header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  padding-top: var(--safe-top);
+  background: #ffffff;
+  border-bottom: 1px solid #f0f1f3;
+}
+.ntc__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #272c30;
+  letter-spacing: -0.01em;
+}
+/* Detail header — just the back button, no centered title (per reference). */
+.ntc__dheader {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  padding: calc(var(--safe-top) + 4px) 6px 0;
+  background: #ffffff;
+}
+.ntc__back {
+  position: absolute;
+  left: 8px;
+  top: calc(var(--safe-top) + 6px);
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: none;
+  color: #272c30;
+  cursor: pointer;
+}
+.ntc__dheader .ntc__back {
+  position: static;
+}
+.ntc__back:active { opacity: 0.55; }
+
+.ntc__scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  /* Column flex so a single-child state (empty) can fill the area and center,
+     while list content still grows and scrolls. Bottom safe-area inset lives
+     here so every state respects it; list-specific clearance is on .ntc__list. */
+  display: flex;
+  flex-direction: column;
+  padding-bottom: var(--safe-bottom);
+}
+.ntc__skeleton { padding: 6px 20px; }
+.ntc__state {
+  padding: 40px 20px;
+}
+
+/* Empty state — quiet, and centered both axes in the content area below the
+   header. `flex: 1` fills the flex column (the scroll's height minus the bottom
+   safe inset), so centring is exact and responsive across phone heights,
+   landscape, tablets, and larger fonts — no fixed margins or absolute
+   coordinates. No icon, card, border, or background. */
+.ntc__empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px clamp(24px, 8vw, 40px);
+}
+.ntc__empty-text {
+  margin: 0;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+/* List rows */
+.ntc__list {
+  list-style: none;
+  margin: 0;
+  /* Bottom breathing room for the last row (above the scroll's safe inset).
+     Scoped to the list so it never offsets the centered empty state. */
+  padding: 0 0 24px;
+}
+.ntc__row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 20px;
+  background: #ffffff;
+  border: none;
+  border-bottom: 1px solid #f0f1f3;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.ntc__row:active { background: #f7f8f9; }
+/* New notice: pale mint/cyan row background (a second cue alongside the badge). */
+.ntc__row--new {
+  background: #eef9f8;
+}
+.ntc__row--new:active { background: #e5f4f3; }
+.ntc__row-titlerow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ntc__row-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: #26292e;
+  line-height: 1.45;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.ntc__badge {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #3fc9c9;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 20px;
+  text-align: center;
+}
+.ntc__row-date {
+  font-size: 12.5px;
+  color: #8a96a3;
+}
+
+/* Pagination footer */
+.ntc__footer {
+  list-style: none;
+  padding: 8px 20px 20px;
+}
+.ntc__footer-retry {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e3d6c6;
+  border-radius: var(--r-md);
+  background: #fff;
+  color: var(--ink-2);
+  font-weight: 700;
+  cursor: pointer;
+}
+.ntc__footer-retry:active { background: #f7f8f9; }
+
+/* Detail */
+.ntc__detail {
+  padding: 18px 22px calc(28px + var(--safe-bottom));
+}
+.ntc__detail-title {
+  margin: 8px 0 0;
+  font-size: 21px;
+  font-weight: 800;
+  color: #24272c;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.ntc__detail-date {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #8a96a3;
+}
+.ntc__detail-divider {
+  height: 1px;
+  background: #ececef;
+  margin: 18px 0 20px;
+}
+
+/* Rich-text body (scoped Markdown styles) */
+.ntc__body {
+  color: #33373d;
+  font-size: 15px;
+  line-height: 1.72;
+  overflow-wrap: anywhere;
+}
+.ntc__body .md__p { margin: 0 0 15px; }
+.ntc__body .md__p:last-child { margin-bottom: 0; }
+.ntc__body .md__heading {
+  display: inline-block;
+  font-size: 16px;
+  color: #24272c;
+}
+.ntc__body .md__list {
+  margin: 0 0 15px;
+  padding-left: 22px;
+}
+.ntc__body .md__list:last-child { margin-bottom: 0; }
+.ntc__body .md__list li { margin-bottom: 7px; }
+.ntc__body a {
+  color: var(--brand-600);
+  text-decoration: underline;
+  word-break: break-all;
+}
+.ntc__body-skeleton { padding-top: 4px; }

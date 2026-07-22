@@ -16,6 +16,7 @@ import type {
   FriendInvitationResponse,
   ResolvedInvitationResponse,
   Invoice,
+  NoticeSummary,
   PaymentRecovery,
   LeaguePosition,
   LeagueSeason,
@@ -401,6 +402,15 @@ export const supportApi = {
   faqs: (params: { category?: string; q?: string; cursor?: string }) =>
     http.get<{ items: Faq[]; next_cursor: string | null }>("/support/faqs", { limit: 50, ...params }, { auth: false }),
   faq: (faqId: string) => http.get<Faq>(`/support/faqs/${encodeURIComponent(faqId)}`, undefined, { auth: false }),
-  notices: (cursor?: string) =>
-    http.get<{ items: Notice[]; next_cursor: string | null }>("/support/notices", { cursor, limit: 20 }, { auth: false }),
+  // Notices are read while authenticated so the server can personalize the
+  // per-user `is_new` flag (and record reads).
+  notices: (params?: { cursor?: string; lang?: string }) =>
+    http.get<{ items: NoticeSummary[]; next_cursor: string | null }>("/support/notices", {
+      limit: 20,
+      ...params,
+    }),
+  notice: (noticeId: string, lang?: string) =>
+    http.get<Notice>(`/support/notices/${encodeURIComponent(noticeId)}`, { lang }),
+  markNoticeRead: (noticeId: string) =>
+    http.post<void>(`/support/notices/${encodeURIComponent(noticeId)}/read`),
 };

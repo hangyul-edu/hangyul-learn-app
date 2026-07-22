@@ -626,10 +626,19 @@ export interface Faq {
   question: string;
   answer: string;
 }
-export interface Notice {
+/** Notice list-row shape — summary fields only (no body). */
+export interface NoticeSummary {
   notice_id: string;
   title: string;
-  body: string;
+  pinned?: boolean;
   published_at?: string;
-  created_at?: string;
+  /** Server-managed, per-user recency flag — never derived on the client. */
+  is_new?: boolean;
+}
+
+/** Notice detail — the full notice, including the Markdown body. */
+export interface Notice extends NoticeSummary {
+  body: string;
+  /** Body authoring format; the client renders it with a safe Markdown renderer. */
+  content_format?: "markdown";
 }

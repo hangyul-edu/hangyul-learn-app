@@ -15,6 +15,40 @@ export function timeAgo(iso?: string | null): string {
   return new Date(iso).toLocaleDateString("ko-KR", { month: "long", day: "numeric" });
 }
 
+// The product's configured display timezone. Notice dates are formatted in
+// KST so they render identically regardless of the device's local timezone
+// (we never slice the raw timestamp string).
+const DISPLAY_TZ = "Asia/Seoul";
+
+function displayDateParts(iso?: string | null): { y: string; m: string; d: string } | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: DISPLAY_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const pick = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  const y = pick("year");
+  const m = pick("month");
+  const d = pick("day");
+  return y && m && d ? { y, m, d } : null;
+}
+
+/** Notice-list date, e.g. `26.06.29` (yy.MM.dd). Invalid/missing → "". */
+export function formatNoticeListDate(iso?: string | null): string {
+  const p = displayDateParts(iso);
+  return p ? `${p.y.slice(2)}.${p.m}.${p.d}` : "";
+}
+
+/** Notice-detail date, e.g. `2026.06.29` (yyyy.MM.dd). Invalid/missing → "". */
+export function formatNoticeDetailDate(iso?: string | null): string {
+  const p = displayDateParts(iso);
+  return p ? `${p.y}.${p.m}.${p.d}` : "";
+}
+
 export function secondsUntil(iso?: string | null): number {
   if (!iso) return 0;
   return Math.max(0, Math.floor((new Date(iso).getTime() - Date.now()) / 1000));

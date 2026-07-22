@@ -194,4 +194,24 @@ describe("NoticeList screen", () => {
     expect(await screen.findByRole("heading", { name: "Notices" })).toBeInTheDocument();
     expect(api.notices).toHaveBeenCalledWith(expect.objectContaining({ lang: "en" }));
   });
+
+  it("renders the server-localized title verbatim (no client-side translation)", async () => {
+    mockMe = { app_language: "en" };
+    api.notices.mockResolvedValue({
+      items: [
+        {
+          notice_id: "n_en",
+          title: "Welcome to Hangyul",
+          locale: "en",
+          published_at: "2026-06-29T00:00:00+09:00",
+          is_new: false,
+        },
+      ],
+      next_cursor: null,
+    });
+    renderScreen();
+    // The exact server-provided (localized) title is shown as-is.
+    expect(await screen.findByText("Welcome to Hangyul")).toBeInTheDocument();
+    expect(api.notices).toHaveBeenCalledWith(expect.objectContaining({ lang: "en" }));
+  });
 });

@@ -626,17 +626,20 @@ export interface Faq {
   question: string;
   answer: string;
 }
-/** Notice list-row shape — summary fields only (no body). */
+/** Notice list-row shape — summary fields only (no body). Title is already
+ * localized server-side to the requested language (with fallback). */
 export interface NoticeSummary {
   notice_id: string;
   title: string;
+  /** Locale actually served (may differ from the requested one via fallback). */
+  locale: string;
   pinned?: boolean;
   published_at?: string;
   /** Server-managed, per-user recency flag — never derived on the client. */
   is_new?: boolean;
 }
 
-/** Notice detail — the full notice, including the Markdown body. */
+/** Notice detail — the full notice, including the localized Markdown body. */
 export interface Notice extends NoticeSummary {
   body: string;
   /** Body authoring format; the client renders it with a safe Markdown renderer. */

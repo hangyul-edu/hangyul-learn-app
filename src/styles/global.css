@@ -1770,11 +1770,13 @@ textarea.input {
   height: 100%;
 }
 
-/* Back chevron (edit mode) — no container, sits above the title */
+/* Back chevron (edit mode) — no container, sits above the title. Give it the
+   same top spacing as the shared account header (.acct__header) so it doesn't
+   sit glued to the safe-area top and read as "too high". */
 .setupp__back {
   width: 44px;
   height: 44px;
-  margin: 0 0 0 -8px;
+  margin: clamp(10px, 3vh, 26px) 0 0 -8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;

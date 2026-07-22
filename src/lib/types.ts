@@ -619,6 +619,18 @@ export interface StatsResp {
   total_questions: number;
 }
 
+/* ---- Attendance ---- */
+/** Response of POST /attendance/check-in. `checked_in_today === true` means the
+ * call was a no-op (already checked in earlier today); `false` means it recorded
+ * a fresh check-in and awarded `points_awarded` points. */
+export interface AttendanceCheckIn {
+  checked_in_today: boolean;
+  consecutive_days: number;
+  last_checkin_date: string;
+  points_awarded: number;
+  streak_bonus_awarded: boolean;
+}
+
 /* ---- Support ---- */
 export interface Faq {
   faq_id: string;

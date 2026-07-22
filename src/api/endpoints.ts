@@ -1,6 +1,7 @@
 import { http } from "../lib/http";
 import type {
   AppSettings,
+  AttendanceCheckIn,
   Banner,
   Course,
   DashboardSummary,
@@ -326,7 +327,7 @@ export const gameApi = {
   joinCurrentLeague: () => http.post<LeagueLifecycleResponse>("/leagues/current/join"),
   seasons: () => http.get<{ current?: { season_id: string }; items?: { season_id: string }[] }>("/leagues/seasons"),
   attendanceStatus: () => http.get<{ checked_in_today?: boolean; consecutive_days?: number }>("/attendance/me"),
-  checkIn: () => http.post<{ points_awarded?: number; consecutive_days?: number }>("/attendance/check-in"),
+  checkIn: () => http.post<AttendanceCheckIn>("/attendance/check-in"),
 };
 
 /* ------------------------------ Friends ----------------------------- */

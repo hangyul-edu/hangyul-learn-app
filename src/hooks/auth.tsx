@@ -2,7 +2,6 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import type { ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { http, setAuthHandlers, ApiError, NetworkError } from "../lib/http";
-import { gameApi } from "../api/endpoints";
 import { clearSession, loadSession, saveSession } from "../lib/storage";
 import type { StoredSession } from "../lib/storage";
 import type { Me, TokenResponse } from "../lib/types";
@@ -135,43 +134,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Daily attendance check-in: opening the app while signed in marks the user
-  // present and awards attendance points. Fire once per signed-in session
-  // (cold-start auto-login OR a fresh login). The server records attendance and
-  // awards points idempotently per local day, so calling on every app open is
-  // safe — a repeat call the same day is a no-op. Fire-and-forget: a failure
-  // must never disrupt app usage (it retries on the next open). On a fresh
-  // award, refresh the points/streak/league/notification views so the new
-  // points show immediately.
-  const checkedInRef = useRef(false);
-  useEffect(() => {
-    if (status !== "signed-in") {
-      checkedInRef.current = false; // let the next sign-in check in again
-      return;
-    }
-    if (checkedInRef.current) return;
-    checkedInRef.current = true;
-    (async () => {
-      try {
-        const res = await gameApi.checkIn();
-        if (res?.points_awarded && res.points_awarded > 0) {
-          for (const key of [
-            ["dashboard"],
-            ["streak"],
-            ["points"],
-            ["league-me"],
-            ["league-season"],
-            ["league-rankings"],
-            ["notif-unread"],
-          ]) {
-            qc.invalidateQueries({ queryKey: key });
-          }
-        }
-      } catch {
-        /* non-critical — attendance retries on the next app open */
-      }
-    })();
-  }, [status, qc]);
+  // Daily attendance check-in + completion modal live in <AttendanceGate>,
+  // mounted at the app root — it reads this provider's signed-in status.
 
   const value = useMemo<AuthCtx>(
     () => ({ status, me, applyTokens, bootstrapMe, setMe, revokeSession, logout, hardSignOut }),

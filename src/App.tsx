@@ -42,6 +42,7 @@ import { Faq } from "./screens/Faq";
 import { FaqDetail } from "./screens/FaqDetail";
 import { NoticeList } from "./screens/NoticeList";
 import { NoticeDetail } from "./screens/NoticeDetail";
+import { AttendanceGate } from "./components/AttendanceGate";
 import { CourseDetail } from "./screens/Courses";
 import { LectureHome } from "./screens/LectureHome";
 import { Lecture } from "./screens/Lecture";
@@ -181,5 +182,13 @@ const router = createBrowserRouter(
 );
 
 export function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <>
+      <RouterProvider router={router} />
+      {/* App-root daily attendance: fires the check-in once per signed-in
+          session and shows the completion modal for a fresh, points-awarding
+          check-in (overlays whatever screen is active). */}
+      <AttendanceGate />
+    </>
+  );
 }

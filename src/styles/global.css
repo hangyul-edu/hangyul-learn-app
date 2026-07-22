@@ -9909,3 +9909,147 @@ textarea.input {
   word-break: break-all;
 }
 .ntc__body-skeleton { padding-top: 4px; }
+
+/* ============================ Attendance completion modal ============================ */
+.attn__overlay {
+  /* Dark translucent dim; page behind stays visible but de-emphasized. */
+  background: rgba(28, 22, 16, 0.5);
+  z-index: 200;
+  animation: fade 0.2s ease-out;
+}
+.attn {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  margin: 0 16px; /* safe horizontal margins on small screens */
+  background: #fff6ea; /* warm ivory / cream */
+  border-radius: 28px;
+  padding: clamp(28px, 7vw, 36px) clamp(22px, 6vw, 28px) clamp(22px, 6vw, 26px);
+  box-shadow: 0 18px 44px rgba(60, 40, 20, 0.22);
+  overflow: hidden;
+  text-align: center;
+  animation: attn-rise 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.05);
+}
+@keyframes attn-rise {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+/* Decorative circles/dots — visual only, never interactive. */
+.attn__deco {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.attn__deco--peach-lg {
+  width: 110px;
+  height: 110px;
+  top: -34px;
+  left: -30px;
+  background: rgba(255, 178, 120, 0.35);
+}
+.attn__deco--peach-sm {
+  width: 46px;
+  height: 46px;
+  top: 84px;
+  right: -14px;
+  background: rgba(255, 178, 120, 0.4);
+}
+.attn__deco--dot {
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  opacity: 0.9;
+}
+.attn__deco--dot-a { top: 22px; right: 40px; }
+.attn__deco--dot-b { top: 130px; left: 26px; width: 7px; height: 7px; }
+
+/* Close (X) — top-right, thin orange icon, 44x44 touch target. */
+.attn__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--brand-500);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  z-index: 1;
+}
+.attn__close:active { opacity: 0.6; }
+.attn__close:focus-visible { outline: 2px solid var(--brand-400); outline-offset: 2px; border-radius: 50%; }
+
+/* Illustration inside a dashed orange ring, with the points badge. */
+.attn__art {
+  position: relative;
+  width: fit-content;
+  margin: clamp(6px, 2vw, 12px) auto 0;
+}
+.attn__ring {
+  width: clamp(112px, 30vw, 128px);
+  height: clamp(112px, 30vw, 128px);
+  border-radius: 50%;
+  border: 2.5px dashed var(--brand-400);
+  display: grid;
+  place-items: center;
+  background: #fffdf9;
+}
+.attn__badge {
+  position: absolute;
+  top: -6px;
+  right: -14px;
+  background: var(--brand-500);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  padding: 5px 11px;
+  border-radius: var(--r-full);
+  box-shadow: 0 6px 14px rgba(249, 115, 22, 0.34);
+}
+
+.attn__title {
+  margin: clamp(18px, 4.5vw, 24px) 0 0;
+  color: var(--brand-600);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(20px, 5.6vw, 24px);
+}
+.attn__streak {
+  margin: 10px 0 0;
+  color: #8a6d4b; /* muted brown / dark beige */
+  font-size: clamp(14px, 4vw, 15.5px);
+  font-weight: 600;
+}
+
+.attn__confirm {
+  width: 100%;
+  height: 54px;
+  margin-top: clamp(22px, 5.5vw, 28px);
+  border: none;
+  border-radius: 16px;
+  background: var(--brand-500);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(249, 115, 22, 0.28);
+  transition: transform 0.08s ease, background 0.15s;
+}
+.attn__confirm:active { transform: scale(0.99); background: var(--brand-600); }
+.attn__confirm:focus-visible { outline: 3px solid var(--brand-200); outline-offset: 2px; }
+
+/* Respect reduced-motion: drop the scale/entrance animation. */
+@media (prefers-reduced-motion: reduce) {
+  .attn { animation: fade 0.15s ease-out; }
+  .attn__overlay { animation: none; }
+  .attn__confirm { transition: background 0.15s; }
+}

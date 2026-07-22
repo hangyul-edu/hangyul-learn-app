@@ -7,7 +7,6 @@ import { http } from "../lib/http";
 import { useAuth } from "../hooks/auth";
 import {
   BellIcon,
-  SunIcon,
   SpeakingIcon,
   PencilIcon,
   GearIcon,
@@ -15,6 +14,7 @@ import {
   BookIcon,
   ChevronRight,
 } from "../components/brand/HomeIcons";
+import { DailyLearningSun } from "../components/DailyLearningSun";
 import type { DashboardSummary, DashboardTrack } from "../lib/types";
 
 /** Icon for a learning track's tab, chosen from its stable category. */
@@ -123,7 +123,7 @@ export function Home() {
               <>
                 {/* Streak */}
                 <button className="home__streak" onClick={() => nav("/streak")}>
-                  <SunIcon size={50} />
+                  <DailyLearningSun size={50} />
                   <span className="home__streak-text">연속 학습 {d.streak_days}일째</span>
                   <ChevronRight size={22} />
                 </button>

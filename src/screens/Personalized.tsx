@@ -4,7 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Async, SkeletonList } from "../components/ui/states";
 import { dashboardApi } from "../api/endpoints";
 import { CharacterArt } from "../components/brand/ProfileAssets";
-import { SunIcon, SpeakingIcon, PencilIcon, GearIcon, BookIcon, ChevronRight } from "../components/brand/HomeIcons";
+import { SpeakingIcon, PencilIcon, GearIcon, BookIcon, ChevronRight } from "../components/brand/HomeIcons";
+import { DailyLearningSun } from "../components/DailyLearningSun";
 import { ChatbotBottomSheet } from "../components/ChatbotBottomSheet";
 import type { DashboardSummary, DashboardTrack } from "../lib/types";
 
@@ -89,7 +90,7 @@ export function Personalized() {
                 <header className="plearn__header">
                   <h1 className="plearn__title">맞춤 학습</h1>
                   <button className="plearn__streak" onClick={() => nav("/streak")} aria-label={`연속 학습 ${d.streak_days}일, 달력 열기`}>
-                    <SunIcon size={22} />
+                    <DailyLearningSun size={22} />
                     <span>{d.streak_days}</span>
                   </button>
                 </header>

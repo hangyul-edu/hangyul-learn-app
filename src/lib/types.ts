@@ -84,6 +84,15 @@ export interface DashboardSummary {
   today_minutes: number;
   tracks: DashboardTrack[];
   paywall_required: boolean;
+  /** Whether the user has done any qualifying learning today (drives the sun). */
+  studied_today: boolean;
+}
+
+/** Response from POST /learning/activity — recording a qualifying view. */
+export interface DailyLearningActivity {
+  studied_today: boolean;
+  learning_day_created: boolean;
+  total_learning_days: number;
 }
 
 /* ---- Sentences ---- */

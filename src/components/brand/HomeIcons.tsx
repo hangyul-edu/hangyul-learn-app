@@ -18,7 +18,16 @@ export function BellIcon({ size = 30 }: { size?: number }) {
   );
 }
 
-export function SunIcon({ size = 82 }: { size?: number }) {
+/**
+ * The daily-learning sun. `lit` is the only difference between states: ON is
+ * the warm peach/orange/yellow palette, OFF is a flat neutral gray. Both states
+ * render the identical geometry at the identical size — no layout shift when it
+ * toggles. Defaults to lit so existing decorative uses are unaffected.
+ */
+export function SunIcon({ size = 82, lit = true }: { size?: number; lit?: boolean }) {
+  const rayStroke = lit ? "#FFC97A" : "#D8DDE1";
+  const faceFill = lit ? "#FFC13B" : "#CDD3D8";
+  const featureStroke = lit ? "#7A4A12" : "#8A929A";
   const rays = [];
   for (let i = 0; i < 8; i++) {
     const a = (i * Math.PI) / 4;
@@ -29,7 +38,7 @@ export function SunIcon({ size = 82 }: { size?: number }) {
         y1={50 + Math.sin(a) * 30}
         x2={50 + Math.cos(a) * 42}
         y2={50 + Math.sin(a) * 42}
-        stroke="#FFC97A"
+        stroke={rayStroke}
         strokeWidth="6"
         strokeLinecap="round"
       />,
@@ -38,11 +47,11 @@ export function SunIcon({ size = 82 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" aria-hidden="true" focusable="false">
       {rays}
-      <circle cx="50" cy="50" r="26" fill="#FFC13B" />
-      <circle cx="50" cy="50" r="26" fill="url(#sunSheen)" />
-      <circle cx="43" cy="47" r="2.6" fill="#7A4A12" />
-      <circle cx="57" cy="47" r="2.6" fill="#7A4A12" />
-      <path d="M43 56c2.5 3 9 3 12 0" stroke="#7A4A12" strokeWidth="2.6" strokeLinecap="round" fill="none" />
+      <circle cx="50" cy="50" r="26" fill={faceFill} />
+      {lit && <circle cx="50" cy="50" r="26" fill="url(#sunSheen)" />}
+      <circle cx="43" cy="47" r="2.6" fill={featureStroke} />
+      <circle cx="57" cy="47" r="2.6" fill={featureStroke} />
+      <path d="M43 56c2.5 3 9 3 12 0" stroke={featureStroke} strokeWidth="2.6" strokeLinecap="round" fill="none" />
       <defs>
         <radialGradient id="sunSheen" cx="0.38" cy="0.34" r="0.7">
           <stop offset="0" stopColor="#FFE39A" stopOpacity="0.9" />

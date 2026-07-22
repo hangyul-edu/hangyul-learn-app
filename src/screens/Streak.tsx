@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { learnApi } from "../api/endpoints";
-import { SunIcon } from "../components/brand/HomeIcons";
+import { DailyLearningSun } from "../components/DailyLearningSun";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -82,8 +82,8 @@ export function Streak() {
               <br />
               꾸준히 {streak ?? "…"}일!
             </p>
-            <span className="strk__banner-sun" aria-hidden="true">
-              <SunIcon size={56} />
+            <span className="strk__banner-sun">
+              <DailyLearningSun size={56} />
             </span>
           </div>
 

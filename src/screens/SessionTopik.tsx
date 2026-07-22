@@ -8,6 +8,7 @@ import { SavePlusIcon } from "../components/brand/HomeIcons";
 import { LoadingState, ErrorState } from "../components/ui/states";
 import { recApi, quizApi, dashboardApi, learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
+import { useMarkStudied } from "../hooks/learningActivity";
 import { errorMessage } from "../lib/http";
 import type { Quiz, QuizAttemptResult } from "../lib/types";
 
@@ -81,6 +82,13 @@ export function SessionTopik() {
   const total = items?.length ?? 0;
   const cur = items?.[idx];
   const progress = total ? answered.size / total : 0;
+
+  // A TOPIK question has actually become the active on-screen item → count
+  // today as a learning day and light the sun (idempotent, fires once).
+  const markStudied = useMarkStudied();
+  useEffect(() => {
+    if (cur) markStudied("topik", cur.quiz_id);
+  }, [cur, markStudied]);
 
   async function submit() {
     if (!cur || submitting || result || !isAnswered(cur, value)) return;

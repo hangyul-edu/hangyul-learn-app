@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { SunIcon } from "../components/brand/HomeIcons";
+import { DailyLearningSun } from "../components/DailyLearningSun";
 import { CharacterArt } from "../components/brand/ProfileAssets";
 import { SkeletonList } from "../components/ui/states";
 import { ChatbotBottomSheet } from "../components/ChatbotBottomSheet";
@@ -292,7 +292,7 @@ export function LectureHome() {
             onClick={() => nav("/streak")}
             aria-label={streak != null ? `연속 학습 ${streak}일, 달력 열기` : "연속 학습, 달력 열기"}
           >
-            <SunIcon size={22} />
+            <DailyLearningSun size={22} />
             <span>{streak ?? "-"}</span>
           </button>
         </header>

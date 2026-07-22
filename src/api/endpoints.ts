@@ -4,6 +4,7 @@ import type {
   AttendanceCheckIn,
   Banner,
   Course,
+  DailyLearningActivity,
   DashboardSummary,
   ExamResult,
   ExamSet,
@@ -212,6 +213,14 @@ export const learnApi = {
     http.post<{ position_seconds: number; max_watched_seconds: number; completed: boolean }>(`/lectures/${lectureId}/progress`, { position_seconds }),
   streakCalendar: (year?: number, month?: number) => http.get<StreakCalendarResp>("/learning/streak-calendar", { year, month }),
   stats: (range: string) => http.get<StatsResp>("/learning/stats", { range }),
+  /**
+   * Record a qualifying learning view (a conversation sentence or TOPIK question
+   * became the active on-screen item) so today counts as a learning day and the
+   * sun lights up. Idempotent per local day — safe to fire on every view.
+   * (Lecture playback lights the sun via `progress` instead.)
+   */
+  recordActivity: (activity_type: "conversation" | "topik" | "lecture", content_id?: string) =>
+    http.post<DailyLearningActivity>("/learning/activity", { activity_type, content_id: content_id ?? null }),
 };
 export const recApi = {
   sentences: (body: { level?: number; prompt?: string; count?: number } = {}) =>

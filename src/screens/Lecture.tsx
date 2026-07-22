@@ -6,6 +6,7 @@ import { Button, ProgressBar } from "../components/ui/kit";
 import { Async } from "../components/ui/states";
 import { learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
+import { useMarkStudied } from "../hooks/learningActivity";
 import { ApiError, errorMessage } from "../lib/http";
 import type { Lecture as Lec } from "../lib/types";
 
@@ -22,6 +23,8 @@ export function Lecture() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [premiumLocked, setPremiumLocked] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const markStudied = useMarkStudied();
 
   const q = useQuery({ queryKey: ["lecture", lectureId], queryFn: () => learnApi.lecture(lectureId) });
 
@@ -66,7 +69,17 @@ export function Lecture() {
             {/* player / poster */}
             <div style={{ position: "relative", borderRadius: 18, overflow: "hidden", background: "#1f1712", aspectRatio: "16/9", display: "grid", placeItems: "center" }}>
               {videoUrl ? (
-                <video src={videoUrl} controls poster={l.thumbnail_url ?? undefined} style={{ width: "100%", height: "100%" }} />
+                <video
+                  src={videoUrl}
+                  controls
+                  poster={l.thumbnail_url ?? undefined}
+                  style={{ width: "100%", height: "100%" }}
+                  // Playback genuinely started (position > 0) → count today's
+                  // learning day and light the sun. Idempotent; fires once.
+                  onTimeUpdate={(e) => {
+                    if (e.currentTarget.currentTime > 0) markStudied("lecture", lectureId);
+                  }}
+                />
               ) : premiumLocked ? (
                 <div className="center" style={{ color: "#fff", padding: 20 }}>
                   <div style={{ fontSize: 34 }}>👑</div>

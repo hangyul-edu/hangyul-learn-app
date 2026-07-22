@@ -14,11 +14,12 @@ vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: v
 let mockMe: { app_language: string } = { app_language: "ko" };
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: mockMe }) }));
 
-const { recSentences, blankAttempt, blankHint, summary } = vi.hoisted(() => ({
+const { recSentences, blankAttempt, blankHint, summary, recordActivity } = vi.hoisted(() => ({
   recSentences: vi.fn(),
   blankAttempt: vi.fn(),
   blankHint: vi.fn(),
   summary: vi.fn(),
+  recordActivity: vi.fn(),
 }));
 vi.mock("../api/endpoints", () => ({
   recApi: { sentences: recSentences },
@@ -30,7 +31,7 @@ vi.mock("../api/endpoints", () => ({
     unbookmark: vi.fn(),
   },
   dashboardApi: { summary },
-  learnApi: { recordSession: vi.fn() },
+  learnApi: { recordSession: vi.fn(), recordActivity },
 }));
 
 import { SessionConversation } from "./SessionConversation";
@@ -65,6 +66,7 @@ beforeEach(() => {
     tracks: [{ category: "conversation", level: 3, goal: { target: 3, current: 0, achieved: false } }],
   });
   recSentences.mockResolvedValue({ items: [SENTENCE] });
+  recordActivity.mockResolvedValue({ studied_today: true, learning_day_created: true, total_learning_days: 1 });
 });
 afterEach(() => vi.restoreAllMocks());
 

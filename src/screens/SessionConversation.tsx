@@ -7,7 +7,6 @@ import { SavePlusIcon } from "../components/brand/HomeIcons";
 import { LoadingState, ErrorState } from "../components/ui/states";
 import { recApi, sentenceApi, dashboardApi, learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
-import { useMarkStudied } from "../hooks/learningActivity";
 import { errorMessage } from "../lib/http";
 import type { BlankAttempt, Sentence, SpeechAttempt } from "../lib/types";
 
@@ -209,13 +208,10 @@ export function SessionConversation() {
   const total = items?.length ?? 0;
   const cur = items?.[idx];
   const progress = total ? answered.size / total : 0;
-
-  // A conversation sentence has actually become the active on-screen item →
-  // count today as a learning day and light the sun (idempotent, fires once).
-  const markStudied = useMarkStudied();
-  useEffect(() => {
-    if (cur) markStudied("conversation", cur.sentence_id);
-  }, [cur, markStudied]);
+  // Note: opening/viewing a sentence does NOT count as learning. Today is only
+  // credited as a learning day once the user answers a sentence correctly —
+  // that happens server-side on the correct attempt, and the sun refreshes when
+  // the dashboard query is invalidated on session exit.
 
   async function toggleSave(s: Sentence) {
     const on = saved[s.sentence_id];

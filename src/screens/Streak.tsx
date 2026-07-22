@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { learnApi } from "../api/endpoints";
+import { dashboardApi, learnApi } from "../api/endpoints";
 import { DailyLearningSun } from "../components/DailyLearningSun";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -49,6 +49,13 @@ export function Streak() {
   const grid = useMemo(() => buildGrid(view.y, view.m), [view]);
   const streak = q.data?.current_streak;
 
+  // The banner's active/inactive state is driven by the SAME shared
+  // ["dashboard"] query (and the same `studied_today` field) as the global sun,
+  // so the copy and the sun can never disagree. While it's first loading we
+  // treat the state as not-yet-studied, matching the sun's dimmed off state.
+  const summary = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
+  const studiedToday = !!summary.data?.studied_today;
+
   // History view: don't browse into future months.
   const atCurrentMonth = view.y === now.getFullYear() && view.m === now.getMonth() + 1;
   const step = (delta: number) =>
@@ -75,12 +82,22 @@ export function Streak() {
             </div>
           </header>
 
-          {/* Streak summary banner */}
-          <div className="strk__banner">
+          {/* Streak summary banner — copy + sun both key off today's study state. */}
+          <div className={`strk__banner${studiedToday ? "" : " strk__banner--inactive"}`}>
             <p className="strk__banner-text">
-              연속 학습으로 태양이 빛나는 중
-              <br />
-              꾸준히 {streak ?? "…"}일!
+              {studiedToday ? (
+                <>
+                  연속 학습으로 태양이 빛나는 중
+                  <br />
+                  꾸준히 {streak ?? "…"}일!
+                </>
+              ) : (
+                <>
+                  연속 학습이 멈췄어요
+                  <br />
+                  학습하면 태양이 다시 빛날 거예요!
+                </>
+              )}
             </p>
             <span className="strk__banner-sun">
               <DailyLearningSun size={56} />

@@ -3291,6 +3291,11 @@ textarea.input {
   font-size: clamp(15px, 4.4vw, 18px);
   line-height: 1.5;
 }
+/* Not studied today: same rounded card + layout, muted "stopped" blue-gray. */
+.strk__banner--inactive {
+  background: #8a97b8;
+  box-shadow: 0 8px 20px rgba(120, 130, 155, 0.22);
+}
 .strk__banner-sun {
   flex-shrink: 0;
   display: grid;

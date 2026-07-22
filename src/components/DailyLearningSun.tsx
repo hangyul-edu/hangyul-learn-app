@@ -30,7 +30,14 @@ export function DailyLearningSun({ size }: { size?: number }) {
     <span
       role="img"
       aria-label={isPending ? SUN_COPY.loading : studied ? SUN_COPY.lit : SUN_COPY.unlit}
-      style={isPending ? { opacity: 0.5, transition: "opacity 150ms ease" } : { transition: "opacity 150ms ease" }}
+      style={{
+        // inline-flex so the SVG centers on the flex cross-axis instead of
+        // sitting on the text baseline (which nudged the sun above the number).
+        display: "inline-flex",
+        alignItems: "center",
+        transition: "opacity 150ms ease",
+        opacity: isPending ? 0.5 : 1,
+      }}
     >
       <SunIcon size={size} lit={studied} />
     </span>

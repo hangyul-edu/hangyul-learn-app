@@ -35,26 +35,40 @@ export function Streak() {
     placeholderData: keepPreviousData,
   });
 
-  // Completion markers come straight from the server: the set of dates the
-  // server flagged `goal_achieved`. We never recompute completion on the client
-  // — we only key off the server-provided `date` (normalized to its YYYY-MM-DD
-  // portion so it matches regardless of any time suffix). Overlaid only when the
-  // loaded month matches the viewed month, so a stale response can't mismark.
-  const completed = useMemo(() => {
-    const m = q.data?.month;
-    if (!m || m.year !== view.y || m.month !== view.m) return new Set<string>();
-    return new Set(m.days.filter((d) => d.goal_achieved).map((d) => d.date.slice(0, 10)));
-  }, [q.data, view]);
-
   const grid = useMemo(() => buildGrid(view.y, view.m), [view]);
   const streak = q.data?.current_streak;
 
-  // The banner's active/inactive state is driven by the SAME shared
-  // ["dashboard"] query (and the same `studied_today` field) as the global sun,
-  // so the copy and the sun can never disagree. While it's first loading we
-  // treat the state as not-yet-studied, matching the sun's dimmed off state.
+  // The banner's active/inactive state — and today's calendar marker — are
+  // driven by the SAME shared ["dashboard"] query (and the same `studied_today`
+  // field) as the global sun, so they can never disagree. While it's first
+  // loading we treat the state as not-yet-studied, matching the sun's dimmed
+  // off state.
   const summary = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
   const studiedToday = !!summary.data?.studied_today;
+
+  // Completion markers come straight from the server: the set of dates that
+  // qualify as a LEARNING DAY (`studied` — any qualifying activity, all flows),
+  // the same rule behind the learning-day count / streak — NOT `goal_achieved`
+  // (which requires reaching the daily custom-learning goal). We only key off
+  // the server-provided `date` (normalized to YYYY-MM-DD so it matches any time
+  // suffix), and only when the loaded month matches the viewed month so a stale
+  // response can't mismark. Today is additionally union-ed in from the sun's
+  // `studied_today` so a view-only day (which advances the streak/sun before any
+  // counted attempt) is marked consistently with the rest of the app.
+  const completed = useMemo(() => {
+    const dates = new Set<string>();
+    const m = q.data?.month;
+    if (m && m.year === view.y && m.month === view.m) {
+      for (const d of m.days) if (d.studied) dates.add(d.date.slice(0, 10));
+    }
+    if (studiedToday) {
+      const now = new Date();
+      if (now.getFullYear() === view.y && now.getMonth() + 1 === view.m) {
+        dates.add(`${view.y}-${pad(view.m)}-${pad(now.getDate())}`);
+      }
+    }
+    return dates;
+  }, [q.data, view, studiedToday]);
 
   // History view: don't browse into future months.
   const atCurrentMonth = view.y === now.getFullYear() && view.m === now.getMonth() + 1;

@@ -6604,6 +6604,11 @@ textarea.input {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  /* Column layout so the white results panel can grow to fill the remaining
+     height — its background then reaches the bottom of the screen instead of
+     stopping mid-way over the cream area. */
+  display: flex;
+  flex-direction: column;
 }
 .rev__header {
   position: relative;
@@ -6772,7 +6777,18 @@ textarea.input {
   right: 16px;
   top: 50%;
   transform: translateY(-50%);
+  /* Flex-box the wrapper so it collapses to the 20px SVG (no inline-baseline
+     whitespace), keeping the icon truly centered vertically in the field. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
   pointer-events: none;
+  color: #aeb7be;
+  transition: color 0.15s;
+}
+/* Active state: a query is entered → tint the magnifying glass the app orange. */
+.rev__search.is-filled .rev__search-icon {
+  color: #ff5b00;
 }
 .rev__skills {
   display: flex;
@@ -6796,8 +6812,10 @@ textarea.input {
   border-color: #ff5b00;
   color: #ff5b00;
 }
-/* Results panel */
+/* Results panel — grows to fill the remaining height so its white background
+   extends to the bottom of the screen (min-height stays as a floor). */
 .rev__panel {
+  flex: 1;
   background: #fff;
   border-radius: 22px 22px 0 0;
   min-height: 50vh;

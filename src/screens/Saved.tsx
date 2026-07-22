@@ -104,8 +104,8 @@ const BookmarkFilled = () => (
 );
 const SearchIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <circle cx="11" cy="11" r="6.5" stroke="#aeb7be" strokeWidth="1.8" />
-    <path d="M16 16l4 4" stroke="#aeb7be" strokeWidth="1.8" strokeLinecap="round" />
+    <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.8" />
+    <path d="M16 16l4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
   </svg>
 );
 const RepeatIcon = ({ color }: { color: string }) => (

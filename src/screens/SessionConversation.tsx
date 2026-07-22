@@ -8,7 +8,108 @@ import { LoadingState, ErrorState } from "../components/ui/states";
 import { recApi, sentenceApi, dashboardApi, learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
-import type { Sentence, SpeechAttempt } from "../lib/types";
+import type { BlankAttempt, Sentence, SpeechAttempt } from "../lib/types";
+
+/** A conversation item is a fill-in-the-blank when it ships a `display_text`
+ * with a blank and structured blank metadata. */
+function hasBlank(s: Sentence): boolean {
+  return !!s.display_text && s.display_text.includes("___") && (s.blanks?.length ?? 0) > 0;
+}
+
+/** Map the fill-in-the-blank result onto the existing SpeechAttempt feedback
+ * shape so the correct/incorrect/progress UI is reused unchanged. */
+function blankToSpeech(b: BlankAttempt): SpeechAttempt {
+  return {
+    attempt_id: b.attempt_id,
+    correct: b.is_correct,
+    transcription: b.transcription ?? b.normalized_answer,
+    target_text: b.completed_sentence,
+    pronunciation_score: b.is_correct ? 100 : 0,
+    feedback_code: b.is_correct ? "correct" : "missed_words",
+    points_earned: b.points_earned,
+    daily_progress: b.daily_progress ?? null,
+  };
+}
+
+function newRequestId(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `req-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+}
+
+/** Renders `display_text` as one inline sentence: prefix text, the mint blank
+ * (a revealed-hint chip in voice mode, or an inline text input in keyboard
+ * mode), then suffix text. Falls back to the full sentence when there is no
+ * blank. Never renders the answer. */
+function FillSentence({
+  sentence,
+  keyboard,
+  typed,
+  onTyped,
+  revealed,
+  onSubmit,
+  submitting,
+  composingRef,
+}: {
+  sentence: Sentence;
+  keyboard: boolean;
+  typed: string;
+  onTyped: (v: string) => void;
+  revealed: string;
+  onSubmit: () => void;
+  submitting: boolean;
+  composingRef: React.MutableRefObject<boolean>;
+}) {
+  if (!hasBlank(sentence)) {
+    return <div className="sess__sentence">{sentence.korean}</div>;
+  }
+  const parts = (sentence.display_text ?? "").split("___");
+  const widthEm = sentence.blanks?.[0]?.display_width_em ?? 6;
+  return (
+    <div className="sess__sentence sess__sentence--fill">
+      {parts.map((part, i) => (
+        <span key={i}>
+          {part}
+          {i < parts.length - 1 &&
+            (keyboard ? (
+              <span className="sess__blank sess__blank--edit">
+                {revealed && <span className="sess__blank-rev" aria-hidden="true">{revealed}</span>}
+                <input
+                  className="sess__blank-input"
+                  style={{ width: `${widthEm}em` }}
+                  value={typed}
+                  onChange={(e) => onTyped(e.target.value)}
+                  onCompositionStart={() => (composingRef.current = true)}
+                  onCompositionEnd={() => (composingRef.current = false)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !composingRef.current) {
+                      e.preventDefault();
+                      onSubmit();
+                    }
+                  }}
+                  disabled={submitting}
+                  autoFocus
+                  lang="ko"
+                  enterKeyHint="done"
+                  aria-label="빈칸에 들어갈 말"
+                />
+              </span>
+            ) : (
+              <span
+                className="sess__blank"
+                style={{ minWidth: `${widthEm}em` }}
+                aria-label={revealed ? `힌트: ${revealed}` : "빈칸"}
+              >
+                {revealed || " "}
+              </span>
+            ))}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 /** Blue circular check for the correct-answer feedback card. */
 function CheckIcon() {
@@ -49,6 +150,13 @@ export function SessionConversation() {
   const [hintOpen, setHintOpen] = useState(false);
   const [keyboard, setKeyboard] = useState(false);
   const [typed, setTyped] = useState("");
+  // Per-sentence server-revealed hint prefix (persists across mode switches /
+  // rerenders for the current item).
+  const [revealed, setRevealed] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [hintBusy, setHintBusy] = useState(false);
+  const composingRef = useRef(false); // true while a Korean IME composition is active
+  const reqIdRef = useRef<string | null>(null); // idempotency key for the current item's attempt
   const [recording, setRecording] = useState(false);
   const [scoring, setScoring] = useState(false);
   const [result, setResult] = useState<SpeechAttempt | null>(null);
@@ -74,6 +182,12 @@ export function SessionConversation() {
       setResult(null);
       setTyped("");
       setHintOpen(false);
+      setRevealed({});
+      reqIdRef.current = null;
+      // Seed bookmark state from the server's saved flag on each item.
+      setSaved(
+        Object.fromEntries(res.items.map((s) => [s.sentence_id, !!(s.bookmarked ?? s.is_saved)])),
+      );
     } catch (e) {
       if (items === null) setError(true);
       else toast.error(errorMessage(e));
@@ -115,6 +229,45 @@ export function SessionConversation() {
     if (res.correct) setCorrectSet((c) => new Set(c).add(s.sentence_id));
   }
 
+  // Keyboard-mode submit. Combines any server-revealed hint prefix with the
+  // typed remainder, guards empty/whitespace + duplicate/in-flight + IME
+  // composition, and funnels the result into the shared feedback flow.
+  async function submitTyped(s: Sentence) {
+    if (submitting || composingRef.current || answered.has(s.sentence_id)) return;
+    const answerText = ((revealed[s.sentence_id] ?? "") + typed).trim();
+    if (!answerText) return;
+    setSubmitting(true);
+    reqIdRef.current ??= newRequestId();
+    try {
+      const res = await sentenceApi.blankAttempt(s.sentence_id, {
+        inputMode: "keyboard",
+        answerText,
+        clientRequestId: reqIdRef.current,
+      });
+      record(blankToSpeech(res), s);
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  // Reveal the next leading character of the answer — server-controlled.
+  async function requestHint(s: Sentence) {
+    if (hintBusy || answered.has(s.sentence_id)) return; // single in-flight request
+    setHintBusy(true);
+    try {
+      const current = revealed[s.sentence_id] ?? "";
+      const res = await sentenceApi.blankHint(s.sentence_id, current.length);
+      setRevealed((m) => ({ ...m, [s.sentence_id]: res.revealed_text }));
+      setHintOpen(true);
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setHintBusy(false);
+    }
+  }
+
   async function startRec(s: Sentence) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -127,7 +280,19 @@ export function SessionConversation() {
         setScoring(true);
         try {
           const blob = new Blob(chunks.current, { type: "audio/webm" });
-          record(await sentenceApi.speechAttempt(s.sentence_id, blob, "attempt.webm"), s);
+          if (hasBlank(s)) {
+            // Voice fill-in-the-blank: accepts the missing phrase OR the full
+            // completed sentence — graded server-side.
+            reqIdRef.current ??= newRequestId();
+            const res = await sentenceApi.blankAttempt(s.sentence_id, {
+              inputMode: "voice",
+              audio: blob,
+              clientRequestId: reqIdRef.current,
+            });
+            record(blankToSpeech(res), s);
+          } else {
+            record(await sentenceApi.speechAttempt(s.sentence_id, blob, "attempt.webm"), s);
+          }
         } catch (e) {
           toast.error(errorMessage(e));
         } finally {
@@ -146,6 +311,7 @@ export function SessionConversation() {
     setResult(null);
     setTyped("");
     setHintOpen(false);
+    reqIdRef.current = null; // fresh idempotency key for the next item
     if (idx >= total - 1) {
       finishOrExit();
     } else {
@@ -289,26 +455,41 @@ export function SessionConversation() {
               </button>
             </div>
 
-            <div className="sess__sentence">{cur.korean}</div>
-            <div className="sess__trans">{cur.translation}</div>
+            <FillSentence
+              sentence={cur}
+              keyboard={keyboard && hasBlank(cur)}
+              typed={typed}
+              onTyped={setTyped}
+              revealed={revealed[cur.sentence_id] ?? ""}
+              onSubmit={() => submitTyped(cur)}
+              submitting={submitting}
+              composingRef={composingRef}
+            />
+            {cur.translation && <div className="sess__trans">{cur.translation}</div>}
 
-            {keyboard && (
-              <input
-                className="sess__answer"
-                placeholder="들리는 대로 입력해보세요"
-                value={typed}
-                onChange={(e) => setTyped(e.target.value)}
-                aria-label="답 입력"
-              />
+            {/* Non-blank sentences keep the romanization hint line; blanks reveal
+                the hint inside the blank itself. */}
+            {hintOpen && !hasBlank(cur) && cur.romanization && (
+              <p className="sess__hint">💡 {cur.romanization}</p>
             )}
-            {hintOpen && cur.romanization && <p className="sess__hint">💡 {cur.romanization}</p>}
 
             <div className="sess__card-actions">
-              <button className="sess__chip" onClick={() => setHintOpen((h) => !h)}>
+              <button
+                className="sess__chip"
+                onClick={() => (hasBlank(cur) ? requestHint(cur) : setHintOpen((h) => !h))}
+                disabled={hintBusy || answered.has(cur.sentence_id)}
+                aria-busy={hintBusy}
+              >
                 <span aria-hidden="true">❔</span> 힌트보기
               </button>
-              <button className="sess__chip" onClick={() => setKeyboard((k) => !k)} aria-pressed={keyboard}>
-                <span aria-hidden="true">⌨</span> 키보드 모드
+              <button
+                className="sess__chip"
+                onClick={() => setKeyboard((k) => !k)}
+                aria-pressed={keyboard}
+                disabled={!hasBlank(cur)}
+              >
+                <span aria-hidden="true">{keyboard ? "🎙" : "⌨"}</span>{" "}
+                {keyboard ? "음성 모드" : "키보드 모드"}
               </button>
             </div>
           </div>
@@ -316,12 +497,24 @@ export function SessionConversation() {
           {result ? (
             <div className="sess__result">
               <span className="sess__result-no">
-                조금 더 연습해요 💪 · {result.pronunciation_score}점
+                {hasBlank(cur)
+                  ? "조금 더 연습해요 💪"
+                  : `조금 더 연습해요 💪 · ${result.pronunciation_score}점`}
               </span>
               <button className="sess__next" onClick={next}>
                 {idx >= total - 1 ? "완료" : "다음"}
               </button>
             </div>
+          ) : keyboard && hasBlank(cur) ? (
+            /* Keyboard mode: submit the typed answer (Enter also submits). */
+            <button
+              className="sess__next"
+              onClick={() => submitTyped(cur)}
+              disabled={submitting || !((revealed[cur.sentence_id] ?? "") + typed).trim()}
+              aria-label="답 확인"
+            >
+              {submitting ? <span className="spinner" style={{ width: 22, height: 22 }} /> : "확인"}
+            </button>
           ) : (
             <div className="sess__mic-wrap">
               {recording ? (

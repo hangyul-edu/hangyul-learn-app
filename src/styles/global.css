@@ -10071,3 +10071,42 @@ textarea.input {
   .attn__overlay { animation: none; }
   .attn__confirm { transition: background 0.15s; }
 }
+
+/* ---- Conversation fill-in-the-blank (inline mint blank + keyboard input) ---- */
+.sess__sentence--fill {
+  line-height: 1.95;
+  word-break: keep-all;
+}
+.sess__blank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4em;
+  padding: 2px 12px;
+  margin: 0 4px;
+  border-radius: 12px;
+  background: #dff6f3; /* light mint / aqua, per the reference */
+  color: #17635a;
+  font-weight: 700;
+  vertical-align: middle;
+}
+.sess__blank--edit {
+  padding: 2px 6px;
+  background: #eafaf7;
+  gap: 2px;
+}
+.sess__blank-rev {
+  color: #0f766e;
+  font-weight: 800;
+}
+.sess__blank-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  color: #17635a;
+  text-align: center;
+  min-width: 3em;
+  padding: 4px 2px;
+}

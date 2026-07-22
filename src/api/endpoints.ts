@@ -41,6 +41,8 @@ import type {
   ChatMessage,
   Quiz,
   TopikQuestionType,
+  BlankAttempt,
+  BlankHint,
   QuizAttemptResult,
   RankingResponse,
   RecQuota,
@@ -138,6 +140,22 @@ export const sentenceApi = {
     fd.append("source", source);
     return http.upload<SpeechAttempt>(`/sentences/${id}/speech-attempts`, fd);
   },
+  // Fill-in-the-blank answer — typed (answerText) or voice (audio). The server
+  // grades authoritatively; clientRequestId makes retries idempotent.
+  blankAttempt: (
+    id: string,
+    opts: { inputMode: "voice" | "keyboard"; answerText?: string; audio?: Blob; clientRequestId?: string; source?: string },
+  ) => {
+    const fd = new FormData();
+    fd.append("input_mode", opts.inputMode);
+    if (opts.answerText != null) fd.append("answer_text", opts.answerText);
+    if (opts.audio) fd.append("audio", opts.audio, "attempt.webm");
+    if (opts.clientRequestId) fd.append("client_request_id", opts.clientRequestId);
+    fd.append("source", opts.source ?? "custom");
+    return http.upload<BlankAttempt>(`/sentences/${id}/blank-attempts`, fd);
+  },
+  blankHint: (id: string, revealedCount: number) =>
+    http.post<BlankHint>(`/sentences/${id}/hint`, { revealed_count: revealedCount }),
   coach: () => http.get<{ targets: unknown[]; summary: string; based_on_attempts: number }>(
     "/sentences/pronunciation-coach",
   ),

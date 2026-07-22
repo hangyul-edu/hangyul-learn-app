@@ -87,9 +87,22 @@ export interface DashboardSummary {
 }
 
 /* ---- Sentences ---- */
+/** Answer-free descriptor of a fill-in-the-blank slot (never carries the answer). */
+export interface SentenceBlank {
+  index: number;
+  blank_id: string;
+  start?: number | null;
+  length?: number | null;
+  display_width_em?: number | null;
+  /** Leading answer characters revealed via hints so far (empty until requested). */
+  revealed_text: string;
+}
 export interface Sentence {
   sentence_id: string;
   korean: string;
+  /** Sentence-with-blank to render (contains `___`); when null, show `korean`. */
+  display_text?: string | null;
+  blanks?: SentenceBlank[];
   translation: string;
   translation_language?: string;
   romanization?: string | null;
@@ -98,7 +111,29 @@ export interface Sentence {
   has_audio?: boolean;
   status?: string;
   attempt_count?: number;
+  bookmarked?: boolean;
   is_saved?: boolean;
+}
+/** Result of a fill-in-the-blank answer submission (answer revealed post-attempt). */
+export interface BlankAttempt {
+  attempt_id: string;
+  sentence_id: string;
+  input_mode: "voice" | "keyboard";
+  is_correct: boolean;
+  normalized_answer: string;
+  transcription?: string | null;
+  completed_sentence: string;
+  correct_answer: string;
+  points_earned: number;
+  daily_progress?: SpeechAttempt["daily_progress"];
+  submitted_at: string;
+}
+export interface BlankHint {
+  blank_id: string;
+  revealed_text: string;
+  revealed_count: number;
+  can_request_another_hint: boolean;
+  hint_used: boolean;
 }
 export interface Page<T> {
   items: T[];

@@ -57,6 +57,7 @@ import { SessionTopik } from "./screens/SessionTopik";
 import { PaymentMethods } from "./screens/PaymentMethods";
 import { Billing } from "./screens/Billing";
 import { Streak } from "./screens/Streak";
+import { LearningManagement } from "./screens/LearningManagement";
 import { LevelUp } from "./screens/LevelUp";
 import { Policy, PolicyList } from "./screens/Policy";
 import { FindEmailResult } from "./screens/FindEmailResult";
@@ -160,6 +161,7 @@ const router = createBrowserRouter(
         {/* My Points lives in the League section (top + bottom nav). */}
         <Route path="/points" element={<Navigate to="/league?tab=points" replace />} />
         <Route path="/streak" element={<RequireAuth><Streak /></RequireAuth>} />
+        <Route path="/learning-management" element={<RequireAuth><LearningManagement /></RequireAuth>} />
         <Route path="/notifications" element={<RequireAuth><Notifications /></RequireAuth>} />
         <Route path="/ai" element={<RequireAuth><AiChat /></RequireAuth>} />
         <Route path="/subscription" element={<RequireAuth><Subscription /></RequireAuth>} />

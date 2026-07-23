@@ -655,6 +655,101 @@ textarea.input {
     opacity: 0;
   }
 }
+
+/* ==================== Learning-section switcher ==================== */
+/* Page-title dropdown on the 연속 학습 / 학습 관리 pages. Trigger reuses the
+   page-title typography; the menu is a fixed, top-centered popover so it is not
+   clipped by the .app-frame's overflow:hidden and sits above all page content. */
+.lsw__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #272c30;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(18px, 5.2vw, 21px);
+}
+.lsw__chev {
+  margin-top: 2px;
+}
+.lsw__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(43, 32, 25, 0.42);
+  animation: fade 0.18s ease;
+}
+/* Anchored directly below the title: inline top/left set the trigger's bottom
+   and center; translateX(-50%) centers the card on that point. */
+.lsw__menu {
+  position: fixed;
+  transform: translateX(-50%);
+  width: 132px;
+  background: #fff;
+  border-radius: 13px;
+  box-shadow: 0 12px 30px rgba(43, 32, 25, 0.2);
+  overflow: hidden;
+  animation: lsw-pop 0.16s ease;
+}
+@keyframes lsw-pop {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-5px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+.lsw__row {
+  display: flex;
+  flex-direction: column;
+}
+.lsw__divider {
+  height: 1px;
+  margin: 0 14px;
+  background: #e5e5e5;
+}
+.lsw__option {
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 14px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #272c30;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(15px, 4.2vw, 17px);
+  text-align: center;
+}
+.lsw__option--active {
+  color: #ff5b00;
+}
+
+/* Learning Management page body (minimal scaffold). */
+.lmgmt__body {
+  margin-top: clamp(24px, 8vh, 48px);
+  text-align: center;
+}
+.lmgmt__lead {
+  margin: 0;
+  color: #272c30;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(20px, 5.6vw, 24px);
+}
+.lmgmt__hint {
+  margin: 10px 0 0;
+  color: #9a8c7d;
+  font-size: clamp(13px, 3.8vw, 15px);
+}
+
 .sheet {
   width: 100%;
   max-width: var(--app-max);

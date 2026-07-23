@@ -7,9 +7,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 const { checkIn } = vi.hoisted(() => ({ checkIn: vi.fn() }));
 vi.mock("../api/endpoints", () => ({ gameApi: { checkIn } }));
 
-let authState: { status: string; me: { app_language: string } | null } = {
+let authState: {
+  status: string;
+  me: { app_language: string; onboarding_completed?: boolean } | null;
+} = {
   status: "signed-in",
-  me: { app_language: "ko" },
+  me: { app_language: "ko", onboarding_completed: true },
 };
 vi.mock("../hooks/auth", () => ({ useAuth: () => authState }));
 
@@ -37,7 +40,7 @@ const dialog = () => screen.queryByRole("dialog");
 
 beforeEach(() => {
   vi.clearAllMocks();
-  authState = { status: "signed-in", me: { app_language: "ko" } };
+  authState = { status: "signed-in", me: { app_language: "ko", onboarding_completed: true } };
   checkIn.mockResolvedValue(FRESH);
 });
 afterEach(() => {
@@ -95,6 +98,21 @@ describe("AttendanceGate", () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(checkIn).not.toHaveBeenCalled();
     expect(dialog()).toBeNull();
+  });
+
+  it("does NOT check in while the user is still going through onboarding", async () => {
+    authState = { status: "signed-in", me: { app_language: "ko", onboarding_completed: false } };
+    renderGate();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(checkIn).not.toHaveBeenCalled();
+    expect(dialog()).toBeNull();
+  });
+
+  it("checks in once onboarding is complete", async () => {
+    authState = { status: "signed-in", me: { app_language: "ko", onboarding_completed: true } };
+    renderGate();
+    await waitFor(() => expect(checkIn).toHaveBeenCalledTimes(1));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
   });
 
   it("checks in only once and does not re-show after a re-render", async () => {

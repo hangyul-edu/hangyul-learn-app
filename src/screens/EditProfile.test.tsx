@@ -25,6 +25,7 @@ const mockMe: Me = {
   marketing_push_consent: false,
   email_sms_marketing_consent: false,
   today_streak_achieved: false,
+  onboarding_completed: true,
   membership: { tier: "free", is_premium: false, expires_at: null },
   created_at: "2026-01-01T00:00:00Z",
 };

@@ -40,6 +40,13 @@ export function AttendanceGate() {
   const lang = normalizeLanguage(me?.app_language);
   const [data, setData] = useState<AttendanceModalData | null>(null);
 
+  // Attendance must only be recorded once the user has finished onboarding — not
+  // while they are still setting up their profile or answering the onboarding
+  // questions. `onboarding_completed` (from /users/me) is the source of truth.
+  // (Refreshing `me` after onboarding flips this true, so the day they finish
+  // still counts — see Onboarding.submit.)
+  const onboardingComplete = status === "signed-in" && !!me && me.onboarding_completed;
+
   const firedRef = useRef(false); // one request per signed-in session
   const inFlightRef = useRef(false); // no concurrent requests
   const processedDateRef = useRef<string | null>(null); // don't reprocess a date
@@ -51,6 +58,7 @@ export function AttendanceGate() {
       inFlightRef.current = false;
       return;
     }
+    if (!onboardingComplete) return; // wait until onboarding is fully complete
     if (firedRef.current || inFlightRef.current) return;
     firedRef.current = true;
     inFlightRef.current = true;
@@ -92,7 +100,7 @@ export function AttendanceGate() {
         inFlightRef.current = false;
       }
     })();
-  }, [status, qc]);
+  }, [status, onboardingComplete, qc]);
 
   if (!data) return null;
   return (

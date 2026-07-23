@@ -49,6 +49,9 @@ export interface Me {
   marketing_push_consent: boolean;
   email_sms_marketing_consent: boolean;
   today_streak_achieved: boolean;
+  /** True once onboarding has been submitted. Gates the daily attendance
+   *  check-in so attendance is never recorded mid-onboarding. */
+  onboarding_completed: boolean;
   membership: Membership;
   created_at: string;
 }

@@ -6,6 +6,7 @@ import { OnboardingPurpose } from "./OnboardingPurpose";
 import { OnboardingSpeaking } from "./OnboardingSpeaking";
 import { OnboardingDailyGoal } from "./OnboardingDailyGoal";
 import { OnboardingTopikTarget } from "./OnboardingTopikTarget";
+import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 
@@ -13,6 +14,7 @@ type Purpose = "conversation" | "topik";
 
 export function Onboarding() {
   const nav = useNavigate();
+  const { bootstrapMe } = useAuth();
   const toast = useToast();
   const [started, setStarted] = useState(false);
   const [step, setStep] = useState(0);
@@ -35,6 +37,13 @@ export function Onboarding() {
         body.daily_question_goal = goal;
       }
       await onboardingApi.submit(body);
+      // Refresh the profile so `next_step` flips to complete — this lets the
+      // attendance gate record today's check-in now that onboarding is done.
+      try {
+        await bootstrapMe();
+      } catch {
+        /* non-blocking: /home will refresh me on next load */
+      }
       nav("/home", { replace: true });
     } catch (e) {
       toast.error(errorMessage(e));

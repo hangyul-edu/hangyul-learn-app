@@ -15,7 +15,7 @@ export function LearningManagement() {
       <div className="strk__scroll">
         <div className="strk__inner">
           <header className="strk__header">
-            <button className="strk__back" onClick={() => nav(-1)} aria-label="뒤로">
+            <button className="strk__back" onClick={() => nav("/home")} aria-label="뒤로">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>

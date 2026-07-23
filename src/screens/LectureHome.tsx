@@ -71,8 +71,19 @@ function BannerCarousel() {
     if (b.action_url && b.action_url.startsWith("/")) nav(b.action_url);
   }
 
+  // Independent banner state: loading → skeleton; error → hide (never the empty
+  // copy); success with no displayable banners → the calm empty region (which
+  // keeps the banner slot's height so the page below doesn't shift). Only a
+  // populated success renders the carousel — so no auto-slide timer, dots, swipe
+  // handlers, or image elements exist when the list is empty.
   if (q.isLoading) return <div className="lechome__banner-skeleton" aria-hidden="true" />;
-  if (banners.length === 0) return null; // no active banners → hide cleanly
+  if (q.isError) return null;
+  if (banners.length === 0)
+    return (
+      <div className="lechome__banner-empty">
+        <p className="lechome__banner-empty-text">표시할 배너가 없어요</p>
+      </div>
+    );
 
   return (
     <section className="lechome__carousel" aria-roledescription="carousel" aria-label="광고 배너">
@@ -282,6 +293,14 @@ export function LectureHome() {
 
   const streak = dash.data?.streak_days;
 
+  // A course is displayable only if it has at least one lecture to show; a
+  // category whose lecture array is empty renders nothing. The course-empty view
+  // shows only when the feed loaded successfully and NO course is displayable.
+  const displayableSections = useMemo(
+    () => sections.filter((c) => (c.lessons_preview?.length ?? 0) > 0),
+    [sections],
+  );
+
   return (
     <div className="screen lechome">
       <div className="lechome__scroll">
@@ -311,11 +330,13 @@ export function LectureHome() {
             <span>강의를 불러오지 못했어요.</span>
             <button className="lechome__retry" onClick={() => loadFirst()}>다시 시도</button>
           </div>
-        ) : sections.length === 0 ? (
-          <p className="lechome__empty">아직 강의가 없어요. 곧 새로운 강의가 추가돼요.</p>
+        ) : displayableSections.length === 0 ? (
+          <div className="lechome__course-empty">
+            <p className="lechome__course-empty-text">아직 등록된 강의가 없어요</p>
+          </div>
         ) : (
           <div className="lechome__sections">
-            {sections.map((c) => (
+            {displayableSections.map((c) => (
               <CourseSection key={c.course_id} course={c} isPremium={entitlementKnown ? isPremium : true} />
             ))}
             <div className="lechome__foot" ref={bottomSentinel}>

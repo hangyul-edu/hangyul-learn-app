@@ -6763,10 +6763,17 @@ textarea.input {
 }
 .lechome__scroll {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   padding-bottom: calc(var(--nav-h) + 96px + var(--safe-bottom));
+}
+/* Children keep their natural height and overflow-scroll (never compress to fit
+   the viewport). Only the course-empty view opts back in to flex-grow below. */
+.lechome__scroll > * {
+  flex-shrink: 0;
 }
 /* Warm cream backdrop behind the header + banner area */
 .lechome__header,
@@ -6863,6 +6870,46 @@ textarea.input {
   background: #ff5b00;
   width: 18px;
   border-radius: 4px;
+}
+/* --- Banner empty view --- */
+/* Full-width, light cool-gray region occupying ~the same height as the carousel
+   (banner is aspect 2.1/1 inset 18px each side → ≈44vw), so the page below does
+   not shift when banners are absent. */
+.lechome__banner-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: clamp(150px, 44vw, 214px);
+  margin: 4px 0 18px;
+  padding: 0 24px;
+  background: #eef1f4;
+}
+.lechome__banner-empty-text {
+  margin: 0;
+  color: #8a94a6;
+  font-weight: 500;
+  font-size: clamp(15px, 4.5vw, 17px);
+  text-align: center;
+}
+/* --- Course empty view --- */
+/* Fills the remaining space between the banner region and the bottom nav (the
+   scroll is a flex column; the scroll's bottom padding already reserves the nav
+   + chatbot zone, so centering here sits comfortably above them). */
+.lechome__course-empty {
+  flex: 1;
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 24px 40px;
+  background: #fff;
+}
+.lechome__course-empty-text {
+  margin: 0;
+  color: #8a94a6;
+  font-weight: 500;
+  font-size: clamp(15px, 4.3vw, 17px);
+  text-align: center;
 }
 /* --- Course sections --- */
 .lechome__sections {

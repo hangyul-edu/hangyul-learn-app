@@ -27,6 +27,8 @@ import type {
   LeagueLifecycleResponse,
   LearningPreferences,
   Lecture,
+  ManagementPeriod,
+  ManagementStats,
   Me,
   MySubscription,
   SessionFinalizeResult,
@@ -213,6 +215,9 @@ export const learnApi = {
     http.post<{ position_seconds: number; max_watched_seconds: number; completed: boolean }>(`/lectures/${lectureId}/progress`, { position_seconds }),
   streakCalendar: (year?: number, month?: number) => http.get<StreakCalendarResp>("/learning/streak-calendar", { year, month }),
   stats: (range: string) => http.get<StatsResp>("/learning/stats", { range }),
+  /** Learning Management dashboard: today's summary + period chart + totals. */
+  management: (period: ManagementPeriod, timezone?: string) =>
+    http.get<ManagementStats>("/learning/management", { period, timezone }),
   /**
    * Record a qualifying learning view (a conversation sentence or TOPIK question
    * became the active on-screen item) so today counts as a learning day and the

@@ -666,6 +666,35 @@ export interface StatsResp {
   total_questions: number;
 }
 
+/* ---- Learning Management dashboard ---- */
+export type ManagementPeriod = "7d" | "1m" | "3m" | "1y";
+export interface ManagementBucket {
+  key: string;
+  start_date: string;
+  end_date: string;
+  label: string;
+  study_seconds: number;
+  is_current: boolean;
+}
+export interface ManagementStats {
+  period: ManagementPeriod;
+  timezone: string;
+  range: { start_date: string; end_date: string };
+  has_any_eligible_learning_record: boolean;
+  today: {
+    study_seconds: number;
+    conversation_sentence_count: number;
+    topik_question_count: number;
+    learning_count: number;
+  };
+  buckets: ManagementBucket[];
+  period_totals: {
+    conversation_sentence_count: number;
+    topik_question_count: number;
+    learning_count: number;
+  };
+}
+
 /* ---- Attendance ---- */
 /** Response of POST /attendance/check-in. `checked_in_today === true` means the
  * call was a no-op (already checked in earlier today); `false` means it recorded

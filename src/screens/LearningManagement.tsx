@@ -10,7 +10,7 @@ import type { ManagementPeriod, ManagementStats } from "../lib/types";
 
 const PERIODS: { id: ManagementPeriod; label: string }[] = [
   { id: "7d", label: "최근 7일" },
-  { id: "1m", label: "이번달" },
+  { id: "1m", label: "이번 달" },
   { id: "3m", label: "최근 3개월" },
   { id: "1y", label: "최근 1년" },
 ];
@@ -20,12 +20,12 @@ function fmtHHMM(seconds: number): string {
   const s = Math.max(0, Math.floor(seconds));
   return `${String(Math.floor(s / 3600)).padStart(2, "0")}:${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}`;
 }
-/** Seconds → compact "1h33m" / "33m" (chart bar value). */
+/** Seconds → compact "1h 33m" / "33m" (chart bar value). */
 function fmtShort(seconds: number): string {
   const s = Math.max(0, Math.floor(seconds));
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
-  return h > 0 ? `${h}h${m}m` : `${m}m`;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
 const BROWSER_TZ =
@@ -140,7 +140,7 @@ export function LearningManagement() {
                 {chartStale ? (
                   <div className="lmgmt__chart lmgmt__chart--loading" aria-busy="true" />
                 ) : (
-                  <Chart data={data} />
+                  <Chart key={data.period} data={data} />
                 )}
 
                 <div className="lmgmt__totals">
@@ -167,28 +167,39 @@ export function LearningManagement() {
   );
 }
 
-/** Bar chart of study duration per bucket; current bucket is orange. */
+/**
+ * Bar chart of study duration per bucket. Bars are selectable: the highlighted
+ * (orange) bar shows its duration above it — today is selected by default, and
+ * tapping any bar moves the highlight + duration to that bar.
+ */
 function Chart({ data }: { data: ManagementStats }) {
+  const currentKey =
+    data.buckets.find((b) => b.is_current)?.key ?? data.buckets[data.buckets.length - 1]?.key;
+  const [selectedKey, setSelectedKey] = useState<string | undefined>(currentKey);
   const max = Math.max(1, ...data.buckets.map((b) => b.study_seconds));
   return (
-    <div className="lmgmt__chart" role="img" aria-label="기간별 학습 시간">
+    <div className="lmgmt__chart" role="group" aria-label="기간별 학습 시간">
       {data.buckets.map((b) => {
+        const selected = b.key === selectedKey;
         const pct =
-          b.study_seconds > 0 ? Math.max(8, (b.study_seconds / max) * 100) : b.is_current ? 3 : 0;
+          b.study_seconds > 0 ? Math.max(8, (b.study_seconds / max) * 100) : selected ? 3 : 0;
         return (
           <div key={b.key} className="lmgmt__bar-col">
-            <div className="lmgmt__bar-track">
+            <button
+              type="button"
+              className="lmgmt__bar-track"
+              aria-pressed={selected}
+              aria-label={`${b.label} ${fmtShort(b.study_seconds)}`}
+              onClick={() => setSelectedKey(b.key)}
+            >
               <div
-                className={`lmgmt__bar${b.is_current ? " lmgmt__bar--current" : ""}`}
+                className={`lmgmt__bar${b.is_current ? " lmgmt__bar--current" : ""}${selected ? " lmgmt__bar--selected" : ""}`}
                 style={{ height: `${pct}%` }}
               >
-                {b.is_current && b.study_seconds > 0 && (
-                  <span className="lmgmt__bar-value">{fmtShort(b.study_seconds)}</span>
-                )}
+                {selected && <span className="lmgmt__bar-value">{fmtShort(b.study_seconds)}</span>}
               </div>
-            </div>
+            </button>
             <span className="lmgmt__bar-label">{b.label}</span>
-            <span className="sr-only">{`${b.label}: ${fmtShort(b.study_seconds)}`}</span>
           </div>
         );
       })}

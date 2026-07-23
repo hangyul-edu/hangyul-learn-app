@@ -59,17 +59,29 @@ describe("LearningManagement", () => {
     const summary = document.querySelector(".lmgmt__summary") as HTMLElement;
     expect(within(summary).getByText("01:00")).toBeInTheDocument(); // 3600s → HH:MM
     expect(within(summary).getByText("5")).toBeInTheDocument(); // server learning_count
-    // Chart bars + current-bucket value.
+    // Chart bars + current-bucket value (today selected by default, "1h 33m" style).
     expect(screen.getByText("월")).toBeInTheDocument();
     expect(screen.getByText("목")).toBeInTheDocument();
-    expect(screen.getByText("1h0m")).toBeInTheDocument(); // current bucket duration
+    expect(screen.getByText("1h 0m")).toBeInTheDocument(); // current bucket duration
   });
 
-  it("colors the current bucket orange and historical buckets gray", async () => {
+  it("highlights today by default and shows its duration above it", async () => {
     const { container } = renderPage();
     await screen.findByText("목");
     expect(container.querySelectorAll(".lmgmt__bar--current")).toHaveLength(1);
+    expect(container.querySelectorAll(".lmgmt__bar--selected")).toHaveLength(1); // today selected
     expect(container.querySelectorAll(".lmgmt__bar")).toHaveLength(2);
+  });
+
+  it("moves the highlight and displayed time to a bar the user selects", async () => {
+    renderPage();
+    await screen.findByText("목");
+    // Default: today's bucket (목, 3600s) shows "1h 0m".
+    expect(screen.getByText("1h 0m")).toBeInTheDocument();
+    // Select the historical Monday bar (월, 1200s) → its time appears, today's is gone.
+    await userEvent.click(screen.getByRole("button", { name: /월/ }));
+    expect(await screen.findByText("20m")).toBeInTheDocument();
+    expect(screen.queryByText("1h 0m")).not.toBeInTheDocument();
   });
 
   it("shows a loading skeleton (not the empty state) before data arrives", () => {
@@ -110,11 +122,11 @@ describe("LearningManagement", () => {
     renderPage();
     await screen.findByText("목");
     await userEvent.click(screen.getByRole("button", { name: "기간 선택" }));
-    for (const label of ["최근 7일", "이번달", "최근 3개월", "최근 1년"]) {
+    for (const label of ["최근 7일", "이번 달", "최근 3개월", "최근 1년"]) {
       expect(screen.getByRole("menuitem", { name: label })).toBeInTheDocument();
     }
     management.mockResolvedValue(stats("1m", { buckets: [{ key: "w1", start_date: "2026-07-01", end_date: "2026-07-05", label: "1주", study_seconds: 600, is_current: true }] }));
-    await userEvent.click(screen.getByRole("menuitem", { name: "이번달" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "이번 달" }));
     await waitFor(() => expect(management).toHaveBeenCalledWith("1m", expect.anything()));
     expect(await screen.findByText("1주")).toBeInTheDocument();
   });

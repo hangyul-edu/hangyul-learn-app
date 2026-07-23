@@ -8231,6 +8231,7 @@ textarea.input {
   font-family: var(--font-display);
   font-size: 17px;
   font-weight: 800;
+  line-height: 1;
   color: var(--ink-2);
 }
 .lg__rank.is-me .lg__rank-no {
@@ -8252,6 +8253,7 @@ textarea.input {
   gap: 8px;
   font-size: 16.5px;
   font-weight: 700;
+  line-height: 1;
   color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
@@ -8262,6 +8264,7 @@ textarea.input {
   font-family: var(--font-display);
   font-size: 18px;
   font-weight: 800;
+  line-height: 1;
   color: var(--ink);
 }
 

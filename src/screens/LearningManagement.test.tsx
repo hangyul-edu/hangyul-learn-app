@@ -110,11 +110,11 @@ describe("LearningManagement", () => {
     renderPage();
     await screen.findByText("목");
     await userEvent.click(screen.getByRole("button", { name: "기간 선택" }));
-    for (const label of ["7일", "1달", "3달", "1년"]) {
+    for (const label of ["최근 7일", "이번달", "최근 3개월", "최근 1년"]) {
       expect(screen.getByRole("menuitem", { name: label })).toBeInTheDocument();
     }
     management.mockResolvedValue(stats("1m", { buckets: [{ key: "w1", start_date: "2026-07-01", end_date: "2026-07-05", label: "1주", study_seconds: 600, is_current: true }] }));
-    await userEvent.click(screen.getByRole("menuitem", { name: "1달" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "이번달" }));
     await waitFor(() => expect(management).toHaveBeenCalledWith("1m", expect.anything()));
     expect(await screen.findByText("1주")).toBeInTheDocument();
   });

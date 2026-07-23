@@ -9,10 +9,10 @@ import { ErrorState } from "../components/ui/states";
 import type { ManagementPeriod, ManagementStats } from "../lib/types";
 
 const PERIODS: { id: ManagementPeriod; label: string }[] = [
-  { id: "7d", label: "7일" },
-  { id: "1m", label: "1달" },
-  { id: "3m", label: "3달" },
-  { id: "1y", label: "1년" },
+  { id: "7d", label: "최근 7일" },
+  { id: "1m", label: "이번달" },
+  { id: "3m", label: "최근 3개월" },
+  { id: "1y", label: "최근 1년" },
 ];
 
 /** Seconds → "HH:MM" (summary card). */

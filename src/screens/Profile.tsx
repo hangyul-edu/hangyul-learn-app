@@ -260,7 +260,7 @@ export function Profile() {
               </button>
               <button
                 className="more__sub-cta"
-                onClick={() => nav("/subscription", { state: { openPlans: true } })}
+                onClick={() => nav("/subscription/start")}
                 aria-label="구독하기, 요금제와 가격 보기"
               >
                 구독하기

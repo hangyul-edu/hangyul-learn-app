@@ -32,6 +32,7 @@ import { InviteLanding } from "./screens/InviteLanding";
 import { Notifications } from "./screens/Notifications";
 import { AiChat } from "./screens/AiChat";
 import { Subscription } from "./screens/Subscription";
+import { SubscriptionPurchase } from "./screens/SubscriptionPurchase";
 import { Profile } from "./screens/Profile";
 import { EditProfile } from "./screens/EditProfile";
 import { Settings } from "./screens/Settings";
@@ -165,6 +166,7 @@ const router = createBrowserRouter(
         <Route path="/notifications" element={<RequireAuth><Notifications /></RequireAuth>} />
         <Route path="/ai" element={<RequireAuth><AiChat /></RequireAuth>} />
         <Route path="/subscription" element={<RequireAuth><Subscription /></RequireAuth>} />
+        <Route path="/subscription/start" element={<RequireAuth><SubscriptionPurchase /></RequireAuth>} />
         <Route path="/profile/edit" element={<RequireAuth><EditProfile /></RequireAuth>} />
         <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
         <Route path="/settings/language" element={<RequireAuth><LanguageSettings /></RequireAuth>} />

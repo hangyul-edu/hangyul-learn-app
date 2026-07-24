@@ -264,7 +264,7 @@ export function Subscription() {
                 <p className="subm__nosub-1">현재 구독 중인 플랜이 없습니다</p>
                 <p className="subm__nosub-2">지금 구독하고 모든 학습을 자유롭게 이용하세요</p>
               </div>
-              <button className="subm__subscribe" onClick={() => setPlanOpen(true)}>구독하기</button>
+              <button className="subm__subscribe" onClick={() => nav("/subscription/start")}>구독하기</button>
             </div>
           )}
 

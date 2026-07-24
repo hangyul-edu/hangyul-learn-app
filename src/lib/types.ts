@@ -590,11 +590,28 @@ export interface Plan {
   plan_id: string;
   name: string;
   description?: string | null;
+  /** List (original) price for the billing interval, in cents. */
   price_cents: number;
+  /** Discounted (current) price for the billing interval, in cents. Null = no
+   *  discount (current === original). */
+  promo_price_cents?: number | null;
   currency?: string;
   interval: "month" | "year";
   trial_days?: number;
   features?: string[];
+
+  // Server-computed presentation values (see SubscriptionPlan on the backend).
+  // Preferred over client-side derivation when present.
+  /** List charge for one billing interval, in cents. */
+  original_total_cents?: number;
+  /** Current (discounted) charge for one billing interval, in cents. */
+  current_total_cents?: number;
+  /** List price per month, in cents (yearly ÷ 12). */
+  original_monthly_cents?: number;
+  /** Current price per month, in cents (yearly ÷ 12). */
+  current_monthly_cents?: number;
+  /** Whole-percent saving of the current price vs. the list price. */
+  discount_percent?: number;
 }
 export interface MySubscription {
   status: string;
@@ -604,6 +621,10 @@ export interface MySubscription {
   trial_end?: string | null;
   cancel_at_period_end?: boolean;
   is_premium?: boolean;
+  /** Server-authoritative one-time-trial flag: true once the account has ever
+   *  started the free trial. Free-trial eligibility = !trial_started. */
+  trial_started?: boolean;
+  in_trial?: boolean;
 }
 
 /* ---- Settings ---- */

@@ -214,7 +214,7 @@ export function Home() {
 
                 {/* Non-subscriber promotion */}
                 {d.paywall_required && (
-                  <button className="home__promo" onClick={() => nav("/subscription")}>
+                  <button className="home__promo" onClick={() => nav("/subscription/start")}>
                     <span className="home__promo-text">
                       아직 한귤 구독 전이라면? <b className="home__promo-hl">지금 바로 구독하세요!</b>
                     </span>

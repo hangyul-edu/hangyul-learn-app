@@ -15,6 +15,7 @@ import {
   ChevronRight,
 } from "../components/brand/HomeIcons";
 import { DailyLearningSun } from "../components/DailyLearningSun";
+import { TopikPartSelectionModal } from "../components/TopikPartSelectionModal";
 import type { DashboardSummary, DashboardTrack } from "../lib/types";
 
 /** Icon for a learning track's tab, chosen from its stable category. */
@@ -85,6 +86,7 @@ export function Home() {
   });
 
   const [tab, setTab] = useState(0);
+  const [topikPartOpen, setTopikPartOpen] = useState(false);
   const nickname = me?.nickname ?? me?.name ?? "회원";
 
   return (
@@ -183,7 +185,12 @@ export function Home() {
                       </div>
                       <button
                         className="home__hero-cta"
-                        onClick={() => nav(active.category === "topik" ? "/session/topik" : "/session/conversation", { state: { from: "/home" } })}
+                        onClick={() => {
+                          // TOPIK: pick a part first (modal → navigates with the
+                          // section). Conversation: start directly, unchanged.
+                          if (active.category === "topik") setTopikPartOpen(true);
+                          else nav("/session/conversation", { state: { from: "/home" } });
+                        }}
                       >
                         {rawCurrent > 0 ? "이어서 학습하기" : "바로 시작하기"}
                       </button>
@@ -219,6 +226,15 @@ export function Home() {
           }}
         </Async>
       </div>
+
+      <TopikPartSelectionModal
+        open={topikPartOpen}
+        onClose={() => setTopikPartOpen(false)}
+        onStart={(part) => {
+          setTopikPartOpen(false);
+          nav("/session/topik", { state: { from: "/home", section: part } });
+        }}
+      />
     </div>
   );
 }

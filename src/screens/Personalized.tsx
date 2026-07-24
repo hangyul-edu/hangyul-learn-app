@@ -7,6 +7,7 @@ import { CharacterArt } from "../components/brand/ProfileAssets";
 import { SpeakingIcon, PencilIcon, GearIcon, BookIcon, ChevronRight } from "../components/brand/HomeIcons";
 import { DailyLearningSun } from "../components/DailyLearningSun";
 import { ChatbotBottomSheet } from "../components/ChatbotBottomSheet";
+import { TopikPartSelectionModal } from "../components/TopikPartSelectionModal";
 import type { DashboardSummary, DashboardTrack } from "../lib/types";
 
 /** Open horseshoe gauge with the percentage centered (yellow when complete). */
@@ -63,6 +64,7 @@ function trackIcon(category: string) {
 export function Personalized() {
   const nav = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
+  const [topikPartOpen, setTopikPartOpen] = useState(false);
   const q = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
   const [tab, setTab] = useState(0);
 
@@ -145,7 +147,12 @@ export function Personalized() {
                       </div>
                       <button
                         className="home__hero-cta"
-                        onClick={() => nav(active.category === "topik" ? "/session/topik" : "/session/conversation", { state: { from: "/recommend" } })}
+                        onClick={() => {
+                          // TOPIK: choose a part first (modal decides the section,
+                          // then navigates). Conversation: start directly, unchanged.
+                          if (active.category === "topik") setTopikPartOpen(true);
+                          else nav("/session/conversation", { state: { from: "/recommend" } });
+                        }}
                       >
                         {cur > 0 ? "이어서 학습하기" : "바로 시작하기"}
                       </button>
@@ -206,6 +213,15 @@ export function Personalized() {
       </button>
 
       <ChatbotBottomSheet open={chatOpen} source="personalized_learning" onClose={() => setChatOpen(false)} />
+
+      <TopikPartSelectionModal
+        open={topikPartOpen}
+        onClose={() => setTopikPartOpen(false)}
+        onStart={(part) => {
+          setTopikPartOpen(false);
+          nav("/session/topik", { state: { from: "/recommend", section: part } });
+        }}
+      />
     </div>
   );
 }

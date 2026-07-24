@@ -279,6 +279,10 @@ export interface Course {
   lessons?: Lecture[];
 }
 
+/** TOPIK part/section — the canonical value used across generation + the
+ *  question-type dropdown (backend `section`). */
+export type TopikSection = "listening" | "reading" | "writing";
+
 export interface Banner {
   banner_id: string;
   image_url: string;

@@ -9,17 +9,20 @@ import { LoadingState, ErrorState } from "../components/ui/states";
 import { recApi, quizApi, dashboardApi, learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
-import type { Quiz, QuizAttemptResult } from "../lib/types";
-
-const SECTION = "reading"; // reference dropdown shows the reading problem types
+import type { Quiz, QuizAttemptResult, TopikSection } from "../lib/types";
 
 export function SessionTopik() {
   const nav = useNavigate();
   const loc = useLocation();
   const toast = useToast();
+  const navState = loc.state as { from?: string; section?: TopikSection } | null;
   // Source page (Home / Personalized), forwarded to the Level-Up screen so its
   // button returns the user there.
-  const from = (loc.state as { from?: string } | null)?.from ?? "/home";
+  const from = navState?.from ?? "/home";
+  // The TOPIK part chosen in the part-selection modal drives the question-type
+  // dropdown and generation; it's fixed for the whole session. Fall back to
+  // listening only if the screen is reached without a selection (deep link).
+  const section: TopikSection = navState?.section ?? "listening";
   const qc = useQueryClient();
 
   const dash = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
@@ -28,8 +31,8 @@ export function SessionTopik() {
   const remaining = topik ? Math.max(topik.goal.target - topik.goal.current, 0) : 0;
 
   const types = useQuery({
-    queryKey: ["topik-question-types", SECTION],
-    queryFn: () => recApi.topikQuestionTypes(SECTION),
+    queryKey: ["topik-question-types", section],
+    queryFn: () => recApi.topikQuestionTypes(section),
   });
 
   const [open, setOpen] = useState(false);
@@ -53,7 +56,7 @@ export function SessionTopik() {
     setError(false);
     try {
       const count = Math.max(remaining || 0, 1);
-      const res = await recApi.questions({ section: SECTION, count, ...(code ? { topik_question_type: code } : {}) });
+      const res = await recApi.questions({ section, count, ...(code ? { topik_question_type: code } : {}) });
       setItems(res.items);
       setIdx(0);
       setValue({});

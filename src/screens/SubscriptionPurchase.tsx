@@ -128,7 +128,10 @@ export function SubscriptionPurchase() {
   const plans: Plan[] = plansQ.data?.plans ?? plansQ.data?.items ?? [];
   const mine = mineQ.data as MySubscription | undefined;
   const methods = (methodsQ.data?.methods ?? methodsQ.data?.items ?? []) as PaymentMethod[];
-  const hasValidPaymentMethod = methods.some((m) => m.is_default && m.status === "active");
+  // Proceed as long as ANY usable method (card or quick-pay) is registered — the
+  // registration popup is only for users with no payment method at all. Being
+  // the default is not required (the server resolves the method to charge).
+  const hasPaymentMethod = methods.some((m) => m.status === "active");
   // Free-trial eligibility is server-authoritative (never local): !trial_started.
   const eligible = mine ? !mine.trial_started : undefined;
   const entryMode: "free_trial" | "direct_paid" = eligible ? "free_trial" : "direct_paid";
@@ -156,8 +159,8 @@ export function SubscriptionPurchase() {
     if (submittingRef.current) return; // one request per press
     const plan = plans.find((p) => p.plan_id === selectedId);
     if (!plan) return;
-    if (!hasValidPaymentMethod) {
-      setPayModal(true); // gate: never start without a payment method
+    if (!hasPaymentMethod) {
+      setPayModal(true); // gate: only when NO payment method is registered
       return;
     }
     submittingRef.current = true;

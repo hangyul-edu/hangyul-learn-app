@@ -110,13 +110,27 @@ describe("SubscriptionPurchase", () => {
     expect(screen.getByRole("radio", { name: /12개월/ })).toHaveAttribute("aria-checked", "false");
   });
 
-  it("opens the payment-method popup (no billing call) when no method is registered", async () => {
+  it("opens the payment-method popup (no billing call) only when NO method is registered", async () => {
     paymentMethods.mockResolvedValue({ methods: [] });
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: "7일 무료 체험 시작하기" }));
     expect(await screen.findByText("결제수단 등록이 필요해요")).toBeInTheDocument();
     expect(startTrial).not.toHaveBeenCalled();
     expect(subscribe).not.toHaveBeenCalled();
+  });
+
+  it("proceeds immediately with a registered non-default quick-pay method (no popup)", async () => {
+    // A registered quick-pay wallet that is NOT the default. Payment must still
+    // proceed — the popup is only for users with no payment method at all.
+    paymentMethods.mockResolvedValue({
+      methods: [
+        { method_id: "pm2", kind: "naver_pay", provider: "naver_pay", status: "active", is_default: false, display_name: "네이버페이" },
+      ],
+    });
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "7일 무료 체험 시작하기" }));
+    await waitFor(() => expect(startTrial).toHaveBeenCalledWith("p_year"));
+    expect(screen.queryByText("결제수단 등록이 필요해요")).not.toBeInTheDocument();
   });
 
   it("cancel closes the popup without billing; register navigates to payment setup", async () => {

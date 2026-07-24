@@ -4746,6 +4746,84 @@ textarea.input {
   text-align: center;
 }
 
+/* Structured attempt result (selection verdict / writing score + feedback). */
+.tq-result {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+.tq-result__verdict {
+  font-weight: 800;
+  font-size: 16px;
+  text-align: center;
+}
+.tq-result--ok .tq-result__verdict {
+  color: #16a34a;
+}
+.tq-result--no .tq-result__verdict {
+  color: #ff5b00;
+}
+.tq-result__explain {
+  margin: 0;
+  color: #667078;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.tq-result--pending {
+  align-items: center;
+  color: #667078;
+  font-weight: 700;
+  font-size: 15px;
+}
+.tq-result__score {
+  align-self: center;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  color: #ff5b00;
+}
+.tq-result__score-num {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 34px;
+  line-height: 1;
+}
+.tq-result__score-max {
+  color: #98a0a8;
+  font-weight: 700;
+  font-size: 16px;
+}
+.tq-result__block {
+  background: #f6f7f9;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.tq-result__block-title {
+  color: #98a0a8;
+  font-size: 12.5px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.tq-result__list {
+  margin: 0;
+  padding-left: 18px;
+  color: #3b4249;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.tq-result__list li + li {
+  margin-top: 4px;
+}
+.tq-result__corrected {
+  margin: 0;
+  color: #2c333a;
+  font-size: 14.5px;
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
 /* ============================ Ask-AI explanation sheet ============================ */
 .askai {
   /* Fixed to the visual viewport so the sheet is always anchored to the visible

@@ -5,6 +5,7 @@ import { SessionChrome } from "../components/SessionChrome";
 import { SessionCompleteModal } from "../components/SessionCompleteModal";
 import { quizAttemptBody, type AnswerValue } from "../components/QuestionView";
 import { TopikQuestion, canSubmitTopik } from "../components/topik/TopikQuestion";
+import { TopikResult } from "../components/topik/TopikResult";
 import { SavePlusIcon } from "../components/brand/HomeIcons";
 import { LoadingState, ErrorState } from "../components/ui/states";
 import { recApi, quizApi, dashboardApi, learnApi } from "../api/endpoints";
@@ -338,11 +339,7 @@ export function SessionTopik() {
 
           {result ? (
             <div className="sess__result">
-              <span className={result.correct ? "sess__result-ok" : "sess__result-no"}>
-                {result.correct ? copy.correct : copy.incorrect}
-                {!result.correct && result.correct_answer ? ` · ${copy.correctAnswerLabel(result.correct_answer)}` : ""}
-              </span>
-              {result.explanation && <p className="sess__explain">{result.explanation}</p>}
+              <TopikResult result={result} copy={copy} />
               <button className="sess__next" onClick={next}>
                 {idx >= total - 1 ? copy.complete : copy.next}
               </button>

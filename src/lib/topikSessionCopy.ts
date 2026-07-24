@@ -20,6 +20,11 @@ export interface TopikSessionCopy {
   correct: string;
   incorrect: string;
   correctAnswerLabel: (answer: string) => string;
+  scoreLabel: (score: number, max: number) => string;
+  suggestionsTitle: string;
+  grammarTitle: string;
+  correctedTitle: string;
+  awaitingReview: string;
   unsupported: string;
   saveQuestion: string;
   removeSaved: string;
@@ -44,6 +49,11 @@ export const TOPIK_SESSION_COPY: Record<AppLanguage, TopikSessionCopy> = {
     correct: "정답이에요! 🎉",
     incorrect: "아쉬워요 💪",
     correctAnswerLabel: (answer) => `정답: ${answer}`,
+    scoreLabel: (score, max) => `${score} / ${max}점`,
+    suggestionsTitle: "이렇게 고쳐보세요",
+    grammarTitle: "문법 피드백",
+    correctedTitle: "고친 문장",
+    awaitingReview: "제출됐어요. 채점을 기다리고 있어요 ✍️",
     unsupported: "이 문제 유형은 아직 지원되지 않아요. 다른 문제로 넘어가 주세요.",
     saveQuestion: "문제 저장",
     removeSaved: "저장 해제",
@@ -66,6 +76,11 @@ export const TOPIK_SESSION_COPY: Record<AppLanguage, TopikSessionCopy> = {
     correct: "Correct! 🎉",
     incorrect: "Not quite 💪",
     correctAnswerLabel: (answer) => `Answer: ${answer}`,
+    scoreLabel: (score, max) => `${score} / ${max}`,
+    suggestionsTitle: "Suggestions",
+    grammarTitle: "Grammar feedback",
+    correctedTitle: "Corrected version",
+    awaitingReview: "Submitted — waiting to be graded ✍️",
     unsupported: "This question type isn't supported yet. Please move on to another question.",
     saveQuestion: "Save question",
     removeSaved: "Remove saved question",

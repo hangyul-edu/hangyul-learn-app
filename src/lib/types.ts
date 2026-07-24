@@ -249,16 +249,30 @@ export interface Quiz {
   is_favorited?: boolean;
   saved_at?: string | null;
 }
+/** Criteria-based grading result for a writing answer (nested under `writing`). */
+export interface QuizWritingResult {
+  score: number;
+  max_score: number;
+  grammar_issues: string[];
+  suggestions: string[];
+  corrected_text?: string | null;
+}
 export interface QuizAttemptResult {
   attempt_id: string;
-  correct: boolean;
+  /** True/False for a graded selection question; null/absent for writing
+   * (scored via `writing`) or a still-`submitted` attempt. */
+  correct?: boolean | null;
+  /** Present for a graded writing answer — score + structured feedback. */
+  writing?: QuizWritingResult | null;
   correct_answer?: string | null;
   explanation?: string | null;
   corrected_text?: string | null;
   xp_awarded?: number;
+  xp_earned?: number;
   points_earned?: number;
   score?: number | null;
-  status?: string;
+  /** `graded` — a definitive result is available; `submitted` — recorded, grading deferred. */
+  status?: "graded" | "submitted" | string;
 }
 
 /* ---- Courses / Lectures ---- */

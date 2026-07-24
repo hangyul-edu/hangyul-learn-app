@@ -5919,6 +5919,80 @@ textarea.input {
   text-align: center;
 }
 
+/* ---------------- Correct-answer bottom sheet ---------------- */
+/* Completion-only blur scrim: blurs the learning screen behind the sheet (the
+   sheet is a sibling ABOVE it, so it stays crisp). Mounted only in complete
+   mode. Also blocks background interaction (modal). */
+.casheet__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+  background: rgba(20, 22, 25, 0.12);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: fade 0.2s ease;
+}
+.casheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 191;
+  margin: 0 auto;
+  width: 100%;
+  max-width: var(--app-max);
+  background: #fff;
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -8px 28px rgba(20, 22, 25, 0.14);
+  padding: 14px clamp(16px, 5vw, 22px) calc(16px + var(--safe-bottom));
+  animation: sheet-up 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+.casheet__row {
+  display: flex;
+  gap: 12px;
+}
+.casheet__btn {
+  flex: 1;
+  /* Tall, almost-square tiles (roughly matches the button width at ~half the
+     row) rather than short/wide bars. Capped so it stays sensible on wide
+     (desktop-framed) viewports. */
+  min-height: clamp(120px, 37vw, 150px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 18px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(15px, 4.4vw, 17px);
+  white-space: nowrap;
+  cursor: pointer;
+  border: none;
+}
+.casheet__btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.casheet__btn--replay {
+  background: #fff;
+  color: #3a4048;
+  border: 1.5px solid #e5e5e5;
+}
+.casheet__btn--next {
+  background: #fff4ec;
+  color: #ff5b00;
+}
+.casheet__btn--complete {
+  background: #ff5b00;
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(249, 115, 22, 0.3);
+}
+
 /* ---------------- TOPIK part-selection modal ---------------- */
 .tpart {
   position: relative;

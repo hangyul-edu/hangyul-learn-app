@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SessionChrome } from "../components/SessionChrome";
 import { SessionCompleteModal } from "../components/SessionCompleteModal";
 import { SavePlusIcon } from "../components/brand/HomeIcons";
+import { CorrectAnswerSheet } from "../components/CorrectAnswerSheet";
 import { LoadingState, ErrorState } from "../components/ui/states";
 import { recApi, sentenceApi, dashboardApi, learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
@@ -323,6 +324,30 @@ export function SessionConversation() {
     }
   }
 
+  // 다시 듣기 — replay the current sentence's audio. Overlap-safe: a re-tap stops
+  // the previous playback and restarts cleanly; it never closes the sheet,
+  // changes progress, or re-submits an answer.
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [replaying, setReplaying] = useState(false);
+  async function replayAudio(s: Sentence) {
+    try {
+      setReplaying(true);
+      audioRef.current?.pause();
+      const { url } = await sentenceApi.audio(s.sentence_id);
+      const el = new Audio(url);
+      audioRef.current = el;
+      el.onended = () => setReplaying(false);
+      el.onerror = () => {
+        setReplaying(false);
+        toast.error("음성을 재생하지 못했어요.");
+      };
+      await el.play();
+    } catch {
+      setReplaying(false);
+      toast.error("음성을 재생하지 못했어요.");
+    }
+  }
+
   // Show the summary only if ≥1 item was correct; otherwise return via the
   // normal exit flow. Used by the CTA at completion AND the back chevron.
   function finishOrExit() {
@@ -437,7 +462,8 @@ export function SessionConversation() {
           </div>
 
           <div className="sess__mic-wrap">
-            {/* Item is locked once answered — no second evaluation. */}
+            {/* Item is locked once answered — no second evaluation. Stays visible
+                (sharp in intermediate, blurred in complete) behind the sheet. */}
             <button className="sess__mic" disabled aria-label="이 문제는 완료되었어요">
               <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <rect x="9" y="3" width="6" height="11" rx="3" fill="#FF5B00" />
@@ -445,9 +471,6 @@ export function SessionConversation() {
               </svg>
             </button>
           </div>
-          <button className="sess__next" onClick={next}>
-            {idx >= total - 1 ? "완료" : "다음"}
-          </button>
         </>
       ) : (
         <>
@@ -540,6 +563,18 @@ export function SessionConversation() {
         </>
       )}
     </SessionChrome>
+    {/* Correct-answer bottom sheet. Intermediate (다시 듣기 / 다음, no blur) vs
+        final (다시 듣기 / 완료, blurred background). The mode is derived from the
+        session's own item state, not a hardcoded count. */}
+    {cur != null && result?.correct && !completed && (
+      <CorrectAnswerSheet
+        mode={idx >= total - 1 ? "complete" : "next"}
+        onReplay={() => replayAudio(cur)}
+        onNext={next}
+        onComplete={next}
+        replaying={replaying}
+      />
+    )}
     {completed && (
       <SessionCompleteModal mode="conversation" correctCount={correctSet.size} points={points} onConfirm={exitSession} />
     )}

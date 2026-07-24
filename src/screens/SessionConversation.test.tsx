@@ -28,6 +28,7 @@ vi.mock("../api/endpoints", () => ({
     speechAttempt: vi.fn(),
     bookmark: vi.fn(),
     unbookmark: vi.fn(),
+    audio: vi.fn().mockResolvedValue({ url: "http://x/a.mp3" }),
   },
   dashboardApi: { summary },
   learnApi: { recordSession: vi.fn() },
@@ -146,5 +147,79 @@ describe("SessionConversation — fill-in-the-blank", () => {
     // Press Enter with an empty input.
     await userEvent.type(screen.getByLabelText("빈칸에 들어갈 말"), "{Enter}");
     expect(blankAttempt).not.toHaveBeenCalled();
+  });
+});
+
+const CORRECT = {
+  attempt_id: "blk_1",
+  sentence_id: SENTENCE.sentence_id,
+  input_mode: "keyboard",
+  is_correct: true,
+  normalized_answer: "지내고",
+  completed_sentence: "덕분에 잘 지내고 있어요.",
+  correct_answer: "지내고",
+  points_earned: 10,
+  submitted_at: "2026-07-22T00:00:00Z",
+};
+
+const SENTENCE_2 = {
+  ...SENTENCE,
+  sentence_id: "sen_next_02",
+  korean: "내일 봐요.",
+  display_text: "내일 ___.",
+  translation: "See you tomorrow.",
+};
+
+async function answerFirstCorrectly() {
+  await screen.findByText(/덕분에 잘/);
+  await userEvent.click(screen.getByRole("button", { name: /키보드 모드/ }));
+  await userEvent.type(screen.getByLabelText("빈칸에 들어갈 말"), "지내고");
+  await userEvent.click(screen.getByRole("button", { name: "답 확인" }));
+  await screen.findByText("정답이에요!");
+}
+
+describe("SessionConversation — correct-answer bottom sheet", () => {
+  it("a correct non-final answer shows the intermediate sheet (다음, no blur)", async () => {
+    recSentences.mockResolvedValue({ items: [SENTENCE, SENTENCE_2] });
+    blankAttempt.mockResolvedValue(CORRECT);
+    const { container } = renderScreen();
+    await answerFirstCorrectly();
+    expect(screen.getByRole("button", { name: "다음 문제로" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "학습 완료" })).not.toBeInTheDocument();
+    expect(container.querySelector(".casheet__scrim")).not.toBeInTheDocument();
+  });
+
+  it("pressing 다음 advances to the next item and closes the sheet", async () => {
+    recSentences.mockResolvedValue({ items: [SENTENCE, SENTENCE_2] });
+    blankAttempt.mockResolvedValue(CORRECT);
+    renderScreen();
+    await answerFirstCorrectly();
+    await userEvent.click(screen.getByRole("button", { name: "다음 문제로" }));
+    // Next item is shown; the correct sheet is gone.
+    expect(await screen.findByText(/내일/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "다음 문제로" })).not.toBeInTheDocument();
+    expect(screen.queryByText("정답이에요!")).not.toBeInTheDocument();
+  });
+
+  it("a correct FINAL answer shows the completion sheet (완료 + blur), not 다음", async () => {
+    recSentences.mockResolvedValue({ items: [SENTENCE] }); // single item = final
+    blankAttempt.mockResolvedValue(CORRECT);
+    const { container } = renderScreen();
+    await answerFirstCorrectly();
+    expect(screen.getByRole("button", { name: "학습 완료" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "다음 문제로" })).not.toBeInTheDocument();
+    expect(container.querySelector(".casheet__scrim")).toBeInTheDocument();
+    // The final answer card stays visible behind the sheet.
+    expect(screen.getByText("정답이에요!")).toBeInTheDocument();
+  });
+
+  it("the session does not complete until 완료 is pressed (no auto-finish)", async () => {
+    recSentences.mockResolvedValue({ items: [SENTENCE] });
+    blankAttempt.mockResolvedValue(CORRECT);
+    renderScreen();
+    await answerFirstCorrectly();
+    // Still on the item; the completion sheet is waiting for 완료.
+    expect(screen.getByRole("button", { name: "학습 완료" })).toBeInTheDocument();
+    expect(screen.getByText("정답이에요!")).toBeInTheDocument();
   });
 });

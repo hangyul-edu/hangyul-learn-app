@@ -452,7 +452,8 @@ export function SessionConversation() {
     }
   }
 
-  // Reveal the next leading character of the answer — server-controlled.
+  // Reveal the leading hint of the answer — server-controlled. Fetched once per
+  // blank, then cached in `revealed` so re-opening the hint never re-requests.
   async function requestHint(s: Sentence) {
     if (hintBusy || answered.has(s.sentence_id)) return; // single in-flight request
     setHintBusy(true);
@@ -465,6 +466,21 @@ export function SessionConversation() {
       toast.error(errorMessage(e));
     } finally {
       setHintBusy(false);
+    }
+  }
+
+  // The 힌트보기 button is a plain on/off toggle. Opening a blank fetches its
+  // hint once (then it's cached); closing just hides it. Non-blank sentences
+  // toggle their romanization line.
+  function toggleHint(s: Sentence) {
+    if (hintOpen) {
+      setHintOpen(false);
+      return;
+    }
+    if (hasBlank(s) && !(revealed[s.sentence_id] ?? "")) {
+      void requestHint(s); // first open: fetch, which also sets hintOpen
+    } else {
+      setHintOpen(true);
     }
   }
 
@@ -710,7 +726,7 @@ export function SessionConversation() {
               keyboard={keyboard && hasBlank(cur)}
               typed={typed}
               onTyped={setTyped}
-              revealed={revealed[cur.sentence_id] ?? ""}
+              revealed={hintOpen ? (revealed[cur.sentence_id] ?? "") : ""}
               onSubmit={() => submitTyped(cur)}
               submitting={submitting}
               composingRef={composingRef}
@@ -737,9 +753,10 @@ export function SessionConversation() {
             <div className="sess__card-actions">
               <button
                 className="sess__chip"
-                onClick={() => (hasBlank(cur) ? requestHint(cur) : setHintOpen((h) => !h))}
+                onClick={() => toggleHint(cur)}
                 disabled={hintBusy || answered.has(cur.sentence_id)}
                 aria-busy={hintBusy}
+                aria-pressed={hintOpen}
               >
                 <span aria-hidden="true">❔</span> {copy.hint}
               </button>

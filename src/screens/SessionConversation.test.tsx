@@ -212,6 +212,36 @@ describe("SessionConversation — fill-in-the-blank", () => {
     );
   });
 
+  it("toggles the hint on and off with the View Hint button (fetched once, then cached)", async () => {
+    blankHint.mockResolvedValue({
+      blank_id: "blank-1",
+      revealed_text: "지",
+      revealed_count: 1,
+      can_request_another_hint: true,
+      hint_used: true,
+    });
+    renderScreen();
+    await screen.findByText(/덕분에 잘/);
+    await userEvent.click(screen.getByRole("button", { name: /키보드 모드/ }));
+    const input = (await screen.findByLabelText("빈칸에 들어갈 말")) as HTMLInputElement;
+    const hintBtn = screen.getByRole("button", { name: /힌트보기/ });
+
+    // Tap → hint shown as the placeholder, button reflects the pressed state.
+    await userEvent.click(hintBtn);
+    await waitFor(() => expect(input).toHaveAttribute("placeholder", "지"));
+    expect(hintBtn).toHaveAttribute("aria-pressed", "true");
+
+    // Tap again → hint hidden.
+    await userEvent.click(hintBtn);
+    await waitFor(() => expect(input).toHaveAttribute("placeholder", ""));
+    expect(hintBtn).toHaveAttribute("aria-pressed", "false");
+
+    // Tap once more → shown again from cache, no second server request.
+    await userEvent.click(hintBtn);
+    await waitFor(() => expect(input).toHaveAttribute("placeholder", "지"));
+    expect(blankHint).toHaveBeenCalledTimes(1);
+  });
+
   it("does not submit an empty typed answer to the server", async () => {
     renderScreen();
     await screen.findByText(/덕분에 잘/);

@@ -699,6 +699,8 @@ export interface ManagementBucket {
   end_date: string;
   label: string;
   study_seconds: number;
+  conversation_sentence_count: number;
+  topik_question_count: number;
   is_current: boolean;
 }
 export interface ManagementStats {

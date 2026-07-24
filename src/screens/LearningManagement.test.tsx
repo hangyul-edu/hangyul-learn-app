@@ -39,10 +39,10 @@ function stats(period: ManagementPeriod, over: Partial<ManagementStats> = {}): M
     has_any_eligible_learning_record: true,
     today: { study_seconds: 3600, conversation_sentence_count: 3, topik_question_count: 2, learning_count: 5 },
     buckets: [
-      { key: "d1", start_date: "2026-07-20", end_date: "2026-07-20", label: "월", study_seconds: 1200, is_current: false },
-      { key: "d2", start_date: "2026-07-23", end_date: "2026-07-23", label: "목", study_seconds: 3600, is_current: true },
+      { key: "d1", start_date: "2026-07-20", end_date: "2026-07-20", label: "월", study_seconds: 1200, conversation_sentence_count: 4, topik_question_count: 1, is_current: false },
+      { key: "d2", start_date: "2026-07-23", end_date: "2026-07-23", label: "목", study_seconds: 3600, conversation_sentence_count: 3, topik_question_count: 2, is_current: true },
     ],
-    period_totals: { conversation_sentence_count: 5, topik_question_count: 5, learning_count: 10 },
+    period_totals: { conversation_sentence_count: 7, topik_question_count: 3, learning_count: 10 },
     ...over,
   };
 }
@@ -84,6 +84,22 @@ describe("LearningManagement", () => {
     expect(screen.queryByText("1h 0m")).not.toBeInTheDocument();
   });
 
+  it("bottom totals reflect the selected bar only, not the period aggregate", async () => {
+    renderPage();
+    await screen.findByText("목");
+    const totals = document.querySelector(".lmgmt__totals") as HTMLElement;
+    // Default selection = current bucket (목): 3 sentences / 2 questions — NOT
+    // the period aggregate (7 / 3).
+    expect(within(totals).getByText("3")).toBeInTheDocument();
+    expect(within(totals).getByText("2")).toBeInTheDocument();
+    expect(within(totals).queryByText("7")).not.toBeInTheDocument();
+    // Select the Monday bar → its own counts (4 / 1).
+    await userEvent.click(screen.getByRole("button", { name: /월/ }));
+    expect(within(totals).getByText("4")).toBeInTheDocument();
+    expect(within(totals).getByText("1")).toBeInTheDocument();
+    expect(within(totals).queryByText("3")).not.toBeInTheDocument();
+  });
+
   it("shows a loading skeleton (not the empty state) before data arrives", () => {
     management.mockReturnValue(new Promise(() => {}));
     const { container } = renderPage();
@@ -108,7 +124,7 @@ describe("LearningManagement", () => {
       stats("7d", {
         has_any_eligible_learning_record: true,
         today: { study_seconds: 0, conversation_sentence_count: 0, topik_question_count: 0, learning_count: 0 },
-        buckets: [{ key: "d", start_date: "2026-07-23", end_date: "2026-07-23", label: "목", study_seconds: 0, is_current: true }],
+        buckets: [{ key: "d", start_date: "2026-07-23", end_date: "2026-07-23", label: "목", study_seconds: 0, conversation_sentence_count: 0, topik_question_count: 0, is_current: true }],
         period_totals: { conversation_sentence_count: 0, topik_question_count: 0, learning_count: 0 },
       }),
     );
@@ -125,7 +141,7 @@ describe("LearningManagement", () => {
     for (const label of ["최근 7일", "이번 달", "최근 3개월", "최근 1년"]) {
       expect(screen.getByRole("menuitem", { name: label })).toBeInTheDocument();
     }
-    management.mockResolvedValue(stats("1m", { buckets: [{ key: "w1", start_date: "2026-07-01", end_date: "2026-07-05", label: "1주", study_seconds: 600, is_current: true }] }));
+    management.mockResolvedValue(stats("1m", { buckets: [{ key: "w1", start_date: "2026-07-01", end_date: "2026-07-05", label: "1주", study_seconds: 600, conversation_sentence_count: 1, topik_question_count: 0, is_current: true }] }));
     await userEvent.click(screen.getByRole("menuitem", { name: "이번 달" }));
     await waitFor(() => expect(management).toHaveBeenCalledWith("1m", expect.anything()));
     expect(await screen.findByText("1주")).toBeInTheDocument();

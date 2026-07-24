@@ -15,6 +15,44 @@ import { normalizeLanguage } from "../lib/language";
 import { TOPIK_SESSION_COPY } from "../lib/topikSessionCopy";
 import type { Quiz, QuizAttemptResult, TopikSection } from "../lib/types";
 
+// In-progress TOPIK session snapshot, persisted so a refresh restores the same
+// set, position, and writing drafts instead of generating new questions. Scoped
+// to the tab via sessionStorage; cleared when the session is finished or exited.
+const TOPIK_SESSION_KEY = "hangyul.session.topik.v1";
+
+type TopikSnapshot = {
+  section: TopikSection;
+  items: Quiz[];
+  idx: number;
+  // Per-item working answers keyed by quiz_id (writing drafts, selected option,
+  // typed blanks) so nothing is lost across navigation or refresh.
+  drafts: Record<string, AnswerValue>;
+  answered: string[];
+  correct: string[];
+  points: number;
+  typeCode: string | null;
+  startedAt: number;
+};
+
+function readTopikSnapshot(): TopikSnapshot | null {
+  try {
+    const raw = sessionStorage.getItem(TOPIK_SESSION_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw) as TopikSnapshot;
+    return Array.isArray(s.items) && s.items.length > 0 ? s : null;
+  } catch {
+    return null;
+  }
+}
+
+function clearTopikSnapshot() {
+  try {
+    sessionStorage.removeItem(TOPIK_SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function SessionTopik() {
   const nav = useNavigate();
   const loc = useLocation();
@@ -45,7 +83,9 @@ export function SessionTopik() {
   const [typeCode, setTypeCode] = useState<string | null>(null);
   const [items, setItems] = useState<Quiz[] | null>(null);
   const [idx, setIdx] = useState(0);
-  const [value, setValue] = useState<AnswerValue>({});
+  // Working answers keyed by quiz_id. The current item's answer is derived from
+  // this map, so navigating between items and refreshing both preserve drafts.
+  const [drafts, setDrafts] = useState<Record<string, AnswerValue>>({});
   const [result, setResult] = useState<QuizAttemptResult | null>(null);
   const [correctSet, setCorrectSet] = useState<Set<string>>(new Set());
   const [answered, setAnswered] = useState<Set<string>>(new Set());
@@ -65,7 +105,7 @@ export function SessionTopik() {
       const res = await recApi.questions({ section, count, ...(code ? { topik_question_type: code } : {}) });
       setItems(res.items);
       setIdx(0);
-      setValue({});
+      setDrafts({});
       setResult(null);
       setCorrectSet(new Set());
       setAnswered(new Set());
@@ -78,22 +118,66 @@ export function SessionTopik() {
   }
 
   const startedAt = useRef(Date.now());
-  // Fetch the initial set once the dashboard (remaining goal) has resolved.
+  // On boot, resume a saved session (same section) if one exists — e.g. after a
+  // refresh — so we never regenerate content or drop drafts; otherwise fetch a
+  // fresh set once the dashboard (remaining goal) has resolved.
   const booted = useRef(false);
   useEffect(() => {
     if (booted.current || !dash.data) return;
     booted.current = true;
-    void loadSet();
+    const snap = readTopikSnapshot();
+    if (snap && snap.section === section) {
+      setItems(snap.items);
+      setIdx(snap.idx);
+      setDrafts(snap.drafts ?? {});
+      setAnswered(new Set(snap.answered));
+      setCorrectSet(new Set(snap.correct));
+      setPoints(snap.points ?? 0);
+      setTypeCode(snap.typeCode ?? null);
+      startedAt.current = snap.startedAt ?? Date.now();
+    } else {
+      void loadSet();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dash.data]);
 
   const total = items?.length ?? 0;
   const cur = items?.[idx];
   const progress = total ? answered.size / total : 0;
+  // The current item's working answer, derived from the per-item draft map.
+  const value: AnswerValue = cur ? (drafts[cur.quiz_id] ?? {}) : {};
+  const setValue = (v: AnswerValue) => {
+    if (cur) setDrafts((d) => ({ ...d, [cur.quiz_id]: v }));
+  };
   // Note: opening/viewing a question does NOT count as learning. Today is only
   // credited as a learning day once the user answers a question correctly —
   // that happens server-side on the correct attempt, and the sun refreshes when
   // the dashboard query is invalidated on session exit.
+
+  // Persist the session (debounced) so a refresh restores the set, position, and
+  // in-progress drafts. Debounced so keystrokes don't thrash sessionStorage.
+  useEffect(() => {
+    if (!items) return;
+    const snap: TopikSnapshot = {
+      section,
+      items,
+      idx,
+      drafts,
+      answered: [...answered],
+      correct: [...correctSet],
+      points,
+      typeCode,
+      startedAt: startedAt.current,
+    };
+    const timer = setTimeout(() => {
+      try {
+        sessionStorage.setItem(TOPIK_SESSION_KEY, JSON.stringify(snap));
+      } catch {
+        /* ignore quota/serialization errors */
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [items, idx, drafts, answered, correctSet, points, typeCode, section]);
 
   async function submit() {
     if (!cur || submitting || result || !canSubmitTopik(cur, value)) return;
@@ -113,7 +197,14 @@ export function SessionTopik() {
 
   function next() {
     setResult(null);
-    setValue({});
+    // The item is submitted — drop its draft (confirmed-submission cleanup).
+    if (cur) {
+      setDrafts((d) => {
+        const rest = { ...d };
+        delete rest[cur.quiz_id];
+        return rest;
+      });
+    }
     if (idx >= total - 1) {
       finishOrExit();
     } else {
@@ -134,6 +225,8 @@ export function SessionTopik() {
   const finalizingRef = useRef(false);
   async function exitSession() {
     if (finalizingRef.current) return;
+    // Leaving ends the session: drop its snapshot so re-entry starts fresh.
+    clearTopikSnapshot();
     if (answered.size === 0) {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       nav(-1);

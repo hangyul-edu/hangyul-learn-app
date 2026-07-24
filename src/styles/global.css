@@ -4497,6 +4497,255 @@ textarea.input {
   cursor: default;
 }
 
+/* ===================== TOPIK discriminated question renderer ===================== */
+.tq {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 4px;
+}
+/* Gray instruction line (the server prompt), below the orange card title. */
+.tq__instruction {
+  margin: 0;
+  color: #4a5560;
+  font-size: clamp(15px, 4vw, 17px);
+  font-weight: 600;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+.tq__instruction-sub {
+  margin: -8px 0 0;
+  color: #8a929a;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.tq__image {
+  width: 100%;
+  border-radius: 14px;
+}
+/* Server-authored passage / table / guiding-questions (text elements only). */
+.tq-passage {
+  background: #f6f7f9;
+  border-radius: 14px;
+  padding: 14px 16px;
+  color: #2c333a;
+  font-size: 15px;
+  line-height: 1.7;
+  word-break: keep-all;
+  overflow-x: auto;
+}
+.tq-passage table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14px;
+}
+.tq-passage th,
+.tq-passage td {
+  border: 1px solid #dfe3e8;
+  padding: 7px 10px;
+  text-align: center;
+}
+.tq-passage th {
+  background: #eef1f4;
+  font-weight: 700;
+}
+.tq-passage ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+/* Multiple choice — reading + listening share this selection design. */
+.tq-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tq-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 14px;
+  border: 1.5px solid #e7e9ec;
+  border-radius: 14px;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+}
+.tq-choice__num {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #eef0f2;
+  color: #4a5560;
+  font-weight: 800;
+  font-size: 14px;
+}
+.tq-choice__text {
+  flex: 1;
+  color: #272c30;
+  font-size: 15.5px;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+.tq-choice__check {
+  flex: 0 0 auto;
+  display: inline-flex;
+  color: #ff5b00;
+}
+.tq-choice.is-selected {
+  border-color: #ff8a3d;
+  background: #fff4ec;
+}
+.tq-choice.is-selected .tq-choice__num {
+  background: #ff5b00;
+  color: #fff;
+}
+.tq-choice:disabled {
+  cursor: default;
+}
+
+/* Fill-in-the-blank inputs. */
+.tq-blanks {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.tq-blank {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tq-blank__label {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #eef0f2;
+  color: #4a5560;
+  font-weight: 800;
+}
+.tq-blank__input {
+  flex: 1;
+  height: 48px;
+  border: 1.5px solid #dfe3e8;
+  border-radius: 12px;
+  background: #fff;
+  padding: 0 14px;
+  font-size: 15px;
+  color: #272c30;
+}
+.tq-blank__input:focus {
+  outline: none;
+  border-color: #ff8a3d;
+}
+
+/* Writing (data-response + opinion-essay). */
+.tq-writing {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tq-writing__area {
+  width: 100%;
+  min-height: 180px;
+  resize: vertical;
+  border: 1.5px solid #dfe3e8;
+  border-radius: 14px;
+  background: #fff;
+  padding: 14px;
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #272c30;
+}
+.tq-writing__area:focus {
+  outline: none;
+  border-color: #ff8a3d;
+}
+.tq-writing__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 18px;
+}
+.tq-writing__hint {
+  color: #ff5b00;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.tq-counter {
+  color: #8a929a;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.tq-counter--error {
+  color: #e5484d;
+}
+
+/* Listening audio player. */
+.tq-audio {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fff6ec;
+  border-radius: 16px;
+  padding: 14px 16px;
+}
+.tq-audio__play {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border: none;
+  border-radius: 50%;
+  background: #ff5b00;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(255, 91, 0, 0.24);
+}
+.tq-audio__play:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+.tq-audio__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tq-audio__label {
+  color: #5a4a3a;
+  font-weight: 700;
+  font-size: 14px;
+}
+.tq-audio__time {
+  color: #8a7a68;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.tq-audio__error {
+  color: #e5484d;
+  font-size: 12.5px;
+}
+
+.tq-unsupported {
+  background: #fff4ec;
+  border: 1px solid #ffd9bf;
+  border-radius: 14px;
+  padding: 16px;
+  color: #8a5a2a;
+  font-size: 14.5px;
+  line-height: 1.6;
+  text-align: center;
+}
+
 /* ============================ Ask-AI explanation sheet ============================ */
 .askai {
   /* Fixed to the visual viewport so the sheet is always anchored to the visible

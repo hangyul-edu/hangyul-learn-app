@@ -177,6 +177,9 @@ export const quizApi = {
     http.get<{ items: Quiz[] }>("/quizzes", { limit: 20, ...params }),
   daily: () => http.get<{ items: Quiz[]; date?: string }>("/quizzes/daily"),
   get: (id: string) => http.get<Quiz>(`/quizzes/${id}`),
+  // Signed, short-lived CDN URL for a listening question's audio (fetched lazily
+  // when the learner plays it, never embedded in the question payload).
+  audio: (id: string) => http.get<{ url: string; duration_ms?: number }>(`/quizzes/${id}/audio`),
   attempt: (id: string, body: Record<string, unknown>) => http.post<QuizAttemptResult>(`/quizzes/${id}/attempt`, body),
   bookmark: (id: string) => http.post<unknown>(`/quizzes/${id}/bookmark`),
   unbookmark: (id: string) => http.del<void>(`/quizzes/${id}/bookmark`),

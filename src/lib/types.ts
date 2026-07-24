@@ -216,10 +216,23 @@ export interface QuizAnswerConfig {
   format: AnswerFormat;
   choices: QuizChoice[];
   blanks: QuizBlank[];
+  /** Character limits for writing answers (free_response). */
+  min_length?: number | null;
+  max_length?: number | null;
+  scoring_criteria?: string[];
   max_score?: number | null;
 }
+/** Discriminated question type the client renders on (server-derived). */
+export type TopikQuestionFormat =
+  | "reading_multiple_choice"
+  | "listening_multiple_choice"
+  | "writing_fill_blanks"
+  | "writing_data_response"
+  | "writing_opinion_essay";
 export interface Quiz {
   quiz_id: string;
+  /** Server-derived discriminator; present on all quiz payloads. */
+  question_type?: TopikQuestionFormat;
   prompt: string;
   prompt_translation?: string | null;
   level: number;

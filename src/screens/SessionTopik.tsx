@@ -3,12 +3,16 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SessionChrome } from "../components/SessionChrome";
 import { SessionCompleteModal } from "../components/SessionCompleteModal";
-import { QuestionView, isAnswered, quizAttemptBody, type AnswerValue } from "../components/QuestionView";
+import { quizAttemptBody, type AnswerValue } from "../components/QuestionView";
+import { TopikQuestion, canSubmitTopik } from "../components/topik/TopikQuestion";
 import { SavePlusIcon } from "../components/brand/HomeIcons";
 import { LoadingState, ErrorState } from "../components/ui/states";
 import { recApi, quizApi, dashboardApi, learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
+import { useAuth } from "../hooks/auth";
 import { errorMessage } from "../lib/http";
+import { normalizeLanguage } from "../lib/language";
+import { TOPIK_SESSION_COPY } from "../lib/topikSessionCopy";
 import type { Quiz, QuizAttemptResult, TopikSection } from "../lib/types";
 
 export function SessionTopik() {
@@ -24,6 +28,8 @@ export function SessionTopik() {
   // listening only if the screen is reached without a selection (deep link).
   const section: TopikSection = navState?.section ?? "listening";
   const qc = useQueryClient();
+  const { me } = useAuth();
+  const copy = TOPIK_SESSION_COPY[normalizeLanguage(me?.app_language)];
 
   const dash = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
   const topik = dash.data?.tracks.find((t) => t.category === "topik");
@@ -90,7 +96,7 @@ export function SessionTopik() {
   // the dashboard query is invalidated on session exit.
 
   async function submit() {
-    if (!cur || submitting || result || !isAnswered(cur, value)) return;
+    if (!cur || submitting || result || !canSubmitTopik(cur, value)) return;
     setSubmitting(true);
     try {
       const res = await quizApi.attempt(cur.quiz_id, quizAttemptBody(cur, value));
@@ -229,28 +235,28 @@ export function SessionTopik() {
       ) : (
         <div className="sess__card">
           <div className="sess__card-top">
-            <p className="sess__instr sess__instr--topik">문제를 풀어보세요</p>
-            <button className="sess__bookmark" onClick={() => toggleSave(cur)} aria-label={saved[cur.quiz_id] ? "저장 해제" : "저장"} aria-pressed={!!saved[cur.quiz_id]}>
+            <p className="sess__instr sess__instr--topik">{copy.title}</p>
+            <button className="sess__bookmark" onClick={() => toggleSave(cur)} aria-label={saved[cur.quiz_id] ? copy.removeSaved : copy.saveQuestion} aria-pressed={!!saved[cur.quiz_id]}>
               <SavePlusIcon active={!!saved[cur.quiz_id]} />
             </button>
           </div>
 
-          <QuestionView quiz={cur} value={value} onChange={setValue} disabled={!!result} />
+          <TopikQuestion quiz={cur} value={value} onChange={setValue} disabled={!!result} copy={copy} />
 
           {result ? (
             <div className="sess__result">
               <span className={result.correct ? "sess__result-ok" : "sess__result-no"}>
-                {result.correct ? "정답이에요! 🎉" : "아쉬워요 💪"}
-                {!result.correct && result.correct_answer ? ` · 정답: ${result.correct_answer}` : ""}
+                {result.correct ? copy.correct : copy.incorrect}
+                {!result.correct && result.correct_answer ? ` · ${copy.correctAnswerLabel(result.correct_answer)}` : ""}
               </span>
               {result.explanation && <p className="sess__explain">{result.explanation}</p>}
               <button className="sess__next" onClick={next}>
-                {idx >= total - 1 ? "완료" : "다음"}
+                {idx >= total - 1 ? copy.complete : copy.next}
               </button>
             </div>
           ) : (
-            <button className="sess__submit" onClick={submit} disabled={!isAnswered(cur, value) || submitting}>
-              {submitting ? <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2.5 }} /> : "제출"}
+            <button className="sess__submit" onClick={submit} disabled={!canSubmitTopik(cur, value) || submitting}>
+              {submitting ? <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2.5 }} /> : copy.submit}
             </button>
           )}
         </div>

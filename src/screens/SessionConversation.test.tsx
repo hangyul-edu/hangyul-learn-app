@@ -4,28 +4,49 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
 
-/* ---- mocks: keep the heavy session chrome out of the way ---- */
+/* ---- mocks: keep the heavy session chrome out of the way, but expose the
+   correct/total counters so tests can assert completion credit ---- */
 vi.mock("../components/SessionChrome", () => ({
-  SessionChrome: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SessionChrome: ({
+    children,
+    correct,
+    total,
+  }: {
+    children: React.ReactNode;
+    correct: number;
+    total: number;
+  }) => (
+    <div>
+      <div data-testid="counter">
+        {correct}/{total}
+      </div>
+      {children}
+    </div>
+  ),
 }));
 vi.mock("../components/SessionCompleteModal", () => ({ SessionCompleteModal: () => null }));
-vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn() }) }));
+
+const { recSentences, blankAttempt, blankHint, speechAttempt, summary, toastError } = vi.hoisted(
+  () => ({
+    recSentences: vi.fn(),
+    blankAttempt: vi.fn(),
+    blankHint: vi.fn(),
+    speechAttempt: vi.fn(),
+    summary: vi.fn(),
+    toastError: vi.fn(),
+  }),
+);
+vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: toastError, success: vi.fn() }) }));
 
 let mockMe: { app_language: string } = { app_language: "ko" };
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: mockMe }) }));
 
-const { recSentences, blankAttempt, blankHint, summary } = vi.hoisted(() => ({
-  recSentences: vi.fn(),
-  blankAttempt: vi.fn(),
-  blankHint: vi.fn(),
-  summary: vi.fn(),
-}));
 vi.mock("../api/endpoints", () => ({
   recApi: { sentences: recSentences },
   sentenceApi: {
     blankAttempt,
     blankHint,
-    speechAttempt: vi.fn(),
+    speechAttempt,
     bookmark: vi.fn(),
     unbookmark: vi.fn(),
     audio: vi.fn().mockResolvedValue({ url: "http://x/a.mp3" }),
@@ -33,6 +54,21 @@ vi.mock("../api/endpoints", () => ({
   dashboardApi: { summary },
   learnApi: { recordSession: vi.fn() },
 }));
+
+/* ---- minimal MediaRecorder / getUserMedia so voice attempts can be driven ---- */
+class MockMediaRecorder {
+  ondataavailable: ((e: { data: Blob }) => void) | null = null;
+  onstop: (() => void) | null = null;
+  state = "inactive";
+  start() {
+    this.state = "recording";
+  }
+  stop() {
+    this.state = "inactive";
+    this.ondataavailable?.({ data: new Blob(["audio"], { type: "audio/webm" }) });
+    this.onstop?.();
+  }
+}
 
 import { SessionConversation } from "./SessionConversation";
 
@@ -67,6 +103,11 @@ beforeEach(() => {
     tracks: [{ category: "conversation", level: 3, goal: { target: 3, current: 0, achieved: false } }],
   });
   recSentences.mockResolvedValue({ items: [SENTENCE] });
+  (globalThis as unknown as { MediaRecorder: unknown }).MediaRecorder = MockMediaRecorder;
+  Object.defineProperty(navigator, "mediaDevices", {
+    configurable: true,
+    value: { getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [{ stop: vi.fn() }] }) },
+  });
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -266,43 +307,223 @@ const INCORRECT = {
   submitted_at: "2026-07-22T00:00:00Z",
 };
 
-describe("SessionConversation — a wrong answer never advances", () => {
-  it("shows no 다음/완료 control and keeps the input ready for an immediate retry", async () => {
+/* A blank-free sentence routes voice attempts through the pronunciation
+   evaluator (speechAttempt), which returns a real score + tips. */
+const NON_BLANK = {
+  sentence_id: "sen_voice_01",
+  korean: "좋은 일들이 곧 올 거예요.",
+  translation: "Good things are on their way.",
+  translation_language: "en",
+  level: 3,
+  bookmarked: false,
+};
+const SPEECH_WRONG = {
+  attempt_id: "sp_wrong",
+  correct: false,
+  transcription: "좋은 일들이 고 올 거예요",
+  target_text: "좋은 일들이 곧 올 거예요.",
+  pronunciation_score: 25,
+  feedback_code: "bad_pronunciation",
+  tips: ["'일'과 '이' 발음을 조금 더 또렷하게 해보세요"],
+  points_earned: 0,
+};
+const SPEECH_OK = {
+  ...SPEECH_WRONG,
+  attempt_id: "sp_ok",
+  correct: true,
+  pronunciation_score: 96,
+  feedback_code: "correct",
+  tips: [],
+  points_earned: 10,
+};
+
+async function recordVoice(startLabel: string) {
+  await userEvent.click(await screen.findByRole("button", { name: startLabel }));
+  await userEvent.click(await screen.findByRole("button", { name: "녹음 멈추기" }));
+}
+
+describe("SessionConversation — keyboard incorrect state", () => {
+  it("renders the compact retry card: warning header, no next/confirm, no score panel", async () => {
     blankAttempt.mockResolvedValue(INCORRECT);
     renderScreen();
     await screen.findByText(/덕분에 잘/);
     await userEvent.click(screen.getByRole("button", { name: /키보드 모드/ }));
     await userEvent.type(screen.getByLabelText("빈칸에 들어갈 말"), "몰라{Enter}");
 
-    // Encouragement is shown, but there is no way to proceed while wrong.
-    expect(await screen.findByText(/다시 시도해봐요/)).toBeInTheDocument();
+    // Incorrect header is shown; there is no way to proceed while wrong.
+    expect(await screen.findByText("다시 생각해보세요")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "다음" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "완료" })).not.toBeInTheDocument();
-    // The input is still present and cleared, ready for another attempt.
+    expect(screen.queryByRole("button", { name: "답 확인" })).not.toBeInTheDocument();
+    // Keyboard mode never shows the pronunciation panel.
+    expect(screen.queryByText("발음 정확도")).not.toBeInTheDocument();
+    // Both bottom actions are present.
+    expect(screen.getByRole("button", { name: /힌트보기/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /음성 모드/ })).toBeInTheDocument();
+    // The input is still present and cleared for another attempt.
     const input = screen.getByLabelText("빈칸에 들어갈 말") as HTMLInputElement;
     expect(input.value).toBe("");
+    // A wrong attempt does not earn completion credit.
+    expect(screen.getByTestId("counter")).toHaveTextContent("0/1");
   });
 
-  it("retrying scores with a fresh request id and can then succeed in place", async () => {
+  it("retries via the IME/Enter action key with a fresh request id and can succeed in place", async () => {
     blankAttempt.mockResolvedValueOnce(INCORRECT).mockResolvedValueOnce(CORRECT);
     renderScreen();
     await screen.findByText(/덕분에 잘/);
     await userEvent.click(screen.getByRole("button", { name: /키보드 모드/ }));
     await userEvent.type(screen.getByLabelText("빈칸에 들어갈 말"), "몰라{Enter}");
-    await screen.findByText(/다시 시도해봐요/);
+    await screen.findByText("다시 생각해보세요");
 
-    // Retry the same item → correct answer resolves it.
     await userEvent.type(screen.getByLabelText("빈칸에 들어갈 말"), "지내고{Enter}");
     expect(await screen.findByText("정답이에요!")).toBeInTheDocument();
 
-    // Each attempt used its own idempotency key (so the retry is scored fresh,
-    // not deduped to the earlier wrong result).
+    // Two attempts, each with its own idempotency key (retry scored fresh).
     expect(blankAttempt).toHaveBeenCalledTimes(2);
     const id1 = blankAttempt.mock.calls[0][1].clientRequestId;
     const id2 = blankAttempt.mock.calls[1][1].clientRequestId;
     expect(id1).toBeTruthy();
     expect(id2).toBeTruthy();
     expect(id1).not.toBe(id2);
+  });
+
+  it("blocks a duplicate submission while the answer is being evaluated", async () => {
+    let resolve!: (v: unknown) => void;
+    blankAttempt.mockImplementation(() => new Promise((r) => (resolve = r)));
+    renderScreen();
+    await screen.findByText(/덕분에 잘/);
+    await userEvent.click(screen.getByRole("button", { name: /키보드 모드/ }));
+    const input = screen.getByLabelText("빈칸에 들어갈 말");
+    await userEvent.type(input, "지내고{Enter}");
+    // A second submit while the first is in flight is ignored.
+    await userEvent.type(input, "{Enter}");
+    expect(blankAttempt).toHaveBeenCalledTimes(1);
+    // Let the single in-flight attempt settle so its state update is flushed.
+    resolve(CORRECT);
+    expect(await screen.findByText("정답이에요!")).toBeInTheDocument();
+  });
+
+  it("keeps a technical failure retryable and never treats it as a wrong answer", async () => {
+    blankAttempt.mockRejectedValueOnce(new Error("network")).mockResolvedValueOnce(CORRECT);
+    renderScreen();
+    await screen.findByText(/덕분에 잘/);
+    await userEvent.click(screen.getByRole("button", { name: /키보드 모드/ }));
+    await userEvent.type(screen.getByLabelText("빈칸에 들어갈 말"), "지내고{Enter}");
+
+    // A retryable error is surfaced, but the item is not marked incorrect.
+    await waitFor(() => expect(toastError).toHaveBeenCalled());
+    expect(screen.queryByText("다시 생각해보세요")).not.toBeInTheDocument();
+    expect(screen.getByTestId("counter")).toHaveTextContent("0/1");
+    // The preserved input can simply be resubmitted → success.
+    await userEvent.type(screen.getByLabelText("빈칸에 들어갈 말"), "{Enter}");
+    expect(await screen.findByText("정답이에요!")).toBeInTheDocument();
+  });
+});
+
+describe("SessionConversation — voice incorrect state", () => {
+  it("renders the pronunciation score ring and actionable feedback from the response", async () => {
+    recSentences.mockResolvedValue({ items: [NON_BLANK] });
+    speechAttempt.mockResolvedValue(SPEECH_WRONG);
+    renderScreen();
+    await screen.findByText(/좋은 일들이/);
+    await recordVoice("따라 말하기");
+
+    expect(await screen.findByText("다시 생각해보세요")).toBeInTheDocument();
+    expect(screen.getByText("발음 정확도")).toBeInTheDocument();
+    expect(screen.getByText("25%")).toBeInTheDocument();
+    expect(screen.getByText(/또렷하게/)).toBeInTheDocument();
+    // The score is exposed accessibly (text alternative for the ring).
+    expect(screen.getByRole("group", { name: "발음 정확도 25 퍼센트" })).toBeInTheDocument();
+    // No progression control, no completion credit.
+    expect(screen.queryByRole("button", { name: "학습 완료" })).not.toBeInTheDocument();
+    expect(screen.getByTestId("counter")).toHaveTextContent("0/1");
+  });
+
+  it("clamps an out-of-range score and still announces it accessibly", async () => {
+    recSentences.mockResolvedValue({ items: [NON_BLANK] });
+    speechAttempt.mockResolvedValue({ ...SPEECH_WRONG, pronunciation_score: 150 });
+    renderScreen();
+    await screen.findByText(/좋은 일들이/);
+    await recordVoice("따라 말하기");
+
+    expect(await screen.findByText("100%")).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "발음 정확도 100 퍼센트" })).toBeInTheDocument();
+  });
+
+  it("falls back to a safe localized message when the response has no tips", async () => {
+    recSentences.mockResolvedValue({ items: [NON_BLANK] });
+    speechAttempt.mockResolvedValue({ ...SPEECH_WRONG, tips: [] });
+    renderScreen();
+    await screen.findByText(/좋은 일들이/);
+    await recordVoice("따라 말하기");
+
+    expect(await screen.findByText("조금 더 또렷하게 말해보세요.")).toBeInTheDocument();
+  });
+
+  it("renders long feedback in full without dropping text", async () => {
+    const long =
+      "발음 피드백이 매우 길어질 수 있으며 " + "여러 줄로 자연스럽게 줄바꿈되어야 합니다 ".repeat(4);
+    recSentences.mockResolvedValue({ items: [NON_BLANK] });
+    speechAttempt.mockResolvedValue({ ...SPEECH_WRONG, tips: [long] });
+    renderScreen();
+    await screen.findByText(/좋은 일들이/);
+    await recordVoice("따라 말하기");
+
+    expect(await screen.findByText(/줄바꿈되어야 합니다/)).toBeInTheDocument();
+  });
+
+  it("lets the learner record another attempt immediately without advancing", async () => {
+    recSentences.mockResolvedValue({ items: [NON_BLANK] });
+    speechAttempt.mockResolvedValue(SPEECH_WRONG);
+    renderScreen();
+    await screen.findByText(/좋은 일들이/);
+    await recordVoice("따라 말하기");
+    await screen.findByText("다시 생각해보세요");
+
+    // Retry via the (relabeled) mic — still the same item, no completion.
+    await recordVoice("다시 녹음하기");
+    expect(speechAttempt).toHaveBeenCalledTimes(2);
+    expect(screen.getByText(/좋은 일들이/)).toBeInTheDocument();
+    expect(screen.getByTestId("counter")).toHaveTextContent("0/1");
+
+    // A correct retry finally advances through the normal correct-answer flow.
+    speechAttempt.mockResolvedValue(SPEECH_OK);
+    await recordVoice("다시 녹음하기");
+    expect(await screen.findByText("정답이에요!")).toBeInTheDocument();
+  });
+});
+
+describe("SessionConversation — mode switching preserves the session", () => {
+  it("keyboard → voice keeps the same item and requests no new content", async () => {
+    blankAttempt.mockResolvedValue(INCORRECT);
+    renderScreen();
+    await screen.findByText(/덕분에 잘/);
+    await userEvent.click(screen.getByRole("button", { name: /키보드 모드/ }));
+    await userEvent.type(screen.getByLabelText("빈칸에 들어갈 말"), "몰라{Enter}");
+    await screen.findByText("다시 생각해보세요");
+
+    await userEvent.click(screen.getByRole("button", { name: /음성 모드/ }));
+    // Same sentence, mic ready for a retry, no new recommendation.
+    expect(screen.getByText(/덕분에 잘/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "다시 녹음하기" })).toBeInTheDocument();
+    expect(recSentences).toHaveBeenCalledTimes(1);
+  });
+
+  it("voice → keyboard keeps the item, hides the panel, and requests no new content", async () => {
+    // A blank sentence: voice attempt is graded, then we switch to keyboard.
+    blankAttempt.mockResolvedValue(INCORRECT);
+    renderScreen();
+    await screen.findByText(/덕분에 잘/);
+    await recordVoice("따라 말하기");
+    await screen.findByText("다시 생각해보세요");
+    expect(screen.getByText("발음 정확도")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /키보드 모드/ }));
+    // Same item, keyboard input available, panel gone, no new recommendation.
+    expect(screen.getByLabelText("빈칸에 들어갈 말")).toBeInTheDocument();
+    expect(screen.queryByText("발음 정확도")).not.toBeInTheDocument();
+    expect(screen.getByText(/덕분에 잘/)).toBeInTheDocument();
+    expect(recSentences).toHaveBeenCalledTimes(1);
   });
 });
 

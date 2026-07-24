@@ -8,8 +8,18 @@ import { CorrectAnswerSheet } from "../components/CorrectAnswerSheet";
 import { LoadingState, ErrorState } from "../components/ui/states";
 import { recApi, sentenceApi, dashboardApi, learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
+import { useAuth } from "../hooks/auth";
 import { errorMessage } from "../lib/http";
+import { normalizeLanguage } from "../lib/language";
+import {
+  SESSION_CONVERSATION_COPY,
+  type SessionConversationCopy,
+} from "../lib/sessionConversationCopy";
 import type { BlankAttempt, Sentence, SpeechAttempt } from "../lib/types";
+
+/** Which input produced the last evaluated attempt — decides whether the
+ * pronunciation panel (voice only) is shown. */
+type AttemptMode = "keyboard" | "voice";
 
 /** A conversation item is a fill-in-the-blank when it ships a `display_text`
  * with a blank and structured blank metadata. */
@@ -40,6 +50,20 @@ function newRequestId(): string {
   }
 }
 
+/** Clamp any returned score to a safe 0–100 integer for display + a11y. */
+function clampScore(score: number): number {
+  if (!Number.isFinite(score)) return 0;
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+/** Actionable pronunciation feedback from the evaluation result. Prefers the
+ * server's already-localized tips; falls back to a safe localized message so a
+ * raw provider/API error is never surfaced to the learner. */
+function pronunciationMessage(res: SpeechAttempt, copy: SessionConversationCopy): string {
+  const tip = res.tips?.find((t) => t.trim().length > 0);
+  return tip?.trim() || copy.pronunciationFallback;
+}
+
 /** Key for the in-progress conversation session snapshot. It is persisted so a
  * page refresh restores the exact same set and progress instead of requesting
  * brand-new content. Scoped to the browser tab via sessionStorage and cleared
@@ -56,6 +80,7 @@ type SessionSnapshot = {
   revealed: Record<string, string>;
   prompt: string;
   startedAt: number;
+  keyboard: boolean;
 };
 
 function readSessionSnapshot(): SessionSnapshot | null {
@@ -162,6 +187,68 @@ function CheckIcon() {
   );
 }
 
+/** Coral circular warning badge (white exclamation) for the incorrect header. */
+function WarnIcon() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="12" r="11" fill="#ff5b00" />
+      <path d="M12 6.4v7.2" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" />
+      <circle cx="12" cy="17.2" r="1.4" fill="#fff" />
+    </svg>
+  );
+}
+
+/** Circular pronunciation-accuracy ring: gray inactive track + orange active arc
+ * with the clamped percentage centered. Decorative — the accessible value is
+ * announced by the panel's group label. */
+function ScoreRing({ percent }: { percent: number }) {
+  const r = 26;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - percent / 100);
+  return (
+    <svg className="sess__pron-ring" width="66" height="66" viewBox="0 0 66 66" aria-hidden="true" focusable="false">
+      <circle cx="33" cy="33" r={r} fill="none" stroke="#ececeb" strokeWidth="7" />
+      <circle
+        cx="33"
+        cy="33"
+        r={r}
+        fill="none"
+        stroke="#ff8a3d"
+        strokeWidth="7"
+        strokeLinecap="round"
+        strokeDasharray={circ}
+        strokeDashoffset={offset}
+        transform="rotate(-90 33 33)"
+      />
+      <text x="33" y="34" textAnchor="middle" dominantBaseline="central" fontSize="15" fontWeight="800" fill="#272c30">
+        {percent}%
+      </text>
+    </svg>
+  );
+}
+
+/** Voice-only pronunciation feedback: score ring + one actionable message. */
+function PronunciationPanel({
+  score,
+  message,
+  copy,
+}: {
+  score: number;
+  message: string;
+  copy: SessionConversationCopy;
+}) {
+  const percent = clampScore(score);
+  return (
+    <div className="sess__pron" role="group" aria-label={copy.scoreA11y(percent)}>
+      <ScoreRing percent={percent} />
+      <div className="sess__pron-text">
+        <div className="sess__pron-title">{copy.pronunciationTitle}</div>
+        <p className="sess__pron-msg">{message}</p>
+      </div>
+    </div>
+  );
+}
+
 /** Remaining items to satisfy today's conversation goal (server-derived). */
 function useRemaining() {
   const q = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
@@ -175,6 +262,8 @@ export function SessionConversation() {
   const loc = useLocation();
   const toast = useToast();
   const qc = useQueryClient();
+  const { me } = useAuth();
+  const copy = SESSION_CONVERSATION_COPY[normalizeLanguage(me?.app_language)];
   // Where the session was launched from (Home / Personalized), forwarded to the
   // Level-Up screen so its button returns the user to that source page.
   const from = (loc.state as { from?: string } | null)?.from ?? "/home";
@@ -201,6 +290,12 @@ export function SessionConversation() {
   const [recording, setRecording] = useState(false);
   const [scoring, setScoring] = useState(false);
   const [result, setResult] = useState<SpeechAttempt | null>(null);
+  // Which input produced `result` — the pronunciation panel is voice-only.
+  const [attemptMode, setAttemptMode] = useState<AttemptMode | null>(null);
+  // Monotonic attempt token. A response is applied only if it is still the
+  // latest attempt, so a late reply from a previous attempt or a now-switched
+  // mode can never overwrite the current state.
+  const attemptSeq = useRef(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
   const media = useRef<MediaRecorder | null>(null);
@@ -224,6 +319,7 @@ export function SessionConversation() {
       setCorrectSet(new Set());
       setAnswered(new Set());
       setResult(null);
+      setAttemptMode(null);
       setTyped("");
       setHintOpen(false);
       setRevealed({});
@@ -257,6 +353,7 @@ export function SessionConversation() {
       setSaved(snap.saved ?? {});
       setRevealed(snap.revealed ?? {});
       setPrompt(snap.prompt ?? "");
+      setKeyboard(!!snap.keyboard);
       startedAt.current = snap.startedAt ?? Date.now();
     } else {
       void loadSet();
@@ -279,13 +376,14 @@ export function SessionConversation() {
       revealed,
       prompt,
       startedAt: startedAt.current,
+      keyboard,
     };
     try {
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(snap));
     } catch {
       /* ignore quota/serialization errors */
     }
-  }, [items, idx, points, correctSet, answered, saved, revealed, prompt]);
+  }, [items, idx, points, correctSet, answered, saved, revealed, prompt, keyboard]);
 
   const total = items?.length ?? 0;
   const cur = items?.[idx];
@@ -307,8 +405,9 @@ export function SessionConversation() {
     }
   }
 
-  function record(res: SpeechAttempt, s: Sentence) {
+  function record(res: SpeechAttempt, s: Sentence, mode: AttemptMode) {
     setResult(res);
+    setAttemptMode(mode);
     attemptedRef.current = true;
     // Points come from the server result; correct count from its `correct` flag.
     setPoints((p) => p + (res.points_earned ?? 0));
@@ -335,15 +434,19 @@ export function SessionConversation() {
     if (!answerText) return;
     setSubmitting(true);
     reqIdRef.current ??= newRequestId();
+    const seq = ++attemptSeq.current;
     try {
       const res = await sentenceApi.blankAttempt(s.sentence_id, {
         inputMode: "keyboard",
         answerText,
         clientRequestId: reqIdRef.current,
       });
-      record(blankToSpeech(res), s);
-    } catch (e) {
-      toast.error(errorMessage(e));
+      // Ignore a late reply that a mode switch / newer attempt has superseded.
+      if (seq === attemptSeq.current) record(blankToSpeech(res), s, "keyboard");
+    } catch {
+      // A technical failure is not a wrong answer: keep the item, show a
+      // localized retryable message, never the raw provider error.
+      if (seq === attemptSeq.current) toast.error(copy.evaluationError);
     } finally {
       setSubmitting(false);
     }
@@ -375,23 +478,30 @@ export function SessionConversation() {
         stream.getTracks().forEach((t) => t.stop());
         setRecording(false);
         setScoring(true);
+        const seq = ++attemptSeq.current;
         try {
           const blob = new Blob(chunks.current, { type: "audio/webm" });
+          let res: SpeechAttempt;
           if (hasBlank(s)) {
             // Voice fill-in-the-blank: accepts the missing phrase OR the full
             // completed sentence — graded server-side.
             reqIdRef.current ??= newRequestId();
-            const res = await sentenceApi.blankAttempt(s.sentence_id, {
-              inputMode: "voice",
-              audio: blob,
-              clientRequestId: reqIdRef.current,
-            });
-            record(blankToSpeech(res), s);
+            res = blankToSpeech(
+              await sentenceApi.blankAttempt(s.sentence_id, {
+                inputMode: "voice",
+                audio: blob,
+                clientRequestId: reqIdRef.current,
+              }),
+            );
           } else {
-            record(await sentenceApi.speechAttempt(s.sentence_id, blob, "attempt.webm"), s);
+            res = await sentenceApi.speechAttempt(s.sentence_id, blob, "attempt.webm");
           }
-        } catch (e) {
-          toast.error(errorMessage(e));
+          // Ignore a late reply superseded by a mode switch / newer attempt.
+          if (seq === attemptSeq.current) record(res, s, "voice");
+        } catch {
+          // A technical failure is not a wrong answer: keep the item and show a
+          // localized retryable message, never the raw provider error.
+          if (seq === attemptSeq.current) toast.error(copy.retryMessage);
         } finally {
           setScoring(false);
         }
@@ -400,12 +510,13 @@ export function SessionConversation() {
       mr.start();
       setRecording(true);
     } catch {
-      toast.error("마이크 권한이 필요해요. 브라우저 설정을 확인해 주세요.");
+      toast.error(copy.micPermission);
     }
   }
 
   function next() {
     setResult(null);
+    setAttemptMode(null);
     setTyped("");
     setHintOpen(false);
     reqIdRef.current = null; // fresh idempotency key for the next item
@@ -484,6 +595,10 @@ export function SessionConversation() {
   }
 
   const incorrect = !!result && cur != null && !result.correct;
+  // The pronunciation panel is voice-only. It stays tied to the attempt history
+  // (`attemptMode`) but hides while the keyboard input mode is active — switching
+  // to keyboard changes the visible state without discarding the attempt.
+  const showPron = incorrect && attemptMode === "voice" && !keyboard;
 
   const panel = useMemo(
     () => (
@@ -568,10 +683,24 @@ export function SessionConversation() {
         </>
       ) : (
         <>
-          <div className={`sess__card sess__card--conv ${result ? "sess__card--incorrect" : ""}`}>
+          <div className={`sess__card sess__card--conv ${incorrect ? "sess__card--incorrect" : ""}`}>
             <div className="sess__card-top">
-              <p className="sess__instr">빈칸을 채워 완성해봐요✨</p>
-              <button className="sess__bookmark" onClick={() => toggleSave(cur)} aria-label={saved[cur.sentence_id] ? "저장 해제" : "저장"} aria-pressed={!!saved[cur.sentence_id]}>
+              {incorrect ? (
+                <div className="sess__incorrect-head" role="status">
+                  <span className="sess__warn" aria-hidden="true">
+                    <WarnIcon />
+                  </span>
+                  <span>{copy.incorrectStatus}</span>
+                </div>
+              ) : (
+                <p className="sess__instr">빈칸을 채워 완성해봐요✨</p>
+              )}
+              <button
+                className="sess__bookmark"
+                onClick={() => toggleSave(cur)}
+                aria-label={saved[cur.sentence_id] ? copy.bookmarkUnsave : copy.bookmarkSave}
+                aria-pressed={!!saved[cur.sentence_id]}
+              >
                 <SavePlusIcon active={!!saved[cur.sentence_id]} />
               </button>
             </div>
@@ -594,6 +723,17 @@ export function SessionConversation() {
               <p className="sess__hint">💡 {cur.romanization}</p>
             )}
 
+            {/* Incorrect state: subtle divider below the sentence, then (voice
+                only) the pronunciation feedback panel. */}
+            {incorrect && <hr className="sess__divider" />}
+            {showPron && result && (
+              <PronunciationPanel
+                score={result.pronunciation_score}
+                message={pronunciationMessage(result, copy)}
+                copy={copy}
+              />
+            )}
+
             <div className="sess__card-actions">
               <button
                 className="sess__chip"
@@ -601,33 +741,30 @@ export function SessionConversation() {
                 disabled={hintBusy || answered.has(cur.sentence_id)}
                 aria-busy={hintBusy}
               >
-                <span aria-hidden="true">❔</span> 힌트보기
+                <span aria-hidden="true">❔</span> {copy.hint}
               </button>
               <button
                 className="sess__chip"
-                onClick={() => setKeyboard((k) => !k)}
+                onClick={() => {
+                  // Switching input mode must not discard the in-flight attempt's
+                  // result: bump the attempt token so a late reply is ignored,
+                  // then flip the mode (same session, same item).
+                  attemptSeq.current++;
+                  setKeyboard((k) => !k);
+                }}
                 aria-pressed={keyboard}
                 disabled={!hasBlank(cur)}
               >
                 <span aria-hidden="true">{keyboard ? "🎙" : "⌨"}</span>{" "}
-                {keyboard ? "음성 모드" : "키보드 모드"}
+                {keyboard ? copy.voiceMode : copy.keyboardMode}
               </button>
             </div>
           </div>
 
           {/* A wrong answer never advances the session: no 다음/완료 control is
-              shown. We surface encouragement and keep the same input/mic below so
-              the user retries the current sentence in place. */}
-          {incorrect && !submitting && !scoring && !recording && (
-            <div className="sess__result sess__result--retry">
-              <span className="sess__result-no">
-                {hasBlank(cur)
-                  ? "아쉬워요, 다시 시도해봐요 💪"
-                  : `아쉬워요, 다시 시도해봐요 💪 · ${result.pronunciation_score}점`}
-              </span>
-            </div>
-          )}
-
+              shown. The incorrect header + (voice) pronunciation panel convey the
+              result, and the same input/mic below stays available for an
+              immediate retry on the current sentence. */}
           {keyboard && hasBlank(cur) ? (
             /* Keyboard mode has no separate confirm button: the answer is
                submitted by the keyboard's action key (Enter on a physical
@@ -637,11 +774,16 @@ export function SessionConversation() {
           ) : (
             <div className="sess__mic-wrap">
               {recording ? (
-                <button className="sess__mic is-rec" onClick={() => media.current?.stop()} aria-label="녹음 멈추기">
+                <button className="sess__mic is-rec" onClick={() => media.current?.stop()} aria-label={copy.stopRecordA11y}>
                   ■
                 </button>
               ) : (
-                <button className="sess__mic" onClick={() => startRec(cur)} disabled={scoring} aria-label="따라 말하기">
+                <button
+                  className="sess__mic"
+                  onClick={() => startRec(cur)}
+                  disabled={scoring}
+                  aria-label={incorrect ? copy.micRetryA11y : copy.recordA11y}
+                >
                   {scoring ? <span className="spinner" style={{ width: 26, height: 26 }} /> : (
                     <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <rect x="9" y="3" width="6" height="11" rx="3" fill="#FF5B00" />

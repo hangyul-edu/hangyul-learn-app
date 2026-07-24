@@ -4284,9 +4284,64 @@ textarea.input {
   border-color: #139bff;
   box-shadow: none;
 }
+/* Incorrect-state: a soft coral border signals the wrong result without turning
+   the card into a heavy error dialog. Keeps the reserved 3px width so applying
+   the colour never shifts the layout. */
 .sess__card--incorrect {
-  border-color: #ff5b00;
+  border-color: #ff8a5b;
   box-shadow: none;
+}
+/* Incorrect header row: coral warning badge + bold status text, vertically
+   centered and left-aligned; the bookmark stays put (space-between) so it does
+   not shift when this replaces the neutral instruction. */
+.sess__incorrect-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #272c30;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(16px, 4.6vw, 19px);
+}
+.sess__warn {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+/* Subtle full-width divider below the sentence/translation section. */
+.sess__divider {
+  border: none;
+  border-top: 1px solid #ececec;
+  margin: 18px 2px;
+}
+/* Voice-only pronunciation feedback: score ring + actionable message. Grows
+   vertically for longer localized text; wraps without clipping. */
+.sess__pron {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 2px 0 6px;
+}
+.sess__pron-ring {
+  flex: 0 0 auto;
+}
+.sess__pron-text {
+  min-width: 0;
+  flex: 1;
+}
+.sess__pron-title {
+  color: #98a0a8;
+  font-size: 12.5px;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+.sess__pron-msg {
+  margin: 0;
+  color: #3b4249;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
 }
 .sess__correct-head {
   display: flex;
@@ -4403,11 +4458,6 @@ textarea.input {
   flex-direction: column;
   align-items: center;
   gap: 12px;
-}
-/* Wrong-answer feedback shown above the retry controls (no next button). */
-.sess__result--retry {
-  margin-top: 6px;
-  margin-bottom: -6px;
 }
 .sess__result-ok {
   color: #16a34a;

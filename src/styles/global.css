@@ -4404,6 +4404,11 @@ textarea.input {
   align-items: center;
   gap: 12px;
 }
+/* Wrong-answer feedback shown above the retry controls (no next button). */
+.sess__result--retry {
+  margin-top: 6px;
+  margin-bottom: -6px;
+}
 .sess__result-ok {
   color: #16a34a;
   font-weight: 800;

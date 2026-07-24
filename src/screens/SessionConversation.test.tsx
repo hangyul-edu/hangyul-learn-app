@@ -61,6 +61,7 @@ function renderScreen() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  sessionStorage.clear(); // isolate the persisted-session snapshot between tests
   mockMe = { app_language: "ko" };
   summary.mockResolvedValue({
     tracks: [{ category: "conversation", level: 3, goal: { target: 3, current: 0, achieved: false } }],
@@ -250,5 +251,78 @@ describe("SessionConversation — correct-answer bottom sheet", () => {
     // Still on the item; the completion sheet is waiting for 완료.
     expect(screen.getByRole("button", { name: "학습 완료" })).toBeInTheDocument();
     expect(screen.getByText("정답이에요!")).toBeInTheDocument();
+  });
+});
+
+const INCORRECT = {
+  attempt_id: "blk_wrong",
+  sentence_id: SENTENCE.sentence_id,
+  input_mode: "keyboard",
+  is_correct: false,
+  normalized_answer: "몰라",
+  completed_sentence: "덕분에 잘 지내고 있어요.",
+  correct_answer: "지내고",
+  points_earned: 0,
+  submitted_at: "2026-07-22T00:00:00Z",
+};
+
+describe("SessionConversation — a wrong answer never advances", () => {
+  it("shows no 다음/완료 control and keeps the input ready for an immediate retry", async () => {
+    blankAttempt.mockResolvedValue(INCORRECT);
+    renderScreen();
+    await screen.findByText(/덕분에 잘/);
+    await userEvent.click(screen.getByRole("button", { name: /키보드 모드/ }));
+    await userEvent.type(screen.getByLabelText("빈칸에 들어갈 말"), "몰라{Enter}");
+
+    // Encouragement is shown, but there is no way to proceed while wrong.
+    expect(await screen.findByText(/다시 시도해봐요/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "다음" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "완료" })).not.toBeInTheDocument();
+    // The input is still present and cleared, ready for another attempt.
+    const input = screen.getByLabelText("빈칸에 들어갈 말") as HTMLInputElement;
+    expect(input.value).toBe("");
+  });
+
+  it("retrying scores with a fresh request id and can then succeed in place", async () => {
+    blankAttempt.mockResolvedValueOnce(INCORRECT).mockResolvedValueOnce(CORRECT);
+    renderScreen();
+    await screen.findByText(/덕분에 잘/);
+    await userEvent.click(screen.getByRole("button", { name: /키보드 모드/ }));
+    await userEvent.type(screen.getByLabelText("빈칸에 들어갈 말"), "몰라{Enter}");
+    await screen.findByText(/다시 시도해봐요/);
+
+    // Retry the same item → correct answer resolves it.
+    await userEvent.type(screen.getByLabelText("빈칸에 들어갈 말"), "지내고{Enter}");
+    expect(await screen.findByText("정답이에요!")).toBeInTheDocument();
+
+    // Each attempt used its own idempotency key (so the retry is scored fresh,
+    // not deduped to the earlier wrong result).
+    expect(blankAttempt).toHaveBeenCalledTimes(2);
+    const id1 = blankAttempt.mock.calls[0][1].clientRequestId;
+    const id2 = blankAttempt.mock.calls[1][1].clientRequestId;
+    expect(id1).toBeTruthy();
+    expect(id2).toBeTruthy();
+    expect(id1).not.toBe(id2);
+  });
+});
+
+describe("SessionConversation — a refresh restores the session", () => {
+  it("restores the persisted set and progress on remount without requesting new content", async () => {
+    recSentences.mockResolvedValue({ items: [SENTENCE, SENTENCE_2] });
+    blankAttempt.mockResolvedValue(CORRECT);
+    const first = renderScreen();
+    await answerFirstCorrectly();
+    await userEvent.click(screen.getByRole("button", { name: "다음 문제로" }));
+    await screen.findByText(/내일/);
+    expect(recSentences).toHaveBeenCalledTimes(1);
+
+    // Simulate a page refresh: tear down and mount a brand-new tree.
+    first.unmount();
+    recSentences.mockClear();
+    renderScreen();
+
+    // The second item is restored from the snapshot; NO recommendation is made.
+    expect(await screen.findByText(/내일/)).toBeInTheDocument();
+    expect(recSentences).not.toHaveBeenCalled();
   });
 });

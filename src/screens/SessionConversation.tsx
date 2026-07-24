@@ -40,6 +40,43 @@ function newRequestId(): string {
   }
 }
 
+/** Key for the in-progress conversation session snapshot. It is persisted so a
+ * page refresh restores the exact same set and progress instead of requesting
+ * brand-new content. Scoped to the browser tab via sessionStorage and cleared
+ * when the session is finished or exited. */
+const SESSION_KEY = "hangyul.session.conversation.v1";
+
+type SessionSnapshot = {
+  items: Sentence[];
+  idx: number;
+  points: number;
+  correct: string[];
+  answered: string[];
+  saved: Record<string, boolean>;
+  revealed: Record<string, string>;
+  prompt: string;
+  startedAt: number;
+};
+
+function readSessionSnapshot(): SessionSnapshot | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw) as SessionSnapshot;
+    return Array.isArray(s.items) && s.items.length > 0 ? s : null;
+  } catch {
+    return null;
+  }
+}
+
+function clearSessionSnapshot() {
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Renders `display_text` as one inline sentence: prefix text, the mint blank
  * (a revealed-hint chip in voice mode, or an inline text input in keyboard
  * mode), then suffix text. Falls back to the full sentence when there is no
@@ -169,6 +206,9 @@ export function SessionConversation() {
   const media = useRef<MediaRecorder | null>(null);
   const chunks = useRef<Blob[]>([]);
   const startedAt = useRef(Date.now());
+  // True once the user has made any attempt (correct or not) — decides whether
+  // the session is worth recording on exit, independent of correctness.
+  const attemptedRef = useRef(false);
 
   // Build (or regenerate) the set for the remaining daily goal. Regeneration
   // replaces the whole active set atomically only on success.
@@ -200,14 +240,52 @@ export function SessionConversation() {
     }
   }
 
-  // Initial fetch once the remaining goal is known.
+  // On mount, restore an in-progress session if one was saved (e.g. after a page
+  // refresh) so we never regenerate content mid-session; otherwise fetch a fresh
+  // set. A new set is requested only when there is nothing to resume.
   const bootedRef = useRef(false);
   useEffect(() => {
     if (bootedRef.current) return;
     bootedRef.current = true;
-    void loadSet();
+    const snap = readSessionSnapshot();
+    if (snap) {
+      setItems(snap.items);
+      setIdx(snap.idx);
+      setPoints(snap.points);
+      setCorrectSet(new Set(snap.correct));
+      setAnswered(new Set(snap.answered));
+      setSaved(snap.saved ?? {});
+      setRevealed(snap.revealed ?? {});
+      setPrompt(snap.prompt ?? "");
+      startedAt.current = snap.startedAt ?? Date.now();
+    } else {
+      void loadSet();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Persist the session's durable progress on every change so a refresh restores
+  // it. Transient attempt state (typed text, recording, the last result) is
+  // intentionally left out — a refresh resumes at the current item, clean.
+  useEffect(() => {
+    if (!items) return;
+    const snap: SessionSnapshot = {
+      items,
+      idx,
+      points,
+      correct: [...correctSet],
+      answered: [...answered],
+      saved,
+      revealed,
+      prompt,
+      startedAt: startedAt.current,
+    };
+    try {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(snap));
+    } catch {
+      /* ignore quota/serialization errors */
+    }
+  }, [items, idx, points, correctSet, answered, saved, revealed, prompt]);
 
   const total = items?.length ?? 0;
   const cur = items?.[idx];
@@ -231,10 +309,20 @@ export function SessionConversation() {
 
   function record(res: SpeechAttempt, s: Sentence) {
     setResult(res);
-    setAnswered((a) => new Set(a).add(s.sentence_id));
+    attemptedRef.current = true;
     // Points come from the server result; correct count from its `correct` flag.
     setPoints((p) => p + (res.points_earned ?? 0));
-    if (res.correct) setCorrectSet((c) => new Set(c).add(s.sentence_id));
+    if (res.correct) {
+      // Only a correct answer resolves the item and unlocks progression.
+      setAnswered((a) => new Set(a).add(s.sentence_id));
+      setCorrectSet((c) => new Set(c).add(s.sentence_id));
+    } else {
+      // Wrong answer: the item stays unresolved so the user retries in place.
+      // Reset the idempotency key (so the next attempt is scored fresh, not
+      // deduped to this same wrong result) and clear any typed text.
+      reqIdRef.current = null;
+      setTyped("");
+    }
   }
 
   // Keyboard-mode submit. The typed text IS the full answer — the revealed hint
@@ -367,7 +455,9 @@ export function SessionConversation() {
   const finalizingRef = useRef(false);
   async function exitSession() {
     if (finalizingRef.current) return;
-    if (answered.size === 0) {
+    // Leaving ends the session: drop its snapshot so re-entry starts fresh.
+    clearSessionSnapshot();
+    if (!attemptedRef.current) {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       nav(-1);
       return;
@@ -393,7 +483,7 @@ export function SessionConversation() {
     nav(-1);
   }
 
-  const incorrect = !!result && cur != null && answered.has(cur.sentence_id) && !result.correct;
+  const incorrect = !!result && cur != null && !result.correct;
 
   const panel = useMemo(
     () => (
@@ -525,18 +615,20 @@ export function SessionConversation() {
             </div>
           </div>
 
-          {result ? (
-            <div className="sess__result">
+          {/* A wrong answer never advances the session: no 다음/완료 control is
+              shown. We surface encouragement and keep the same input/mic below so
+              the user retries the current sentence in place. */}
+          {incorrect && !submitting && !scoring && !recording && (
+            <div className="sess__result sess__result--retry">
               <span className="sess__result-no">
                 {hasBlank(cur)
-                  ? "조금 더 연습해요 💪"
-                  : `조금 더 연습해요 💪 · ${result.pronunciation_score}점`}
+                  ? "아쉬워요, 다시 시도해봐요 💪"
+                  : `아쉬워요, 다시 시도해봐요 💪 · ${result.pronunciation_score}점`}
               </span>
-              <button className="sess__next" onClick={next}>
-                {idx >= total - 1 ? "완료" : "다음"}
-              </button>
             </div>
-          ) : keyboard && hasBlank(cur) ? (
+          )}
+
+          {keyboard && hasBlank(cur) ? (
             /* Keyboard mode has no separate confirm button: the answer is
                submitted by the keyboard's action key (Enter on a physical
                keyboard, Go/이동 on a mobile keyboard) — see the input's

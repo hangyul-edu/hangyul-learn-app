@@ -96,7 +96,7 @@ function FillSentence({
                   disabled={submitting}
                   autoFocus
                   lang="ko"
-                  enterKeyHint="done"
+                  enterKeyHint="go"
                   aria-label="빈칸에 들어갈 말"
                 />
               </span>
@@ -537,15 +537,11 @@ export function SessionConversation() {
               </button>
             </div>
           ) : keyboard && hasBlank(cur) ? (
-            /* Keyboard mode: submit the typed answer (Enter also submits). */
-            <button
-              className="sess__next"
-              onClick={() => submitTyped(cur)}
-              disabled={submitting || !typed.trim()}
-              aria-label="답 확인"
-            >
-              {submitting ? <span className="spinner" style={{ width: 22, height: 22 }} /> : "확인"}
-            </button>
+            /* Keyboard mode has no separate confirm button: the answer is
+               submitted by the keyboard's action key (Enter on a physical
+               keyboard, Go/이동 on a mobile keyboard) — see the input's
+               onKeyDown + enterKeyHint in FillSentence. */
+            null
           ) : (
             <div className="sess__mic-wrap">
               {recording ? (

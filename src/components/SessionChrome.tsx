@@ -101,7 +101,7 @@ export function SessionChrome({
             <div className="sess__mascot-wrap">
               {askContext?.bubble && (
                 <button className="sess__bubble" onClick={() => setSheetOpen(true)} aria-label="현재 문제를 한귤AI에게 물어보기">
-                  무엇이든 물어봐
+                  궁금한 건 나한테 물어봐!
                 </button>
               )}
               <button

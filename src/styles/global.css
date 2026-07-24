@@ -11017,10 +11017,6 @@ textarea.input {
   background: #eafaf7;
   gap: 2px;
 }
-.sess__blank-rev {
-  color: #0f766e;
-  font-weight: 800;
-}
 .sess__blank-input {
   border: none;
   outline: none;
@@ -11031,4 +11027,10 @@ textarea.input {
   text-align: center;
   min-width: 3em;
   padding: 4px 2px;
+}
+/* The revealed hint shows here as a faded placeholder, replaced on typing. */
+.sess__blank-input::placeholder {
+  color: #17635a;
+  opacity: 0.45;
+  font-weight: 700;
 }

@@ -76,11 +76,14 @@ function FillSentence({
           {i < parts.length - 1 &&
             (keyboard ? (
               <span className="sess__blank sess__blank--edit">
-                {revealed && <span className="sess__blank-rev" aria-hidden="true">{revealed}</span>}
+                {/* The revealed hint is the input's placeholder — it shows the
+                    partial answer while empty and is replaced the moment the
+                    user types (not a separate element beside the input). */}
                 <input
                   className="sess__blank-input"
                   style={{ width: `${widthEm}em` }}
                   value={typed}
+                  placeholder={revealed}
                   onChange={(e) => onTyped(e.target.value)}
                   onCompositionStart={() => (composingRef.current = true)}
                   onCompositionEnd={() => (composingRef.current = false)}
@@ -93,7 +96,7 @@ function FillSentence({
                   disabled={submitting}
                   autoFocus
                   lang="ko"
-                  enterKeyHint="done"
+                  enterKeyHint="go"
                   aria-label="빈칸에 들어갈 말"
                 />
               </span>
@@ -234,12 +237,13 @@ export function SessionConversation() {
     if (res.correct) setCorrectSet((c) => new Set(c).add(s.sentence_id));
   }
 
-  // Keyboard-mode submit. Combines any server-revealed hint prefix with the
-  // typed remainder, guards empty/whitespace + duplicate/in-flight + IME
-  // composition, and funnels the result into the shared feedback flow.
+  // Keyboard-mode submit. The typed text IS the full answer — the revealed hint
+  // is only a placeholder cue, not a prefix that's combined in. Guards
+  // empty/whitespace + duplicate/in-flight + IME composition, and funnels the
+  // result into the shared feedback flow.
   async function submitTyped(s: Sentence) {
     if (submitting || composingRef.current || answered.has(s.sentence_id)) return;
-    const answerText = ((revealed[s.sentence_id] ?? "") + typed).trim();
+    const answerText = typed.trim();
     if (!answerText) return;
     setSubmitting(true);
     reqIdRef.current ??= newRequestId();
@@ -533,15 +537,11 @@ export function SessionConversation() {
               </button>
             </div>
           ) : keyboard && hasBlank(cur) ? (
-            /* Keyboard mode: submit the typed answer (Enter also submits). */
-            <button
-              className="sess__next"
-              onClick={() => submitTyped(cur)}
-              disabled={submitting || !((revealed[cur.sentence_id] ?? "") + typed).trim()}
-              aria-label="답 확인"
-            >
-              {submitting ? <span className="spinner" style={{ width: 22, height: 22 }} /> : "확인"}
-            </button>
+            /* Keyboard mode has no separate confirm button: the answer is
+               submitted by the keyboard's action key (Enter on a physical
+               keyboard, Go/이동 on a mobile keyboard) — see the input's
+               onKeyDown + enterKeyHint in FillSentence. */
+            null
           ) : (
             <div className="sess__mic-wrap">
               {recording ? (

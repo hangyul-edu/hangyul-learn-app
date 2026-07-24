@@ -36,6 +36,9 @@ export function LearningManagement() {
   const navigatingRef = useRef(false);
   const [period, setPeriod] = useState<ManagementPeriod>("7d");
   const [periodOpen, setPeriodOpen] = useState(false);
+  // Selected chart bar, tagged with the period it belongs to so the selection
+  // falls back to the current bucket whenever the period changes.
+  const [sel, setSel] = useState<{ period: ManagementPeriod; key: string } | null>(null);
 
   const q = useQuery({
     queryKey: ["management", period],
@@ -46,6 +49,15 @@ export function LearningManagement() {
   // keepPreviousData still holds the previous period while the new one loads —
   // treat that as stale so old buckets never render under the new label.
   const chartStale = !data || data.period !== period;
+
+  // The bottom totals reflect the SELECTED bar only (not the period aggregate).
+  // Default to the current bucket; a user selection (tagged with its period)
+  // overrides until the period changes.
+  const currentKey = data
+    ? data.buckets.find((b) => b.is_current)?.key ?? data.buckets[data.buckets.length - 1]?.key
+    : undefined;
+  const selectedKey = sel && data && sel.period === data.period ? sel.key : currentKey;
+  const selectedBucket = data?.buckets.find((b) => b.key === selectedKey);
 
   function startLearning() {
     if (navigatingRef.current) return; // guard rapid double taps
@@ -140,21 +152,29 @@ export function LearningManagement() {
                 {chartStale ? (
                   <div className="lmgmt__chart lmgmt__chart--loading" aria-busy="true" />
                 ) : (
-                  <Chart key={data.period} data={data} />
+                  <Chart
+                    data={data}
+                    selectedKey={selectedKey}
+                    onSelect={(key) => setSel({ period: data.period, key })}
+                  />
                 )}
 
                 <div className="lmgmt__totals">
                   <div className="lmgmt__totals-col">
                     <span className="lmgmt__totals-label">학습한 문장 수</span>
                     <span className="lmgmt__totals-value">
-                      {chartStale ? "–" : data.period_totals.conversation_sentence_count.toLocaleString()}
+                      {chartStale || !selectedBucket
+                        ? "–"
+                        : selectedBucket.conversation_sentence_count.toLocaleString()}
                     </span>
                   </div>
                   <div className="lmgmt__summary-divider" aria-hidden="true" />
                   <div className="lmgmt__totals-col">
                     <span className="lmgmt__totals-label">학습한 문제 수</span>
                     <span className="lmgmt__totals-value">
-                      {chartStale ? "–" : data.period_totals.topik_question_count.toLocaleString()}
+                      {chartStale || !selectedBucket
+                        ? "–"
+                        : selectedBucket.topik_question_count.toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -169,13 +189,19 @@ export function LearningManagement() {
 
 /**
  * Bar chart of study duration per bucket. Bars are selectable: the highlighted
- * (orange) bar shows its duration above it — today is selected by default, and
- * tapping any bar moves the highlight + duration to that bar.
+ * (orange) bar shows its duration above it — the current bucket is selected by
+ * default, and tapping any bar moves the highlight (and drives the totals below
+ * the chart). Selection is owned by the parent so the totals can read it.
  */
-function Chart({ data }: { data: ManagementStats }) {
-  const currentKey =
-    data.buckets.find((b) => b.is_current)?.key ?? data.buckets[data.buckets.length - 1]?.key;
-  const [selectedKey, setSelectedKey] = useState<string | undefined>(currentKey);
+function Chart({
+  data,
+  selectedKey,
+  onSelect,
+}: {
+  data: ManagementStats;
+  selectedKey: string | undefined;
+  onSelect: (key: string) => void;
+}) {
   const max = Math.max(1, ...data.buckets.map((b) => b.study_seconds));
   return (
     <div className="lmgmt__chart" role="group" aria-label="기간별 학습 시간">
@@ -190,7 +216,7 @@ function Chart({ data }: { data: ManagementStats }) {
               className="lmgmt__bar-track"
               aria-pressed={selected}
               aria-label={`${b.label} ${fmtShort(b.study_seconds)}`}
-              onClick={() => setSelectedKey(b.key)}
+              onClick={() => onSelect(b.key)}
             >
               <div
                 className={`lmgmt__bar${b.is_current ? " lmgmt__bar--current" : ""}${selected ? " lmgmt__bar--selected" : ""}`}

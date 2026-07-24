@@ -93,6 +93,35 @@ describe("SessionConversation — fill-in-the-blank", () => {
     expect(screen.getByRole("button", { name: "답 확인" })).toBeDisabled();
   });
 
+  it("keyboard-mode hint is the input placeholder; typing replaces it, only typed text submits", async () => {
+    blankHint.mockResolvedValue({
+      blank_id: "blank-1",
+      revealed_text: "지",
+      revealed_count: 1,
+      can_request_another_hint: true,
+      hint_used: true,
+    });
+    blankAttempt.mockResolvedValue(CORRECT);
+    renderScreen();
+    await screen.findByText(/덕분에 잘/);
+    await userEvent.click(screen.getByRole("button", { name: /키보드 모드/ }));
+    const input = (await screen.findByLabelText("빈칸에 들어갈 말")) as HTMLInputElement;
+    // The hint appears as the input's placeholder — not a separate element beside it.
+    await userEvent.click(screen.getByRole("button", { name: /힌트보기/ }));
+    await waitFor(() => expect(input).toHaveAttribute("placeholder", "지"));
+    expect(document.querySelector(".sess__blank-rev")).toBeNull();
+    // Typing replaces the placeholder; only the typed text is submitted.
+    await userEvent.type(input, "지내고");
+    expect(input.value).toBe("지내고");
+    await userEvent.click(screen.getByRole("button", { name: "답 확인" }));
+    await waitFor(() =>
+      expect(blankAttempt).toHaveBeenCalledWith(
+        SENTENCE.sentence_id,
+        expect.objectContaining({ answerText: "지내고" }),
+      ),
+    );
+  });
+
   it("submits the typed answer and shows the correct-answer feedback from the server", async () => {
     blankAttempt.mockResolvedValue({
       attempt_id: "blk_1",

@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SessionChrome } from "../components/SessionChrome";
 import { SessionCompleteModal } from "../components/SessionCompleteModal";
 import { SavePlusIcon } from "../components/brand/HomeIcons";
 import { CorrectAnswerSheet } from "../components/CorrectAnswerSheet";
+import { ReviewCompleteSheet } from "../components/ReviewCompleteSheet";
+import { ReviewRewardModal } from "../components/ReviewRewardModal";
+import { REVIEW_SESSION_COPY } from "../lib/reviewSessionCopy";
 import { LoadingState, ErrorState } from "../components/ui/states";
 import { recApi, sentenceApi, dashboardApi, learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
@@ -263,7 +266,17 @@ export function SessionConversation() {
   const toast = useToast();
   const qc = useQueryClient();
   const { me } = useAuth();
-  const copy = SESSION_CONVERSATION_COPY[normalizeLanguage(me?.app_language)];
+  const lang = normalizeLanguage(me?.app_language);
+  const copy = SESSION_CONVERSATION_COPY[lang];
+  const reviewCopy = REVIEW_SESSION_COPY[lang];
+  // Single-item review mode: reached via /review/sentence/:sentenceId. Reuses the
+  // whole answer flow but with one fixed saved sentence, source="review" attempts
+  // (server awards review points, skips goal/level), no progress/config chrome,
+  // and a review completion sheet + reward modal instead of the session summary.
+  const { sentenceId: reviewSentenceId } = useParams();
+  const isReview = !!reviewSentenceId;
+  const [rewardOpen, setRewardOpen] = useState(false);
+  const attemptSource = isReview ? "review" : "custom";
   // Where the session was launched from (Home / Personalized), forwarded to the
   // Level-Up screen so its button returns the user to that source page.
   const from = (loc.state as { from?: string } | null)?.from ?? "/home";
@@ -336,6 +349,23 @@ export function SessionConversation() {
     }
   }
 
+  // Review mode: load the one saved sentence by id (never generate/replace). The
+  // id is in the URL, so a refresh restores the exact same item.
+  async function loadReviewItem(id: string) {
+    setBusy(true);
+    setError(false);
+    try {
+      const s = await sentenceApi.get(id);
+      setItems([s]);
+      setIdx(0);
+      setSaved({ [s.sentence_id]: !!(s.bookmarked ?? s.is_saved) });
+    } catch {
+      setError(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   // On mount, restore an in-progress session if one was saved (e.g. after a page
   // refresh) so we never regenerate content mid-session; otherwise fetch a fresh
   // set. A new set is requested only when there is nothing to resume.
@@ -343,6 +373,10 @@ export function SessionConversation() {
   useEffect(() => {
     if (bootedRef.current) return;
     bootedRef.current = true;
+    if (isReview) {
+      void loadReviewItem(reviewSentenceId!);
+      return;
+    }
     const snap = readSessionSnapshot();
     if (snap) {
       setItems(snap.items);
@@ -365,7 +399,7 @@ export function SessionConversation() {
   // it. Transient attempt state (typed text, recording, the last result) is
   // intentionally left out — a refresh resumes at the current item, clean.
   useEffect(() => {
-    if (!items) return;
+    if (!items || isReview) return; // review restores from the URL id, not a snapshot
     const snap: SessionSnapshot = {
       items,
       idx,
@@ -440,6 +474,7 @@ export function SessionConversation() {
         inputMode: "keyboard",
         answerText,
         clientRequestId: reqIdRef.current,
+        source: attemptSource,
       });
       // Ignore a late reply that a mode switch / newer attempt has superseded.
       if (seq === attemptSeq.current) record(blankToSpeech(res), s, "keyboard");
@@ -507,10 +542,11 @@ export function SessionConversation() {
                 inputMode: "voice",
                 audio: blob,
                 clientRequestId: reqIdRef.current,
+                source: attemptSource,
               }),
             );
           } else {
-            res = await sentenceApi.speechAttempt(s.sentence_id, blob, "attempt.webm");
+            res = await sentenceApi.speechAttempt(s.sentence_id, blob, "attempt.webm", attemptSource);
           }
           // Ignore a late reply superseded by a mode switch / newer attempt.
           if (seq === attemptSeq.current) record(res, s, "voice");
@@ -541,6 +577,28 @@ export function SessionConversation() {
     } else {
       setIdx((i) => i + 1);
     }
+  }
+
+  // 다시 시작 — reset the single review item to its answerable state so it can be
+  // reviewed again. Points already awarded aren't re-awarded here; a fresh
+  // correct answer is scored (and rewarded) on its own per the review policy.
+  function reviewRestart(s: Sentence) {
+    setResult(null);
+    setAttemptMode(null);
+    setTyped("");
+    setHintOpen(false);
+    reqIdRef.current = null;
+    setRewardOpen(false);
+    setAnswered((a) => {
+      const n = new Set(a);
+      n.delete(s.sentence_id);
+      return n;
+    });
+    setCorrectSet((c) => {
+      const n = new Set(c);
+      n.delete(s.sentence_id);
+      return n;
+    });
   }
 
   // 다시 듣기 — replay the current sentence's audio. Overlap-safe: a re-tap stops
@@ -645,13 +703,14 @@ export function SessionConversation() {
   return (
     <>
     <SessionChrome
-      title={`회화 Lv.${level}`}
+      title={isReview ? reviewCopy.sentenceTitle : `회화 Lv.${level}`}
       heading="목표 하루 학습 문장"
       correct={correctSet.size}
       total={total}
       progress={progress}
       panel={panel}
-      onBack={finishOrExit}
+      minimal={isReview}
+      onBack={isReview ? () => nav("/saved") : finishOrExit}
       askContext={
         !cur
           ? null
@@ -817,7 +876,7 @@ export function SessionConversation() {
     {/* Correct-answer bottom sheet. Intermediate (다시 듣기 / 다음, no blur) vs
         final (다시 듣기 / 완료, blurred background). The mode is derived from the
         session's own item state, not a hardcoded count. */}
-    {cur != null && result?.correct && !completed && (
+    {cur != null && result?.correct && !completed && !isReview && (
       <CorrectAnswerSheet
         mode={idx >= total - 1 ? "complete" : "next"}
         onReplay={() => replayAudio(cur)}
@@ -826,7 +885,23 @@ export function SessionConversation() {
         replaying={replaying}
       />
     )}
-    {completed && (
+    {/* Review completion: a two-button sheet (다시 시작 / 완료), then the reward modal. */}
+    {cur != null && result?.correct && isReview && !rewardOpen && (
+      <ReviewCompleteSheet
+        leftLabel={reviewCopy.restart}
+        onLeft={() => reviewRestart(cur)}
+        onComplete={() => setRewardOpen(true)}
+        copy={reviewCopy}
+      />
+    )}
+    {isReview && rewardOpen && result?.correct && (
+      <ReviewRewardModal
+        points={result.points_earned ?? 0}
+        copy={reviewCopy}
+        onConfirm={() => nav("/saved")}
+      />
+    )}
+    {completed && !isReview && (
       <SessionCompleteModal mode="conversation" correctCount={correctSet.size} points={points} onConfirm={exitSession} />
     )}
     </>

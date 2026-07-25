@@ -88,12 +88,6 @@ const Speaker = () => (
 const PlayGlyph = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 5.5v13l11-6.5-11-6.5z" fill="#fff" /></svg>
 );
-const PauseGlyph = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <rect x="7" y="5" width="3.5" height="14" rx="1.2" fill="#fff" />
-    <rect x="13.5" y="5" width="3.5" height="14" rx="1.2" fill="#fff" />
-  </svg>
-);
 const TrashIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <path d="M5 7h14M10 7V5.5A1.5 1.5 0 0 1 11.5 4h1A1.5 1.5 0 0 1 14 5.5V7M6.5 7l.8 11a2 2 0 0 0 2 1.9h5.4a2 2 0 0 0 2-1.9L17.5 7" stroke="#aeb7be" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -160,7 +154,6 @@ export function Saved() {
   // --- audio ---
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
-  const [audioLoadingId, setAudioLoadingId] = useState<string | null>(null);
   function stopAudio() {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -260,25 +253,6 @@ export function Saved() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [more, cursor, items.length]);
 
-  async function toggleAudio(id: string) {
-    if (playingId === id) { stopAudio(); return; }
-    stopAudio();
-    setAudioLoadingId(id);
-    try {
-      const { url } = await sentenceApi.audio(id);
-      const a = new Audio(url);
-      audioRef.current = a;
-      a.onended = () => setPlayingId(null);
-      a.onerror = () => { setPlayingId(null); toast.error("오디오를 재생할 수 없어요."); };
-      await a.play();
-      setPlayingId(id);
-      void sentenceApi.markViewed(id);
-    } catch {
-      toast.error("오디오를 재생할 수 없어요.");
-    } finally {
-      setAudioLoadingId(null);
-    }
-  }
   useEffect(() => () => stopAudio(), []);
 
   async function removeItem(it: SavedSentenceItem | Quiz) {
@@ -313,6 +287,15 @@ export function Saved() {
     savedSnapshot = { ...live.current, scrollTop: scrollRef.current?.scrollTop ?? 0 };
     // Start a single-item review session for this saved question.
     nav(`/review/question/${q.quiz_id}`);
+  }
+
+  // The orange button on a saved sentence starts a single-item review session —
+  // it no longer plays audio inline in the list.
+  function openSentence(s: { sentence_id: string }) {
+    stopAudio();
+    void sentenceApi.markViewed(s.sentence_id).catch(() => {});
+    savedSnapshot = { ...live.current, scrollTop: scrollRef.current?.scrollTop ?? 0 };
+    nav(`/review/sentence/${s.sentence_id}`);
   }
 
   function pickMode(m: Mode) {
@@ -426,10 +409,8 @@ export function Saved() {
                       </div>
                       <div className="rev__tr">{it.translation}</div>
                     </div>
-                    <button className="rev__play" onClick={() => toggleAudio(it.sentence_id)} aria-label={`${it.korean} 문장 듣기`}>
-                      {audioLoadingId === it.sentence_id ? (
-                        <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />
-                      ) : playingId === it.sentence_id ? <PauseGlyph /> : <PlayGlyph />}
+                    <button className="rev__play" onClick={() => openSentence(it)} aria-label={`${it.korean} 문장 복습하기`}>
+                      <PlayGlyph />
                     </button>
                     <button className="rev__action" onClick={() => removeItem(it)} aria-label={source === "wrong" ? "오답에서 삭제" : "찜 해제"}>
                       {source === "wrong" ? <TrashIcon /> : <BookmarkFilled />}

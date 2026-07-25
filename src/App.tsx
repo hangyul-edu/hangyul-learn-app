@@ -151,6 +151,7 @@ const router = createBrowserRouter(
         <Route path="/session/conversation" element={<RequireAuth><SessionConversation /></RequireAuth>} />
         <Route path="/session/topik" element={<RequireAuth><SessionTopik /></RequireAuth>} />
         <Route path="/review/question/:quizId" element={<RequireAuth><SessionReview /></RequireAuth>} />
+        <Route path="/review/sentence/:sentenceId" element={<RequireAuth><SessionConversation /></RequireAuth>} />
         <Route path="/level-up" element={<RequireAuth><LevelUp /></RequireAuth>} />
         <Route path="/lectures/:lectureId" element={<RequireAuth><Lecture /></RequireAuth>} />
         <Route path="/lectures/:lectureId/practice" element={<RequireAuth><Practice /></RequireAuth>} />

@@ -9,14 +9,15 @@ vi.mock("../components/SessionChrome", () => ({
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn() }) }));
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: "ko" } }) }));
 
-const { get, attempt, bookmark, unbookmark } = vi.hoisted(() => ({
+const { get, attempt, bookmark, unbookmark, audio } = vi.hoisted(() => ({
   get: vi.fn(),
   attempt: vi.fn(),
   bookmark: vi.fn(),
   unbookmark: vi.fn(),
+  audio: vi.fn(),
 }));
 vi.mock("../api/endpoints", () => ({
-  quizApi: { get, attempt, bookmark, unbookmark },
+  quizApi: { get, attempt, bookmark, unbookmark, audio },
 }));
 
 import { SessionReview } from "./SessionReview";
@@ -92,6 +93,23 @@ describe("SessionReview — saved TOPIK question", () => {
     expect(screen.getByText("+5P")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "확인" }));
     expect(await screen.findByText("SAVED LIST")).toBeInTheDocument();
+  });
+
+  it("uses '다시 듣기' (not '다시 시작') as the left button for a listening question", async () => {
+    get.mockResolvedValue({
+      ...QUIZ,
+      quiz_id: "q2",
+      question_type: "listening_multiple_choice",
+      prompt: "대화를 듣고 알맞은 것을 고르십시오.",
+      material: { kind: "audio", html: null, image_url: null, audio: null },
+    });
+    attempt.mockResolvedValue({ attempt_id: "a3", correct: true, points_earned: 5, status: "graded" });
+    renderReview();
+    await userEvent.click((await screen.findAllByRole("radio"))[0]);
+    await userEvent.click(screen.getByRole("button", { name: "제출" }));
+
+    expect(await screen.findByRole("button", { name: "다시 듣기" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "다시 시작" })).not.toBeInTheDocument();
   });
 
   it("an incorrect answer stays on the item with no sheet and allows retry", async () => {

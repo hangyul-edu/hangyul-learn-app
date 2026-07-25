@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { SessionChrome } from "../components/SessionChrome";
 import { ReviewCompleteSheet } from "../components/ReviewCompleteSheet";
 import { ReviewRewardModal } from "../components/ReviewRewardModal";
-import { TopikQuestion, canSubmitTopik } from "../components/topik/TopikQuestion";
+import { TopikQuestion, canSubmitTopik, questionKind } from "../components/topik/TopikQuestion";
 import { TopikResult } from "../components/topik/TopikResult";
 import { quizAttemptBody, type AnswerValue } from "../components/QuestionView";
 import { SavePlusIcon } from "../components/brand/HomeIcons";
@@ -187,7 +187,7 @@ export function SessionReview() {
 
       {completed && !rewardOpen && (
         <ReviewCompleteSheet
-          leftLabel={copy.restart}
+          leftLabel={quiz && questionKind(quiz) === "listening_multiple_choice" ? copy.listenAgain : copy.restart}
           onLeft={restart}
           onComplete={() => setRewardOpen(true)}
           copy={copy}

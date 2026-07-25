@@ -4009,17 +4009,19 @@ textarea.input {
   display: flex;
   flex-direction: column;
 }
-/* Chatbot fixed in the top-right corner, out of the normal flow. */
+/* Chatbot kept in flow at the top-right (right after the header), so it stays
+   visible without the fixed-positioning gotchas. */
 .sess--minimal .sess__goalrow {
-  min-height: 0;
+  display: flex;
+  justify-content: flex-end;
 }
 .sess--minimal .sess__mascot-wrap {
-  position: fixed;
-  top: calc(var(--safe-top) + 6px);
-  right: clamp(18px, 5vw, 24px);
+  position: relative;
+  top: auto;
+  right: auto;
   transform: none;
-  z-index: 20;
 }
+/* The review card fills and centers in the space below the header + chatbot. */
 .sess__minbody {
   flex: 1;
   display: flex;

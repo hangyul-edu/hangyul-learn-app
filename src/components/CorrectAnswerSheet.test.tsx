@@ -15,7 +15,7 @@ function setup(mode: "next" | "complete", over = {}) {
 }
 
 describe("CorrectAnswerSheet", () => {
-  it("intermediate mode shows 다시 듣기 + 다음, no 완료, and NO blur scrim", () => {
+  it("intermediate mode shows 다시 듣기 + 다음, no 완료, and NO scrim", () => {
     const { container } = setup("next");
     expect(screen.getByRole("button", { name: "다시 듣기" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "다음 문제로" })).toBeInTheDocument();
@@ -23,7 +23,7 @@ describe("CorrectAnswerSheet", () => {
     expect(container.querySelector(".casheet__scrim")).not.toBeInTheDocument();
   });
 
-  it("complete mode shows 다시 듣기 + 완료, no 다음, and DOES mount the blur scrim", () => {
+  it("complete mode shows 다시 듣기 + 완료, no 다음, and DOES mount the dim scrim", () => {
     const { container } = setup("complete");
     expect(screen.getByRole("button", { name: "다시 듣기" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "학습 완료" })).toBeInTheDocument();

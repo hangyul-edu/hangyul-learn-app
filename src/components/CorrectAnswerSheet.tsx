@@ -2,12 +2,13 @@
  * Bottom sheet shown after a CORRECT personalized-learning answer. Two mutually
  * exclusive modes with a distinct visual hierarchy:
  *
- * - "next"     — more items remain. Buttons: 다시 듣기 / 다음. NO background blur;
- *                the learning screen behind stays sharp and readable.
+ * - "next"     — more items remain. Buttons: 다시 듣기 / 다음. No scrim; the
+ *                learning screen behind stays fully interactive-looking.
  * - "complete" — the final required item was just completed correctly. Buttons:
- *                다시 듣기 / 완료. A blur scrim de-emphasizes (and blocks) the
- *                learning screen behind the sheet, which itself stays crisp. The
- *                session finishes only when the user presses 완료.
+ *                다시 듣기 / 완료. A light dim scrim de-emphasizes (and blocks) the
+ *                learning screen behind the sheet — NOT blurred, so the learner
+ *                can still read the item they just completed. The session
+ *                finishes only when the user presses 완료.
  */
 export type CorrectAnswerSheetMode = "next" | "complete";
 
@@ -31,7 +32,7 @@ export function CorrectAnswerSheet({
   const spinner = <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />;
   return (
     <>
-      {/* Completion-only blur layer, behind the sheet (never blurs the sheet). */}
+      {/* Completion-only dim layer behind the sheet (blocks interaction, not blurred). */}
       {mode === "complete" && <div className="casheet__scrim" aria-hidden="true" />}
 
       <div

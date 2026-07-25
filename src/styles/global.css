@@ -6342,16 +6342,15 @@ textarea.input {
 }
 
 /* ---------------- Correct-answer bottom sheet ---------------- */
-/* Completion-only blur scrim: blurs the learning screen behind the sheet (the
-   sheet is a sibling ABOVE it, so it stays crisp). Mounted only in complete
-   mode. Also blocks background interaction (modal). */
+/* Completion scrim: a light dim over the learning screen behind the sheet (the
+   sheet is a sibling ABOVE it, so it stays crisp). Mounted only in complete mode
+   and blocks background interaction (modal). Deliberately NOT blurred so the
+   learner can still read the sentence/question they just completed. */
 .casheet__scrim {
   position: fixed;
   inset: 0;
   z-index: 190;
   background: rgba(20, 22, 25, 0.12);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
   animation: fade 0.2s ease;
 }
 .casheet {

@@ -3996,6 +3996,20 @@ textarea.input {
 .sess__inner {
   padding: calc(var(--safe-top) + 8px) clamp(18px, 5vw, 24px) calc(28px + var(--safe-bottom));
 }
+/* Single-item review: the header (and chatbot) stay pinned at the top while the
+   review card is centered vertically in the remaining space, so the content
+   isn't left floating too high after the progress/config chrome is removed. */
+.sess--minimal .sess__inner {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.sess__minbody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
 .sess__header {
   position: relative;
   display: flex;

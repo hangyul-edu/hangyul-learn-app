@@ -57,7 +57,7 @@ export function SessionChrome({
   }, [askContext]);
 
   return (
-    <div className="screen sess">
+    <div className={`screen sess ${minimal ? "sess--minimal" : ""}`}>
       <div className="sess__scroll">
         <div className="sess__inner">
           <header className="sess__header">
@@ -134,7 +134,7 @@ export function SessionChrome({
             </div>
           )}
 
-          {children}
+          {minimal ? <div className="sess__minbody">{children}</div> : children}
         </div>
       </div>
 

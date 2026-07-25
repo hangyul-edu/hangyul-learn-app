@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { ReviewSessionCopy } from "../lib/reviewSessionCopy";
 
 /**
@@ -37,6 +38,19 @@ export function ReviewRewardModal({
   copy: ReviewSessionCopy;
   onConfirm: () => void;
 }) {
+  const confirmRef = useRef<HTMLButtonElement | null>(null);
+
+  // Move focus to the confirm button on open, and let Escape dismiss (same as
+  // 확인 / the close icon) so keyboard and back-gesture users can leave cleanly.
+  useEffect(() => {
+    confirmRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onConfirm();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onConfirm]);
+
   return (
     <div className="scomp" role="dialog" aria-modal="true" aria-label={copy.rewardTitle}>
       <div className="scomp__backdrop" onClick={onConfirm} />
@@ -58,7 +72,7 @@ export function ReviewRewardModal({
           {copy.rewardSubtitle}
         </p>
 
-        <button className="scomp__confirm" onClick={onConfirm} aria-label={copy.confirm}>
+        <button ref={confirmRef} className="scomp__confirm" onClick={onConfirm} aria-label={copy.confirm}>
           {copy.confirm}
         </button>
       </div>

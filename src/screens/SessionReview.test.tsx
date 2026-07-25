@@ -95,6 +95,18 @@ describe("SessionReview — saved TOPIK question", () => {
     expect(await screen.findByText("SAVED LIST")).toBeInTheDocument();
   });
 
+  it("focuses the confirm button and dismisses the reward modal on Escape", async () => {
+    attempt.mockResolvedValue({ attempt_id: "a1", correct: true, points_earned: 5, status: "graded" });
+    renderReview();
+    await userEvent.click((await screen.findAllByRole("radio"))[0]);
+    await userEvent.click(screen.getByRole("button", { name: "제출" }));
+    await userEvent.click(await screen.findByRole("button", { name: "완료" }));
+
+    expect(await screen.findByRole("button", { name: "확인" })).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+    expect(await screen.findByText("SAVED LIST")).toBeInTheDocument();
+  });
+
   it("uses '다시 듣기' (not '다시 시작') as the left button for a listening question", async () => {
     get.mockResolvedValue({
       ...QUIZ,

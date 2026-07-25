@@ -16,29 +16,33 @@ import { AskAiSheet, type AskContext } from "./AskAiSheet";
  */
 export function SessionChrome({
   title,
-  heading,
-  correct,
-  total,
-  progress,
-  panel,
+  heading = "",
+  correct = 0,
+  total = 0,
+  progress = 0,
+  panel = null,
   askContext,
   onBack,
+  minimal = false,
   children,
 }: {
   title: string;
-  heading: string;
-  correct: number;
-  total: number;
+  heading?: string;
+  correct?: number;
+  total?: number;
   /** 0–1 session progress (submitted/total). */
-  progress: number;
+  progress?: number;
   /** The AI-customization control (Conversation prompt or TOPIK dropdown). */
-  panel: ReactNode;
+  panel?: ReactNode;
   /** Explanation context — present only after a server-confirmed incorrect
    *  answer for the current attempt; null otherwise (mascot inactive). */
   askContext: AskContext | null;
   /** Back-chevron handler — runs the same completion/exit flow as the CTA so
    *  exiting via back shows the summary modal when applicable. */
   onBack?: () => void;
+  /** Single-item review mode: hides the AI-customization panel, the daily
+   *  heading + counter, and the progress bar (keeping the header + chatbot). */
+  minimal?: boolean;
   children: ReactNode;
 }) {
   const nav = useNavigate();
@@ -67,37 +71,43 @@ export function SessionChrome({
 
           {/* Collapsible AI-customization control. Expanded: handle on the left,
               panel to its right. Collapsed: only the handle, right-aligned. The
-              region keeps a stable height so surrounding content never jumps. */}
-          <div className={`sess__ai ${collapsed ? "is-collapsed" : ""}`}>
-            <button
-              className="sess__ai-handle"
-              onClick={() => setCollapsed((c) => !c)}
-              aria-label={collapsed ? "맞춤 설정 입력창 펼치기" : "맞춤 설정 입력창 접기"}
-              aria-expanded={!collapsed}
-            >
-              <svg width="25" height="25" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                {/* Arrow shows the NEXT action: collapsed → expand (points left);
-                    expanded → collapse (points right). */}
-                <path
-                  d={collapsed ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6"}
-                  stroke="#fff"
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-            {!collapsed && <div className="sess__ai-panel">{panel}</div>}
-          </div>
-
-          {/* Daily-learning heading + counter + contextual chatbot */}
-          <div className="sess__goalrow">
-            <div className="sess__goalinfo">
-              <p className="sess__goal-heading">{heading}</p>
-              <span className="sess__pill" aria-label={`현재 학습 세트 ${total}개 중 ${shownCorrect}개 정답`}>
-                {shownCorrect}/{total}
-              </span>
+              region keeps a stable height so surrounding content never jumps.
+              Hidden entirely in single-item review mode. */}
+          {!minimal && (
+            <div className={`sess__ai ${collapsed ? "is-collapsed" : ""}`}>
+              <button
+                className="sess__ai-handle"
+                onClick={() => setCollapsed((c) => !c)}
+                aria-label={collapsed ? "맞춤 설정 입력창 펼치기" : "맞춤 설정 입력창 접기"}
+                aria-expanded={!collapsed}
+              >
+                <svg width="25" height="25" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  {/* Arrow shows the NEXT action: collapsed → expand (points left);
+                      expanded → collapse (points right). */}
+                  <path
+                    d={collapsed ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6"}
+                    stroke="#fff"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+              {!collapsed && <div className="sess__ai-panel">{panel}</div>}
             </div>
+          )}
+
+          {/* Daily-learning heading + counter + contextual chatbot. In review mode
+              the heading + counter are dropped; the chatbot stays. */}
+          <div className="sess__goalrow">
+            {!minimal && (
+              <div className="sess__goalinfo">
+                <p className="sess__goal-heading">{heading}</p>
+                <span className="sess__pill" aria-label={`현재 학습 세트 ${total}개 중 ${shownCorrect}개 정답`}>
+                  {shownCorrect}/{total}
+                </span>
+              </div>
+            )}
             <div className="sess__mascot-wrap">
               {askContext?.bubble && (
                 <button className="sess__bubble" onClick={() => setSheetOpen(true)} aria-label="현재 문제를 한귤AI에게 물어보기">
@@ -117,10 +127,12 @@ export function SessionChrome({
             </div>
           </div>
 
-          {/* Session progress bar */}
-          <div className="sess__progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="세션 진행률">
-            <div className="sess__progress-fill" style={{ width: `${pct}%` }} />
-          </div>
+          {/* Session progress bar — omitted in single-item review mode. */}
+          {!minimal && (
+            <div className="sess__progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="세션 진행률">
+              <div className="sess__progress-fill" style={{ width: `${pct}%` }} />
+            </div>
+          )}
 
           {children}
         </div>

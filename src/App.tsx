@@ -55,6 +55,7 @@ import { TrackSettings } from "./screens/TrackSettings";
 import { Personalized } from "./screens/Personalized";
 import { SessionConversation } from "./screens/SessionConversation";
 import { SessionTopik } from "./screens/SessionTopik";
+import { SessionReview } from "./screens/SessionReview";
 import { PaymentMethods } from "./screens/PaymentMethods";
 import { Billing } from "./screens/Billing";
 import { Streak } from "./screens/Streak";
@@ -149,6 +150,7 @@ const router = createBrowserRouter(
         <Route path="/recommend/settings/:category" element={<RequireAuth><TrackSettings /></RequireAuth>} />
         <Route path="/session/conversation" element={<RequireAuth><SessionConversation /></RequireAuth>} />
         <Route path="/session/topik" element={<RequireAuth><SessionTopik /></RequireAuth>} />
+        <Route path="/review/question/:quizId" element={<RequireAuth><SessionReview /></RequireAuth>} />
         <Route path="/level-up" element={<RequireAuth><LevelUp /></RequireAuth>} />
         <Route path="/lectures/:lectureId" element={<RequireAuth><Lecture /></RequireAuth>} />
         <Route path="/lectures/:lectureId/practice" element={<RequireAuth><Practice /></RequireAuth>} />

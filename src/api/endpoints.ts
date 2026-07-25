@@ -181,6 +181,10 @@ export const quizApi = {
   // when the learner plays it, never embedded in the question payload).
   audio: (id: string) => http.get<{ url: string; duration_ms?: number }>(`/quizzes/${id}/audio`),
   attempt: (id: string, body: Record<string, unknown>) => http.post<QuizAttemptResult>(`/quizzes/${id}/attempt`, body),
+  // Single-item review submission — correct plural path + required elapsed_ms +
+  // source:"review" (the server awards review points and skips goal/level).
+  reviewAttempt: (id: string, body: Record<string, unknown>) =>
+    http.post<QuizAttemptResult>(`/quizzes/${id}/attempts`, body),
   bookmark: (id: string) => http.post<unknown>(`/quizzes/${id}/bookmark`),
   unbookmark: (id: string) => http.del<void>(`/quizzes/${id}/bookmark`),
   // Remove only the incorrect-answer (auto_wrong) record; keeps any bookmark.

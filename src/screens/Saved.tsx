@@ -311,7 +311,8 @@ export function Saved() {
     // the user never submits an answer (best-effort; ignore failures).
     void quizApi.markViewed(q.quiz_id).catch(() => {});
     savedSnapshot = { ...live.current, scrollTop: scrollRef.current?.scrollTop ?? 0 };
-    nav(`/quiz/${q.quiz_id}`, { state: { source: "review" } });
+    // Start a single-item review session for this saved question.
+    nav(`/review/question/${q.quiz_id}`);
   }
 
   function pickMode(m: Mode) {

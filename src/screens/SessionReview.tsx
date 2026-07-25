@@ -94,7 +94,7 @@ export function SessionReview() {
     setSubmitting(true);
     try {
       const elapsed_ms = Math.max(0, Date.now() - startedAt.current);
-      const res = await quizApi.reviewAttempt(quiz.quiz_id, {
+      const res = await quizApi.attempt(quiz.quiz_id, {
         ...quizAttemptBody(quiz, value),
         elapsed_ms,
         source: "review",

@@ -9,15 +9,14 @@ vi.mock("../components/SessionChrome", () => ({
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn() }) }));
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: "ko" } }) }));
 
-const { get, reviewAttempt, attempt, bookmark, unbookmark } = vi.hoisted(() => ({
+const { get, attempt, bookmark, unbookmark } = vi.hoisted(() => ({
   get: vi.fn(),
-  reviewAttempt: vi.fn(),
   attempt: vi.fn(),
   bookmark: vi.fn(),
   unbookmark: vi.fn(),
 }));
 vi.mock("../api/endpoints", () => ({
-  quizApi: { get, reviewAttempt, attempt, bookmark, unbookmark },
+  quizApi: { get, attempt, bookmark, unbookmark },
 }));
 
 import { SessionReview } from "./SessionReview";
@@ -67,24 +66,23 @@ describe("SessionReview — saved TOPIK question", () => {
     expect(get).toHaveBeenCalledWith("q1");
   });
 
-  it("submits with source 'review' (never the normal attempt path) and opens the completion sheet on correct", async () => {
-    reviewAttempt.mockResolvedValue({ attempt_id: "a1", correct: true, points_earned: 5, status: "graded" });
+  it("submits with source 'review' and opens the two-button completion sheet on correct", async () => {
+    attempt.mockResolvedValue({ attempt_id: "a1", correct: true, points_earned: 5, status: "graded" });
     renderReview();
     await userEvent.click((await screen.findAllByRole("radio"))[0]);
     await userEvent.click(screen.getByRole("button", { name: "제출" }));
 
-    expect(reviewAttempt).toHaveBeenCalledWith(
+    expect(attempt).toHaveBeenCalledWith(
       "q1",
       expect.objectContaining({ answer: "1", source: "review", elapsed_ms: expect.any(Number) }),
     );
-    expect(attempt).not.toHaveBeenCalled();
     // Two-button sheet, no next.
     expect(await screen.findByRole("button", { name: "완료" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "다시 시작" })).toBeInTheDocument();
   });
 
   it("finalizes on 완료: shows the reward modal with the server points, then returns to the saved list", async () => {
-    reviewAttempt.mockResolvedValue({ attempt_id: "a1", correct: true, points_earned: 5, status: "graded" });
+    attempt.mockResolvedValue({ attempt_id: "a1", correct: true, points_earned: 5, status: "graded" });
     renderReview();
     await userEvent.click((await screen.findAllByRole("radio"))[0]);
     await userEvent.click(screen.getByRole("button", { name: "제출" }));
@@ -97,7 +95,7 @@ describe("SessionReview — saved TOPIK question", () => {
   });
 
   it("an incorrect answer stays on the item with no sheet and allows retry", async () => {
-    reviewAttempt.mockResolvedValue({
+    attempt.mockResolvedValue({
       attempt_id: "a2",
       correct: false,
       correct_answer: "1",

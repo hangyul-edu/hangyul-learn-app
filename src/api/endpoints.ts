@@ -180,11 +180,11 @@ export const quizApi = {
   // Signed, short-lived CDN URL for a listening question's audio (fetched lazily
   // when the learner plays it, never embedded in the question payload).
   audio: (id: string) => http.get<{ url: string; duration_ms?: number }>(`/quizzes/${id}/audio`),
-  attempt: (id: string, body: Record<string, unknown>) => http.post<QuizAttemptResult>(`/quizzes/${id}/attempt`, body),
-  // Single-item review submission — correct plural path + required elapsed_ms +
-  // source:"review" (the server awards review points and skips goal/level).
-  reviewAttempt: (id: string, body: Record<string, unknown>) =>
-    http.post<QuizAttemptResult>(`/quizzes/${id}/attempts`, body),
+  // POST /quizzes/{id}/attempts (plural). `elapsed_ms` is required server-side;
+  // default it to 0 when a caller doesn't track time. Pass `source: "review"`
+  // for a saved-item review attempt (server awards review points, skips goal/level).
+  attempt: (id: string, body: Record<string, unknown>) =>
+    http.post<QuizAttemptResult>(`/quizzes/${id}/attempts`, { elapsed_ms: 0, ...body }),
   bookmark: (id: string) => http.post<unknown>(`/quizzes/${id}/bookmark`),
   unbookmark: (id: string) => http.del<void>(`/quizzes/${id}/bookmark`),
   // Remove only the incorrect-answer (auto_wrong) record; keeps any bookmark.

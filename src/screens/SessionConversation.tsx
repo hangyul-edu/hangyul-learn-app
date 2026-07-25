@@ -446,6 +446,9 @@ export function SessionConversation() {
     // Points come from the server result; correct count from its `correct` flag.
     setPoints((p) => p + (res.points_earned ?? 0));
     if (res.correct) {
+      // A correct review answer awards points server-side and creates a points
+      // notification — refresh the unread badge (normal sessions do this on exit).
+      if (isReview) qc.invalidateQueries({ queryKey: ["notif-unread"] });
       // Only a correct answer resolves the item and unlocks progression.
       setAnswered((a) => new Set(a).add(s.sentence_id));
       setCorrectSet((c) => new Set(c).add(s.sentence_id));

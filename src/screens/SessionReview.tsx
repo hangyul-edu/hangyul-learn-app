@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { SessionChrome } from "../components/SessionChrome";
 import { ReviewCompleteSheet } from "../components/ReviewCompleteSheet";
 import { ReviewRewardModal } from "../components/ReviewRewardModal";
@@ -30,6 +31,7 @@ export function SessionReview() {
   const nav = useNavigate();
   const toast = useToast();
   const { me } = useAuth();
+  const qc = useQueryClient();
   const lang = normalizeLanguage(me?.app_language);
   const copy = REVIEW_SESSION_COPY[lang];
   const topikCopy = TOPIK_SESSION_COPY[lang];
@@ -102,6 +104,8 @@ export function SessionReview() {
       setResult(res);
       if (res.correct) {
         setRewardPoints(res.points_earned ?? 0);
+        // The review award created a points notification — refresh the badge.
+        qc.invalidateQueries({ queryKey: ["notif-unread"] });
         try {
           sessionStorage.removeItem(draftKey);
         } catch {

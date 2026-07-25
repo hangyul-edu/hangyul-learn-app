@@ -8194,6 +8194,14 @@ textarea.input {
 .rev__speaker {
   flex: 0 0 auto;
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  padding: 2px;
+  margin: -2px 0;
+  cursor: pointer;
+  color: inherit;
 }
 .rev__tr {
   margin-top: 4px;

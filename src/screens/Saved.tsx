@@ -154,6 +154,7 @@ export function Saved() {
   // --- audio ---
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [audioLoadingId, setAudioLoadingId] = useState<string | null>(null);
   function stopAudio() {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -162,6 +163,34 @@ export function Saved() {
       audioRef.current = null;
     }
     setPlayingId(null);
+  }
+
+  // Speaker button next to a saved sentence: fetch its signed audio URL and play
+  // it right away. Re-tapping the same sentence stops it; tapping another swaps.
+  async function toggleAudio(id: string) {
+    if (playingId === id) {
+      stopAudio();
+      return;
+    }
+    stopAudio();
+    setAudioLoadingId(id);
+    try {
+      const { url } = await sentenceApi.audio(id);
+      const a = new Audio(url);
+      audioRef.current = a;
+      a.onended = () => setPlayingId(null);
+      a.onerror = () => {
+        setPlayingId(null);
+        toast.error("오디오를 재생할 수 없어요.");
+      };
+      await a.play();
+      setPlayingId(id);
+      void sentenceApi.markViewed(id).catch(() => {});
+    } catch {
+      toast.error("오디오를 재생할 수 없어요.");
+    } finally {
+      setAudioLoadingId(null);
+    }
   }
 
   // --- feed state (state-based cursor pagination) ---
@@ -405,7 +434,17 @@ export function Saved() {
                     <div className="rev__main">
                       <div className="rev__ko">
                         <span className="rev__ko-text">{it.korean}</span>
-                        <span className="rev__speaker" aria-hidden="true"><Speaker /></span>
+                        <button
+                          className="rev__speaker"
+                          onClick={() => toggleAudio(it.sentence_id)}
+                          aria-label={playingId === it.sentence_id ? `${it.korean} 재생 멈추기` : `${it.korean} 듣기`}
+                        >
+                          {audioLoadingId === it.sentence_id ? (
+                            <span className="spinner" style={{ width: 15, height: 15, borderWidth: 2 }} />
+                          ) : (
+                            <Speaker />
+                          )}
+                        </button>
                       </div>
                       <div className="rev__tr">{it.translation}</div>
                     </div>

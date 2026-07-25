@@ -145,7 +145,7 @@ export function SessionReview() {
 
   return (
     <>
-      <SessionChrome minimal title={copy.questionTitle} askContext={askContext} onBack={() => nav("/saved")}>
+      <SessionChrome minimal title={copy.questionTitle} askContext={askContext} onBack={() => nav(-1)}>
         {error ? (
           <ErrorState message={copy.loadError} onRetry={() => nav(0)} />
         ) : !quiz ? (
@@ -194,7 +194,7 @@ export function SessionReview() {
         />
       )}
       {rewardOpen && rewardPoints !== null && (
-        <ReviewRewardModal points={rewardPoints} copy={copy} onConfirm={() => nav("/saved")} />
+        <ReviewRewardModal points={rewardPoints} copy={copy} onConfirm={() => nav(-1)} />
       )}
     </>
   );

@@ -47,7 +47,7 @@ function renderReview() {
       { path: "/review/question/:quizId", element: <SessionReview /> },
       { path: "/saved", element: <div>SAVED LIST</div> },
     ],
-    { initialEntries: ["/review/question/q1"] },
+    { initialEntries: ["/saved", "/review/question/q1"], initialIndex: 1 },
   );
   return render(<RouterProvider router={router} />);
 }

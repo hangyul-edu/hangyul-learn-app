@@ -710,7 +710,7 @@ export function SessionConversation() {
       progress={progress}
       panel={panel}
       minimal={isReview}
-      onBack={isReview ? () => nav("/saved") : finishOrExit}
+      onBack={isReview ? () => nav(-1) : finishOrExit}
       askContext={
         !cur
           ? null
@@ -898,7 +898,7 @@ export function SessionConversation() {
       <ReviewRewardModal
         points={result.points_earned ?? 0}
         copy={reviewCopy}
-        onConfirm={() => nav("/saved")}
+        onConfirm={() => nav(-1)}
       />
     )}
     {completed && !isReview && (

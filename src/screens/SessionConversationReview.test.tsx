@@ -67,7 +67,7 @@ function renderReview() {
       { path: "/review/sentence/:sentenceId", element: <SessionConversation /> },
       { path: "/saved", element: <div>SAVED LIST</div> },
     ],
-    { initialEntries: ["/review/sentence/sen_thanks_01"] },
+    { initialEntries: ["/saved", "/review/sentence/sen_thanks_01"], initialIndex: 1 },
   );
   return render(
     <QueryClientProvider client={qc}>

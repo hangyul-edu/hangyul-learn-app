@@ -10560,12 +10560,15 @@ textarea.input {
   border-color: var(--brand-500);
 }
 .afs__dial {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 3px;
   border: none;
   background: transparent;
-  font-size: 13.5px;
   color: var(--ink-2);
   padding: 8px 2px;
-  max-width: 84px;
+  cursor: pointer;
 }
 .afs__phone {
   flex: 1;

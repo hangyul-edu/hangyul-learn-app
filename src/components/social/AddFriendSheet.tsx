@@ -10,6 +10,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sheet } from "../ui/Modal";
 import { Button } from "../ui/kit";
+import { CountrySelect } from "../ui/CountrySelect";
 import { SkeletonList } from "../ui/states";
 import { RankAvatar } from "../brand/RankBits";
 import { friendApi } from "../../api/endpoints";
@@ -212,7 +213,10 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
   const qc = useQueryClient();
   const refreshSocial = useSocialRefresh();
 
-  const [dial, setDial] = useState("+82");
+  // Selected country as an ISO code (flag+chevron picker); the dial code used for
+  // E.164 normalization/hashing is derived from it.
+  const [country, setCountry] = useState("KR");
+  const dial = NATIONALITIES.find((n) => n.code === country)?.dial ?? "+82";
   const [phone, setPhone] = useState("");
   const [searchState, setSearchState] = useState<"idle" | "searching" | "error">("idle");
   const [result, setResult] = useState<RecommendedUser | "none" | null>(null);
@@ -318,18 +322,7 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
 
         {/* Phone search */}
         <div className={`afs__search ${phone ? "is-filled" : ""}`}>
-          <select
-            className="afs__dial"
-            aria-label="Country code"
-            value={dial}
-            onChange={(e) => setDial(e.target.value)}
-          >
-            {NATIONALITIES.map((n) => (
-              <option key={n.code} value={n.dial}>
-                {n.flag} {n.dial}
-              </option>
-            ))}
-          </select>
+          <CountrySelect value={country} onChange={setCountry} className="afs__dial" />
           <input
             className="afs__phone"
             inputMode="tel"

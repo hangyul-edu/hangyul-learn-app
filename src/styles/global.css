@@ -4191,11 +4191,13 @@ textarea.input {
   transform: translateY(-50%);
   z-index: 6;
 }
-/* Compact speech bubble sitting fully below the mascot (no overlap, no tail). */
+/* Compact speech bubble just below the mascot — a small gap keeps it clear of
+   the mascot while sitting high enough not to cover the progress bar. Its right
+   edge lines up with the mascot's (right: 0). */
 .sess__bubble {
   position: absolute;
-  top: calc(100% + 10px);
-  right: 8px;
+  top: calc(100% + 3px);
+  right: 0;
   border: none;
   cursor: pointer;
   background: #fff4ec;

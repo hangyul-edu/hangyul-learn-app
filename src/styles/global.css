@@ -3996,19 +3996,39 @@ textarea.input {
 .sess__inner {
   padding: calc(var(--safe-top) + 8px) clamp(18px, 5vw, 24px) calc(28px + var(--safe-bottom));
 }
-/* Single-item review: the header (and chatbot) stay pinned at the top while the
-   review card is centered vertically in the remaining space, so the content
-   isn't left floating too high after the progress/config chrome is removed. */
-.sess--minimal .sess__inner {
-  min-height: 100%;
+/* Single-item review: the header stays at the top and the chatbot is pinned to
+   the top-right corner, while the review card is centered vertically AND
+   horizontally in the remaining space. A flex chain (not min-height:100%, which
+   doesn't resolve against a flex-derived height) fills the scroll area. */
+.sess--minimal .sess__scroll {
   display: flex;
   flex-direction: column;
+}
+.sess--minimal .sess__inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+/* Chatbot fixed in the top-right corner, out of the normal flow. */
+.sess--minimal .sess__goalrow {
+  min-height: 0;
+}
+.sess--minimal .sess__mascot-wrap {
+  position: fixed;
+  top: calc(var(--safe-top) + 6px);
+  right: clamp(18px, 5vw, 24px);
+  transform: none;
+  z-index: 20;
 }
 .sess__minbody {
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
+}
+.sess__minbody > * {
+  width: 100%;
 }
 .sess__header {
   position: relative;

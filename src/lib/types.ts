@@ -267,6 +267,8 @@ export interface QuizAttemptResult {
   correct_answer?: string | null;
   explanation?: string | null;
   corrected_text?: string | null;
+  /** Authoritative writing-answer character count (same rule as the client). */
+  server_character_count?: number | null;
   xp_awarded?: number;
   xp_earned?: number;
   points_earned?: number;

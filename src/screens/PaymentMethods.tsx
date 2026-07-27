@@ -70,18 +70,18 @@ const CheckMark = () => (
 );
 
 /* -------------------------------- helpers ------------------------------- */
-// Provider-specific logo height (px) normalises the two marks by *perceived*
-// size — Toss Pay is a wider horizontal lockup, Naver Pay a squarer one, so they
-// are not forced to share one dimension. Sizing lives here (the config), not in
-// the card markup, so each provider stays independently tunable.
+// Logo height (px). Both marks share the same height so their icons render at
+// the same size (each icon fills its 32-unit-tall viewBox at 1:1), while Toss
+// Pay still reads wider via its longer icon+wordmark lockup. Sizing lives here
+// (the config), not in the card markup, so each provider stays tunable.
 const EASY_PAY: {
   provider: MethodProvider;
   label: string;
   Logo: (p: { height?: number }) => JSX.Element;
   logoHeight: number;
 }[] = [
-  { provider: "toss_pay", label: "토스페이", Logo: TossPayLogo, logoHeight: 26 },
-  { provider: "naver_pay", label: "네이버페이", Logo: NaverPayLogo, logoHeight: 32 },
+  { provider: "toss_pay", label: "토스페이", Logo: TossPayLogo, logoHeight: 30 },
+  { provider: "naver_pay", label: "네이버페이", Logo: NaverPayLogo, logoHeight: 30 },
 ];
 
 function cardName(m: PaymentMethod): string {

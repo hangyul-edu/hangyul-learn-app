@@ -22,7 +22,7 @@ type LogoProps = { height?: number };
  * Toss Pay — the icon (Toss blue #0064FF) next to the wordmark, matching the
  * official horizontal lockup: `toss` bold + `pay` regular, both black.
  */
-export function TossPayLogo({ height = 26 }: LogoProps) {
+export function TossPayLogo({ height = 30 }: LogoProps) {
   return (
     <span className="paybrand" role="img" aria-label="토스페이" style={{ height }}>
       {/* Icon + wordmark → wide lockup, renders visibly wider than Naver Pay. */}
@@ -55,26 +55,25 @@ export function TossPayLogo({ height = 26 }: LogoProps) {
   );
 }
 
-/** Naver Pay — official Naver green (#03C75A) "N Pay" lockup, no outer box. */
-export function NaverPayLogo({ height = 32 }: LogoProps) {
+/** Naver Pay — circular green (#03C75A) N icon + `pay` wordmark, no outer box. */
+export function NaverPayLogo({ height = 30 }: LogoProps) {
   return (
     <span className="paybrand" role="img" aria-label="네이버페이" style={{ height }}>
       {/* Circular green N icon + "Pay" wordmark kept together as one lockup. */}
       <svg viewBox="0 0 84 32" aria-hidden="true" focusable="false">
         <circle cx="16" cy="16" r="16" fill="#03C75A" />
         <path d="M10 9h4.4l3.4 5.1V9H22v14h-4.4l-3.4-5.1V23H10V9z" fill="#ffffff" />
+        {/* `pay` — same font/size/weight/colour as the Toss Pay wordmark. */}
         <text
-          x="40"
-          y="24"
-          textLength="44"
-          lengthAdjust="spacingAndGlyphs"
+          x="42"
+          y="23.5"
           fontFamily="-apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif"
-          fontSize="22"
-          fontWeight="800"
-          letterSpacing="-0.5"
-          fill="#03C75A"
+          fontSize="23"
+          fontWeight="400"
+          letterSpacing="-0.6"
+          fill="#111111"
         >
-          Pay
+          pay
         </text>
       </svg>
     </span>

@@ -63,7 +63,8 @@ export function NaverPayLogo({ height = 30 }: LogoProps) {
       <svg viewBox="0 0 84 32" aria-hidden="true" focusable="false">
         <circle cx="16" cy="16" r="16" fill="#03C75A" />
         <path d="M10 9h4.4l3.4 5.1V9H22v14h-4.4l-3.4-5.1V23H10V9z" fill="#ffffff" />
-        {/* `pay` — same font/size/weight/colour as the Toss Pay wordmark. */}
+        {/* `pay` — same font/size/weight as the Toss Pay wordmark, in the
+            Naver icon's green. */}
         <text
           x="42"
           y="23.5"
@@ -71,7 +72,7 @@ export function NaverPayLogo({ height = 30 }: LogoProps) {
           fontSize="23"
           fontWeight="400"
           letterSpacing="-0.6"
-          fill="#111111"
+          fill="#03C75A"
         >
           pay
         </text>

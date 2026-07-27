@@ -1,4 +1,5 @@
 import { http } from "../lib/http";
+import { randomUuid } from "../lib/uuid";
 import type {
   AppSettings,
   AttendanceCheckIn,
@@ -284,7 +285,7 @@ export const payApi = {
   methods: () => http.get<{ methods: PaymentMethod[] }>("/payment-methods"),
   cardIntent: (return_url: string, card_region: CardRegion = "domestic") =>
     http.post<CardIntent>("/payment-methods/cards/intent", {
-      client_idempotency_key: crypto.randomUUID(),
+      client_idempotency_key: randomUuid(),
       return_url,
       card_region,
     }),
@@ -292,14 +293,14 @@ export const payApi = {
     http.post<{ method: PaymentMethod }>("/payment-methods/cards/confirm", { intent_id, auth_key }),
   tosspayIntent: (return_url: string) =>
     http.post<RedirectIntent>("/payment-methods/tosspay/intent", {
-      client_idempotency_key: crypto.randomUUID(),
+      client_idempotency_key: randomUuid(),
       return_url,
     }),
   tosspayConfirm: (intent_id: string, code: string, state: string) =>
     http.post<{ method: PaymentMethod }>("/payment-methods/tosspay/confirm", { intent_id, code, state }),
   naverpayIntent: (return_url: string) =>
     http.post<RedirectIntent>("/payment-methods/naverpay/intent", {
-      client_idempotency_key: crypto.randomUUID(),
+      client_idempotency_key: randomUuid(),
       return_url,
     }),
   naverpayConfirm: (intent_id: string, reserve_id: string) =>

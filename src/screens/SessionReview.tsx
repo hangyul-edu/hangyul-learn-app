@@ -14,6 +14,7 @@ import { useToast } from "../hooks/toast";
 import { useAuth } from "../hooks/auth";
 import { errorMessage } from "../lib/http";
 import { normalizeLanguage } from "../lib/language";
+import { randomUuid } from "../lib/uuid";
 import { REVIEW_SESSION_COPY } from "../lib/reviewSessionCopy";
 import { TOPIK_SESSION_COPY } from "../lib/topikSessionCopy";
 import type { Quiz, QuizAttemptResult } from "../lib/types";
@@ -56,7 +57,7 @@ export function SessionReview() {
   // once per session. Regenerated when the item (or mount) changes — i.e. a new
   // session — but deliberately preserved across `restart()`, so re-answering the
   // same item after a restart collides on the key and is not re-awarded.
-  const reviewSessionId = useRef(crypto.randomUUID());
+  const reviewSessionId = useRef(randomUuid());
 
   const draftKey = `hangyul.review.quiz.${quizId}`;
 
@@ -71,7 +72,7 @@ export function SessionReview() {
     setSessionPoints(0);
     setRewardOpen(false);
     // A different item is a new review session — start a fresh award key.
-    reviewSessionId.current = crypto.randomUUID();
+    reviewSessionId.current = randomUuid();
     try {
       const raw = sessionStorage.getItem(draftKey);
       setValue(raw ? (JSON.parse(raw) as AnswerValue) : {});

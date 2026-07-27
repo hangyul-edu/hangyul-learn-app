@@ -14,6 +14,7 @@ import { useToast } from "../hooks/toast";
 import { useAuth } from "../hooks/auth";
 import { errorMessage } from "../lib/http";
 import { normalizeLanguage } from "../lib/language";
+import { randomUuid } from "../lib/uuid";
 import {
   SESSION_CONVERSATION_COPY,
   type SessionConversationCopy,
@@ -46,11 +47,7 @@ function blankToSpeech(b: BlankAttempt): SpeechAttempt {
 }
 
 function newRequestId(): string {
-  try {
-    return crypto.randomUUID();
-  } catch {
-    return `req-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  }
+  return randomUuid();
 }
 
 /** Clamp any returned score to a safe 0–100 integer for display + a11y. */
@@ -304,7 +301,7 @@ export function SessionConversation() {
   // points are awarded once per session. Fresh per mount (a new session), but
   // preserved across `reviewRestart` — so re-answering the same item after a
   // restart collides on the key server-side and is not re-awarded.
-  const reviewSessionIdRef = useRef<string>(crypto.randomUUID());
+  const reviewSessionIdRef = useRef<string>(randomUuid());
   const [recording, setRecording] = useState(false);
   const [scoring, setScoring] = useState(false);
   const [result, setResult] = useState<SpeechAttempt | null>(null);

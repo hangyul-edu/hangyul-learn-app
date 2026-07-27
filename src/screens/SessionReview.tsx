@@ -41,11 +41,22 @@ export function SessionReview() {
   const [value, setValue] = useState<AnswerValue>({});
   const [result, setResult] = useState<QuizAttemptResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  // Set once the item is answered correctly (points from the server attempt).
+  // Set once the item is answered correctly (points from the latest attempt);
+  // doubles as the "completed" gate. Reset to null by a restart to re-enable
+  // answering, so it is NOT a running total.
   const [rewardPoints, setRewardPoints] = useState<number | null>(null);
+  // Running total of points earned across the whole session — accumulated on
+  // every correct attempt and preserved across restarts, so the completion
+  // modal shows the real total (a deduped re-answer after a restart earns 0).
+  const [sessionPoints, setSessionPoints] = useState(0);
   const [rewardOpen, setRewardOpen] = useState(false);
   const [saved, setSaved] = useState(false);
   const startedAt = useRef(Date.now());
+  // Identifies THIS review session to the server so review points are awarded
+  // once per session. Regenerated when the item (or mount) changes — i.e. a new
+  // session — but deliberately preserved across `restart()`, so re-answering the
+  // same item after a restart collides on the key and is not re-awarded.
+  const reviewSessionId = useRef(crypto.randomUUID());
 
   const draftKey = `hangyul.review.quiz.${quizId}`;
 
@@ -57,7 +68,10 @@ export function SessionReview() {
     setError(false);
     setResult(null);
     setRewardPoints(null);
+    setSessionPoints(0);
     setRewardOpen(false);
+    // A different item is a new review session — start a fresh award key.
+    reviewSessionId.current = crypto.randomUUID();
     try {
       const raw = sessionStorage.getItem(draftKey);
       setValue(raw ? (JSON.parse(raw) as AnswerValue) : {});
@@ -100,10 +114,12 @@ export function SessionReview() {
         ...quizAttemptBody(quiz, value),
         elapsed_ms,
         source: "review",
+        review_session_id: reviewSessionId.current,
       });
       setResult(res);
       if (res.correct) {
         setRewardPoints(res.points_earned ?? 0);
+        setSessionPoints((p) => p + (res.points_earned ?? 0));
         // The review award created a points notification — refresh the badge.
         qc.invalidateQueries({ queryKey: ["notif-unread"] });
         try {
@@ -121,7 +137,8 @@ export function SessionReview() {
   }
 
   function restart() {
-    // Redo the same item; points already awarded are not re-awarded here.
+    // Redo the same item within the SAME session. `reviewSessionId` is kept, so
+    // the server dedups the review award — a restart never grants points again.
     setResult(null);
     setValue({});
     setRewardPoints(null);
@@ -198,7 +215,7 @@ export function SessionReview() {
         />
       )}
       {rewardOpen && rewardPoints !== null && (
-        <ReviewRewardModal points={rewardPoints} copy={copy} onConfirm={() => nav(-1)} />
+        <ReviewRewardModal points={sessionPoints} copy={copy} onConfirm={() => nav(-1)} />
       )}
     </>
   );

@@ -300,6 +300,11 @@ export function SessionConversation() {
   const [hintBusy, setHintBusy] = useState(false);
   const composingRef = useRef(false); // true while a Korean IME composition is active
   const reqIdRef = useRef<string | null>(null); // idempotency key for the current item's attempt
+  // Review mode only: identifies THIS review session to the server so review
+  // points are awarded once per session. Fresh per mount (a new session), but
+  // preserved across `reviewRestart` — so re-answering the same item after a
+  // restart collides on the key server-side and is not re-awarded.
+  const reviewSessionIdRef = useRef<string>(crypto.randomUUID());
   const [recording, setRecording] = useState(false);
   const [scoring, setScoring] = useState(false);
   const [result, setResult] = useState<SpeechAttempt | null>(null);
@@ -478,6 +483,7 @@ export function SessionConversation() {
         answerText,
         clientRequestId: reqIdRef.current,
         source: attemptSource,
+        reviewSessionId: isReview ? reviewSessionIdRef.current : undefined,
       });
       // Ignore a late reply that a mode switch / newer attempt has superseded.
       if (seq === attemptSeq.current) record(blankToSpeech(res), s, "keyboard");
@@ -546,10 +552,17 @@ export function SessionConversation() {
                 audio: blob,
                 clientRequestId: reqIdRef.current,
                 source: attemptSource,
+                reviewSessionId: isReview ? reviewSessionIdRef.current : undefined,
               }),
             );
           } else {
-            res = await sentenceApi.speechAttempt(s.sentence_id, blob, "attempt.webm", attemptSource);
+            res = await sentenceApi.speechAttempt(
+              s.sentence_id,
+              blob,
+              "attempt.webm",
+              attemptSource,
+              isReview ? reviewSessionIdRef.current : undefined,
+            );
           }
           // Ignore a late reply superseded by a mode switch / newer attempt.
           if (seq === attemptSeq.current) record(res, s, "voice");
@@ -583,8 +596,9 @@ export function SessionConversation() {
   }
 
   // 다시 시작 — reset the single review item to its answerable state so it can be
-  // reviewed again. Points already awarded aren't re-awarded here; a fresh
-  // correct answer is scored (and rewarded) on its own per the review policy.
+  // reviewed again within the SAME session. `reviewSessionIdRef` is intentionally
+  // NOT regenerated, so re-answering correctly is deduped server-side and never
+  // awards review points a second time (only a brand-new session can).
   function reviewRestart(s: Sentence) {
     setResult(null);
     setAttemptMode(null);
@@ -899,7 +913,10 @@ export function SessionConversation() {
     )}
     {isReview && rewardOpen && result?.correct && (
       <ReviewRewardModal
-        points={result.points_earned ?? 0}
+        // The session total (accumulated across every correct attempt, kept
+        // across a restart), NOT the last attempt — a deduped re-answer after a
+        // restart earns 0, but the session's real total must still be shown.
+        points={points}
         copy={reviewCopy}
         onConfirm={() => nav(-1)}
       />

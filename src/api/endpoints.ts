@@ -137,17 +137,20 @@ export const sentenceApi = {
   audio: (id: string) => http.get<{ url: string }>(`/sentences/${id}/audio`),
   bookmark: (id: string) => http.post<unknown>(`/sentences/${id}/bookmark`),
   unbookmark: (id: string) => http.del<void>(`/sentences/${id}/bookmark`),
-  speechAttempt: (id: string, audio: Blob, filename: string, source = "custom") => {
+  speechAttempt: (id: string, audio: Blob, filename: string, source = "custom", reviewSessionId?: string) => {
     const fd = new FormData();
     fd.append("audio", audio, filename);
     fd.append("source", source);
+    // Ties a review attempt to its session so points are awarded once per
+    // session (a restart re-answers without re-awarding).
+    if (reviewSessionId) fd.append("review_session_id", reviewSessionId);
     return http.upload<SpeechAttempt>(`/sentences/${id}/speech-attempts`, fd);
   },
   // Fill-in-the-blank answer — typed (answerText) or voice (audio). The server
   // grades authoritatively; clientRequestId makes retries idempotent.
   blankAttempt: (
     id: string,
-    opts: { inputMode: "voice" | "keyboard"; answerText?: string; audio?: Blob; clientRequestId?: string; source?: string },
+    opts: { inputMode: "voice" | "keyboard"; answerText?: string; audio?: Blob; clientRequestId?: string; source?: string; reviewSessionId?: string },
   ) => {
     const fd = new FormData();
     fd.append("input_mode", opts.inputMode);
@@ -155,6 +158,8 @@ export const sentenceApi = {
     if (opts.audio) fd.append("audio", opts.audio, "attempt.webm");
     if (opts.clientRequestId) fd.append("client_request_id", opts.clientRequestId);
     fd.append("source", opts.source ?? "custom");
+    // See speechAttempt: award review points once per session, not per restart.
+    if (opts.reviewSessionId) fd.append("review_session_id", opts.reviewSessionId);
     return http.upload<BlankAttempt>(`/sentences/${id}/blank-attempts`, fd);
   },
   blankHint: (id: string, revealedCount: number) =>

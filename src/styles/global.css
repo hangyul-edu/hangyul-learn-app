@@ -3761,7 +3761,9 @@ textarea.input {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: clamp(24px, 5vh, 40px);
+  /* Sits the calendar a little higher for a more balanced vertical rhythm
+     between the banner above and the grid below. */
+  margin-top: clamp(14px, 3vh, 24px);
   padding: 0 clamp(2px, 3vw, 16px);
 }
 .strk__arrow {

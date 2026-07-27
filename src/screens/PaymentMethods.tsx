@@ -70,9 +70,18 @@ const CheckMark = () => (
 );
 
 /* -------------------------------- helpers ------------------------------- */
-const EASY_PAY: { provider: MethodProvider; label: string; Logo: (p: { height?: number }) => JSX.Element }[] = [
-  { provider: "toss_pay", label: "토스페이", Logo: TossPayLogo },
-  { provider: "naver_pay", label: "네이버페이", Logo: NaverPayLogo },
+// Provider-specific logo height (px) normalises the two marks by *perceived*
+// size — Toss Pay is a wider horizontal lockup, Naver Pay a squarer one, so they
+// are not forced to share one dimension. Sizing lives here (the config), not in
+// the card markup, so each provider stays independently tunable.
+const EASY_PAY: {
+  provider: MethodProvider;
+  label: string;
+  Logo: (p: { height?: number }) => JSX.Element;
+  logoHeight: number;
+}[] = [
+  { provider: "toss_pay", label: "토스페이", Logo: TossPayLogo, logoHeight: 26 },
+  { provider: "naver_pay", label: "네이버페이", Logo: NaverPayLogo, logoHeight: 32 },
 ];
 
 function cardName(m: PaymentMethod): string {
@@ -462,15 +471,15 @@ export function PaymentMethods() {
             {/* --- Easy payment --- */}
             <section className="pm__section" aria-label="간편 결제">
               <h2 className="pm__section-title">간편 결제</h2>
-              <ul className="pm__list" role="list">
-                {EASY_PAY.map(({ provider, label, Logo }) => {
+              <ul className="pm__list pm__list--ez" role="list">
+                {EASY_PAY.map(({ provider, label, Logo, logoHeight }) => {
                   const connected = methods.find((m) => m.provider === provider);
                   const connect = provider === "toss_pay" ? startTossPay : startNaverPay;
                   return (
                     <li key={provider}>
                       {connected ? (
                         <div
-                          className="pm__row"
+                          className="pm__row pm__ez"
                           role="button"
                           tabIndex={0}
                           aria-pressed={connected.is_default}
@@ -479,7 +488,7 @@ export function PaymentMethods() {
                           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectPrimary(connected); } }}
                         >
                           <Radio checked={connected.is_default} />
-                          <div className="pm__row-main pm__row-main--logo"><Logo /></div>
+                          <div className="pm__row-main pm__row-main--logo"><Logo height={logoHeight} /></div>
                           <button
                             className="pm__del"
                             aria-label={`${label} 연결 해제`}
@@ -489,8 +498,8 @@ export function PaymentMethods() {
                           </button>
                         </div>
                       ) : (
-                        <div className="pm__row pm__row--connect">
-                          <div className="pm__row-main pm__row-main--logo"><Logo /></div>
+                        <div className="pm__row pm__row--connect pm__ez">
+                          <div className="pm__row-main pm__row-main--logo"><Logo height={logoHeight} /></div>
                           <button className="pm__connect" onClick={connect} disabled={!!starting || retry.isPending} aria-label={`${label} 연결하기`}>
                             연결하기
                           </button>

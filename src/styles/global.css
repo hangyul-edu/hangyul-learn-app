@@ -5824,8 +5824,10 @@ textarea.input {
   gap: clamp(8px, 2.4vw, 11px);
 }
 /* Compact country selector: flag + chevron, native <select> overlaid for the picker */
+/* Trigger for the shared CountrySelect on the phone-change screen (sized to
+   this screen's taller controls; the dropdown/chevron/flag come from the
+   shared component). */
 .pchg__country {
-  position: relative;
   flex: 0 0 auto;
   height: clamp(52px, 14vw, 58px);
   width: clamp(80px, 22vw, 88px);
@@ -5836,22 +5838,10 @@ textarea.input {
   border: 1.5px solid #e6e9ea;
   border-radius: 14px;
   background: #fff;
-}
-.pchg__country-sel {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  border: none;
-  background: none;
-  -webkit-appearance: none;
-  appearance: none;
   cursor: pointer;
 }
-.pchg__flag {
-  font-size: 22px;
-  line-height: 1;
+.pchg__country:active {
+  transform: scale(0.97);
 }
 .pchg__phone {
   flex: 1;

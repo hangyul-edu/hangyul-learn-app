@@ -5,6 +5,7 @@ import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import { NATIONALITIES } from "../lib/format";
+import { CountrySelect } from "../components/ui/CountrySelect";
 
 /* ------------------------- Password ------------------------- */
 /**
@@ -262,25 +263,14 @@ export function ChangePhone() {
           {/* Phone number */}
           <div className="acct__label" id="pchg-phone-label">휴대폰번호</div>
           <div className="pchg__row">
-            <div className="pchg__country">
-              <span className="pchg__flag" aria-hidden="true">{cn.flag}</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M6 9l6 6 6-6" stroke="#9aa0a7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <select
-                className="pchg__country-sel"
-                value={country}
-                onChange={(e) => {
-                  setCountry(e.target.value);
-                  resetVerification();
-                }}
-                aria-label={`국가 선택, 현재 ${cn.label}`}
-              >
-                {NATIONALITIES.map((n) => (
-                  <option key={n.code} value={n.code}>{n.flag} {n.label} {n.dial}</option>
-                ))}
-              </select>
-            </div>
+            <CountrySelect
+              value={country}
+              onChange={(c) => {
+                setCountry(c);
+                resetVerification();
+              }}
+              className="pchg__country"
+            />
             <input
               className="pchg__phone"
               inputMode="numeric"

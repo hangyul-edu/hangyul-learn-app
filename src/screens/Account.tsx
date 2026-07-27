@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/auth";
-import { NATIONALITIES, formatPhone } from "../lib/format";
+import { formatPhone } from "../lib/format";
 
 /**
  * Account Management ("계정관리") — read-only summary of account-level identity
@@ -12,8 +12,6 @@ import { NATIONALITIES, formatPhone } from "../lib/format";
 export function Account() {
   const nav = useNavigate();
   const { me } = useAuth();
-
-  const country = NATIONALITIES.find((n) => n.code === (me?.nationality ?? "KR")) ?? NATIONALITIES[0];
 
   return (
     <div className="screen acct">
@@ -34,19 +32,9 @@ export function Account() {
             {me?.name ?? "-"}
           </div>
 
-          {/* Phone — country + read-only number + change */}
+          {/* Phone — read-only number + change (editing lives on /account/phone) */}
           <div className="acct__label" id="acct-phone-label">휴대폰번호</div>
           <div className="acct__row">
-            <button
-              className="acct__country"
-              onClick={() => nav("/account/phone")}
-              aria-label={`국가 ${country.label}, 번호 변경으로 이동`}
-            >
-              <span className="acct__flag" aria-hidden="true">{country.flag}</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M6 9l6 6 6-6" stroke="#9aa0a7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
             <div className="acct__field acct__field--flex" role="textbox" aria-readonly="true" aria-labelledby="acct-phone-label">
               {formatPhone(me?.phone)}
             </div>

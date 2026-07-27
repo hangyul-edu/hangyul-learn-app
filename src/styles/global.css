@@ -5756,28 +5756,6 @@ textarea.input {
   align-items: center;
   gap: clamp(8px, 2.4vw, 11px);
 }
-/* Country selector */
-.acct__country {
-  flex: 0 0 auto;
-  height: clamp(72px, 18vw, 84px);
-  width: clamp(80px, 22vw, 90px);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  border: 1.5px solid #e6e9ea;
-  border-radius: 14px;
-  background: #fff;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.acct__country:active {
-  transform: scale(0.98);
-}
-.acct__flag {
-  font-size: 22px;
-  line-height: 1;
-}
 /* Dark change action */
 .acct__action {
   flex: 0 0 auto;

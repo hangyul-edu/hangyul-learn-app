@@ -1785,6 +1785,67 @@ textarea.input {
   transform: scale(0.97);
 }
 
+/* Country selector dropdown (shared across every phone-entry screen). The
+   wrapper anchors the list to the trigger; it takes the trigger's slot in the
+   phone row without stretching. */
+.country-select {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+}
+.country-select__list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 60;
+  min-width: 220px;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #ececea;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(80, 70, 60, 0.16);
+  max-height: 300px;
+  overflow-y: auto;
+}
+.country-select__item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  border: none;
+  background: none;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #f2f3f4;
+}
+.country-select__list li:last-child .country-select__item {
+  border-bottom: none;
+}
+.country-select__flag {
+  font-size: 20px;
+  line-height: 1;
+}
+.country-select__label {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: #272c30;
+}
+.country-select__dial {
+  font-size: 13px;
+  color: #8a929a;
+}
+.country-select__item.is-selected .country-select__label {
+  color: #ff5b00;
+  font-weight: 800;
+}
+.country-select__item:active {
+  background: #f7f6f4;
+}
+
 /* Dark action pills (인증하기 / 확인) */
 .signup__pill {
   flex: 0 0 auto;

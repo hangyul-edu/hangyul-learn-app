@@ -18,24 +18,37 @@
 
 type LogoProps = { height?: number };
 
-/** Toss Pay — official Toss blue (#0064FF) horizontal wordmark, no box. */
+/**
+ * Toss Pay — the icon (Toss blue #0064FF) next to the wordmark, matching the
+ * official horizontal lockup: `toss` bold + `pay` regular, both black.
+ */
 export function TossPayLogo({ height = 26 }: LogoProps) {
   return (
     <span className="paybrand" role="img" aria-label="토스페이" style={{ height }}>
-      {/* Wide 4.1:1 lockup — renders visibly wider than Naver Pay. */}
-      <svg viewBox="0 0 132 32" aria-hidden="true" focusable="false">
+      {/* Icon + wordmark → wide lockup, renders visibly wider than Naver Pay. */}
+      <svg viewBox="0 0 150 32" aria-hidden="true" focusable="false">
+        {/* Toss-blue icon mark. */}
+        <rect width="32" height="32" rx="9" fill="#0064FF" />
+        <rect
+          x="8.5"
+          y="8.5"
+          width="15"
+          height="15"
+          rx="4.5"
+          fill="#ffffff"
+          transform="rotate(45 16 16)"
+        />
+        {/* Wordmark: `toss` bold + `pay` regular, both black. */}
         <text
-          x="0"
-          y="25"
-          textLength="128"
-          lengthAdjust="spacingAndGlyphs"
+          x="42"
+          y="23.5"
           fontFamily="-apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif"
-          fontSize="27"
-          fontWeight="800"
-          letterSpacing="-1"
-          fill="#0064FF"
+          fontSize="23"
+          letterSpacing="-0.6"
+          fill="#111111"
         >
-          toss pay
+          <tspan fontWeight="800">toss</tspan>
+          <tspan dx="7" fontWeight="400">pay</tspan>
         </text>
       </svg>
     </span>
@@ -46,9 +59,9 @@ export function TossPayLogo({ height = 26 }: LogoProps) {
 export function NaverPayLogo({ height = 32 }: LogoProps) {
   return (
     <span className="paybrand" role="img" aria-label="네이버페이" style={{ height }}>
-      {/* Green N icon + "Pay" wordmark kept together as one lockup. */}
+      {/* Circular green N icon + "Pay" wordmark kept together as one lockup. */}
       <svg viewBox="0 0 84 32" aria-hidden="true" focusable="false">
-        <rect width="32" height="32" rx="8" fill="#03C75A" />
+        <circle cx="16" cy="16" r="16" fill="#03C75A" />
         <path d="M10 9h4.4l3.4 5.1V9H22v14h-4.4l-3.4-5.1V23H10V9z" fill="#ffffff" />
         <text
           x="40"

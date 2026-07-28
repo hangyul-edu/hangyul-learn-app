@@ -147,15 +147,20 @@ export function Saved() {
   const snap = snapRef.current;
   const modeHint = modeHintRef.current ?? null;
 
-  // Initial tab precedence: full snapshot › explicit navigation state › the tab
-  // we were last left on before a review › the Sentences default.
+  // Initial tab precedence:
+  //   full snapshot › the tab we were on when we left for a review (modeHint) ›
+  //   explicit navigation state › the Sentences default.
+  // modeHint is set ONLY when leaving Saved for a review, so it is a reliable
+  // "returning from a review" signal and must beat `entry.tab` — which is the
+  // STALE navigation state of this history entry (e.g. Personalized opens /saved
+  // with tab:"sentence"), not the tab the user was actually on when they left.
   const initialMode: Mode = snap
     ? snap.mode
-    : entry?.tab
-      ? entry.tab === "quiz"
+    : modeHint
+      ? modeHint
+      : entry?.tab === "quiz"
         ? "problem"
-        : "sentence"
-      : modeHint ?? "sentence";
+        : "sentence";
   const [mode, setMode] = useState<Mode>(initialMode);
   const [source, setSource] = useState<Source>(snap ? snap.source : entry?.filter === "favorite" ? "bookmark" : "wrong");
   const [sort, setSort] = useState<Sort>(snap ? snap.sort : "latest");

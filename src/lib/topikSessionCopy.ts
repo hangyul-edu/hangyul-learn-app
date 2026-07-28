@@ -11,6 +11,12 @@ export interface TopikSessionCopy {
   submit: string;
   next: string;
   complete: string;
+  /** Result-header title after a correct answer (blue check state). */
+  resultCorrectTitle: string;
+  /** Result-header title after a wrong answer (coral retry state). */
+  resultRetryTitle: string;
+  /** Fallback label for the listening track (the audio payload carries no title). */
+  audioTrack: string;
   answerPlaceholder: string;
   blankPlaceholder: string;
   /** current/max character counter, e.g. "247/300". */
@@ -41,6 +47,9 @@ export const TOPIK_SESSION_COPY: Record<AppLanguage, TopikSessionCopy> = {
     submit: "제출",
     next: "다음",
     complete: "완료",
+    resultCorrectTitle: "정답이에요!",
+    resultRetryTitle: "다시 풀어보세요",
+    audioTrack: "Track 1",
     answerPlaceholder: "답을 입력하세요",
     blankPlaceholder: "답을 입력하세요",
     charCount: (current, max) => `${current}/${max}`,
@@ -68,6 +77,9 @@ export const TOPIK_SESSION_COPY: Record<AppLanguage, TopikSessionCopy> = {
     submit: "Submit",
     next: "Next",
     complete: "Done",
+    resultCorrectTitle: "Correct!",
+    resultRetryTitle: "Try again",
+    audioTrack: "Track 1",
     answerPlaceholder: "Type your answer",
     blankPlaceholder: "Type your answer",
     charCount: (current, max) => `${current}/${max}`,

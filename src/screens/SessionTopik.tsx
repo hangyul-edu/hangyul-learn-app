@@ -6,6 +6,7 @@ import { SessionCompleteModal } from "../components/SessionCompleteModal";
 import { quizAttemptBody, type AnswerValue } from "../components/QuestionView";
 import { TopikQuestion, canSubmitTopik } from "../components/topik/TopikQuestion";
 import { TopikResult } from "../components/topik/TopikResult";
+import { ResultHeader, type ResultStatus } from "../components/topik/ResultHeader";
 import { SavePlusIcon } from "../components/brand/HomeIcons";
 import { LoadingState, ErrorState } from "../components/ui/states";
 import { recApi, quizApi, dashboardApi, learnApi } from "../api/endpoints";
@@ -372,17 +373,39 @@ export function SessionTopik() {
     }
   }
 
-  const showResult = phase === "incorrect" || phase === "correct";
+  // Writing is scored (not right/wrong): a graded-writing or still-deferred
+  // result renders the score card, never the correct/retry verdict header.
+  const isWriting = !!result?.writing || result?.status === "submitted";
+  // Verdict shown in the result header. Only a graded SELECTION answer gets the
+  // blue/coral header; writing stays neutral (score shown below instead).
+  const headerStatus: ResultStatus =
+    phase === "incorrect"
+      ? "incorrect"
+      : phase === "correct" && !!result?.correct && !isWriting
+        ? "correct"
+        : "none";
+  // The listening player picks up the warm cream tint while retrying.
+  const audioTone: "neutral" | "incorrect" = phase === "incorrect" ? "incorrect" : "neutral";
   // Options are interactive while answering AND after an incorrect result (the
   // learner must be able to pick another option immediately). They lock only on
   // a correct/terminal result or while a request is in flight.
   const optionsLocked = phase === "correct" || phase === "submitting";
-  // Per-option result markers: blue on the chosen key once correct, red on any
+  // Per-option result markers: blue on the chosen key once correct, coral on any
   // wrong-submitted key. Absent while answering.
   const optionResult =
     phase === "correct" && result?.correct
       ? { correctKey: value.choiceKey ?? null, wrongKeys }
       : { correctKey: null, wrongKeys };
+  const bookmarkButton = cur && (
+    <button
+      className="sess__bookmark"
+      onClick={() => toggleSave(cur)}
+      aria-label={saved[cur.quiz_id] ? copy.removeSaved : copy.saveQuestion}
+      aria-pressed={!!saved[cur.quiz_id]}
+    >
+      <SavePlusIcon active={!!saved[cur.quiz_id]} />
+    </button>
+  );
 
   const panel = (
     <div className="sess__dropdown">
@@ -443,13 +466,8 @@ export function SessionTopik() {
       ) : !cur ? (
         <LoadingState />
       ) : (
-        <div className="sess__card">
-          <div className="sess__card-top">
-            <p className="sess__instr sess__instr--topik">{copy.title}</p>
-            <button className="sess__bookmark" onClick={() => toggleSave(cur)} aria-label={saved[cur.quiz_id] ? copy.removeSaved : copy.saveQuestion} aria-pressed={!!saved[cur.quiz_id]}>
-              <SavePlusIcon active={!!saved[cur.quiz_id]} />
-            </button>
-          </div>
+        <div className="sess__card sess__card--topik">
+          <ResultHeader status={headerStatus} copy={copy} bookmark={bookmarkButton} />
 
           <TopikQuestion
             quiz={cur}
@@ -458,23 +476,28 @@ export function SessionTopik() {
             disabled={optionsLocked}
             copy={copy}
             optionResult={optionResult}
+            tone={audioTone}
           />
 
-          {showResult && result && <TopikResult result={result} copy={copy} />}
+          {/* Writing answers show a score card; selection verdicts live in the
+              header (the correct answer is never revealed after a wrong try). */}
+          {phase === "correct" && result && isWriting && <TopikResult result={result} copy={copy} />}
 
-          {phase === "correct" ? (
-            <button className="sess__next" onClick={next}>
-              {idx >= total - 1 || (goalTarget > 0 && correctlyCompleted >= goalTarget) ? copy.complete : copy.next}
-            </button>
-          ) : (
-            <button className="sess__submit" onClick={submit} disabled={!canSubmit}>
-              {phase === "submitting" ? (
-                <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2.5 }} />
-              ) : (
-                copy.submit
-              )}
-            </button>
-          )}
+          <div className="sess__cta">
+            {phase === "correct" ? (
+              <button className="sess__next" onClick={next}>
+                {idx >= total - 1 || (goalTarget > 0 && correctlyCompleted >= goalTarget) ? copy.complete : copy.next}
+              </button>
+            ) : (
+              <button className="sess__submit" onClick={submit} disabled={!canSubmit}>
+                {phase === "submitting" ? (
+                  <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2.5 }} />
+                ) : (
+                  copy.submit
+                )}
+              </button>
+            )}
+          </div>
         </div>
       )}
     </SessionChrome>

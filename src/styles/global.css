@@ -4353,6 +4353,50 @@ textarea.input {
   background: #fff;
   box-shadow: 0 8px 20px rgba(80, 70, 60, 0.08);
 }
+/* TOPIK question card: a large, soft, spacious white card. A flex column with a
+   generous gap sets the vertical rhythm between the result header, the question
+   (instruction / audio / choices), the optional writing score, and the CTA. */
+.sess__card--topik {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(22px, 6vw, 32px);
+  padding: clamp(28px, 7vw, 42px) clamp(22px, 6vw, 34px);
+  border-radius: 28px;
+  box-shadow: 0 10px 26px rgba(35, 30, 25, 0.1);
+}
+.sess__card--topik .tq {
+  gap: clamp(20px, 5.5vw, 30px);
+  margin-top: 0;
+}
+/* Result header: circular status badge + bold verdict on the left, bookmark
+   pinned to the far right (kept in place across every state via margin-left). */
+.tq-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 46px;
+}
+.tq-head__status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.tq-head__badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+}
+.tq-head__title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(22px, 6vw, 28px);
+  line-height: 1.15;
+  color: #1c2126;
+  word-break: keep-all;
+}
+.tq-head .sess__bookmark {
+  margin-left: auto;
+}
 /* Neutral before answering — the transparent 3px reserves space so applying a
    result colour later doesn't shift the layout. The result colour is added only
    after a server-confirmed answer via --correct / --incorrect. */
@@ -4596,6 +4640,28 @@ textarea.input {
   box-shadow: none;
   cursor: default;
 }
+/* Centered pill CTA for the TOPIK card (Submit / Next). Scoped to .sess__cta so
+   the shared full-width button on other session screens is unaffected. */
+.sess__cta {
+  display: flex;
+  justify-content: center;
+  margin-top: clamp(8px, 3vw, 18px);
+}
+.sess__cta .sess__submit,
+.sess__cta .sess__next {
+  width: min(220px, 100%);
+  height: 72px;
+  margin-top: 0;
+  border-radius: 999px;
+  font-size: clamp(20px, 5.6vw, 24px);
+}
+.sess__cta .sess__next {
+  background: #ff6500;
+  box-shadow: 0 8px 14px rgba(0, 0, 0, 0.16);
+}
+.sess__cta .sess__submit:disabled {
+  background: #aeb5bb;
+}
 
 /* ===================== TOPIK discriminated question renderer ===================== */
 .tq {
@@ -4607,7 +4673,7 @@ textarea.input {
 /* Gray instruction line (the server prompt), below the orange card title. */
 .tq__instruction {
   margin: 0;
-  color: #4a5560;
+  color: #7d8791;
   font-size: clamp(15px, 4vw, 17px);
   font-weight: 600;
   line-height: 1.55;
@@ -4658,77 +4724,85 @@ textarea.input {
 .tq-choices {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
+/* An unselected option sits directly on the white card — no bordered/gray box.
+   The 1.5px transparent border reserves space so a coloured state border never
+   shifts the row. Highlight backgrounds (selected / correct / wrong) round to a
+   soft pill. */
 .tq-choice {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
-  padding: 13px 14px;
-  border: 1.5px solid #e7e9ec;
-  border-radius: 14px;
-  background: #fff;
+  min-height: 54px;
+  padding: 9px 12px;
+  border: 1.5px solid transparent;
+  border-radius: 18px;
+  background: transparent;
   cursor: pointer;
   text-align: left;
 }
 .tq-choice__num {
   flex: 0 0 auto;
-  width: 26px;
-  height: 26px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #eef0f2;
-  color: #4a5560;
+  background: #eceff2;
+  color: #7e8790;
   font-weight: 800;
-  font-size: 14px;
+  font-size: 15px;
 }
 .tq-choice__text {
   flex: 1;
-  color: #272c30;
-  font-size: 15.5px;
-  line-height: 1.45;
+  color: #252a2f;
+  font-size: clamp(16px, 4.4vw, 20px);
+  font-weight: 600;
+  line-height: 1.4;
   word-break: keep-all;
 }
+/* The right-hand marker (a check) always represents the learner's selection;
+   colour carries the verdict. Orange while choosing, blue when correct, coral
+   when wrong. */
 .tq-choice__check {
   flex: 0 0 auto;
   display: inline-flex;
-  color: #ff5b00;
+  color: #ff6500;
 }
 .tq-choice.is-selected {
-  border-color: #ff8a3d;
+  border-color: #ff9a52;
   background: #fff4ec;
 }
 .tq-choice.is-selected .tq-choice__num {
-  background: #ff5b00;
+  background: #ff6500;
   color: #fff;
 }
-/* Result states: a correct answer is blue, a submitted wrong answer is red
-   (matching the reference screens). These override the neutral selected look. */
+/* Correct — blue success treatment (answer text stays dark, not blue). */
 .tq-choice.is-correct {
-  border-color: #2f6bff;
+  border-color: #5b7ff5;
   background: #eef3ff;
 }
 .tq-choice.is-correct .tq-choice__num {
-  background: #2f6bff;
+  background: #5b7ff5;
   color: #fff;
 }
 .tq-choice.is-correct .tq-choice__check {
-  color: #2f6bff;
+  color: #5b7ff5;
 }
+/* Wrong — coral/pink treatment on the learner's own submitted option only. The
+   correct option is never revealed here. */
 .tq-choice.is-wrong {
-  border-color: #f0483e;
-  background: #fdeeed;
+  border-color: #ff7079;
+  background: #fff0f1;
 }
 .tq-choice.is-wrong .tq-choice__num {
-  background: #f0483e;
+  background: #ff7079;
   color: #fff;
 }
-.tq-choice__cross {
-  flex: 0 0 auto;
-  display: inline-flex;
-  color: #f0483e;
+.tq-choice.is-wrong .tq-choice__check {
+  color: #ff7079;
 }
 .tq-choice:disabled {
   cursor: default;
@@ -4816,26 +4890,35 @@ textarea.input {
   color: #e5484d;
 }
 
-/* Listening audio player. */
+/* Listening audio player — a wide, rounded horizontal card: big orange play
+   button + track label + time. Neutral gray by default; a warm cream tint in the
+   retry (incorrect) state. */
 .tq-audio {
   display: flex;
   align-items: center;
-  gap: 14px;
-  background: #fff6ec;
-  border-radius: 16px;
-  padding: 14px 16px;
+  gap: 16px;
+  min-height: 96px;
+  background: #f7f7f7;
+  border-radius: 18px;
+  padding: 14px 18px;
+}
+.tq-audio--incorrect {
+  background: #fff7e5;
 }
 .tq-audio__play {
   flex: 0 0 auto;
-  width: 52px;
-  height: 52px;
+  width: 68px;
+  height: 68px;
   border: none;
   border-radius: 50%;
-  background: #ff5b00;
+  background: #ff6500;
   display: grid;
   place-items: center;
   cursor: pointer;
-  box-shadow: 0 6px 14px rgba(255, 91, 0, 0.24);
+  box-shadow: 0 8px 16px rgba(255, 101, 0, 0.26);
+}
+.tq-audio__play.is-playing {
+  box-shadow: 0 6px 12px rgba(255, 101, 0, 0.34);
 }
 .tq-audio__play:disabled {
   cursor: default;
@@ -4844,16 +4927,16 @@ textarea.input {
 .tq-audio__meta {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 .tq-audio__label {
-  color: #5a4a3a;
-  font-weight: 700;
-  font-size: 14px;
+  color: #2c333a;
+  font-weight: 600;
+  font-size: clamp(18px, 4.6vw, 20px);
 }
 .tq-audio__time {
-  color: #8a7a68;
-  font-size: 13px;
+  color: #aab3c0;
+  font-size: clamp(16px, 4vw, 17px);
   font-variant-numeric: tabular-nums;
 }
 .tq-audio__error {

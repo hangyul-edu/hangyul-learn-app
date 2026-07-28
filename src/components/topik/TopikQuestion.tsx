@@ -81,6 +81,7 @@ export function TopikQuestion({
   disabled,
   copy,
   optionResult,
+  tone = "neutral",
 }: {
   quiz: Quiz;
   value: AnswerValue;
@@ -89,6 +90,9 @@ export function TopikQuestion({
   copy: TopikSessionCopy;
   /** Result markers for MC options (blue correct / red wrong). Absent = none. */
   optionResult?: OptionResultState;
+  /** Visual tone of the audio player — `incorrect` gives it the warm cream tint
+   *  that matches the retry state; `neutral` otherwise. */
+  tone?: "neutral" | "incorrect";
 }) {
   const kind = questionKind(quiz);
   return (
@@ -98,7 +102,7 @@ export function TopikQuestion({
       {quiz.prompt_translation && <p className="tq__instruction-sub">{quiz.prompt_translation}</p>}
 
       {kind === "reading_multiple_choice" && (
-        <MultipleChoice quiz={quiz} value={value} onChange={onChange} disabled={disabled} optionResult={optionResult} />
+        <MultipleChoice quiz={quiz} value={value} onChange={onChange} disabled={disabled} copy={copy} optionResult={optionResult} />
       )}
       {kind === "listening_multiple_choice" && (
         <MultipleChoice
@@ -108,6 +112,7 @@ export function TopikQuestion({
           disabled={disabled}
           copy={copy}
           listening
+          tone={tone}
           optionResult={optionResult}
         />
       )}
@@ -131,6 +136,7 @@ function MultipleChoice({
   disabled,
   copy,
   listening,
+  tone = "neutral",
   optionResult,
 }: {
   quiz: Quiz;
@@ -139,6 +145,7 @@ function MultipleChoice({
   disabled?: boolean;
   copy?: TopikSessionCopy;
   listening?: boolean;
+  tone?: "neutral" | "incorrect";
   optionResult?: OptionResultState;
 }) {
   const correctKey = optionResult?.correctKey ?? null;
@@ -146,7 +153,7 @@ function MultipleChoice({
   return (
     <>
       {listening && copy ? (
-        <AudioPlayer quiz={quiz} copy={copy} />
+        <AudioPlayer quiz={quiz} copy={copy} tone={tone} />
       ) : (
         quiz.material.html && <Passage html={quiz.material.html} />
       )}
@@ -157,13 +164,23 @@ function MultipleChoice({
         {quiz.answer.choices.map((c) => {
           const selected = value.choiceKey === c.key;
           // Precedence correct > wrong > selected: the confirmed-correct option
-          // is blue; any option submitted and confirmed wrong is red (even while
+          // is blue; any option submitted and confirmed wrong is coral (even while
           // it is still the current value, right after submitting it); a freshly
           // selected retry option that was never wrong shows the neutral orange
-          // selected state — it never inherits the red of a prior wrong attempt.
+          // selected state — it never inherits the coral of a prior wrong attempt.
           const isCorrect = correctKey === c.key;
           const isWrong = !isCorrect && wrongKeys.includes(c.key);
           const isSelected = !isCorrect && !isWrong && selected;
+          // The right-hand marker is a check on any chosen option — it always
+          // represents the learner's selection. Colour carries the verdict (blue
+          // correct / coral wrong / orange in-progress); a screen-reader label
+          // states it too, so colour is never the only signal.
+          const marked = isCorrect || isWrong || isSelected;
+          const stateLabel = isCorrect
+            ? (copy?.correct ?? "")
+            : isWrong
+              ? (copy?.incorrect ?? "")
+              : "";
           return (
             <button
               key={c.key}
@@ -178,29 +195,16 @@ function MultipleChoice({
                 {c.key}
               </span>
               <span className="tq-choice__text">{c.text}</span>
-              {/* Check on the chosen answer (blue when correct, orange while
-                  selecting); an ✕ on a confirmed-wrong option. */}
-              {(isCorrect || isSelected) && (
+              {stateLabel && <span className="sr-only">{stateLabel}</span>}
+              {marked && (
                 <span className="tq-choice__check" aria-hidden="true">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
                     <path
                       d="M5 12.5l4.5 4.5L19 7.5"
                       stroke="currentColor"
                       strokeWidth="2.6"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                    />
-                  </svg>
-                </span>
-              )}
-              {isWrong && (
-                <span className="tq-choice__cross" aria-hidden="true">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M6 6l12 12M18 6L6 18"
-                      stroke="currentColor"
-                      strokeWidth="2.6"
-                      strokeLinecap="round"
                     />
                   </svg>
                 </span>
@@ -341,7 +345,15 @@ function fmtTime(seconds: number): string {
 /** Listening audio: fetches a signed URL lazily on first play, exposes
  * play/pause + a track label + time, and surfaces a retryable error. Selection
  * state lives above this component, so playback never disturbs the answer. */
-function AudioPlayer({ quiz, copy }: { quiz: Quiz; copy: TopikSessionCopy }) {
+function AudioPlayer({
+  quiz,
+  copy,
+  tone = "neutral",
+}: {
+  quiz: Quiz;
+  copy: TopikSessionCopy;
+  tone?: "neutral" | "incorrect";
+}) {
   // Duration isn't in the list payload; it's learned from the audio endpoint or
   // the element's loadedmetadata event.
   const [state, setState] = useState<"idle" | "loading" | "playing" | "paused" | "error">("idle");
@@ -398,29 +410,29 @@ function AudioPlayer({ quiz, copy }: { quiz: Quiz; copy: TopikSessionCopy }) {
     state === "loading" ? copy.audioLoading : state === "playing" ? copy.audioPause : copy.audioPlay;
 
   return (
-    <div className="tq-audio">
+    <div className={`tq-audio ${tone === "incorrect" ? "tq-audio--incorrect" : ""}`}>
       <button
         type="button"
-        className="tq-audio__play"
+        className={`tq-audio__play ${state === "playing" ? "is-playing" : ""}`}
         onClick={toggle}
         disabled={state === "loading"}
         aria-label={label}
       >
         {state === "loading" ? (
-          <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2.5 }} />
+          <span className="spinner" style={{ width: 24, height: 24, borderWidth: 2.5 }} />
         ) : state === "playing" ? (
-          <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true">
             <rect x="6" y="5" width="4" height="14" rx="1.2" fill="#fff" />
             <rect x="14" y="5" width="4" height="14" rx="1.2" fill="#fff" />
           </svg>
         ) : (
-          <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M8 5.5v13l11-6.5-11-6.5z" fill="#fff" />
           </svg>
         )}
       </button>
       <div className="tq-audio__meta">
-        <span className="tq-audio__label">Track 1</span>
+        <span className="tq-audio__label">{copy.audioTrack}</span>
         <span className="tq-audio__time">
           {fmtTime(pos)} / {fmtTime(dur)}
         </span>

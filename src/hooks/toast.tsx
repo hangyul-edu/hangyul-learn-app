@@ -83,14 +83,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={value}>
       {children}
-      <div className="toast-wrap" role="status" aria-live="polite" aria-atomic="true">
+      {/* "hg-" prefix: plain ".toast" classes are hidden by ad-blocker
+          cosmetic filters (EasyList carries a ##.toast rule). */}
+      <div className="hg-toast-wrap" role="status" aria-live="polite" aria-atomic="true">
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`toast ${t.kind !== "default" ? `toast--${t.kind}` : ""} ${t.icon ? "" : "toast--plain"}`}
+            className={`hg-toast ${t.kind !== "default" ? `hg-toast--${t.kind}` : ""} ${t.icon ? "" : "hg-toast--plain"}`}
           >
             {t.icon && (
-              <span className="toast__icon">
+              <span className="hg-toast__icon">
                 {t.kind === "success" ? "✓" : t.kind === "error" ? "✕" : "🔔"}
               </span>
             )}

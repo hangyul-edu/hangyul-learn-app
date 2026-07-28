@@ -574,7 +574,7 @@ textarea.input {
 }
 
 /* ============================ Toast ============================ */
-.toast-wrap {
+.hg-toast-wrap {
   position: fixed;
   left: 0;
   right: 0;
@@ -587,7 +587,7 @@ textarea.input {
   pointer-events: none;
   padding: 0 16px;
 }
-.toast {
+.hg-toast {
   pointer-events: auto;
   display: flex;
   align-items: center;
@@ -602,15 +602,15 @@ textarea.input {
   max-width: var(--app-max);
   animation: toast-in 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
 }
-.toast--success {
+.hg-toast--success {
   background: #14532d;
 }
-.toast--error {
+.hg-toast--error {
   background: #7f1d1d;
 }
 /* Icon-less confirmation message: dark charcoal, centered, softly rounded
    rectangle (e.g. the "link copied" snackbar). */
-.toast--plain {
+.hg-toast--plain {
   justify-content: center;
   text-align: center;
   background: #26282c;
@@ -619,7 +619,7 @@ textarea.input {
   font-weight: 600;
   line-height: 1.4;
 }
-.toast__icon {
+.hg-toast__icon {
   font-size: 16px;
 }
 @keyframes toast-in {

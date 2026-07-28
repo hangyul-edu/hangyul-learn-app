@@ -6,6 +6,7 @@ import { ReviewCompleteSheet } from "../components/ReviewCompleteSheet";
 import { ReviewRewardModal } from "../components/ReviewRewardModal";
 import { TopikQuestion, canSubmitTopik, questionKind } from "../components/topik/TopikQuestion";
 import { TopikResult } from "../components/topik/TopikResult";
+import { ResultHeader, type ResultStatus } from "../components/topik/ResultHeader";
 import { quizAttemptBody, type AnswerValue } from "../components/QuestionView";
 import { SavePlusIcon } from "../components/brand/HomeIcons";
 import { LoadingState, ErrorState } from "../components/ui/states";
@@ -41,6 +42,9 @@ export function SessionReview() {
   const [error, setError] = useState(false);
   const [value, setValue] = useState<AnswerValue>({});
   const [result, setResult] = useState<QuizAttemptResult | null>(null);
+  // Option keys submitted and confirmed wrong for the current item — kept coral
+  // while the learner retries (review reveals the correct option in blue).
+  const [wrongKeys, setWrongKeys] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   // Set once the item is answered correctly (points from the latest attempt);
   // doubles as the "completed" gate. Reset to null by a restart to re-enable
@@ -68,6 +72,7 @@ export function SessionReview() {
     setQuiz(null);
     setError(false);
     setResult(null);
+    setWrongKeys([]);
     setRewardPoints(null);
     setSessionPoints(0);
     setRewardOpen(false);
@@ -128,6 +133,10 @@ export function SessionReview() {
         } catch {
           /* ignore */
         }
+      } else if (res.status !== "submitted" && !res.writing && value.choiceKey) {
+        // A graded-wrong selection: remember the submitted option so it stays
+        // coral while the learner retries.
+        setWrongKeys((keys) => (keys.includes(value.choiceKey!) ? keys : [...keys, value.choiceKey!]));
       }
     } catch (e) {
       // A technical failure is not a wrong answer — keep the draft, allow retry.
@@ -141,6 +150,7 @@ export function SessionReview() {
     // Redo the same item within the SAME session. `reviewSessionId` is kept, so
     // the server dedups the review award — a restart never grants points again.
     setResult(null);
+    setWrongKeys([]);
     setValue({});
     setRewardPoints(null);
     startedAt.current = Date.now();
@@ -165,6 +175,32 @@ export function SessionReview() {
       ? { contextKind: "quiz_attempt" as const, contextId: result.attempt_id, autoExplain: true, bubble: true }
       : { contextKind: "quiz" as const, contextId: quiz.quiz_id, autoExplain: false, bubble: false };
 
+  // Writing is scored, never right/wrong — it keeps the neutral header and shows
+  // the score card below.
+  const isWriting = !!result?.writing || result?.status === "submitted";
+  // Verdict shown in the result header: blue "correct" / coral "retry" for a
+  // graded selection answer; neutral otherwise.
+  const headerStatus: ResultStatus =
+    result && !isWriting ? (result.correct ? "correct" : "incorrect") : "none";
+  const audioTone: "neutral" | "incorrect" = headerStatus === "incorrect" ? "incorrect" : "neutral";
+  // Per-option markers. Review REVEALS the answer: the correct option is blue
+  // (the chosen key when right, the server's correct_answer when wrong) and the
+  // learner's submitted wrong option(s) stay coral.
+  const optionResult = {
+    correctKey: result ? (result.correct ? (value.choiceKey ?? null) : (result.correct_answer ?? null)) : null,
+    wrongKeys,
+  };
+  const bookmarkButton = quiz && (
+    <button
+      className="sess__bookmark"
+      onClick={toggleSave}
+      aria-label={saved ? topikCopy.removeSaved : topikCopy.saveQuestion}
+      aria-pressed={saved}
+    >
+      <SavePlusIcon active={saved} />
+    </button>
+  );
+
   return (
     <>
       <SessionChrome minimal title={copy.questionTitle} askContext={askContext} onBack={() => nav(-1)}>
@@ -173,35 +209,37 @@ export function SessionReview() {
         ) : !quiz ? (
           <LoadingState />
         ) : (
-          <div className="sess__card">
-            <div className="sess__card-top">
-              <p className="sess__instr sess__instr--topik">{topikCopy.title}</p>
-              <button
-                className="sess__bookmark"
-                onClick={toggleSave}
-                aria-label={saved ? topikCopy.removeSaved : topikCopy.saveQuestion}
-                aria-pressed={saved}
-              >
-                <SavePlusIcon active={saved} />
-              </button>
-            </div>
+          <div className="sess__card sess__card--topik">
+            <ResultHeader status={headerStatus} copy={topikCopy} bookmark={bookmarkButton} />
 
-            <TopikQuestion quiz={quiz} value={value} onChange={setValue} disabled={completed} copy={topikCopy} />
+            <TopikQuestion
+              quiz={quiz}
+              value={value}
+              onChange={setValue}
+              disabled={completed || submitting}
+              copy={topikCopy}
+              optionResult={optionResult}
+              tone={audioTone}
+            />
 
-            {result && <TopikResult result={result} copy={topikCopy} />}
+            {/* Writing answers show the score card; selection verdicts are carried
+                by the header + the blue (correct) / coral (submitted-wrong) options. */}
+            {result && isWriting && <TopikResult result={result} copy={topikCopy} />}
 
             {!completed && (
-              <button
-                className="sess__submit"
-                onClick={submit}
-                disabled={!canSubmitTopik(quiz, value) || submitting}
-              >
-                {submitting ? (
-                  <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2.5 }} />
-                ) : (
-                  topikCopy.submit
-                )}
-              </button>
+              <div className="sess__cta">
+                <button
+                  className="sess__submit"
+                  onClick={submit}
+                  disabled={!canSubmitTopik(quiz, value) || submitting}
+                >
+                  {submitting ? (
+                    <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2.5 }} />
+                  ) : (
+                    topikCopy.submit
+                  )}
+                </button>
+              </div>
             )}
           </div>
         )}

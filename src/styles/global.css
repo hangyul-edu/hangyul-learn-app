@@ -4704,6 +4704,32 @@ textarea.input {
   background: #ff5b00;
   color: #fff;
 }
+/* Result states: a correct answer is blue, a submitted wrong answer is red
+   (matching the reference screens). These override the neutral selected look. */
+.tq-choice.is-correct {
+  border-color: #2f6bff;
+  background: #eef3ff;
+}
+.tq-choice.is-correct .tq-choice__num {
+  background: #2f6bff;
+  color: #fff;
+}
+.tq-choice.is-correct .tq-choice__check {
+  color: #2f6bff;
+}
+.tq-choice.is-wrong {
+  border-color: #f0483e;
+  background: #fdeeed;
+}
+.tq-choice.is-wrong .tq-choice__num {
+  background: #f0483e;
+  color: #fff;
+}
+.tq-choice__cross {
+  flex: 0 0 auto;
+  display: inline-flex;
+  color: #f0483e;
+}
 .tq-choice:disabled {
   cursor: default;
 }

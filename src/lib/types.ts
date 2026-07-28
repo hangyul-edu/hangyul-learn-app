@@ -275,6 +275,15 @@ export interface QuizAttemptResult {
   score?: number | null;
   /** `graded` — a definitive result is available; `submitted` — recorded, grading deferred. */
   status?: "graded" | "submitted" | string;
+  /** Server-authoritative daily-goal snapshot after this attempt. `current` =
+   * correctly-completed questions today, `target` = the daily goal. The
+   * authoritative source for the session's x/N counter + progress bar. */
+  daily_progress?: { goal_key?: string; target: number; current: number; achieved: boolean } | null;
+  /** True only when THIS attempt newly credited the daily goal (a correct
+   * custom answer not already completed). False for wrong answers, writing,
+   * reviews, and duplicate correct submissions. `daily_progress.current`
+   * advanced iff this is true. */
+  completed_now?: boolean;
 }
 
 /* ---- Courses / Lectures ---- */

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SessionChrome } from "../components/SessionChrome";
@@ -21,6 +21,18 @@ import type { Quiz, QuizAttemptResult, TopikSection } from "../lib/types";
 // to the tab via sessionStorage; cleared when the session is finished or exited.
 const TOPIK_SESSION_KEY = "hangyul.session.topik.v1";
 
+/**
+ * Explicit per-question answer phase. The whole result/retry/next flow is
+ * driven by this — never inferred from unrelated values (progress, whether a
+ * result object exists, the selected option). Transitions:
+ *   answering  → submitting            (Submit pressed with a valid answer)
+ *   submitting → incorrect | correct   (server verdict)
+ *   incorrect  → answering             (learner selects a different option)
+ *   incorrect  → submitting            (Submit pressed again, same question)
+ *   correct    → (Next → new question, phase resets to answering)
+ */
+type Phase = "answering" | "submitting" | "incorrect" | "correct";
+
 type TopikSnapshot = {
   section: TopikSection;
   items: Quiz[];
@@ -28,11 +40,14 @@ type TopikSnapshot = {
   // Per-item working answers keyed by quiz_id (writing drafts, selected option,
   // typed blanks) so nothing is lost across navigation or refresh.
   drafts: Record<string, AnswerValue>;
-  answered: string[];
   correct: string[];
+  attempted: string[];
   points: number;
   typeCode: string | null;
   startedAt: number;
+  // Server-authoritative daily-goal snapshot (correctly-completed / goal).
+  goalCurrent: number;
+  goalTarget: number;
 };
 
 function readTopikSnapshot(): TopikSnapshot | null {
@@ -52,6 +67,15 @@ function clearTopikSnapshot() {
   } catch {
     /* ignore */
   }
+}
+
+/** A submitted answer is a retryable wrong answer only for graded selection
+ * questions (MC / fill-blanks). Writing is scored, never right/wrong, so it is
+ * terminal (→ Next) regardless. */
+function isRetryableWrong(result: QuizAttemptResult): boolean {
+  if (result.writing) return false;
+  if (result.status === "submitted") return false; // deferred writing grade
+  return result.correct === false;
 }
 
 export function SessionTopik() {
@@ -80,22 +104,37 @@ export function SessionTopik() {
     queryFn: () => recApi.topikQuestionTypes(section),
   });
 
-  const [open, setOpen] = useState(false);
+  const [openPanel, setOpenPanel] = useState(false);
   const [typeCode, setTypeCode] = useState<string | null>(null);
   const [items, setItems] = useState<Quiz[] | null>(null);
   const [idx, setIdx] = useState(0);
   // Working answers keyed by quiz_id. The current item's answer is derived from
   // this map, so navigating between items and refreshing both preserve drafts.
   const [drafts, setDrafts] = useState<Record<string, AnswerValue>>({});
+  // Explicit answer phase for the CURRENT question (see Phase).
+  const [phase, setPhase] = useState<Phase>("answering");
+  // The graded response for the current question (banner + wrong option + AI).
   const [result, setResult] = useState<QuizAttemptResult | null>(null);
+  // Option keys submitted and confirmed wrong for the CURRENT question — kept
+  // red so the learner sees which attempts failed while retrying.
+  const [wrongKeys, setWrongKeys] = useState<string[]>([]);
+  // The exact answer value last submitted (any format); Submit stays disabled
+  // until the learner changes it, so an identical resubmit isn't offered.
+  const [submittedValue, setSubmittedValue] = useState<AnswerValue | null>(null);
   const [correctSet, setCorrectSet] = useState<Set<string>>(new Set());
-  const [answered, setAnswered] = useState<Set<string>>(new Set());
+  // Quiz_ids the learner has attempted at all (right or wrong) — used only to
+  // decide whether to record session time on exit, never for progress.
+  const [attempted, setAttempted] = useState<Set<string>>(new Set());
   const [saved, setSaved] = useState<Record<string, boolean>>({});
   const [points, setPoints] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(false);
+  // Server-authoritative daily goal: `goalCurrent` = correctly-completed today,
+  // `goalTarget` = the daily goal. These drive the x/N counter AND the bar; they
+  // move ONLY when the server confirms a correct answer (completed_now).
+  const [goalCurrent, setGoalCurrent] = useState(0);
+  const [goalTarget, setGoalTarget] = useState(0);
 
   async function loadSet(code?: string | null) {
     if (busy) return;
@@ -107,15 +146,24 @@ export function SessionTopik() {
       setItems(res.items);
       setIdx(0);
       setDrafts({});
-      setResult(null);
+      resetQuestionPhase();
       setCorrectSet(new Set());
-      setAnswered(new Set());
+      setAttempted(new Set());
     } catch (e) {
       if (items === null) setError(true);
       else toast.error(errorMessage(e));
     } finally {
       setBusy(false);
     }
+  }
+
+  // Clear all per-question result state so a (new or re-entered) question starts
+  // clean: nothing selected-as-result, Submit governs the CTA, no stale loading.
+  function resetQuestionPhase() {
+    setPhase("answering");
+    setResult(null);
+    setWrongKeys([]);
+    setSubmittedValue(null);
   }
 
   const startedAt = useRef(Date.now());
@@ -131,12 +179,21 @@ export function SessionTopik() {
       setItems(snap.items);
       setIdx(snap.idx);
       setDrafts(snap.drafts ?? {});
-      setAnswered(new Set(snap.answered));
       setCorrectSet(new Set(snap.correct));
+      setAttempted(new Set(snap.attempted ?? []));
       setPoints(snap.points ?? 0);
       setTypeCode(snap.typeCode ?? null);
       startedAt.current = snap.startedAt ?? Date.now();
+      // Restore server-authoritative progress; fall back to the dashboard goal.
+      setGoalCurrent(snap.goalCurrent ?? topik?.goal.current ?? 0);
+      setGoalTarget(snap.goalTarget ?? topik?.goal.target ?? 0);
+      // A restored session always reopens the current question UNRESOLVED — the
+      // learner may have refreshed mid-attempt. Progress is the persisted count;
+      // no credit is added by restoring.
+      resetQuestionPhase();
     } else {
+      setGoalCurrent(topik?.goal.current ?? 0);
+      setGoalTarget(topik?.goal.target ?? 0);
       void loadSet();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -144,19 +201,27 @@ export function SessionTopik() {
 
   const total = items?.length ?? 0;
   const cur = items?.[idx];
-  const progress = total ? answered.size / total : 0;
+  // Progress is derived ONLY from server-confirmed correct completions vs the
+  // daily goal — never from attempts, the question index, or response count.
+  const dailyGoal = goalTarget || total || 1;
+  const correctlyCompleted = Math.min(goalCurrent, dailyGoal);
+  const progress = dailyGoal ? correctlyCompleted / dailyGoal : 0;
   // The current item's working answer, derived from the per-item draft map.
   const value: AnswerValue = cur ? (drafts[cur.quiz_id] ?? {}) : {};
   const setValue = (v: AnswerValue) => {
-    if (cur) setDrafts((d) => ({ ...d, [cur.quiz_id]: v }));
+    if (!cur) return;
+    setDrafts((d) => ({ ...d, [cur.quiz_id]: v }));
+    // Selecting/editing after an incorrect result re-arms the question: back to
+    // the answering phase, banner cleared, Submit re-enabled. The previously
+    // wrong option stays red (wrongKeys); the new selection is neutral.
+    if (phase === "incorrect") {
+      setPhase("answering");
+      setResult(null);
+    }
   };
-  // Note: opening/viewing a question does NOT count as learning. Today is only
-  // credited as a learning day once the user answers a question correctly —
-  // that happens server-side on the correct attempt, and the sun refreshes when
-  // the dashboard query is invalidated on session exit.
 
-  // Persist the session (debounced) so a refresh restores the set, position, and
-  // in-progress drafts. Debounced so keystrokes don't thrash sessionStorage.
+  // Persist the session (debounced) so a refresh restores the set, position,
+  // drafts, and authoritative progress. Debounced so keystrokes don't thrash.
   useEffect(() => {
     if (!items) return;
     const snap: TopikSnapshot = {
@@ -164,11 +229,13 @@ export function SessionTopik() {
       items,
       idx,
       drafts,
-      answered: [...answered],
       correct: [...correctSet],
+      attempted: [...attempted],
       points,
       typeCode,
       startedAt: startedAt.current,
+      goalCurrent,
+      goalTarget,
     };
     const timer = setTimeout(() => {
       try {
@@ -178,27 +245,64 @@ export function SessionTopik() {
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [items, idx, drafts, answered, correctSet, points, typeCode, section]);
+  }, [items, idx, drafts, correctSet, attempted, points, typeCode, section, goalCurrent, goalTarget]);
+
+  // Submit-enabled iff: a valid answer is selected, we're not mid-request, the
+  // question isn't already correct, and the answer differs from the last one
+  // submitted (so an identical wrong answer isn't re-offered).
+  const answerChanged = useMemo(() => {
+    if (!submittedValue) return true;
+    return JSON.stringify(value) !== JSON.stringify(submittedValue);
+  }, [value, submittedValue]);
+  const canSubmit =
+    !!cur &&
+    phase !== "submitting" &&
+    phase !== "correct" &&
+    canSubmitTopik(cur, value) &&
+    answerChanged;
 
   async function submit() {
-    if (!cur || submitting || result || !canSubmitTopik(cur, value)) return;
-    setSubmitting(true);
+    if (!cur || !canSubmit) return;
+    setPhase("submitting");
+    const submitted = value;
     try {
-      const res = await quizApi.attempt(cur.quiz_id, quizAttemptBody(cur, value));
+      const res = await quizApi.attempt(cur.quiz_id, quizAttemptBody(cur, submitted));
       setResult(res);
-      setAnswered((a) => new Set(a).add(cur.quiz_id));
-      setPoints((p) => p + (res.points_earned ?? 0));
-      if (res.correct) setCorrectSet((c) => new Set(c).add(cur.quiz_id));
+      setSubmittedValue(submitted);
+      setAttempted((a) => new Set(a).add(cur.quiz_id));
+      if (isRetryableWrong(res)) {
+        // Wrong: stay on the question. Mark the submitted option red (MC) and
+        // return to a state where Submit is available once a new option is
+        // chosen. NOTHING is credited — the server credited nothing either.
+        setPhase("incorrect");
+        if (submitted.choiceKey) {
+          setWrongKeys((keys) => (keys.includes(submitted.choiceKey!) ? keys : [...keys, submitted.choiceKey!]));
+        }
+      } else {
+        // Correct (or terminal writing): lock the question, show Next. Credit
+        // strictly from the server's authoritative snapshot — the bar moves
+        // only when completed_now is true.
+        setPhase("correct");
+        if (res.correct) setCorrectSet((c) => new Set(c).add(cur.quiz_id));
+        if (res.completed_now) setPoints((p) => p + (res.points_earned ?? 0));
+        if (res.daily_progress) {
+          setGoalCurrent(res.daily_progress.current);
+          setGoalTarget(res.daily_progress.target);
+        } else if (res.completed_now) {
+          setGoalCurrent((c) => c + 1);
+        }
+      }
     } catch (e) {
+      // Request failed: return to answering so the learner can retry safely.
+      // No progress was credited (server never confirmed).
+      setPhase(result ? "incorrect" : "answering");
       toast.error(errorMessage(e));
-    } finally {
-      setSubmitting(false);
     }
   }
 
   function next() {
-    setResult(null);
-    // The item is submitted — drop its draft (confirmed-submission cleanup).
+    // Only reachable in the "correct" phase (Next button). Advance to the next
+    // question, or finish when the set is exhausted / the goal is reached.
     if (cur) {
       setDrafts((d) => {
         const rest = { ...d };
@@ -206,10 +310,12 @@ export function SessionTopik() {
         return rest;
       });
     }
-    if (idx >= total - 1) {
+    const goalReached = goalTarget > 0 && correctlyCompleted >= goalTarget;
+    if (idx >= total - 1 || goalReached) {
       finishOrExit();
     } else {
       setIdx((i) => i + 1);
+      resetQuestionPhase();
     }
   }
 
@@ -228,7 +334,7 @@ export function SessionTopik() {
     if (finalizingRef.current) return;
     // Leaving ends the session: drop its snapshot so re-entry starts fresh.
     clearTopikSnapshot();
-    if (answered.size === 0) {
+    if (attempted.size === 0) {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       nav(-1);
       return;
@@ -266,11 +372,21 @@ export function SessionTopik() {
     }
   }
 
-  const incorrect = !!result && !result.correct;
+  const showResult = phase === "incorrect" || phase === "correct";
+  // Options are interactive while answering AND after an incorrect result (the
+  // learner must be able to pick another option immediately). They lock only on
+  // a correct/terminal result or while a request is in flight.
+  const optionsLocked = phase === "correct" || phase === "submitting";
+  // Per-option result markers: blue on the chosen key once correct, red on any
+  // wrong-submitted key. Absent while answering.
+  const optionResult =
+    phase === "correct" && result?.correct
+      ? { correctKey: value.choiceKey ?? null, wrongKeys }
+      : { correctKey: null, wrongKeys };
 
   const panel = (
     <div className="sess__dropdown">
-      <button className="sess__dropdown-field" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="listbox">
+      <button className="sess__dropdown-field" onClick={() => setOpenPanel((o) => !o)} aria-expanded={openPanel} aria-haspopup="listbox">
         <span className={typeCode ? "sess__dropdown-val" : "sess__dropdown-ph"}>
           {typeCode
             ? (() => {
@@ -280,10 +396,10 @@ export function SessionTopik() {
             : "✨ 더 집중해서 풀어보고 싶은 문제 유형을 선택해보세요"}
         </span>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d={open ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6"} stroke="#8a929a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d={openPanel ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6"} stroke="#8a929a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
-      {open && (
+      {openPanel && (
         <ul className="sess__dropdown-list" role="listbox" aria-label="TOPIK 문제 유형">
           {(types.data?.items ?? []).map((t) => (
             <li key={t.code} role="option" aria-selected={typeCode === t.code}>
@@ -291,7 +407,7 @@ export function SessionTopik() {
                 className={`sess__dropdown-item ${typeCode === t.code ? "is-selected" : ""}`}
                 onClick={() => {
                   setTypeCode(t.code);
-                  setOpen(false);
+                  setOpenPanel(false);
                   void loadSet(t.code);
                 }}
               >
@@ -309,15 +425,15 @@ export function SessionTopik() {
     <SessionChrome
       title={`토픽 ${grade}급`}
       heading="목표 하루 학습 문제"
-      correct={correctSet.size}
-      total={total}
+      correct={correctlyCompleted}
+      total={dailyGoal}
       progress={progress}
       panel={panel}
       onBack={finishOrExit}
       askContext={
         !cur
           ? null
-          : incorrect && result
+          : phase === "incorrect" && result
             ? { contextKind: "quiz_attempt", contextId: result.attempt_id, autoExplain: true, bubble: true }
             : { contextKind: "quiz", contextId: cur.quiz_id, autoExplain: false, bubble: false }
       }
@@ -335,18 +451,28 @@ export function SessionTopik() {
             </button>
           </div>
 
-          <TopikQuestion quiz={cur} value={value} onChange={setValue} disabled={!!result} copy={copy} />
+          <TopikQuestion
+            quiz={cur}
+            value={value}
+            onChange={setValue}
+            disabled={optionsLocked}
+            copy={copy}
+            optionResult={optionResult}
+          />
 
-          {result ? (
-            <div className="sess__result">
-              <TopikResult result={result} copy={copy} />
-              <button className="sess__next" onClick={next}>
-                {idx >= total - 1 ? copy.complete : copy.next}
-              </button>
-            </div>
+          {showResult && result && <TopikResult result={result} copy={copy} />}
+
+          {phase === "correct" ? (
+            <button className="sess__next" onClick={next}>
+              {idx >= total - 1 || (goalTarget > 0 && correctlyCompleted >= goalTarget) ? copy.complete : copy.next}
+            </button>
           ) : (
-            <button className="sess__submit" onClick={submit} disabled={!canSubmitTopik(cur, value) || submitting}>
-              {submitting ? <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2.5 }} /> : copy.submit}
+            <button className="sess__submit" onClick={submit} disabled={!canSubmit}>
+              {phase === "submitting" ? (
+                <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2.5 }} />
+              ) : (
+                copy.submit
+              )}
             </button>
           )}
         </div>

@@ -64,18 +64,31 @@ export function canSubmitTopik(quiz: Quiz, v: AnswerValue): boolean {
 
 /* -------------------------------------------------------------------------- */
 
+/** Per-option result markers for a multiple-choice question after submission:
+ * the correct/selected option renders blue, previously-submitted wrong options
+ * render red. Empty during answering (no result yet). */
+export interface OptionResultState {
+  /** The key to render blue: the selected option once the answer is correct. */
+  correctKey?: string | null;
+  /** Keys submitted and confirmed wrong for the current question (rendered red). */
+  wrongKeys?: readonly string[];
+}
+
 export function TopikQuestion({
   quiz,
   value,
   onChange,
   disabled,
   copy,
+  optionResult,
 }: {
   quiz: Quiz;
   value: AnswerValue;
   onChange: (v: AnswerValue) => void;
   disabled?: boolean;
   copy: TopikSessionCopy;
+  /** Result markers for MC options (blue correct / red wrong). Absent = none. */
+  optionResult?: OptionResultState;
 }) {
   const kind = questionKind(quiz);
   return (
@@ -85,7 +98,7 @@ export function TopikQuestion({
       {quiz.prompt_translation && <p className="tq__instruction-sub">{quiz.prompt_translation}</p>}
 
       {kind === "reading_multiple_choice" && (
-        <MultipleChoice quiz={quiz} value={value} onChange={onChange} disabled={disabled} />
+        <MultipleChoice quiz={quiz} value={value} onChange={onChange} disabled={disabled} optionResult={optionResult} />
       )}
       {kind === "listening_multiple_choice" && (
         <MultipleChoice
@@ -95,6 +108,7 @@ export function TopikQuestion({
           disabled={disabled}
           copy={copy}
           listening
+          optionResult={optionResult}
         />
       )}
       {kind === "writing_fill_blanks" && (
@@ -117,6 +131,7 @@ function MultipleChoice({
   disabled,
   copy,
   listening,
+  optionResult,
 }: {
   quiz: Quiz;
   value: AnswerValue;
@@ -124,7 +139,10 @@ function MultipleChoice({
   disabled?: boolean;
   copy?: TopikSessionCopy;
   listening?: boolean;
+  optionResult?: OptionResultState;
 }) {
+  const correctKey = optionResult?.correctKey ?? null;
+  const wrongKeys = optionResult?.wrongKeys ?? [];
   return (
     <>
       {listening && copy ? (
@@ -138,13 +156,21 @@ function MultipleChoice({
       <div className="tq-choices" role="radiogroup" aria-label={quiz.prompt}>
         {quiz.answer.choices.map((c) => {
           const selected = value.choiceKey === c.key;
+          // Precedence correct > wrong > selected: the confirmed-correct option
+          // is blue; any option submitted and confirmed wrong is red (even while
+          // it is still the current value, right after submitting it); a freshly
+          // selected retry option that was never wrong shows the neutral orange
+          // selected state — it never inherits the red of a prior wrong attempt.
+          const isCorrect = correctKey === c.key;
+          const isWrong = !isCorrect && wrongKeys.includes(c.key);
+          const isSelected = !isCorrect && !isWrong && selected;
           return (
             <button
               key={c.key}
               type="button"
               role="radio"
               aria-checked={selected}
-              className={`tq-choice ${selected ? "is-selected" : ""}`}
+              className={`tq-choice ${isCorrect ? "is-correct" : isWrong ? "is-wrong" : isSelected ? "is-selected" : ""}`}
               onClick={() => !disabled && onChange({ choiceKey: c.key })}
               disabled={disabled}
             >
@@ -152,7 +178,9 @@ function MultipleChoice({
                 {c.key}
               </span>
               <span className="tq-choice__text">{c.text}</span>
-              {selected && (
+              {/* Check on the chosen answer (blue when correct, orange while
+                  selecting); an ✕ on a confirmed-wrong option. */}
+              {(isCorrect || isSelected) && (
                 <span className="tq-choice__check" aria-hidden="true">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                     <path
@@ -161,6 +189,18 @@ function MultipleChoice({
                       strokeWidth="2.6"
                       strokeLinecap="round"
                       strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+              )}
+              {isWrong && (
+                <span className="tq-choice__cross" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M6 6l12 12M18 6L6 18"
+                      stroke="currentColor"
+                      strokeWidth="2.6"
+                      strokeLinecap="round"
                     />
                   </svg>
                 </span>

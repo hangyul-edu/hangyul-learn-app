@@ -156,13 +156,13 @@ export function SessionReview() {
     startedAt.current = Date.now();
   }
 
-  // A saved-question review is only ever opened from the Saved > Questions list,
-  // so leaving it (back chevron or the reward modal's confirm) returns there.
-  // Navigating with an explicit `tab: "quiz"` lands on the Questions tab even
-  // when the list's return snapshot can't be restored — otherwise Saved defaults
-  // to the Sentences tab.
+  // Leaving the review (back chevron or the reward modal's confirm) pops back to
+  // the Saved list it was opened from — a plain history-back, so no extra /saved
+  // entry is pushed and Saved's own back still reaches the origin screen (Home /
+  // Personalized). Saved restores the Questions tab it was left on via its own
+  // return-state (see Saved's `savedModeHint`).
   function backToSaved() {
-    nav("/saved", { state: { tab: "quiz" } });
+    nav(-1);
   }
 
   async function toggleSave() {

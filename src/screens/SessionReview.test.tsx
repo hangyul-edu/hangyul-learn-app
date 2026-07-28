@@ -15,11 +15,14 @@ vi.mock("../components/SessionChrome", () => ({
   ),
 }));
 
-// The saved list, showing which tab it was opened on (from router state).
+// The saved list, tagged with a marker carried on the ORIGIN history entry.
+// Leaving the review must pop back to that same entry (history-back), not push a
+// fresh /saved — otherwise the marker is absent and Saved's own back would loop
+// into the review.
 function SavedProbe() {
   const loc = useLocation();
-  const tab = (loc.state as { tab?: string } | null)?.tab ?? "none";
-  return <div>SAVED LIST tab={tab}</div>;
+  const marker = (loc.state as { marker?: string } | null)?.marker ?? "fresh";
+  return <div>SAVED[{marker}]</div>;
 }
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn() }) }));
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: "ko" } }) }));
@@ -62,7 +65,13 @@ function renderReview() {
       { path: "/review/question/:quizId", element: <SessionReview /> },
       { path: "/saved", element: <SavedProbe /> },
     ],
-    { initialEntries: ["/saved", "/review/question/q1"], initialIndex: 1 },
+    {
+      initialEntries: [
+        { pathname: "/saved", state: { marker: "origin" } },
+        "/review/question/q1",
+      ],
+      initialIndex: 1,
+    },
   );
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -105,11 +114,12 @@ describe("SessionReview — saved TOPIK question", () => {
     expect(screen.getByRole("button", { name: "다시 시작" })).toBeInTheDocument();
   });
 
-  it("back button returns to the Saved Questions tab (not Sentences)", async () => {
+  it("back button pops to the origin Saved entry (no new entry / loop)", async () => {
     renderReview();
     await screen.findByText(/알맞은 것을 고르십시오/);
     await userEvent.click(screen.getByRole("button", { name: "뒤로" }));
-    expect(await screen.findByText("SAVED LIST tab=quiz")).toBeInTheDocument();
+    // Popped to the exact entry we came from — a pushed /saved would read "fresh".
+    expect(await screen.findByText("SAVED[origin]")).toBeInTheDocument();
   });
 
   it("finalizes on 완료: shows the reward modal with the server points, then returns to the saved list", async () => {
@@ -122,7 +132,7 @@ describe("SessionReview — saved TOPIK question", () => {
     expect(await screen.findByText("복습 완료!")).toBeInTheDocument();
     expect(screen.getByText("+5P")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "확인" }));
-    expect(await screen.findByText("SAVED LIST tab=quiz")).toBeInTheDocument();
+    expect(await screen.findByText("SAVED[origin]")).toBeInTheDocument();
   });
 
   it("focuses the confirm button and dismisses the reward modal on Escape", async () => {
@@ -134,7 +144,7 @@ describe("SessionReview — saved TOPIK question", () => {
 
     expect(await screen.findByRole("button", { name: "확인" })).toHaveFocus();
     await userEvent.keyboard("{Escape}");
-    expect(await screen.findByText("SAVED LIST tab=quiz")).toBeInTheDocument();
+    expect(await screen.findByText("SAVED[origin]")).toBeInTheDocument();
   });
 
   it("uses '다시 듣기' (not '다시 시작') as the left button for a listening question", async () => {

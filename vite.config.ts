@@ -8,7 +8,21 @@ import react from "@vitejs/plugin-react";
 export default defineConfig(({ mode }) => {
   const backend = process.env.VITE_DEV_BACKEND || "http://127.0.0.1:8000";
   return {
-    plugins: [react()],
+    plugins: [
+      react(),
+      {
+        // Serve the admin SPA at /admin (and any /admin/* deep link) in dev.
+        name: "admin-spa-fallback",
+        configureServer(server) {
+          server.middlewares.use((req, _res, next) => {
+            if (req.url === "/admin" || req.url?.startsWith("/admin/")) {
+              req.url = "/admin.html";
+            }
+            next();
+          });
+        },
+      },
+    ],
     server: {
       port: 5173,
       proxy: {
@@ -19,6 +33,15 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
-    build: { outDir: "dist", sourcemap: mode !== "production" },
+    build: {
+      outDir: "dist",
+      sourcemap: mode !== "production",
+      rollupOptions: {
+        input: {
+          main: new URL("./index.html", import.meta.url).pathname,
+          admin: new URL("./admin.html", import.meta.url).pathname,
+        },
+      },
+    },
   };
 });

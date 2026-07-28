@@ -7865,6 +7865,39 @@ textarea.input {
   background: none;
   padding: 0;
   cursor: pointer;
+  text-align: left;
+}
+.lechome__card-title {
+  margin: 7px 2px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* Track filter chips (전체 / 회화 / TOPIK) above the unified lecture feed. */
+.lechome__filters {
+  display: flex;
+  gap: 8px;
+  padding: 14px 20px 2px;
+}
+.lechome__filter {
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.lechome__filter.is-active {
+  background: var(--brand-500);
+  border-color: var(--brand-500);
+  color: #fff;
 }
 .lechome__thumb {
   position: relative;

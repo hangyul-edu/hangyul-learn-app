@@ -8,7 +8,7 @@ import { learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { useMarkStudied } from "../hooks/learningActivity";
 import { ApiError, errorMessage } from "../lib/http";
-import type { Lecture as Lec } from "../lib/types";
+import type { LectureDetail as Lec } from "../lib/types";
 
 function fmt(sec: number) {
   return `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, "0")}`;
@@ -97,7 +97,7 @@ export function Lecture() {
             <div>
               <h2 style={{ fontSize: 20 }}>{l.title}</h2>
               <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
-                {l.kind === "video" ? "영상 강의" : l.kind === "listening" ? "듣기" : "읽기"} · 레벨 {l.level}
+                {l.kind === "video" ? "영상 강의" : l.kind === "listening" ? "듣기" : "읽기"}
                 {l.completed && <span style={{ color: "var(--success)", fontWeight: 700 }}> · ✓ 완료</span>}
               </div>
             </div>

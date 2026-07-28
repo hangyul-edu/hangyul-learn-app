@@ -28,6 +28,7 @@ import type {
   LeagueLifecycleResponse,
   LearningPreferences,
   Lecture,
+  LectureDetail,
   ManagementPeriod,
   ManagementStats,
   Me,
@@ -221,7 +222,10 @@ export const learnApi = {
   courseLessons: (courseId: string, cursor?: string | null) =>
     http.get<{ items: Lecture[]; next_cursor: string | null; has_more: boolean }>(`/courses/${courseId}/lessons`, { cursor: cursor ?? undefined, limit: 6 }),
   course: (courseId: string) => http.get<Course>(`/courses/${courseId}`),
-  lecture: (lectureId: string) => http.get<Lecture>(`/lectures/${lectureId}`),
+  /** Unified lecture catalog — both tracks; pass `track` to filter. */
+  lectures: (track?: "track_conversation" | "track_topik") =>
+    http.get<{ items: Lecture[] }>("/lectures", { track }),
+  lecture: (lectureId: string) => http.get<LectureDetail>(`/lectures/${lectureId}`),
   lecturePlay: (lectureId: string) =>
     http.get<{ video: { url: string; duration_seconds: number; captions_url: string | null } }>(`/lectures/${lectureId}/play`),
   progress: (lectureId: string, position_seconds: number) =>

@@ -6,39 +6,20 @@ import { CharacterArt } from "../components/brand/ProfileAssets";
 import { SkeletonList } from "../components/ui/states";
 import { ChatbotBottomSheet } from "../components/ChatbotBottomSheet";
 import { bannerApi, dashboardApi, learnApi, subApi } from "../api/endpoints";
-import type { Banner, Course, Lecture } from "../lib/types";
+import type { Banner, Lecture } from "../lib/types";
 
-type CoursesPage = { items: Course[]; next_cursor: string | null; has_more: boolean };
+// The lecture page shows the FULL catalog — conversation and TOPIK lectures
+// together, with an optional track filter chip. Lectures carry no level, so
+// nothing is pre-filtered by the user's learning level.
+type TrackFilter = "all" | "track_conversation" | "track_topik";
 
-// Single-arg page fetcher (keeps the useInfiniteQuery generic inference clean).
-const fetchCoursesPage = (cursor: string | undefined): Promise<CoursesPage> =>
-  learnApi.courses(FEED_TRACK, cursor);
+const TRACK_LABELS: Record<string, string> = {
+  track_conversation: "회화",
+  track_topik: "TOPIK",
+};
 
-// The Lecture-home vertical feed is the conversation track's courses (the
-// reference sections are conversation courses). A dedicated cross-track feed
-// could replace this without touching the UI.
-const FEED_TRACK = "track_conversation";
 const prefersReducedMotion = () =>
   typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-
-/** Client-side level → label (backend exposes numeric `level` only). */
-function levelLabel(level: number): string {
-  if (level >= 7) return "Advanced";
-  if (level >= 4) return "Intermediate";
-  return "Beginner";
-}
-function dedupById<T>(items: T[], id: (t: T) => string): T[] {
-  const seen = new Set<string>();
-  const out: T[] = [];
-  for (const it of items) {
-    const key = id(it);
-    if (!seen.has(key)) {
-      seen.add(key);
-      out.push(it);
-    }
-  }
-  return out;
-}
 
 /* --------------------------- Banner carousel --------------------------- */
 function BannerCarousel() {
@@ -130,11 +111,12 @@ function BannerCarousel() {
 function LectureCard({ lecture, isPremium }: { lecture: Lecture; isPremium: boolean }) {
   const nav = useNavigate();
   const showFree = lecture.access === "free" && !isPremium;
+  const marker = lecture.completed ? "완료" : lecture.started ? "이어보기" : null;
   return (
     <button
       className="lechome__card"
       onClick={() => nav(`/lectures/${lecture.lecture_id}`)}
-      aria-label={`${lecture.title}, ${levelLabel(lecture.level)}${showFree ? ", 무료 강의" : ""}`}
+      aria-label={`${lecture.title}${marker ? `, ${marker}` : ""}${showFree ? ", 무료 강의" : ""}`}
     >
       <div className="lechome__thumb">
         {lecture.thumbnail_url ? (
@@ -143,74 +125,34 @@ function LectureCard({ lecture, isPremium }: { lecture: Lecture; isPremium: bool
           <div className="lechome__thumb-ph" aria-hidden="true" />
         )}
         {showFree && <span className="lechome__free" aria-hidden="true">Free</span>}
-        <span className="lechome__level" aria-hidden="true">{levelLabel(lecture.level)}</span>
+        {marker && <span className="lechome__level" aria-hidden="true">{marker}</span>}
       </div>
+      <p className="lechome__card-title">{lecture.title}</p>
     </button>
   );
 }
 
-/* --------------------------- Course section ---------------------------- */
-function CourseSection({ course, isPremium }: { course: Course; isPremium: boolean }) {
-  // Each section owns its horizontal pagination (state keyed by this course id
-  // via the React key on the parent). Seeded from the preview the feed bundled.
-  const [extra, setExtra] = useState<Lecture[]>([]);
-  const [cursor, setCursor] = useState<string | null>(course.lessons_next_cursor ?? null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
-  const sentinel = useRef<HTMLDivElement>(null);
-
-  const lectures = useMemo(
-    () => dedupById([...(course.lessons_preview ?? []), ...extra], (l) => l.lecture_id),
-    [course.lessons_preview, extra],
-  );
-
-  async function loadMore() {
-    if (loading || cursor == null) return;
-    setLoading(true);
-    setError(false);
-    try {
-      const page = await learnApi.courseLessons(course.course_id, cursor);
-      setExtra((prev) => dedupById([...prev, ...page.items], (l) => l.lecture_id));
-      setCursor(page.next_cursor);
-    } catch {
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    const el = sentinel.current;
-    if (!el) return;
-    const ob = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) void loadMore();
-      },
-      { root: el.closest(".lechome__row"), rootMargin: "0px 200px" },
-    );
-    ob.observe(el);
-    return () => ob.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cursor, loading]);
-
-  if (lectures.length === 0) return null; // omit empty sections
-
+/* --------------------------- Track section ----------------------------- */
+function TrackSection({
+  trackId,
+  lectures,
+  isPremium,
+}: {
+  trackId: string;
+  lectures: Lecture[];
+  isPremium: boolean;
+}) {
+  if (lectures.length === 0) return null;
+  const title = `${TRACK_LABELS[trackId] ?? trackId} 강의`;
   return (
-    <section className="lechome__section" aria-label={course.title}>
-      <h2 className="lechome__section-title">{course.title}</h2>
+    <section className="lechome__section" aria-label={title}>
+      <h2 className="lechome__section-title">{title}</h2>
       <div className="lechome__row" role="list">
         {lectures.map((l) => (
           <div role="listitem" key={l.lecture_id}>
             <LectureCard lecture={l} isPremium={isPremium} />
           </div>
         ))}
-        {error ? (
-          <button className="lechome__row-retry" onClick={() => loadMore()}>다시 불러오기</button>
-        ) : cursor != null ? (
-          <div className="lechome__row-foot" ref={sentinel}>
-            {loading && <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />}
-          </div>
-        ) : null}
       </div>
     </section>
   );
@@ -220,6 +162,7 @@ function CourseSection({ course, isPremium }: { course: Course; isPremium: boole
 export function LectureHome() {
   const nav = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
+  const [filter, setFilter] = useState<TrackFilter>("all");
   const dash = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
   const sub = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
   // Premium lecture access (paid, trial, or voucher all set is_premium server-side).
@@ -228,78 +171,24 @@ export function LectureHome() {
   // (hides Free) rather than falsely tagging paid content as free.
   const entitlementKnown = sub.isSuccess;
 
-  // Vertical course-section pagination (cursor-based). Kept in local state so the
-  // isPremium change only recomputes badges — it never reloads the course feed.
-  const [sections, setSections] = useState<Course[]>([]);
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
-  const [feedLoading, setFeedLoading] = useState(true);
-  const [feedError, setFeedError] = useState(false);
-  const [moreState, setMoreState] = useState<"idle" | "loading" | "error" | "done">("idle");
-  const bootedRef = useRef(false);
-  const loadingMoreRef = useRef(false); // in-flight guard (independent of moreState)
+  // One unified catalog fetch; the track filter is a server-side query param.
+  const feed = useQuery({
+    queryKey: ["lectures", filter],
+    queryFn: () => learnApi.lectures(filter === "all" ? undefined : filter),
+  });
 
-  async function loadFirst() {
-    setFeedLoading(true);
-    setFeedError(false);
-    try {
-      const page = await fetchCoursesPage(undefined);
-      setSections(dedupById(page.items, (c) => c.course_id));
-      setCursor(page.next_cursor ?? undefined);
-      setMoreState(page.next_cursor ? "idle" : "done");
-    } catch {
-      setFeedError(true);
-    } finally {
-      setFeedLoading(false);
+  const byTrack = useMemo(() => {
+    const groups = new Map<string, Lecture[]>();
+    for (const lecture of feed.data?.items ?? []) {
+      const bucket = groups.get(lecture.track_id) ?? [];
+      bucket.push(lecture);
+      groups.set(lecture.track_id, bucket);
     }
-  }
-  // Called by the observer (only while "idle") and by the retry button.
-  async function loadMore() {
-    if (loadingMoreRef.current || cursor == null) return;
-    loadingMoreRef.current = true;
-    setMoreState("loading");
-    try {
-      const page = await fetchCoursesPage(cursor);
-      setSections((prev) => dedupById([...prev, ...page.items], (c) => c.course_id));
-      setCursor(page.next_cursor ?? undefined);
-      setMoreState(page.next_cursor ? "idle" : "done");
-    } catch {
-      setMoreState("error");
-    } finally {
-      loadingMoreRef.current = false;
-    }
-  }
-  useEffect(() => {
-    if (bootedRef.current) return;
-    bootedRef.current = true;
-    void loadFirst();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const bottomSentinel = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = bottomSentinel.current;
-    if (!el) return;
-    const ob = new IntersectionObserver(
-      (entries) => {
-        // Auto-load only when idle — an errored page waits for the retry button.
-        if (entries[0].isIntersecting && moreState === "idle") void loadMore();
-      },
-      { rootMargin: "320px" },
-    );
-    ob.observe(el);
-    return () => ob.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [moreState, cursor]);
+    return groups;
+  }, [feed.data]);
 
   const streak = dash.data?.streak_days;
-
-  // A course is displayable only if it has at least one lecture to show; a
-  // category whose lecture array is empty renders nothing. The course-empty view
-  // shows only when the feed loaded successfully and NO course is displayable.
-  const displayableSections = useMemo(
-    () => sections.filter((c) => (c.lessons_preview?.length ?? 0) > 0),
-    [sections],
-  );
+  const total = feed.data?.items.length ?? 0;
 
   return (
     <div className="screen lechome">
@@ -318,34 +207,52 @@ export function LectureHome() {
 
         <BannerCarousel />
 
-        {feedLoading ? (
+        <div className="lechome__filters" role="tablist" aria-label="트랙 필터">
+          {(
+            [
+              ["all", "전체"],
+              ["track_conversation", "회화"],
+              ["track_topik", "TOPIK"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              role="tab"
+              aria-selected={filter === value}
+              className={`lechome__filter ${filter === value ? "is-active" : ""}`}
+              onClick={() => setFilter(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {feed.isLoading ? (
           <div className="lechome__sections">
             <div className="lechome__section-title lechome__skel-title" aria-hidden="true" />
             <SkeletonList rows={1} height={130} />
             <div className="lechome__section-title lechome__skel-title" aria-hidden="true" />
             <SkeletonList rows={1} height={130} />
           </div>
-        ) : feedError ? (
+        ) : feed.isError ? (
           <div className="lechome__err">
             <span>강의를 불러오지 못했어요.</span>
-            <button className="lechome__retry" onClick={() => loadFirst()}>다시 시도</button>
+            <button className="lechome__retry" onClick={() => feed.refetch()}>다시 시도</button>
           </div>
-        ) : displayableSections.length === 0 ? (
+        ) : total === 0 ? (
           <div className="lechome__course-empty">
             <p className="lechome__course-empty-text">아직 등록된 강의가 없어요</p>
           </div>
         ) : (
           <div className="lechome__sections">
-            {displayableSections.map((c) => (
-              <CourseSection key={c.course_id} course={c} isPremium={entitlementKnown ? isPremium : true} />
+            {[...byTrack.entries()].map(([trackId, lectures]) => (
+              <TrackSection
+                key={trackId}
+                trackId={trackId}
+                lectures={lectures}
+                isPremium={entitlementKnown ? isPremium : true}
+              />
             ))}
-            <div className="lechome__foot" ref={bottomSentinel}>
-              {moreState === "loading" ? (
-                <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} />
-              ) : moreState === "error" ? (
-                <button className="lechome__retry" onClick={() => { setMoreState("idle"); void loadMore(); }}>다시 불러오기</button>
-              ) : null}
-            </div>
           </div>
         )}
       </div>

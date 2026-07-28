@@ -278,18 +278,26 @@ export interface QuizAttemptResult {
 }
 
 /* ---- Courses / Lectures ---- */
+/** Lightweight lecture card returned by every list endpoint. Lectures carry
+ *  no level — any user can open any lecture — and list items never include
+ *  checkpoint schedules or playback positions (those come from the detail
+ *  and play endpoints when a lecture is opened). */
 export interface Lecture {
   lecture_id: string;
   track_id: string;
   course_id: string | null;
-  level: number;
   title: string;
   kind: "video" | "reading" | "listening";
   duration_seconds: number;
   thumbnail_url: string | null;
   topik_question_type: string | null;
   completed: boolean;
+  /** True when the caller has any playback progress — drives the resume marker. */
+  started: boolean;
   access: "free" | "premium";
+}
+/** Full detail from GET /lectures/{id}: adds checkpoints + caller playback. */
+export interface LectureDetail extends Lecture {
   checkpoints: { checkpoint_id: string; interaction_type: string; at_second: number }[];
   my_playback: { last_position_seconds: number; max_watched_seconds: number; completed: boolean } | null;
 }

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -186,5 +186,46 @@ describe("SessionReview — saved TOPIK question", () => {
     expect(await screen.findByText(/아쉬워요|정답: 1/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "완료" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "제출" })).toBeInTheDocument();
+  });
+
+  const option = (text: string) => screen.getByRole("radio", { name: new RegExp(text) });
+
+  it("does not reveal the correct option on an incorrect answer", async () => {
+    attempt.mockResolvedValue({ attempt_id: "a", correct: false, correct_answer: "1", status: "graded" });
+    renderReview();
+    await screen.findAllByRole("radio");
+    await userEvent.click(option("동안")); // key "2"
+    await userEvent.click(screen.getByRole("button", { name: "제출" }));
+
+    await waitFor(() => expect(option("동안").className).toContain("is-wrong"));
+    // The correct option (key "1" = "덕분에") must NOT be revealed blue.
+    expect(option("덕분에").className).not.toContain("is-correct");
+  });
+
+  it("highlights only the most recently submitted wrong option", async () => {
+    attempt.mockResolvedValue({ attempt_id: "a", correct: false, correct_answer: "1", status: "graded" });
+    renderReview();
+    await screen.findAllByRole("radio");
+
+    await userEvent.click(option("동안")); // key "2"
+    await userEvent.click(screen.getByRole("button", { name: "제출" }));
+    await waitFor(() => expect(option("동안").className).toContain("is-wrong"));
+
+    // Selecting a different option clears the previous wrong highlight at once.
+    await userEvent.click(option("처럼")); // key "3"
+    expect(option("동안").className).not.toContain("is-wrong");
+
+    // Submitting the new wrong option highlights only it — the first is neutral.
+    await userEvent.click(screen.getByRole("button", { name: "제출" }));
+    await waitFor(() => expect(option("처럼").className).toContain("is-wrong"));
+    expect(option("동안").className).not.toContain("is-wrong");
+  });
+
+  it("starts with no option selected even if a stale MC draft is persisted", async () => {
+    sessionStorage.setItem("hangyul.review.quiz.q1", JSON.stringify({ choiceKey: "2" }));
+    renderReview();
+    const radios = await screen.findAllByRole("radio");
+    for (const r of radios) expect(r).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByRole("button", { name: "제출" })).toBeDisabled();
   });
 });

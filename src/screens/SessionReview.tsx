@@ -42,9 +42,11 @@ export function SessionReview() {
   const [error, setError] = useState(false);
   const [value, setValue] = useState<AnswerValue>({});
   const [result, setResult] = useState<QuizAttemptResult | null>(null);
-  // Option keys submitted and confirmed wrong for the current item — kept coral
-  // while the learner retries (review reveals the correct option in blue).
-  const [wrongKeys, setWrongKeys] = useState<string[]>([]);
+  // The option key of the MOST RECENT submitted-wrong answer (rendered coral).
+  // Only the latest wrong submission is highlighted — selecting another option or
+  // submitting again clears the previous one. `null` when there is no standing
+  // wrong result to show.
+  const [wrongKey, setWrongKey] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   // Set once the item is answered correctly (points from the latest attempt);
   // doubles as the "completed" gate. Reset to null by a restart to re-enable
@@ -66,30 +68,38 @@ export function SessionReview() {
   const draftKey = `hangyul.review.quiz.${quizId}`;
 
   // Fetch the exact saved question (never generate/replace). Keyed on the URL id
-  // so a refresh restores the same item; a persisted writing draft is restored.
+  // so a refresh restores the same item. Every (re)initialization starts fully
+  // reset: no option selected, no result, no highlight.
   useEffect(() => {
     let cancelled = false;
     setQuiz(null);
     setError(false);
     setResult(null);
-    setWrongKeys([]);
+    setWrongKey(null);
+    setValue({});
     setRewardPoints(null);
     setSessionPoints(0);
     setRewardOpen(false);
     // A different item is a new review session — start a fresh award key.
     reviewSessionId.current = randomUuid();
-    try {
-      const raw = sessionStorage.getItem(draftKey);
-      setValue(raw ? (JSON.parse(raw) as AnswerValue) : {});
-    } catch {
-      setValue({});
-    }
     quizApi
       .get(quizId)
       .then((q) => {
         if (cancelled) return;
         setQuiz(q);
         setSaved(!!(q.is_favorited ?? q.bookmarked));
+        // Restore a persisted draft ONLY for text answers (writing / fill-blanks)
+        // so a refresh keeps typed text. A multiple-choice question always starts
+        // with no option selected — a saved choice must never carry into a new
+        // session or a reopened question.
+        if (q.answer.format !== "single_choice") {
+          try {
+            const raw = sessionStorage.getItem(draftKey);
+            if (raw) setValue(JSON.parse(raw) as AnswerValue);
+          } catch {
+            /* ignore */
+          }
+        }
       })
       .catch(() => !cancelled && setError(true));
     return () => {
@@ -98,9 +108,11 @@ export function SessionReview() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quizId]);
 
-  // Persist the working answer so a refresh keeps the writing draft.
+  // Persist the working answer so a refresh keeps the writing draft. Only text
+  // answers are persisted — MC selections are intentionally never stored, so a
+  // reopened question can't resurrect a previous choice.
   useEffect(() => {
-    if (!quiz || rewardPoints !== null) return;
+    if (!quiz || rewardPoints !== null || quiz.answer.format === "single_choice") return;
     try {
       sessionStorage.setItem(draftKey, JSON.stringify(value));
     } catch {
@@ -124,6 +136,7 @@ export function SessionReview() {
       });
       setResult(res);
       if (res.correct) {
+        setWrongKey(null); // clear any prior wrong highlight — show only the correct option
         setRewardPoints(res.points_earned ?? 0);
         setSessionPoints((p) => p + (res.points_earned ?? 0));
         // The review award created a points notification — refresh the badge.
@@ -133,10 +146,11 @@ export function SessionReview() {
         } catch {
           /* ignore */
         }
-      } else if (res.status !== "submitted" && !res.writing && value.choiceKey) {
-        // A graded-wrong selection: remember the submitted option so it stays
-        // coral while the learner retries.
-        setWrongKeys((keys) => (keys.includes(value.choiceKey!) ? keys : [...keys, value.choiceKey!]));
+      } else if (res.status !== "submitted" && !res.writing) {
+        // A graded-wrong selection: highlight ONLY this submission (coral),
+        // replacing any earlier wrong highlight. The correct answer is never
+        // revealed on a wrong attempt.
+        setWrongKey(value.choiceKey ?? null);
       }
     } catch (e) {
       // A technical failure is not a wrong answer — keep the draft, allow retry.
@@ -150,10 +164,21 @@ export function SessionReview() {
     // Redo the same item within the SAME session. `reviewSessionId` is kept, so
     // the server dedups the review award — a restart never grants points again.
     setResult(null);
-    setWrongKeys([]);
+    setWrongKey(null);
     setValue({});
     setRewardPoints(null);
     startedAt.current = Date.now();
+  }
+
+  // Changing the selection after a result re-arms the question: clear the verdict
+  // and the previous wrong highlight so only the newly-selected (neutral) option
+  // shows. No effect once completed (the question is locked).
+  function handleChange(v: AnswerValue) {
+    setValue(v);
+    if (result && !completed) {
+      setResult(null);
+      setWrongKey(null);
+    }
   }
 
   // Leaving the review (back chevron or the reward modal's confirm) pops back to
@@ -192,12 +217,12 @@ export function SessionReview() {
   const headerStatus: ResultStatus =
     result && !isWriting ? (result.correct ? "correct" : "incorrect") : "none";
   const audioTone: "neutral" | "incorrect" = headerStatus === "incorrect" ? "incorrect" : "neutral";
-  // Per-option markers. Review REVEALS the answer: the correct option is blue
-  // (the chosen key when right, the server's correct_answer when wrong) and the
-  // learner's submitted wrong option(s) stay coral.
+  // Per-option markers. Blue is shown ONLY on a correct answer (the chosen
+  // option) — a wrong attempt never reveals the correct option. Coral marks only
+  // the most-recent submitted-wrong option.
   const optionResult = {
-    correctKey: result ? (result.correct ? (value.choiceKey ?? null) : (result.correct_answer ?? null)) : null,
-    wrongKeys,
+    correctKey: result?.correct ? (value.choiceKey ?? null) : null,
+    wrongKeys: wrongKey ? [wrongKey] : [],
   };
   const bookmarkButton = quiz && (
     <button
@@ -224,7 +249,7 @@ export function SessionReview() {
             <TopikQuestion
               quiz={quiz}
               value={value}
-              onChange={setValue}
+              onChange={handleChange}
               disabled={completed || submitting}
               copy={topikCopy}
               optionResult={optionResult}

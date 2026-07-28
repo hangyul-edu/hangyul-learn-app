@@ -112,6 +112,13 @@ describe("SessionReview — saved TOPIK question", () => {
     // Two-button sheet, no next.
     expect(await screen.findByRole("button", { name: "완료" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "다시 시작" })).toBeInTheDocument();
+    // The Submit button stays in the DOM but hidden, so the vertically-centered
+    // card keeps its height (no downward shift) as the sheet slides up — it is
+    // reserved, not removed.
+    const submitEl = document.querySelector<HTMLButtonElement>(".sess__submit");
+    expect(submitEl).not.toBeNull();
+    expect(submitEl!.style.visibility).toBe("hidden");
+    expect(screen.queryByRole("button", { name: "제출" })).not.toBeInTheDocument();
   });
 
   it("back button pops to the origin Saved entry (no new entry / loop)", async () => {

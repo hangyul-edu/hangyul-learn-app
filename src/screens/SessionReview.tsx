@@ -235,21 +235,24 @@ export function SessionReview() {
                 by the header + the blue (correct) / coral (submitted-wrong) options. */}
             {result && isWriting && <TopikResult result={result} copy={topikCopy} />}
 
-            {!completed && (
-              <div className="sess__cta">
-                <button
-                  className="sess__submit"
-                  onClick={submit}
-                  disabled={!canSubmitTopik(quiz, value) || submitting}
-                >
-                  {submitting ? (
-                    <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2.5 }} />
-                  ) : (
-                    topikCopy.submit
-                  )}
-                </button>
-              </div>
-            )}
+            {/* The CTA slot is always rendered so the vertically-centered card
+                keeps its exact height when the completion sheet slides up — on a
+                correct answer the Submit button is hidden (its space reserved),
+                not removed, so the background never reflows/shifts. */}
+            <div className="sess__cta" aria-hidden={completed}>
+              <button
+                className="sess__submit"
+                onClick={submit}
+                disabled={!canSubmitTopik(quiz, value) || submitting || completed}
+                style={completed ? { visibility: "hidden" } : undefined}
+              >
+                {submitting ? (
+                  <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2.5 }} />
+                ) : (
+                  topikCopy.submit
+                )}
+              </button>
+            </div>
           </div>
         )}
       </SessionChrome>

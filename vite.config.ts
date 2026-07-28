@@ -11,9 +11,20 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       {
-        // Serve the admin SPA at /admin (and any /admin/* deep link) in dev.
+        // Serve the admin SPA at /admin (and any /admin/* deep link) in both
+        // `vite` (dev) and `vite preview`. Other static hosts need the same
+        // rewrite — and the runtime redirect in src/main.tsx covers hosts
+        // that only have an index.html fallback (see docs/admin-portal.md).
         name: "admin-spa-fallback",
         configureServer(server) {
+          server.middlewares.use((req, _res, next) => {
+            if (req.url === "/admin" || req.url?.startsWith("/admin/")) {
+              req.url = "/admin.html";
+            }
+            next();
+          });
+        },
+        configurePreviewServer(server) {
           server.middlewares.use((req, _res, next) => {
             if (req.url === "/admin" || req.url?.startsWith("/admin/")) {
               req.url = "/admin.html";

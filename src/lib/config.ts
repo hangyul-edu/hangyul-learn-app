@@ -7,5 +7,5 @@
 const raw = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
 export const API_BASE_URL = raw ? raw.replace(/\/+$/, "") : "/api";
 
-export const APP_NAME = "한글";
+export const APP_NAME = "한귤";
 export const APP_NAME_EN = "Hangyul";

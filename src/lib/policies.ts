@@ -30,7 +30,7 @@ export const POLICIES: Record<PolicyId, PolicyDoc> = {
   terms: {
     title: "회원이용약관",
     updated: "2026-07-01",
-    intro: "본 약관은 한글(Hangyul) 서비스의 이용과 관련하여 회사와 회원 간의 권리·의무 및 책임사항을 규정합니다.",
+    intro: "본 약관은 한귤(Hangyul) 서비스의 이용과 관련하여 회사와 회원 간의 권리·의무 및 책임사항을 규정합니다.",
     sections: [
       {
         heading: "제1조 (목적)",

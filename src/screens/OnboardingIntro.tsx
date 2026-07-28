@@ -33,7 +33,7 @@ export function OnboardingIntro({ onStart }: { onStart: () => void }) {
           <div className="onbi__grow onbi__grow--mid" />
 
           {/* Character illustration (decorative group) */}
-          <div className="onbi__art" role="img" aria-label="한글 캐릭터들이 환영하는 그림">
+          <div className="onbi__art" role="img" aria-label="한귤 캐릭터들이 환영하는 그림">
             <div className="onbi__circle" />
             <span className="onbi__shadow" />
             <span className="onbi__char onbi__char--left">

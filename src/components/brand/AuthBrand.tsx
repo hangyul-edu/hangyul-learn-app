@@ -13,7 +13,7 @@
 /** Orange tangerine mascot on the left + black wordmark on the right. */
 export function HangyulLogo() {
   return (
-    <div className="auth__logo" role="img" aria-label="한글 Hangyul">
+    <div className="auth__logo" role="img" aria-label="한귤 Hangyul">
       <svg className="auth__logo-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
         {/* leaf + stem */}
         <path d="M33 12c4-6 11-7 15-6 .6 3.4-.7 9.6-6 12-4.2 1.9-8 .3-9-.6-.9-1.7-1.4-3.6 0-5.4z" fill="#5FB65B" />

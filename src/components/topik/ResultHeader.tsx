@@ -8,25 +8,32 @@ import type { TopikSessionCopy } from "../../lib/topikSessionCopy";
 export type ResultStatus = "none" | "correct" | "incorrect";
 
 /**
- * The horizontal header at the top of the TOPIK question card: a circular status
- * badge + bold verdict title on the left, the save/bookmark control pinned to the
- * far right. The badge + title appear only after a graded selection answer; the
- * bookmark is always present and keeps its position across every state so it
- * never shifts when the verdict is revealed.
+ * The horizontal header at the top of the TOPIK question card: the save/bookmark
+ * control is always pinned to the far right and keeps its position across every
+ * state. On its left:
+ *  - before an answer (status `none`): the question directive/heading (`title`),
+ *    so every question shows its instruction — same as before the redesign;
+ *  - after a graded selection answer: the circular status badge + verdict, which
+ *    replaces the heading.
  */
 export function ResultHeader({
   status,
+  title,
   copy,
   bookmark,
 }: {
   status: ResultStatus;
+  /** Question directive shown before answering (e.g. "문제를 풀어보세요"). */
+  title: string;
   copy: TopikSessionCopy;
   /** The save/bookmark button — owned by the screen (holds its saved state). */
   bookmark: ReactNode;
 }) {
   return (
     <div className="tq-head">
-      {status !== "none" && (
+      {status === "none" ? (
+        <p className="sess__instr sess__instr--topik">{title}</p>
+      ) : (
         <div
           className={`tq-head__status tq-head__status--${status}`}
           role="status"

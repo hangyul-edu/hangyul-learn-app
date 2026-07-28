@@ -210,7 +210,7 @@ export function SessionReview() {
           <LoadingState />
         ) : (
           <div className="sess__card sess__card--topik">
-            <ResultHeader status={headerStatus} copy={topikCopy} bookmark={bookmarkButton} />
+            <ResultHeader status={headerStatus} title={topikCopy.title} copy={topikCopy} bookmark={bookmarkButton} />
 
             <TopikQuestion
               quiz={quiz}

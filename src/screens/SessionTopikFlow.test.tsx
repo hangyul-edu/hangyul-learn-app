@@ -119,6 +119,10 @@ describe("SessionTopik — answer flow (incorrect → retry → correct)", () =>
   it("starts with Submit disabled and no progress", async () => {
     renderScreen();
     await screen.findByText("문제 A");
+    // The question instruction is shown for every question (regression guard):
+    // the heading before answering + the per-question prompt below it.
+    expect(screen.getByText("문제를 풀어보세요")).toBeInTheDocument();
+    expect(screen.getByText("문제 A")).toBeInTheDocument();
     expect(submitBtn()).toBeDisabled();
     expect(screen.getByTestId("counter")).toHaveTextContent("0/3");
     expect(screen.getByTestId("progress")).toHaveTextContent("0");

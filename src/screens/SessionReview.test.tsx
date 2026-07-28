@@ -68,7 +68,10 @@ afterEach(() => vi.restoreAllMocks());
 describe("SessionReview — saved TOPIK question", () => {
   it("renders the exact saved question via the TOPIK renderer", async () => {
     renderReview();
+    // The instruction shows for every question: the heading + the per-question
+    // prompt (regression guard — both vanished during the result-state redesign).
     expect(await screen.findByText(/알맞은 것을 고르십시오/)).toBeInTheDocument();
+    expect(screen.getByText("문제를 풀어보세요")).toBeInTheDocument();
     expect(screen.getAllByRole("radio")).toHaveLength(4);
     expect(get).toHaveBeenCalledWith("q1");
   });

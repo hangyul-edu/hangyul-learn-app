@@ -467,7 +467,7 @@ export function SessionTopik() {
         <LoadingState />
       ) : (
         <div className="sess__card sess__card--topik">
-          <ResultHeader status={headerStatus} copy={copy} bookmark={bookmarkButton} />
+          <ResultHeader status={headerStatus} title={copy.title} copy={copy} bookmark={bookmarkButton} />
 
           <TopikQuestion
             quiz={cur}

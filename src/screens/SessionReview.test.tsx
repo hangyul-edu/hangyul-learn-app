@@ -1,12 +1,26 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { RouterProvider, createMemoryRouter } from "react-router-dom";
+import { RouterProvider, createMemoryRouter, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 vi.mock("../components/SessionChrome", () => ({
-  SessionChrome: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SessionChrome: ({ children, onBack }: { children: React.ReactNode; onBack?: () => void }) => (
+    <div>
+      <button aria-label="뒤로" onClick={onBack}>
+        back
+      </button>
+      {children}
+    </div>
+  ),
 }));
+
+// The saved list, showing which tab it was opened on (from router state).
+function SavedProbe() {
+  const loc = useLocation();
+  const tab = (loc.state as { tab?: string } | null)?.tab ?? "none";
+  return <div>SAVED LIST tab={tab}</div>;
+}
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn() }) }));
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: "ko" } }) }));
 
@@ -46,7 +60,7 @@ function renderReview() {
   const router = createMemoryRouter(
     [
       { path: "/review/question/:quizId", element: <SessionReview /> },
-      { path: "/saved", element: <div>SAVED LIST</div> },
+      { path: "/saved", element: <SavedProbe /> },
     ],
     { initialEntries: ["/saved", "/review/question/q1"], initialIndex: 1 },
   );
@@ -91,6 +105,13 @@ describe("SessionReview — saved TOPIK question", () => {
     expect(screen.getByRole("button", { name: "다시 시작" })).toBeInTheDocument();
   });
 
+  it("back button returns to the Saved Questions tab (not Sentences)", async () => {
+    renderReview();
+    await screen.findByText(/알맞은 것을 고르십시오/);
+    await userEvent.click(screen.getByRole("button", { name: "뒤로" }));
+    expect(await screen.findByText("SAVED LIST tab=quiz")).toBeInTheDocument();
+  });
+
   it("finalizes on 완료: shows the reward modal with the server points, then returns to the saved list", async () => {
     attempt.mockResolvedValue({ attempt_id: "a1", correct: true, points_earned: 5, status: "graded" });
     renderReview();
@@ -101,7 +122,7 @@ describe("SessionReview — saved TOPIK question", () => {
     expect(await screen.findByText("복습 완료!")).toBeInTheDocument();
     expect(screen.getByText("+5P")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "확인" }));
-    expect(await screen.findByText("SAVED LIST")).toBeInTheDocument();
+    expect(await screen.findByText("SAVED LIST tab=quiz")).toBeInTheDocument();
   });
 
   it("focuses the confirm button and dismisses the reward modal on Escape", async () => {
@@ -113,7 +134,7 @@ describe("SessionReview — saved TOPIK question", () => {
 
     expect(await screen.findByRole("button", { name: "확인" })).toHaveFocus();
     await userEvent.keyboard("{Escape}");
-    expect(await screen.findByText("SAVED LIST")).toBeInTheDocument();
+    expect(await screen.findByText("SAVED LIST tab=quiz")).toBeInTheDocument();
   });
 
   it("uses '다시 듣기' (not '다시 시작') as the left button for a listening question", async () => {

@@ -156,6 +156,15 @@ export function SessionReview() {
     startedAt.current = Date.now();
   }
 
+  // A saved-question review is only ever opened from the Saved > Questions list,
+  // so leaving it (back chevron or the reward modal's confirm) returns there.
+  // Navigating with an explicit `tab: "quiz"` lands on the Questions tab even
+  // when the list's return snapshot can't be restored — otherwise Saved defaults
+  // to the Sentences tab.
+  function backToSaved() {
+    nav("/saved", { state: { tab: "quiz" } });
+  }
+
   async function toggleSave() {
     if (!quiz) return;
     const on = saved;
@@ -203,7 +212,7 @@ export function SessionReview() {
 
   return (
     <>
-      <SessionChrome minimal title={copy.questionTitle} askContext={askContext} onBack={() => nav(-1)}>
+      <SessionChrome minimal title={copy.questionTitle} askContext={askContext} onBack={backToSaved}>
         {error ? (
           <ErrorState message={copy.loadError} onRetry={() => nav(0)} />
         ) : !quiz ? (
@@ -254,7 +263,7 @@ export function SessionReview() {
         />
       )}
       {rewardOpen && rewardPoints !== null && (
-        <ReviewRewardModal points={sessionPoints} copy={copy} onConfirm={() => nav(-1)} />
+        <ReviewRewardModal points={sessionPoints} copy={copy} onConfirm={backToSaved} />
       )}
     </>
   );

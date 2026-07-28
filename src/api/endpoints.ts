@@ -134,7 +134,6 @@ export const dashboardApi = {
 export const sentenceApi = {
   list: (params: { level?: number; topic?: string; cursor?: string; limit?: number }) =>
     http.get<Page<Sentence>>("/sentences", params),
-  recent: (cursor?: string) => http.get<Page<Sentence>>("/sentences/recently-studied", { cursor, limit: 20 }),
   get: (id: string) => http.get<Sentence>(`/sentences/${id}`),
   audio: (id: string) => http.get<{ url: string }>(`/sentences/${id}/audio`),
   bookmark: (id: string) => http.post<unknown>(`/sentences/${id}/bookmark`),
@@ -166,9 +165,6 @@ export const sentenceApi = {
   },
   blankHint: (id: string, revealedCount: number) =>
     http.post<BlankHint>(`/sentences/${id}/hint`, { revealed_count: revealedCount }),
-  coach: () => http.get<{ targets: unknown[]; summary: string; based_on_attempts: number }>(
-    "/sentences/pronunciation-coach",
-  ),
   saved: (params: { save_type?: string; sort?: string; q?: string; cursor?: string }) =>
     http.get<SavedSentencesPage>("/saved-sentences", { limit: 20, ...params }),
   removeSaved: (id: string) => http.del<unknown>(`/saved-sentences/${id}`),
@@ -201,11 +197,6 @@ export const quizApi = {
   markViewed: (id: string) => http.post<unknown>(`/quizzes/${id}/view`),
   bookmarks: (params: { save_type?: string; section?: string; sort?: string; q?: string; cursor?: string }) =>
     http.get<{ items: Quiz[]; next_cursor?: string | null }>("/quizzes/bookmarks", { limit: 20, ...params }),
-  attempts: (cursor?: string) =>
-    http.get<{ items: unknown[]; stats?: Record<string, number>; next_cursor?: string | null }>(
-      "/quizzes/attempts/me",
-      { cursor, limit: 20 },
-    ),
 };
 
 /* ---------------------- Learning / recommend / AI -------------------- */
@@ -215,12 +206,6 @@ export const learnApi = {
    *  points — creates the "학습 완료! +Np 적립" notification. */
   recordSession: (body: { session_type: "sentence" | "review" | "lecture"; duration_seconds: number; category?: "conversation" | "topik"; lecture_id?: string }) =>
     http.post<SessionFinalizeResult>("/learning/sessions", body),
-  /** Course catalog; pass `track` to filter to one track, omit for all. */
-  courses: (track?: "track_conversation" | "track_topik", cursor?: string) =>
-    http.get<{ items: Course[]; next_cursor: string | null; has_more: boolean }>("/courses", { track, cursor, limit: 6, lessons_per_course: 6 }),
-  // Per-course horizontal lecture pagination (continues each course's lessons_next_cursor).
-  courseLessons: (courseId: string, cursor?: string | null) =>
-    http.get<{ items: Lecture[]; next_cursor: string | null; has_more: boolean }>(`/courses/${courseId}/lessons`, { cursor: cursor ?? undefined, limit: 6 }),
   course: (courseId: string) => http.get<Course>(`/courses/${courseId}`),
   /** Unified lecture catalog — both tracks; pass `track` to filter. */
   lectures: (track?: "track_conversation" | "track_topik") =>
@@ -327,7 +312,6 @@ export const billingApi = {
 };
 export const aiApi = {
   createConversation: () => http.post<{ conversation_id: string }>("/ai/conversations", {}),
-  messages: (id: string) => http.get<{ items: unknown[] }>(`/ai/conversations/${id}/messages`),
   send: (id: string, content: string, mode = "tutor") =>
     http.post<{ reply?: string; message?: unknown }>(`/ai/conversations/${id}/messages`, { content, mode }),
   /** Start a context-anchored conversation (e.g. explain the wrong answer). */
@@ -374,8 +358,6 @@ export const gameApi = {
   ackLeagueResult: (seasonId: string) =>
     http.post<LeagueLifecycleResponse>(`/leagues/result/${encodeURIComponent(seasonId)}/ack`),
   joinCurrentLeague: () => http.post<LeagueLifecycleResponse>("/leagues/current/join"),
-  seasons: () => http.get<{ current?: { season_id: string }; items?: { season_id: string }[] }>("/leagues/seasons"),
-  attendanceStatus: () => http.get<{ checked_in_today?: boolean; consecutive_days?: number }>("/attendance/me"),
   checkIn: () => http.post<AttendanceCheckIn>("/attendance/check-in"),
 };
 

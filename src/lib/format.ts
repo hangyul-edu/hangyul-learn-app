@@ -1,9 +1,3 @@
-export function initials(name?: string | null): string {
-  if (!name) return "🙂";
-  const t = name.trim();
-  return t ? t[0].toUpperCase() : "🙂";
-}
-
 export function timeAgo(iso?: string | null): string {
   if (!iso) return "";
   const then = new Date(iso).getTime();
@@ -65,11 +59,6 @@ export function formatMoney(cents: number, currency = "KRW"): string {
   } catch {
     return `${amount.toLocaleString()} ${currency}`;
   }
-}
-
-export function maskPhone(p?: string | null): string {
-  if (!p) return "-";
-  return p.replace(/(\d{2,3})\d+(\d{4})$/, "$1****$2");
 }
 
 /**

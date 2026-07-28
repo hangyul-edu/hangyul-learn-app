@@ -45,15 +45,16 @@ export function ResultHeader({
   );
 }
 
-/** Blue disc + white check — the correct-answer badge. */
+/** Blue disc + white check — the correct-answer badge. Sized to match the
+ * Conversation session's verdict badge (26px, viewBox 24). */
 function CheckBadge() {
   return (
-    <svg width="46" height="46" viewBox="0 0 46 46" fill="none">
-      <circle cx="23" cy="23" r="23" fill="#5B7FF5" />
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="11" fill="#5B7FF5" />
       <path
-        d="M14 23.5l6 6 12-13"
+        d="M7 12.5l3.2 3.2L17 8.8"
         stroke="#fff"
-        strokeWidth="3.4"
+        strokeWidth="2.4"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -64,10 +65,10 @@ function CheckBadge() {
 /** Coral disc + white exclamation — the retry (incorrect) badge. */
 function BangBadge() {
   return (
-    <svg width="46" height="46" viewBox="0 0 46 46" fill="none">
-      <circle cx="23" cy="23" r="23" fill="#FF7079" />
-      <rect x="20.8" y="11" width="4.4" height="16" rx="2.2" fill="#fff" />
-      <circle cx="23" cy="33" r="2.6" fill="#fff" />
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="11" fill="#FF7079" />
+      <path d="M12 6.4v7.2" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" />
+      <circle cx="12" cy="17.2" r="1.4" fill="#fff" />
     </svg>
   );
 }

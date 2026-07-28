@@ -210,14 +210,14 @@ export const quizApi = {
 
 /* ---------------------- Learning / recommend / AI -------------------- */
 export const learnApi = {
-  myLearning: () => http.get<{ tracks: { track_id: string; kind: string; current_level: number; max_level: number }[] }>("/me/learning"),
   /** Record a completed learning session (duration + category). Finalizes a
    *  pending level-up and — for a personalized (custom) session that earned
    *  points — creates the "학습 완료! +Np 적립" notification. */
   recordSession: (body: { session_type: "sentence" | "review" | "lecture"; duration_seconds: number; category?: "conversation" | "topik"; lecture_id?: string }) =>
     http.post<SessionFinalizeResult>("/learning/sessions", body),
-  courses: (trackId: string, cursor?: string) =>
-    http.get<{ items: Course[]; next_cursor: string | null; has_more: boolean }>(`/tracks/${trackId}/courses`, { cursor, limit: 6, lessons_per_course: 6 }),
+  /** Course catalog; pass `track` to filter to one track, omit for all. */
+  courses: (track?: "track_conversation" | "track_topik", cursor?: string) =>
+    http.get<{ items: Course[]; next_cursor: string | null; has_more: boolean }>("/courses", { track, cursor, limit: 6, lessons_per_course: 6 }),
   // Per-course horizontal lecture pagination (continues each course's lessons_next_cursor).
   courseLessons: (courseId: string, cursor?: string | null) =>
     http.get<{ items: Lecture[]; next_cursor: string | null; has_more: boolean }>(`/courses/${courseId}/lessons`, { cursor: cursor ?? undefined, limit: 6 }),

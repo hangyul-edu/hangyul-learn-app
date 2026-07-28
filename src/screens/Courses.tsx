@@ -15,8 +15,11 @@ function fmtDur(sec: number) {
 
 export function Courses() {
   const nav = useNavigate();
-  const [track, setTrack] = useState("track_conversation");
-  const q = useQuery({ queryKey: ["courses", track], queryFn: () => learnApi.courses(track) });
+  const [track, setTrack] = useState<"all" | "track_conversation" | "track_topik">("all");
+  const q = useQuery({
+    queryKey: ["courses", track],
+    queryFn: () => learnApi.courses(track === "all" ? undefined : track),
+  });
 
   return (
     <Screen title="강의" nav>
@@ -25,6 +28,7 @@ export function Courses() {
           value={track}
           onChange={setTrack}
           options={[
+            { value: "all", label: "전체" },
             { value: "track_conversation", label: "회화" },
             { value: "track_topik", label: "TOPIK" },
           ]}

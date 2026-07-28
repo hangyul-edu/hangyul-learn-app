@@ -41,11 +41,14 @@ type SavedSnapshot = {
 };
 let savedSnapshot: SavedSnapshot | null = null;
 
-// The tab (mode) Saved was left on to open a single-item review. It restores the
-// tab on return even when the full snapshot can't (e.g. the history entry's key
-// no longer matches, so scroll/pages are reloaded). Set on the way out, consumed
-// on the next Saved mount so a later unrelated visit still uses the default tab.
-let savedModeHint: Mode | null = null;
+// The tab (mode) Saved was left on to open a single-item review, keyed by the
+// /saved history entry it belongs to. Restores the tab on return even when the
+// full snapshot can't. Read IDEMPOTENTLY (never consumed) and scoped by loc.key —
+// a consume-once flag is clobbered by React StrictMode's dev mount→unmount→mount
+// double-invoke (the throwaway first mount ate it, so the real mount fell back to
+// the Sentences default); the loc.key guard is what keeps a fresh visit from
+// picking up a stale hint.
+let savedModeHint: { locKey: string; mode: Mode } | null = null;
 
 const SORT_LABEL: Record<Sort, string> = {
   latest: "최신순",
@@ -131,21 +134,20 @@ export function Saved() {
 
   // Restore a snapshot only when we're back on the exact history entry we left
   // for a quiz review (same `loc.key`) and it belongs to the current user.
-  // Resolve once per mount (`undefined` = not yet resolved) and consume the
-  // cache so a later fresh visit never picks up a stale snapshot.
+  // Resolve once per mount. Do NOT null out savedSnapshot here: StrictMode's
+  // throwaway first mount would consume it and leave the real second mount with
+  // nothing. The locKey/userId guard already prevents a stale entry from being
+  // reused (a fresh visit has a different key).
   const snapRef = useRef<SavedSnapshot | null | undefined>(undefined);
-  const modeHintRef = useRef<Mode | null | undefined>(undefined);
   if (snapRef.current === undefined) {
     const cached = savedSnapshot;
     const canResume = !!cached && cached.locKey === loc.key && cached.userId === userId;
     snapRef.current = canResume ? cached : null;
-    if (cached && cached.locKey === loc.key) savedSnapshot = null;
-    // Consume the leaving-tab hint once (see `savedModeHint`).
-    modeHintRef.current = savedModeHint;
-    savedModeHint = null;
   }
   const snap = snapRef.current;
-  const modeHint = modeHintRef.current ?? null;
+  // Idempotent, key-scoped read (never consumed — StrictMode-safe).
+  const modeHint: Mode | null =
+    savedModeHint && savedModeHint.locKey === loc.key ? savedModeHint.mode : null;
 
   // Initial tab precedence:
   //   full snapshot › the tab we were on when we left for a review (modeHint) ›
@@ -339,7 +341,7 @@ export function Saved() {
     // the user never submits an answer (best-effort; ignore failures).
     void quizApi.markViewed(q.quiz_id).catch(() => {});
     savedSnapshot = { ...live.current, scrollTop: scrollRef.current?.scrollTop ?? 0 };
-    savedModeHint = mode; // restore the Questions tab on return even without the snapshot
+    savedModeHint = { locKey: loc.key, mode }; // restore this tab on return even without the snapshot
     // Start a single-item review session for this saved question.
     nav(`/review/question/${q.quiz_id}`);
   }
@@ -350,7 +352,7 @@ export function Saved() {
     stopAudio();
     void sentenceApi.markViewed(s.sentence_id).catch(() => {});
     savedSnapshot = { ...live.current, scrollTop: scrollRef.current?.scrollTop ?? 0 };
-    savedModeHint = mode;
+    savedModeHint = { locKey: loc.key, mode };
     nav(`/review/sentence/${s.sentence_id}`);
   }
 

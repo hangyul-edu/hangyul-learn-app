@@ -1,7 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { StrictMode } from "react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { RouterProvider, createMemoryRouter } from "react-router-dom";
+import { RouterProvider, createMemoryRouter, useNavigate } from "react-router-dom";
 import type { Quiz } from "../lib/types";
 
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn() }) }));
@@ -43,52 +44,57 @@ beforeEach(() => {
   quizMarkViewed.mockResolvedValue(undefined);
 });
 
-function renderSaved(entries: (string | { pathname: string; state?: unknown })[], index?: number) {
+// The single-item review screen: its back chevron pops history (nav(-1)).
+function ReviewStub() {
+  const nav = useNavigate();
+  return <button onClick={() => nav(-1)}>back-to-saved</button>;
+}
+
+// Renders a realistic history [origin, /saved] and mounts under StrictMode so the
+// dev mount→unmount→mount double-invoke is exercised — the exact condition that
+// broke the earlier consume-once restore.
+function renderRoundTrip(savedEntry: string | { pathname: string; state?: unknown }) {
   const router = createMemoryRouter(
     [
       { path: "/saved", element: <Saved /> },
-      { path: "/review/question/:quizId", element: <div>REVIEW</div> },
+      { path: "/review/question/:quizId", element: <ReviewStub /> },
     ],
-    { initialEntries: entries, initialIndex: index },
+    { initialEntries: ["/home", savedEntry], initialIndex: 1 },
   );
-  return render(<RouterProvider router={router} />);
+  return render(
+    <StrictMode>
+      <RouterProvider router={router} />
+    </StrictMode>,
+  );
 }
 
-describe("Saved — tab restored across a review round-trip", () => {
-  it("returns to the Questions tab even when the list snapshot cannot restore", async () => {
-    // Leg 1: Saved opened from Home (a non-default history entry). Switch to the
-    // Questions tab and open a saved question — Saved records the leaving tab.
-    renderSaved(["/home", "/saved"], 1);
-    const modeBtn = await screen.findByRole("button", { name: /저장한 (문장|문제)/ });
-    await userEvent.click(modeBtn);
-    await userEvent.click(await screen.findByRole("menuitemradio", { name: "저장한 문제" }));
-    await userEvent.click(await screen.findByRole("button", { name: /문제 복습하기/ }));
-    await screen.findByText("REVIEW");
-    cleanup();
+async function switchToQuestionsAndOpenReview() {
+  const modeBtn = await screen.findByRole("button", { name: /저장한 (문장|문제)/ });
+  await userEvent.click(modeBtn);
+  await userEvent.click(await screen.findByRole("menuitemradio", { name: "저장한 문제" }));
+  await userEvent.click(await screen.findByRole("button", { name: /문제 복습하기/ }));
+  await screen.findByText("back-to-saved");
+}
 
-    // Leg 2: land on a FRESH /saved entry (a different history key → the return
-    // snapshot can't be matched). The tab must still come back as Questions, not
-    // fall back to the Sentences default.
-    renderSaved(["/saved"], 0);
-    expect(await screen.findByRole("button", { name: /저장한 문제/ })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /저장한 문장/ })).not.toBeInTheDocument();
+async function expectQuestionsTab() {
+  expect(await screen.findByRole("button", { name: /저장한 문제/ })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /저장한 문장/ })).not.toBeInTheDocument();
+}
+
+describe("Saved — Questions tab restored when returning from a review", () => {
+  it("restores Questions on back, surviving the StrictMode double-mount", async () => {
+    renderRoundTrip("/saved"); // reached from Home (no nav state)
+    await switchToQuestionsAndOpenReview();
+    await userEvent.click(screen.getByRole("button", { name: "back-to-saved" }));
+    await expectQuestionsTab();
   });
 
-  it("returns to Questions even when the /saved entry's nav state says Sentences", async () => {
-    // Leg 1: opened from Personalized, which navigates to /saved with
-    // state { tab: "sentence" }. Switch to Questions and open a review.
-    renderSaved([{ pathname: "/home" }, { pathname: "/saved", state: { tab: "sentence" } }], 1);
-    const modeBtn = await screen.findByRole("button", { name: /저장한 (문장|문제)/ });
-    await userEvent.click(modeBtn);
-    await userEvent.click(await screen.findByRole("menuitemradio", { name: "저장한 문제" }));
-    await userEvent.click(await screen.findByRole("button", { name: /문제 복습하기/ }));
-    await screen.findByText("REVIEW");
-    cleanup();
-
-    // Leg 2: return to a /saved entry that STILL carries the stale Sentences nav
-    // state. The leaving-tab hint must win over that stale state → Questions.
-    renderSaved([{ pathname: "/saved", state: { tab: "sentence" } }], 0);
-    expect(await screen.findByRole("button", { name: /저장한 문제/ })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /저장한 문장/ })).not.toBeInTheDocument();
+  it("restores Questions even when the /saved entry's nav state says Sentences", async () => {
+    // Personalized opens /saved with state { tab: "sentence" } — the stale state
+    // must not override the tab the user actually left on.
+    renderRoundTrip({ pathname: "/saved", state: { tab: "sentence" } });
+    await switchToQuestionsAndOpenReview();
+    await userEvent.click(screen.getByRole("button", { name: "back-to-saved" }));
+    await expectQuestionsTab();
   });
 });

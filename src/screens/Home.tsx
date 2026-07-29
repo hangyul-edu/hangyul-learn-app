@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Async, SkeletonList } from "../components/ui/states";
-import { dashboardApi } from "../api/endpoints";
+import { dashboardApi, subApi } from "../api/endpoints";
 import { http } from "../lib/http";
 import { useAuth } from "../hooks/auth";
 import {
@@ -16,7 +16,11 @@ import {
 } from "../components/brand/HomeIcons";
 import { DailyLearningSun } from "../components/DailyLearningSun";
 import { TopikPartSelectionModal } from "../components/TopikPartSelectionModal";
-import type { DashboardSummary, DashboardTrack } from "../lib/types";
+import {
+  AdditionalLearningCountModal,
+  type AdditionalCount,
+} from "../components/AdditionalLearningCountModal";
+import type { DashboardSummary, DashboardTrack, TopikSection } from "../lib/types";
 
 /** Icon for a learning track's tab, chosen from its stable category. */
 function trackIcon(category: string, size = 30) {
@@ -84,10 +88,39 @@ export function Home() {
     queryFn: () => http.get<{ has_unread: boolean }>("/notifications/unread"),
     staleTime: 30_000,
   });
+  // Entitlement for additional learning — paid, trial, and voucher all set
+  // is_premium server-side (same check the lecture screens use).
+  const sub = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
+  const isPremium = sub.data?.is_premium === true || sub.data?.status === "trial";
 
   const [tab, setTab] = useState(0);
   const [topikPartOpen, setTopikPartOpen] = useState(false);
+  // Additional-learning flow (only after the daily goal is 100%): the count
+  // modal's kind (null = closed), the TOPIK section chosen just before it, and
+  // whether the TOPIK part-modal should chain into the count modal.
+  const [countKind, setCountKind] = useState<"conversation" | "topik" | null>(null);
+  const [pendingSection, setPendingSection] = useState<TopikSection | null>(null);
+  const [topikAdditional, setTopikAdditional] = useState(false);
   const nickname = me?.nickname ?? me?.name ?? "회원";
+
+  // Confirming the count modal: unsubscribed → subscription screen (no session
+  // created / no API call); subscribed → start a new additional session of the
+  // chosen size. The daily goal is untouched.
+  function startAdditional(count: AdditionalCount) {
+    const kind = countKind;
+    setCountKind(null);
+    if (!isPremium) {
+      nav("/subscription/start");
+      return;
+    }
+    if (kind === "topik") {
+      nav("/session/topik", {
+        state: { from: "/home", section: pendingSection, additionalCount: count },
+      });
+    } else {
+      nav("/session/conversation", { state: { from: "/home", additionalCount: count } });
+    }
+  }
 
   return (
     <div className="screen home">
@@ -186,13 +219,20 @@ export function Home() {
                       <button
                         className="home__hero-cta"
                         onClick={() => {
-                          // TOPIK: pick a part first (modal → navigates with the
-                          // section). Conversation: start directly, unchanged.
-                          if (active.category === "topik") setTopikPartOpen(true);
-                          else nav("/session/conversation", { state: { from: "/home" } });
+                          // TOPIK always picks a part first; the part modal then
+                          // chains into the count modal when the goal is done.
+                          // Conversation: done → count modal, else start directly.
+                          if (active.category === "topik") {
+                            setTopikAdditional(done);
+                            setTopikPartOpen(true);
+                          } else if (done) {
+                            setCountKind("conversation");
+                          } else {
+                            nav("/session/conversation", { state: { from: "/home" } });
+                          }
                         }}
                       >
-                        {rawCurrent > 0 ? "이어서 학습하기" : "바로 시작하기"}
+                        {done ? "추가 학습하기" : rawCurrent > 0 ? "이어서 학습하기" : "바로 시작하기"}
                       </button>
                     </section>
                   </>
@@ -232,8 +272,21 @@ export function Home() {
         onClose={() => setTopikPartOpen(false)}
         onStart={(part) => {
           setTopikPartOpen(false);
-          nav("/session/topik", { state: { from: "/home", section: part } });
+          if (topikAdditional) {
+            // Goal already done → chain into the additional-count modal.
+            setPendingSection(part);
+            setCountKind("topik");
+          } else {
+            nav("/session/topik", { state: { from: "/home", section: part } });
+          }
         }}
+      />
+
+      <AdditionalLearningCountModal
+        open={countKind !== null}
+        kind={countKind ?? "conversation"}
+        onClose={() => setCountKind(null)}
+        onStart={startAdditional}
       />
     </div>
   );

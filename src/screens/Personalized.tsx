@@ -2,13 +2,17 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Async, SkeletonList } from "../components/ui/states";
-import { dashboardApi } from "../api/endpoints";
+import { dashboardApi, subApi } from "../api/endpoints";
 import { CharacterArt } from "../components/brand/ProfileAssets";
 import { SpeakingIcon, PencilIcon, GearIcon, BookIcon, ChevronRight } from "../components/brand/HomeIcons";
 import { DailyLearningSun } from "../components/DailyLearningSun";
 import { ChatbotBottomSheet } from "../components/ChatbotBottomSheet";
 import { TopikPartSelectionModal } from "../components/TopikPartSelectionModal";
-import type { DashboardSummary, DashboardTrack } from "../lib/types";
+import {
+  AdditionalLearningCountModal,
+  type AdditionalCount,
+} from "../components/AdditionalLearningCountModal";
+import type { DashboardSummary, DashboardTrack, TopikSection } from "../lib/types";
 
 /** Open horseshoe gauge with the percentage centered (yellow when complete). */
 function Gauge({ ratio, done }: { ratio: number; done: boolean }) {
@@ -63,8 +67,30 @@ function trackIcon(category: string) {
 
 export function Personalized() {
   const nav = useNavigate();
+  const sub = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
+  const isPremium = sub.data?.is_premium === true || sub.data?.status === "trial";
   const [chatOpen, setChatOpen] = useState(false);
   const [topikPartOpen, setTopikPartOpen] = useState(false);
+  // Additional-learning flow (only after the daily goal is 100%).
+  const [countKind, setCountKind] = useState<"conversation" | "topik" | null>(null);
+  const [pendingSection, setPendingSection] = useState<TopikSection | null>(null);
+  const [topikAdditional, setTopikAdditional] = useState(false);
+
+  function startAdditional(count: AdditionalCount) {
+    const kind = countKind;
+    setCountKind(null);
+    if (!isPremium) {
+      nav("/subscription/start");
+      return;
+    }
+    if (kind === "topik") {
+      nav("/session/topik", {
+        state: { from: "/recommend", section: pendingSection, additionalCount: count },
+      });
+    } else {
+      nav("/session/conversation", { state: { from: "/recommend", additionalCount: count } });
+    }
+  }
   const q = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
   const [tab, setTab] = useState(0);
 
@@ -148,13 +174,17 @@ export function Personalized() {
                       <button
                         className="home__hero-cta"
                         onClick={() => {
-                          // TOPIK: choose a part first (modal decides the section,
-                          // then navigates). Conversation: start directly, unchanged.
-                          if (active.category === "topik") setTopikPartOpen(true);
-                          else nav("/session/conversation", { state: { from: "/recommend" } });
+                          if (active.category === "topik") {
+                            setTopikAdditional(done);
+                            setTopikPartOpen(true);
+                          } else if (done) {
+                            setCountKind("conversation");
+                          } else {
+                            nav("/session/conversation", { state: { from: "/recommend" } });
+                          }
                         }}
                       >
-                        {cur > 0 ? "이어서 학습하기" : "바로 시작하기"}
+                        {done ? "추가 학습하기" : cur > 0 ? "이어서 학습하기" : "바로 시작하기"}
                       </button>
                     </section>
                   </>
@@ -219,8 +249,20 @@ export function Personalized() {
         onClose={() => setTopikPartOpen(false)}
         onStart={(part) => {
           setTopikPartOpen(false);
-          nav("/session/topik", { state: { from: "/recommend", section: part } });
+          if (topikAdditional) {
+            setPendingSection(part);
+            setCountKind("topik");
+          } else {
+            nav("/session/topik", { state: { from: "/recommend", section: part } });
+          }
         }}
+      />
+
+      <AdditionalLearningCountModal
+        open={countKind !== null}
+        kind={countKind ?? "conversation"}
+        onClose={() => setCountKind(null)}
+        onStart={startAdditional}
       />
     </div>
   );

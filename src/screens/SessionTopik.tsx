@@ -50,6 +50,8 @@ type TopikSnapshot = {
   // Server-authoritative daily-goal snapshot (correctly-completed / goal).
   goalCurrent: number;
   goalTarget: number;
+  // Additional-learning batch size (5/10/15/20), or null for a normal session.
+  additionalCount: number | null;
 };
 
 function readTopikSnapshot(): TopikSnapshot | null {
@@ -84,7 +86,9 @@ export function SessionTopik() {
   const nav = useNavigate();
   const loc = useLocation();
   const toast = useToast();
-  const navState = loc.state as { from?: string; section?: TopikSection } | null;
+  const navState = loc.state as
+    | { from?: string; section?: TopikSection; additionalCount?: number }
+    | null;
   // Source page (Home / Personalized), forwarded to the Level-Up screen so its
   // button returns the user there.
   const from = navState?.from ?? "/home";
@@ -137,13 +141,21 @@ export function SessionTopik() {
   // move ONLY when the server confirms a correct answer (completed_now).
   const [goalCurrent, setGoalCurrent] = useState(0);
   const [goalTarget, setGoalTarget] = useState(0);
+  // Additional-learning batch size: set (5/10/15/20) only when the user opted
+  // into extra study after completing today's goal, else null (a normal,
+  // goal-driven session). Persisted in the snapshot so a refresh restores it.
+  const [additionalCount, setAdditionalCount] = useState<number | null>(
+    navState?.additionalCount ?? null,
+  );
 
   async function loadSet(code?: string | null) {
     if (busy) return;
     setBusy(true);
     setError(false);
     try {
-      const count = Math.max(remaining || 0, 1);
+      // Additional learning requests the exact chosen count; a normal session
+      // requests the remaining daily goal (min 1).
+      const count = additionalCount ?? Math.max(remaining || 0, 1);
       const res = await recApi.questions({ section, count, ...(code ? { topik_question_type: code } : {}) });
       setItems(res.items);
       setIdx(0);
@@ -196,6 +208,7 @@ export function SessionTopik() {
       // Restore server-authoritative progress; fall back to the dashboard goal.
       setGoalCurrent(snap.goalCurrent ?? topik?.goal.current ?? 0);
       setGoalTarget(snap.goalTarget ?? topik?.goal.target ?? 0);
+      setAdditionalCount(snap.additionalCount ?? null);
       // A restored session always reopens the current question UNRESOLVED — the
       // learner may have refreshed mid-attempt. Progress is the persisted count;
       // no credit is added by restoring.
@@ -214,7 +227,20 @@ export function SessionTopik() {
   // daily goal — never from attempts, the question index, or response count.
   const dailyGoal = goalTarget || total || 1;
   const correctlyCompleted = Math.min(goalCurrent, dailyGoal);
-  const progress = dailyGoal ? correctlyCompleted / dailyGoal : 0;
+  // An ADDITIONAL (post-goal) session shows its OWN batch progress
+  // (correct-in-session / chosen count); the daily goal stays 100% and is not
+  // shown here. A normal session shows the server-authoritative daily progress.
+  const isAdditional = additionalCount != null;
+  const batchTotal = total || additionalCount || 1;
+  const shownCurrent = isAdditional ? Math.min(correctSet.size, batchTotal) : correctlyCompleted;
+  const shownTotal = isAdditional ? batchTotal : dailyGoal;
+  const progress = shownTotal ? shownCurrent / shownTotal : 0;
+  // Session-end condition: an additional batch ends when its items are done
+  // (never early on the already-met daily goal); a normal session ends when the
+  // daily goal is reached.
+  const targetReached = isAdditional
+    ? shownCurrent >= shownTotal
+    : goalTarget > 0 && correctlyCompleted >= goalTarget;
   // The current item's working answer, derived from the per-item draft map.
   const value: AnswerValue = cur ? (drafts[cur.quiz_id] ?? {}) : {};
   const setValue = (v: AnswerValue) => {
@@ -248,6 +274,7 @@ export function SessionTopik() {
       startedAt: startedAt.current,
       goalCurrent,
       goalTarget,
+      additionalCount,
     };
     const timer = setTimeout(() => {
       try {
@@ -257,7 +284,7 @@ export function SessionTopik() {
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [items, idx, drafts, correctSet, attempted, points, typeCode, section, goalCurrent, goalTarget]);
+  }, [items, idx, drafts, correctSet, attempted, points, typeCode, section, goalCurrent, goalTarget, additionalCount]);
 
   // Submit-enabled iff: a valid answer is selected, we're not mid-request, the
   // question isn't already correct, and the answer differs from the last one
@@ -326,8 +353,7 @@ export function SessionTopik() {
         return rest;
       });
     }
-    const goalReached = goalTarget > 0 && correctlyCompleted >= goalTarget;
-    if (idx >= total - 1 || goalReached) {
+    if (idx >= total - 1 || targetReached) {
       finishOrExit();
     } else {
       setIdx((i) => i + 1);
@@ -463,8 +489,8 @@ export function SessionTopik() {
     <SessionChrome
       title={`토픽 ${grade}급`}
       heading="목표 하루 학습 문제"
-      correct={correctlyCompleted}
-      total={dailyGoal}
+      correct={shownCurrent}
+      total={shownTotal}
       progress={progress}
       panel={panel}
       onBack={finishOrExit}
@@ -501,7 +527,7 @@ export function SessionTopik() {
           <div className="sess__cta">
             {phase === "correct" ? (
               <button className="sess__next" onClick={next}>
-                {idx >= total - 1 || (goalTarget > 0 && correctlyCompleted >= goalTarget) ? copy.complete : copy.next}
+                {idx >= total - 1 || targetReached ? copy.complete : copy.next}
               </button>
             ) : (
               <button className="sess__submit" onClick={submit} disabled={!canSubmit}>

@@ -5,8 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 /* -------------------------------- mocks --------------------------------- */
-const { summary } = vi.hoisted(() => ({ summary: vi.fn() }));
-vi.mock("../api/endpoints", () => ({ dashboardApi: { summary } }));
+const { summary, subMine } = vi.hoisted(() => ({ summary: vi.fn(), subMine: vi.fn() }));
+vi.mock("../api/endpoints", () => ({
+  dashboardApi: { summary },
+  subApi: { mine: subMine },
+}));
 
 import { Personalized } from "./Personalized";
 
@@ -43,6 +46,7 @@ function renderPage() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  subMine.mockResolvedValue({ is_premium: true, status: "active" });
   summary.mockResolvedValue({
     user_id: "u1",
     streak_days: 2,

@@ -5,8 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 /* -------------------------------- mocks --------------------------------- */
-const { summary } = vi.hoisted(() => ({ summary: vi.fn() }));
-vi.mock("../api/endpoints", () => ({ dashboardApi: { summary } }));
+const { summary, subMine } = vi.hoisted(() => ({ summary: vi.fn(), subMine: vi.fn() }));
+vi.mock("../api/endpoints", () => ({
+  dashboardApi: { summary },
+  subApi: { mine: subMine },
+}));
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: "ko" } }) }));
 vi.mock("../lib/http", () => ({ http: { get: vi.fn().mockResolvedValue({ has_unread: false }) } }));
 
@@ -36,7 +39,8 @@ function renderHome() {
         <Routes>
           <Route path="/home" element={<><Home /><Loc /></>} />
           <Route path="/session/topik" element={<><div>TOPIK SESSION</div><Loc /></>} />
-          <Route path="/session/conversation" element={<div>CONVERSATION SESSION</div>} />
+          <Route path="/session/conversation" element={<><div>CONVERSATION SESSION</div><Loc /></>} />
+          <Route path="/subscription/start" element={<div>SUBSCRIPTION</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -45,6 +49,7 @@ function renderHome() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  subMine.mockResolvedValue({ is_premium: true, status: "active" });
   summary.mockResolvedValue({
     user_id: "u1",
     streak_days: 2,
@@ -76,5 +81,68 @@ describe("Home — TOPIK part-selection gating", () => {
     await userEvent.click(screen.getByRole("button", { name: /시작할게요/ }));
     await waitFor(() => expect(screen.getByText("TOPIK SESSION")).toBeInTheDocument());
     expect(screen.getByTestId("loc")).toHaveTextContent('"section":"writing"');
+  });
+});
+
+const doneTracks = () => ({
+  user_id: "u1",
+  streak_days: 2,
+  last_study_date: null,
+  today_minutes: 0,
+  studied_today: false,
+  paywall_required: false,
+  tracks: [
+    { ...track("conversation", "회화"), goal: { key: "daily", label: "하루 목표", target: 5, current: 5, achieved: true } },
+    { ...track("topik", "TOPIK"), goal: { key: "daily", label: "하루 목표", target: 5, current: 5, achieved: true } },
+  ],
+});
+
+describe("Home — additional learning after the daily goal is 100%", () => {
+  it("Conversation: opens the count modal, then starts an additional session with the chosen count", async () => {
+    summary.mockResolvedValue(doneTracks());
+    renderHome();
+    // The CTA reads 추가 학습하기 once the goal is done.
+    await userEvent.click(await screen.findByRole("button", { name: "추가 학습하기" }));
+    expect(await screen.findByText(/추가할 문장 수를 선택해 주세요/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("radio", { name: "10개" }));
+    await userEvent.click(screen.getByRole("button", { name: /시작할게요/ }));
+    await waitFor(() => expect(screen.getByText("CONVERSATION SESSION")).toBeInTheDocument());
+    expect(screen.getByTestId("loc")).toHaveTextContent('"additionalCount":10');
+  });
+
+  it("TOPIK: section modal first, THEN the count modal, then starts with both", async () => {
+    summary.mockResolvedValue(doneTracks());
+    renderHome();
+    await screen.findByRole("button", { name: "추가 학습하기" }); // wait for load
+    await userEvent.click(screen.getByRole("tab", { name: "TOPIK" }));
+    await userEvent.click(screen.getByRole("button", { name: "추가 학습하기" }));
+
+    // Section first — the count modal is NOT shown yet.
+    expect(await screen.findByText("학습할 파트를 선택하세요")).toBeInTheDocument();
+    expect(screen.queryByText(/추가할 문제 수를 선택해 주세요/)).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("radio", { name: "읽기" }));
+    await userEvent.click(screen.getByRole("button", { name: /시작할게요/ }));
+
+    // Now the count modal.
+    expect(await screen.findByText(/추가할 문제 수를 선택해 주세요/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("radio", { name: "15개" }));
+    await userEvent.click(screen.getByRole("button", { name: /시작할게요/ }));
+
+    await waitFor(() => expect(screen.getByText("TOPIK SESSION")).toBeInTheDocument());
+    expect(screen.getByTestId("loc")).toHaveTextContent('"section":"reading"');
+    expect(screen.getByTestId("loc")).toHaveTextContent('"additionalCount":15');
+  });
+
+  it("unsubscribed: Start goes to the subscription screen and creates no session", async () => {
+    summary.mockResolvedValue(doneTracks());
+    subMine.mockResolvedValue({ is_premium: false, status: "expired" });
+    renderHome();
+    await userEvent.click(await screen.findByRole("button", { name: "추가 학습하기" }));
+    await screen.findByText(/추가할 문장 수를 선택해 주세요/);
+    await userEvent.click(screen.getByRole("button", { name: /시작할게요/ }));
+    await waitFor(() => expect(screen.getByText("SUBSCRIPTION")).toBeInTheDocument());
+    expect(screen.queryByText("CONVERSATION SESSION")).not.toBeInTheDocument();
   });
 });

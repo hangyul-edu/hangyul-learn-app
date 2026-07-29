@@ -81,6 +81,8 @@ type SessionSnapshot = {
   prompt: string;
   startedAt: number;
   keyboard: boolean;
+  // Additional-learning batch size (5/10/15/20), or null for a normal session.
+  additionalCount: number | null;
 };
 
 function readSessionSnapshot(): SessionSnapshot | null {
@@ -276,8 +278,14 @@ export function SessionConversation() {
   const attemptSource = isReview ? "review" : "custom";
   // Where the session was launched from (Home / Personalized), forwarded to the
   // Level-Up screen so its button returns the user to that source page.
-  const from = (loc.state as { from?: string } | null)?.from ?? "/home";
+  const navState = loc.state as { from?: string; additionalCount?: number } | null;
+  const from = navState?.from ?? "/home";
   const { remaining, level } = useRemaining();
+  // Additional-learning batch size (5/10/15/20), set only when the user opted
+  // into extra study after completing today's goal; null for a normal session.
+  const [additionalCount, setAdditionalCount] = useState<number | null>(
+    navState?.additionalCount ?? null,
+  );
 
   const [prompt, setPrompt] = useState("");
   const [items, setItems] = useState<Sentence[] | null>(null);
@@ -327,7 +335,9 @@ export function SessionConversation() {
     setBusy(true);
     setError(false);
     try {
-      const count = Math.max(remaining || 0, 1);
+      // Additional learning requests the exact chosen count; a normal session
+      // requests the remaining daily goal (min 1).
+      const count = additionalCount ?? Math.max(remaining || 0, 1);
       const res = await recApi.sentences({ count, ...(withPrompt ? { prompt: withPrompt } : {}) });
       setItems(res.items);
       setIdx(0);
@@ -390,6 +400,7 @@ export function SessionConversation() {
       setRevealed(snap.revealed ?? {});
       setPrompt(snap.prompt ?? "");
       setKeyboard(!!snap.keyboard);
+      setAdditionalCount(snap.additionalCount ?? null);
       startedAt.current = snap.startedAt ?? Date.now();
     } else {
       void loadSet();
@@ -413,13 +424,14 @@ export function SessionConversation() {
       prompt,
       startedAt: startedAt.current,
       keyboard,
+      additionalCount,
     };
     try {
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(snap));
     } catch {
       /* ignore quota/serialization errors */
     }
-  }, [items, idx, points, correctSet, answered, saved, revealed, prompt, keyboard]);
+  }, [items, idx, points, correctSet, answered, saved, revealed, prompt, keyboard, additionalCount]);
 
   const total = items?.length ?? 0;
   const cur = items?.[idx];

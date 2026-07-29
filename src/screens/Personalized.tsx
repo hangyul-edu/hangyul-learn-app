@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Async, SkeletonList } from "../components/ui/states";
-import { dashboardApi, subApi } from "../api/endpoints";
+import { dashboardApi } from "../api/endpoints";
 import { CharacterArt } from "../components/brand/ProfileAssets";
 import { SpeakingIcon, PencilIcon, GearIcon, BookIcon, ChevronRight } from "../components/brand/HomeIcons";
 import { DailyLearningSun } from "../components/DailyLearningSun";
@@ -67,19 +67,24 @@ function trackIcon(category: string) {
 
 export function Personalized() {
   const nav = useNavigate();
-  const sub = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
-  const isPremium = sub.data?.is_premium === true || sub.data?.status === "trial";
+  const q = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
+  // Entitlement for additional learning: the server-authoritative premium flag.
+  // `paywall_required` is `!has_premium_access`, true for a paid / trial / coupon
+  // subscription AND for an admin or tester role (the same gate the additional-
+  // learning API enforces).
+  const entitled = q.data?.paywall_required === false;
   const [chatOpen, setChatOpen] = useState(false);
   const [topikPartOpen, setTopikPartOpen] = useState(false);
   // Additional-learning flow (only after the daily goal is 100%).
   const [countKind, setCountKind] = useState<"conversation" | "topik" | null>(null);
   const [pendingSection, setPendingSection] = useState<TopikSection | null>(null);
   const [topikAdditional, setTopikAdditional] = useState(false);
+  const [tab, setTab] = useState(0);
 
   function startAdditional(count: AdditionalCount) {
     const kind = countKind;
     setCountKind(null);
-    if (!isPremium) {
+    if (!entitled) {
       nav("/subscription/start");
       return;
     }
@@ -91,8 +96,6 @@ export function Personalized() {
       nav("/session/conversation", { state: { from: "/recommend", additionalCount: count } });
     }
   }
-  const q = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
-  const [tab, setTab] = useState(0);
 
   return (
     <div className="screen plearn">

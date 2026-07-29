@@ -5,11 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 /* -------------------------------- mocks --------------------------------- */
-const { summary, subMine } = vi.hoisted(() => ({ summary: vi.fn(), subMine: vi.fn() }));
-vi.mock("../api/endpoints", () => ({
-  dashboardApi: { summary },
-  subApi: { mine: subMine },
-}));
+const { summary } = vi.hoisted(() => ({ summary: vi.fn() }));
+vi.mock("../api/endpoints", () => ({ dashboardApi: { summary } }));
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: "ko" } }) }));
 vi.mock("../lib/http", () => ({ http: { get: vi.fn().mockResolvedValue({ has_unread: false }) } }));
 
@@ -49,7 +46,6 @@ function renderHome() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  subMine.mockResolvedValue({ is_premium: true, status: "active" });
   summary.mockResolvedValue({
     user_id: "u1",
     streak_days: 2,
@@ -136,8 +132,7 @@ describe("Home — additional learning after the daily goal is 100%", () => {
   });
 
   it("unsubscribed: Start goes to the subscription screen and creates no session", async () => {
-    summary.mockResolvedValue(doneTracks());
-    subMine.mockResolvedValue({ is_premium: false, status: "expired" });
+    summary.mockResolvedValue({ ...doneTracks(), paywall_required: true });
     renderHome();
     await userEvent.click(await screen.findByRole("button", { name: "추가 학습하기" }));
     await screen.findByText(/추가할 문장 수를 선택해 주세요/);

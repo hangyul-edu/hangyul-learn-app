@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Async, SkeletonList } from "../components/ui/states";
-import { dashboardApi, subApi } from "../api/endpoints";
+import { dashboardApi } from "../api/endpoints";
 import { http } from "../lib/http";
 import { useAuth } from "../hooks/auth";
 import {
@@ -88,10 +88,11 @@ export function Home() {
     queryFn: () => http.get<{ has_unread: boolean }>("/notifications/unread"),
     staleTime: 30_000,
   });
-  // Entitlement for additional learning — paid, trial, and voucher all set
-  // is_premium server-side (same check the lecture screens use).
-  const sub = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
-  const isPremium = sub.data?.is_premium === true || sub.data?.status === "trial";
+  // Entitlement for additional learning: the server-authoritative premium flag.
+  // `paywall_required` is `!has_premium_access`, which is true for a paid / trial
+  // / coupon subscription AND for an admin or tester role (the same gate the
+  // additional-learning API enforces), so no separate role check is needed.
+  const entitled = q.data?.paywall_required === false;
 
   const [tab, setTab] = useState(0);
   const [topikPartOpen, setTopikPartOpen] = useState(false);
@@ -109,7 +110,7 @@ export function Home() {
   function startAdditional(count: AdditionalCount) {
     const kind = countKind;
     setCountKind(null);
-    if (!isPremium) {
+    if (!entitled) {
       nav("/subscription/start");
       return;
     }

@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SessionChrome } from "../components/SessionChrome";
 import { SessionCompleteModal } from "../components/SessionCompleteModal";
 import { quizAttemptBody, type AnswerValue } from "../components/QuestionView";
+import { randomUuid } from "../lib/uuid";
 import { TopikQuestion, canSubmitTopik } from "../components/topik/TopikQuestion";
 import { TopikResult } from "../components/topik/TopikResult";
 import { ResultHeader, type ResultStatus } from "../components/topik/ResultHeader";
@@ -165,7 +166,14 @@ export function SessionTopik() {
     setResult(null);
     setWrongKeys([]);
     setSubmittedValue(null);
+    requestIdRef.current = null;
   }
+
+  // Idempotency key for the CURRENT submission. Stable across retries of the same
+  // answer (a lost-response re-press reuses it → the server dedupes), and cleared
+  // whenever the answer changes or the question advances so a genuinely new
+  // submission gets a fresh key and is counted.
+  const requestIdRef = useRef<string | null>(null);
 
   const startedAt = useRef(Date.now());
   // On boot, resume a saved session (same section) if one exists — e.g. after a
@@ -212,6 +220,9 @@ export function SessionTopik() {
   const setValue = (v: AnswerValue) => {
     if (!cur) return;
     setDrafts((d) => ({ ...d, [cur.quiz_id]: v }));
+    // A changed answer is a new submission — drop the current idempotency key so
+    // the next submit gets a fresh one (and is counted).
+    requestIdRef.current = null;
     // Selecting/editing after an incorrect result re-arms the question: back to
     // the answering phase, banner cleared, Submit re-enabled. The previously
     // wrong option stays red (wrongKeys); the new selection is neutral.
@@ -267,7 +278,11 @@ export function SessionTopik() {
     setPhase("submitting");
     const submitted = value;
     try {
-      const res = await quizApi.attempt(cur.quiz_id, quizAttemptBody(cur, submitted));
+      const clientRequestId = (requestIdRef.current ??= randomUuid());
+      const res = await quizApi.attempt(cur.quiz_id, {
+        ...quizAttemptBody(cur, submitted),
+        client_request_id: clientRequestId,
+      });
       setResult(res);
       setSubmittedValue(submitted);
       setAttempted((a) => new Set(a).add(cur.quiz_id));

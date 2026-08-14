@@ -113,7 +113,9 @@ export function Personalized() {
             const target = active?.goal.target ?? 0;
             const cur = active?.goal.current ?? 0;
             const done = !!active && target > 0 && (active.goal.achieved || cur >= target);
-            const shown = target > 0 ? Math.min(cur, target) : cur;
+            // Show the true count, including additional-learning overage past the
+            // goal (e.g. 7/5) — only the gauge fill (ratio→pct) is clamped to 100%.
+            const shown = cur;
             const ratio = target ? cur / target : 0;
 
             return (

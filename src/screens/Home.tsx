@@ -153,7 +153,9 @@ export function Home() {
             // Completed = authoritative flag AND a valid goal reached (guards
             // against a zero/absent goal). Evaluated for the SELECTED track only.
             const done = !!active && target > 0 && (active.goal.achieved || rawCurrent >= target);
-            const shownCurrent = target > 0 ? Math.min(rawCurrent, target) : rawCurrent; // clamp display to goal
+            // Show the true count, including additional-learning overage past the
+            // goal (e.g. 7/5) — only the gauge fill (ratio→pct) is clamped to 100%.
+            const shownCurrent = rawCurrent;
             const ratio = target ? rawCurrent / target : 0;
             return (
               <>

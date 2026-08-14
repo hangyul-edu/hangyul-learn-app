@@ -98,10 +98,10 @@ export function GearIcon({ size = 28, color = "#AEB7BD" }: { size?: number; colo
       <path
         d="M12 3.5l1.4 2.1 2.5-.5.5 2.5 2.1 1.4-1.2 2.2 1.2 2.2-2.1 1.4-.5 2.5-2.5-.5L12 20.5l-1.4-2.1-2.5.5-.5-2.5-2.1-1.4L6.7 12 5.5 9.8l2.1-1.4.5-2.5 2.5.5L12 3.5z"
         stroke={color}
-        strokeWidth="1.6"
+        strokeWidth="1.4"
         strokeLinejoin="round"
       />
-      <circle cx="12" cy="12" r="3" stroke={color} strokeWidth="1.6" />
+      <circle cx="12" cy="12" r="3" stroke={color} strokeWidth="1.4" />
     </svg>
   );
 }
@@ -151,7 +151,7 @@ export function NavLecture({ active }: { active: boolean }) {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <rect x="3.5" y="6" width="17" height="12.5" rx="2.4" stroke={c} strokeWidth="1.9" />
-      <path d="M3.8 9.2h16.4M8 6l-1 3.2M13 6l-1 3.2" stroke={c} strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M3.8 9.2h16.4M8 6l-1 3.2M13 6l-1 3.2" stroke={c} strokeWidth="1.4" strokeLinecap="round" />
     </svg>
   );
 }
@@ -189,23 +189,30 @@ export function NavMore({ active }: { active: boolean }) {
   );
 }
 
-/** Save / bookmark control — a plus in a circle. Filled orange when saved. */
+/** Save / bookmark control — a bookmark/ribbon outline with a centered plus.
+ * A soft light-gray outline (no fill) when unsaved; filled orange with a white
+ * plus when saved. The silhouette has rounded top corners, straight sides, and a
+ * V-shaped inward notch at the bottom centre. */
 export function SavePlusIcon({ active = false }: { active?: boolean }) {
+  // Bookmark: ~0.9:1 width:height, bottom notch ≈ lower 22%, top corners r≈3,
+  // stroke ≈ 7% of the bookmark width (the 4px-at-~57px reference).
+  const line = active ? "#FF5B00" : "#AEB4B9";
   return (
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
-      <circle
-        cx="12"
-        cy="12"
-        r="10.5"
+      <path
+        d="M2.5 22.5 L12 18 L21.5 22.5 L21.5 4.5 Q21.5 1.5 18.5 1.5 L5.5 1.5 Q2.5 1.5 2.5 4.5 Z"
         fill={active ? "#FF5B00" : "none"}
-        stroke={active ? "#FF5B00" : "#C4CBD1"}
-        strokeWidth="1.6"
+        stroke={line}
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
-        d="M12 7.4v9.2M7.4 12h9.2"
-        stroke={active ? "#fff" : "#8A929A"}
-        strokeWidth="2"
+        d="M12 6.5v6M9 9.5h6"
+        stroke={active ? "#fff" : line}
+        strokeWidth="1.4"
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );

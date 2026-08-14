@@ -9,8 +9,10 @@ import type { AppLanguage } from "./language";
 export interface SessionConversationCopy {
   /** Bold status shown in the incorrect-answer card header. */
   incorrectStatus: string;
-  /** Bottom-action buttons. */
+  /** Bottom-action buttons. `hint` is the first tap (reveal one character);
+   * after that the same button becomes `answer` (reveal the whole answer). */
   hint: string;
+  answer: string;
   voiceMode: string;
   keyboardMode: string;
   /** Pronunciation feedback panel (voice only). */
@@ -37,6 +39,7 @@ export const SESSION_CONVERSATION_COPY: Record<AppLanguage, SessionConversationC
   ko: {
     incorrectStatus: "다시 생각해보세요",
     hint: "힌트보기",
+    answer: "정답보기",
     voiceMode: "음성 모드",
     keyboardMode: "키보드 모드",
     pronunciationTitle: "발음 정확도",
@@ -54,6 +57,7 @@ export const SESSION_CONVERSATION_COPY: Record<AppLanguage, SessionConversationC
   en: {
     incorrectStatus: "Give it another try",
     hint: "Hint",
+    answer: "Answer",
     voiceMode: "Voice mode",
     keyboardMode: "Keyboard mode",
     pronunciationTitle: "Pronunciation accuracy",

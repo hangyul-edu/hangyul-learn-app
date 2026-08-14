@@ -4572,6 +4572,13 @@ textarea.input {
   background: #ffe9d8;
   color: #ff5b00;
 }
+/* Second step of the hint reveal (정답보기): a solid orange fill clearly signals
+   the state change from the idle gray 힌트보기 chip. The HintIcon uses
+   currentColor, so it turns white to match. */
+.sess__chip--answer {
+  background: #ff5b00;
+  color: #fff;
+}
 
 /* Microphone */
 .sess__mic-wrap {

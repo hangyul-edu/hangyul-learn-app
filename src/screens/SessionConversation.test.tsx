@@ -212,34 +212,39 @@ describe("SessionConversation — fill-in-the-blank", () => {
     );
   });
 
-  it("toggles the hint on and off with the View Hint button (fetched once, then cached)", async () => {
-    blankHint.mockResolvedValue({
-      blank_id: "blank-1",
-      revealed_text: "지",
-      revealed_count: 1,
-      can_request_another_hint: true,
-      hint_used: true,
-    });
+  it("two-step reveal: 힌트보기 shows one char then becomes 정답보기; 정답보기 reveals the full answer and hides the chip", async () => {
+    blankHint
+      .mockResolvedValueOnce({
+        blank_id: "blank-1",
+        revealed_text: "지",
+        revealed_count: 1,
+        can_request_another_hint: true,
+        hint_used: true,
+      })
+      .mockResolvedValueOnce({
+        blank_id: "blank-1",
+        revealed_text: "지내고",
+        revealed_count: 3,
+        can_request_another_hint: false,
+        hint_used: true,
+      });
     renderScreen();
     await screen.findByText(/덕분에 잘/);
     await userEvent.click(screen.getByRole("button", { name: /키보드 모드/ }));
     const input = (await screen.findByLabelText("빈칸에 들어갈 말")) as HTMLInputElement;
-    const hintBtn = screen.getByRole("button", { name: /힌트보기/ });
 
-    // Tap → hint shown as the placeholder, button reflects the pressed state.
-    await userEvent.click(hintBtn);
+    // Step 1 — 힌트보기: one leading char, and the button switches to 정답보기.
+    await userEvent.click(screen.getByRole("button", { name: /힌트보기/ }));
     await waitFor(() => expect(input).toHaveAttribute("placeholder", "지"));
-    expect(hintBtn).toHaveAttribute("aria-pressed", "true");
+    expect(blankHint).toHaveBeenNthCalledWith(1, SENTENCE.sentence_id, 0);
+    expect(screen.queryByRole("button", { name: /힌트보기/ })).toBeNull();
 
-    // Tap again → hint hidden.
-    await userEvent.click(hintBtn);
-    await waitFor(() => expect(input).toHaveAttribute("placeholder", ""));
-    expect(hintBtn).toHaveAttribute("aria-pressed", "false");
-
-    // Tap once more → shown again from cache, no second server request.
-    await userEvent.click(hintBtn);
-    await waitFor(() => expect(input).toHaveAttribute("placeholder", "지"));
-    expect(blankHint).toHaveBeenCalledTimes(1);
+    // Step 2 — 정답보기: the whole answer is revealed, then the chip disappears.
+    await userEvent.click(screen.getByRole("button", { name: /정답보기/ }));
+    await waitFor(() => expect(input).toHaveAttribute("placeholder", "지내고"));
+    expect(blankHint).toHaveBeenNthCalledWith(2, SENTENCE.sentence_id, 0, true);
+    expect(screen.queryByRole("button", { name: /정답보기/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /힌트보기/ })).toBeNull();
   });
 
   it("does not submit an empty typed answer to the server", async () => {

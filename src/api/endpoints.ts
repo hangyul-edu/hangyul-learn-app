@@ -163,8 +163,11 @@ export const sentenceApi = {
     if (opts.reviewSessionId) fd.append("review_session_id", opts.reviewSessionId);
     return http.upload<BlankAttempt>(`/sentences/${id}/blank-attempts`, fd);
   },
-  blankHint: (id: string, revealedCount: number) =>
-    http.post<BlankHint>(`/sentences/${id}/hint`, { revealed_count: revealedCount }),
+  blankHint: (id: string, revealedCount: number, revealAll = false) =>
+    http.post<BlankHint>(`/sentences/${id}/hint`, {
+      revealed_count: revealedCount,
+      reveal_all: revealAll,
+    }),
   saved: (params: { save_type?: string; sort?: string; q?: string; cursor?: string }) =>
     http.get<SavedSentencesPage>("/saved-sentences", { limit: 20, ...params }),
   removeSaved: (id: string) => http.del<unknown>(`/saved-sentences/${id}`),

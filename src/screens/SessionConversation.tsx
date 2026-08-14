@@ -78,6 +78,7 @@ type SessionSnapshot = {
   answered: string[];
   saved: Record<string, boolean>;
   revealed: Record<string, string>;
+  hintStage: Record<string, "hint" | "answer">;
   prompt: string;
   startedAt: number;
   keyboard: boolean;
@@ -315,7 +316,11 @@ export function SessionConversation() {
   const [correctSet, setCorrectSet] = useState<Set<string>>(new Set());
   const [answered, setAnswered] = useState<Set<string>>(new Set());
   const [saved, setSaved] = useState<Record<string, boolean>>({});
-  const [hintOpen, setHintOpen] = useState(false);
+  // Per-sentence hint stage. Absent = untouched (button reads 힌트보기); "hint" =
+  // one leading character revealed (button becomes 정답보기); "answer" = the whole
+  // answer revealed (button hidden). Keyed by sentence_id so each item is
+  // independent and advancing to the next item resets the button automatically.
+  const [hintStage, setHintStage] = useState<Record<string, "hint" | "answer">>({});
   const [keyboard, setKeyboard] = useState(false);
   const [typed, setTyped] = useState("");
   // Per-sentence server-revealed hint prefix (persists across mode switches /
@@ -366,7 +371,7 @@ export function SessionConversation() {
       setResult(null);
       setAttemptMode(null);
       setTyped("");
-      setHintOpen(false);
+      setHintStage({});
       setRevealed({});
       reqIdRef.current = null;
       // Seed bookmark state from the server's saved flag on each item.
@@ -418,6 +423,7 @@ export function SessionConversation() {
       setAnswered(new Set(snap.answered));
       setSaved(snap.saved ?? {});
       setRevealed(snap.revealed ?? {});
+      setHintStage(snap.hintStage ?? {});
       setPrompt(snap.prompt ?? "");
       setKeyboard(!!snap.keyboard);
       setAdditionalCount(snap.additionalCount ?? null);
@@ -441,6 +447,7 @@ export function SessionConversation() {
       answered: [...answered],
       saved,
       revealed,
+      hintStage,
       prompt,
       startedAt: startedAt.current,
       keyboard,
@@ -451,7 +458,7 @@ export function SessionConversation() {
     } catch {
       /* ignore quota/serialization errors */
     }
-  }, [items, idx, points, correctSet, answered, saved, revealed, prompt, keyboard, additionalCount]);
+  }, [items, idx, points, correctSet, answered, saved, revealed, hintStage, prompt, keyboard, additionalCount]);
 
   const total = items?.length ?? 0;
   const cur = items?.[idx];
@@ -525,36 +532,52 @@ export function SessionConversation() {
     }
   }
 
-  // Reveal the leading hint of the answer — server-controlled. Fetched once per
-  // blank, then cached in `revealed` so re-opening the hint never re-requests.
-  async function requestHint(s: Sentence) {
+  // Step 1 — 힌트보기: reveal the leading character of the blank's answer
+  // (server-controlled, fetched once then cached), then advance the button to
+  // 정답보기. A non-blank sentence has no answer to spell out, so its hint is the
+  // full romanization line shown at once. The stage only advances on success.
+  async function revealHint(s: Sentence) {
     if (hintBusy || answered.has(s.sentence_id)) return; // single in-flight request
-    setHintBusy(true);
-    try {
-      const current = revealed[s.sentence_id] ?? "";
-      const res = await sentenceApi.blankHint(s.sentence_id, current.length);
-      setRevealed((m) => ({ ...m, [s.sentence_id]: res.revealed_text }));
-      setHintOpen(true);
-    } catch (e) {
-      toast.error(errorMessage(e));
-    } finally {
-      setHintBusy(false);
+    if (hasBlank(s) && !(revealed[s.sentence_id] ?? "")) {
+      setHintBusy(true);
+      try {
+        const res = await sentenceApi.blankHint(s.sentence_id, 0);
+        setRevealed((m) => ({ ...m, [s.sentence_id]: res.revealed_text }));
+      } catch (e) {
+        toast.error(errorMessage(e));
+        return; // finally still runs; stage is left untouched on failure
+      } finally {
+        setHintBusy(false);
+      }
     }
+    setHintStage((m) => ({ ...m, [s.sentence_id]: "hint" }));
   }
 
-  // The 힌트보기 button is a plain on/off toggle. Opening a blank fetches its
-  // hint once (then it's cached); closing just hides it. Non-blank sentences
-  // toggle their romanization line.
-  function toggleHint(s: Sentence) {
-    if (hintOpen) {
-      setHintOpen(false);
-      return;
+  // Step 2 — 정답보기: reveal the ENTIRE answer. For a blank the server returns the
+  // whole answer (reveal_all); a non-blank already shows its full hint. The stage
+  // becomes "answer", which hides the button.
+  async function revealAnswer(s: Sentence) {
+    if (hintBusy || answered.has(s.sentence_id)) return;
+    if (hasBlank(s)) {
+      setHintBusy(true);
+      try {
+        const res = await sentenceApi.blankHint(s.sentence_id, 0, true);
+        setRevealed((m) => ({ ...m, [s.sentence_id]: res.revealed_text }));
+      } catch (e) {
+        toast.error(errorMessage(e));
+        return;
+      } finally {
+        setHintBusy(false);
+      }
     }
-    if (hasBlank(s) && !(revealed[s.sentence_id] ?? "")) {
-      void requestHint(s); // first open: fetch, which also sets hintOpen
-    } else {
-      setHintOpen(true);
-    }
+    setHintStage((m) => ({ ...m, [s.sentence_id]: "answer" }));
+  }
+
+  // The hint chip is a two-step reveal: first tap shows a hint, second (now
+  // labelled 정답보기) shows the full answer and hides the chip.
+  function onHint(s: Sentence) {
+    if (hintStage[s.sentence_id] === "hint") void revealAnswer(s);
+    else void revealHint(s);
   }
 
   async function startRec(s: Sentence) {
@@ -615,7 +638,8 @@ export function SessionConversation() {
     setResult(null);
     setAttemptMode(null);
     setTyped("");
-    setHintOpen(false);
+    // The next item has its own sentence_id, so its hint stage is absent and the
+    // chip resets to 힌트보기 without an explicit reset here.
     reqIdRef.current = null; // fresh idempotency key for the next item
     if (idx >= total - 1) {
       finishOrExit();
@@ -632,7 +656,18 @@ export function SessionConversation() {
     setResult(null);
     setAttemptMode(null);
     setTyped("");
-    setHintOpen(false);
+    // Re-answering the SAME item: reset its hint chip to 힌트보기 and drop the
+    // cached reveal so the blank starts empty again.
+    setHintStage((m) => {
+      const n = { ...m };
+      delete n[s.sentence_id];
+      return n;
+    });
+    setRevealed((m) => {
+      const n = { ...m };
+      delete n[s.sentence_id];
+      return n;
+    });
     reqIdRef.current = null;
     setRewardOpen(false);
     setAnswered((a) => {
@@ -719,6 +754,10 @@ export function SessionConversation() {
   // (`attemptMode`) but hides while the keyboard input mode is active — switching
   // to keyboard changes the visible state without discarding the attempt.
   const showPron = incorrect && attemptMode === "voice" && !keyboard;
+  // Hint chip state for the current item: undefined → 힌트보기, "hint" → 정답보기,
+  // "answer" → chip hidden. A hint is shown once any stage is set.
+  const curStage = cur ? hintStage[cur.sentence_id] : undefined;
+  const hintShown = curStage != null;
 
   const panel = useMemo(
     () => (
@@ -831,7 +870,7 @@ export function SessionConversation() {
               keyboard={keyboard && hasBlank(cur)}
               typed={typed}
               onTyped={setTyped}
-              revealed={hintOpen ? (revealed[cur.sentence_id] ?? "") : ""}
+              revealed={hintShown ? (revealed[cur.sentence_id] ?? "") : ""}
               onSubmit={() => submitTyped(cur)}
               submitting={submitting}
               composingRef={composingRef}
@@ -840,7 +879,7 @@ export function SessionConversation() {
 
             {/* Non-blank sentences keep the romanization hint line; blanks reveal
                 the hint inside the blank itself. */}
-            {hintOpen && !hasBlank(cur) && cur.romanization && (
+            {hintShown && !hasBlank(cur) && cur.romanization && (
               <p className="sess__hint">💡 {cur.romanization}</p>
             )}
 
@@ -856,15 +895,17 @@ export function SessionConversation() {
             )}
 
             <div className="sess__card-actions">
-              <button
-                className="sess__chip"
-                onClick={() => toggleHint(cur)}
-                disabled={hintBusy || answered.has(cur.sentence_id)}
-                aria-busy={hintBusy}
-                aria-pressed={hintOpen}
-              >
-                <HintIcon /> {copy.hint}
-              </button>
+              {/* Two-step reveal: 힌트보기 → 정답보기 → hidden once the full answer is shown. */}
+              {curStage !== "answer" && (
+                <button
+                  className={"sess__chip" + (curStage === "hint" ? " sess__chip--answer" : "")}
+                  onClick={() => onHint(cur)}
+                  disabled={hintBusy || answered.has(cur.sentence_id)}
+                  aria-busy={hintBusy}
+                >
+                  <HintIcon /> {curStage === "hint" ? copy.answer : copy.hint}
+                </button>
+              )}
               <button
                 className="sess__chip"
                 onClick={() => {

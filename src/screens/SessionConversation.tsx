@@ -200,6 +200,26 @@ function WarnIcon() {
   );
 }
 
+/** Circled question mark for the 힌트보기 (view-hint) chip. Inherits the chip's
+ * text colour via currentColor so it stays legible in both idle and pressed
+ * states — clearer than the low-contrast ❔ emoji it replaces. */
+function HintIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M9.1 9.3a2.9 2.9 0 1 1 4.3 2.9c-.9.6-1.4 1.1-1.4 2.1"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="17.4" r="1.25" fill="currentColor" />
+    </svg>
+  );
+}
+
 /** Circular pronunciation-accuracy ring: gray inactive track + orange active arc
  * with the clamped percentage centered. Decorative — the accessible value is
  * announced by the panel's group label. */
@@ -843,7 +863,7 @@ export function SessionConversation() {
                 aria-busy={hintBusy}
                 aria-pressed={hintOpen}
               >
-                <span aria-hidden="true">❔</span> {copy.hint}
+                <HintIcon /> {copy.hint}
               </button>
               <button
                 className="sess__chip"

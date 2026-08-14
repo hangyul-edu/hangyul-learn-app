@@ -3583,13 +3583,14 @@ textarea.input {
 .home__gauge-num {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: clamp(38px, 11vw, 48px);
+  /* Slightly smaller than the ring so a three-digit "100%" doesn't overlap it. */
+  font-size: clamp(34px, 10vw, 43px);
   line-height: 1;
 }
 .home__gauge-pct {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: clamp(18px, 5vw, 22px);
+  font-size: clamp(16px, 4.5vw, 20px);
   margin-left: 1px;
 }
 

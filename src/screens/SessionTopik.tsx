@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SessionChrome } from "../components/SessionChrome";
 import { SessionCompleteModal } from "../components/SessionCompleteModal";
+import { TopikCompleteSheet } from "../components/TopikCompleteSheet";
 import { quizAttemptBody, type AnswerValue } from "../components/QuestionView";
 import { randomUuid } from "../lib/uuid";
 import { TopikQuestion, canSubmitTopik } from "../components/topik/TopikQuestion";
@@ -241,6 +242,9 @@ export function SessionTopik() {
   const targetReached = isAdditional
     ? shownCurrent >= shownTotal
     : goalTarget > 0 && correctlyCompleted >= goalTarget;
+  // True on the final correct answer of the session — the set is exhausted or the
+  // goal is met. The completion CTA is then presented as a bottom-up sheet.
+  const isLastStep = idx >= total - 1 || targetReached;
   // The current item's working answer, derived from the per-item draft map.
   const value: AnswerValue = cur ? (drafts[cur.quiz_id] ?? {}) : {};
   const setValue = (v: AnswerValue) => {
@@ -526,9 +530,13 @@ export function SessionTopik() {
 
           <div className="sess__cta">
             {phase === "correct" ? (
-              <button className="sess__next" onClick={next}>
-                {idx >= total - 1 || targetReached ? copy.complete : copy.next}
-              </button>
+              // The final step's 완료 lives in the bottom-up completion sheet
+              // (rendered below); intermediate answers keep the inline 다음.
+              isLastStep ? null : (
+                <button className="sess__next" onClick={next}>
+                  {copy.next}
+                </button>
+              )
             ) : (
               <button className="sess__submit" onClick={submit} disabled={!canSubmit}>
                 {phase === "submitting" ? (
@@ -542,6 +550,11 @@ export function SessionTopik() {
         </div>
       )}
     </SessionChrome>
+    {/* Bottom-up completion sheet on the final correct answer — its 완료 finalizes
+        the session and opens the summary modal (mirrors TOPIK Review Learning). */}
+    {phase === "correct" && isLastStep && !completed && cur != null && (
+      <TopikCompleteSheet onComplete={next} />
+    )}
     {completed && (
       <SessionCompleteModal mode="topik" correctCount={correctSet.size} points={points} onConfirm={exitSession} />
     )}

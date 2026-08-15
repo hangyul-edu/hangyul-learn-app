@@ -227,6 +227,13 @@ describe("SessionTopik — answer flow (incorrect → retry → correct)", () =>
       await userEvent.click(option("1"));
       await userEvent.click(submitBtn());
       const btn = await screen.findByRole("button", { name: q === "C" ? "완료" : "다음" });
+      if (q === "C") {
+        // The final 완료 lives in a bottom-up completion sheet (like Review)…
+        expect(screen.getByRole("group", { name: "학습 완료" })).toContainElement(btn);
+      } else {
+        // …intermediate answers do not open the sheet.
+        expect(screen.queryByRole("group", { name: "학습 완료" })).not.toBeInTheDocument();
+      }
       await userEvent.click(btn);
     }
     expect(await screen.findByTestId("complete")).toHaveTextContent("완료 3");

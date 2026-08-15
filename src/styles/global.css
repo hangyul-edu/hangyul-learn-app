@@ -5779,18 +5779,22 @@ textarea.input {
 }
 
 /* --- Withdrawal + logout --- */
+/* Stacked like the menu rows above (same height/alignment/rhythm), just kept in
+   a muted gray to stay visually secondary. */
 .more__account-actions {
   display: flex;
-  gap: 22px;
-  padding: 22px 4px 8px;
+  flex-direction: column;
 }
 .more__muted-action {
   background: none;
   border: none;
-  padding: 0;
-  font-size: 13px;
+  text-align: left;
+  padding: 15px 4px;
+  font-size: 16px;
+  font-weight: 600;
   color: #a8adb2;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 .more__muted-action:active {
   opacity: 0.55;

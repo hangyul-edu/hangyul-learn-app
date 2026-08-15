@@ -54,6 +54,11 @@ type TopikSnapshot = {
   goalTarget: number;
   // Additional-learning batch size (5/10/15/20), or null for a normal session.
   additionalCount: number | null;
+  // Session id for per-question credit dedup (see learningSessionIdRef) —
+  // preserved across a refresh so a retry after refreshing still dedups.
+  learningSessionId?: string;
+  // Whether the learner is re-solving the set after 다시 시작.
+  retrying?: boolean;
 };
 
 function readTopikSnapshot(): TopikSnapshot | null {
@@ -135,6 +140,10 @@ export function SessionTopik() {
   // Quiz_ids the learner has attempted at all (right or wrong) — used only to
   // decide whether to record session time on exit, never for progress.
   const [attempted, setAttempted] = useState<Set<string>>(new Set());
+  // True while re-solving the set after 다시 시작. The daily goal is already met,
+  // so completion is driven by finishing all items (not the goal) — otherwise the
+  // met goal would end the retry after the first answer.
+  const [retrying, setRetrying] = useState(false);
   const [saved, setSaved] = useState<Record<string, boolean>>({});
   const [points, setPoints] = useState(0);
   const [completed, setCompleted] = useState(false);
@@ -167,6 +176,7 @@ export function SessionTopik() {
       resetQuestionPhase();
       setCorrectSet(new Set());
       setAttempted(new Set());
+      setRetrying(false);
     } catch (e) {
       if (items === null) setError(true);
       else toast.error(errorMessage(e));
@@ -190,6 +200,11 @@ export function SessionTopik() {
   // whenever the answer changes or the question advances so a genuinely new
   // submission gets a fresh key and is counted.
   const requestIdRef = useRef<string | null>(null);
+  // Identifies THIS personalized-learning session to the server so a correct
+  // answer credits the goal + points at most once per question per session.
+  // Preserved across a 다시 시작 restart (re-answers don't re-credit) but fresh
+  // per mount — so additional learning is a new session that credits again.
+  const learningSessionIdRef = useRef<string>(randomUuid());
 
   const startedAt = useRef(Date.now());
   // On boot, resume a saved session (same section) if one exists — e.g. after a
@@ -213,6 +228,9 @@ export function SessionTopik() {
       setGoalCurrent(snap.goalCurrent ?? topik?.goal.current ?? 0);
       setGoalTarget(snap.goalTarget ?? topik?.goal.target ?? 0);
       setAdditionalCount(snap.additionalCount ?? null);
+      // Keep the same session id across a refresh so a retry still dedups credit.
+      if (snap.learningSessionId) learningSessionIdRef.current = snap.learningSessionId;
+      setRetrying(!!snap.retrying);
       // A restored session always reopens the current question UNRESOLVED — the
       // learner may have refreshed mid-attempt. Progress is the persisted count;
       // no credit is added by restoring.
@@ -246,8 +264,10 @@ export function SessionTopik() {
     ? shownCurrent >= shownTotal
     : goalTarget > 0 && correctlyCompleted >= goalTarget;
   // True on the final correct answer of the session — the set is exhausted or the
-  // goal is met. The completion CTA is then presented as a bottom-up sheet.
-  const isLastStep = idx >= total - 1 || targetReached;
+  // goal is met. While retrying (goal already met) only the exhausted-set case
+  // ends it, so the learner can re-solve every question. The completion CTA is
+  // then presented as a bottom-up sheet.
+  const isLastStep = idx >= total - 1 || (!retrying && targetReached);
   // The current item's working answer, derived from the per-item draft map.
   const value: AnswerValue = cur ? (drafts[cur.quiz_id] ?? {}) : {};
   const setValue = (v: AnswerValue) => {
@@ -282,6 +302,8 @@ export function SessionTopik() {
       goalCurrent,
       goalTarget,
       additionalCount,
+      learningSessionId: learningSessionIdRef.current,
+      retrying,
     };
     const timer = setTimeout(() => {
       try {
@@ -291,7 +313,7 @@ export function SessionTopik() {
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [items, idx, drafts, correctSet, attempted, points, typeCode, section, goalCurrent, goalTarget, additionalCount]);
+  }, [items, idx, drafts, correctSet, attempted, points, typeCode, section, goalCurrent, goalTarget, additionalCount, retrying]);
 
   // Submit-enabled iff: a valid answer is selected, we're not mid-request, the
   // question isn't already correct, and the answer differs from the last one
@@ -316,6 +338,7 @@ export function SessionTopik() {
       const res = await quizApi.attempt(cur.quiz_id, {
         ...quizAttemptBody(cur, submitted),
         client_request_id: clientRequestId,
+        learning_session_id: learningSessionIdRef.current,
       });
       setResult(res);
       setSubmittedValue(submitted);
@@ -360,7 +383,7 @@ export function SessionTopik() {
         return rest;
       });
     }
-    if (idx >= total - 1 || targetReached) {
+    if (isLastStep) {
       finishOrExit();
     } else {
       setIdx((i) => i + 1);
@@ -379,6 +402,7 @@ export function SessionTopik() {
     setAttempted(new Set());
     setPoints(0);
     setCompleted(false);
+    setRetrying(true);
     requestIdRef.current = null;
     startedAt.current = Date.now();
   }

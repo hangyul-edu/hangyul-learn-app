@@ -241,11 +241,12 @@ describe("SessionTopik — answer flow (incorrect → retry → correct)", () =>
     expect(await screen.findByTestId("complete")).toHaveTextContent("완료 3");
   });
 
-  it("다시 시작 on the completion sheet restarts the set from the first question", async () => {
+  it("다시 시작 restarts the set from the first question, reusing the same learning session", async () => {
     attempt
       .mockResolvedValueOnce(correctRes("A", 1))
       .mockResolvedValueOnce(correctRes("B", 2))
-      .mockResolvedValueOnce(correctRes("C", 3));
+      .mockResolvedValueOnce(correctRes("C", 3))
+      .mockResolvedValueOnce(correctRes("A", 3)); // re-answer A after restart
     renderScreen();
     for (const q of ["A", "B", "C"]) {
       await screen.findByText(`문제 ${q}`);
@@ -254,6 +255,10 @@ describe("SessionTopik — answer flow (incorrect → retry → correct)", () =>
       await screen.findByRole("button", { name: q === "C" ? "완료" : "다음" });
       if (q !== "C") await userEvent.click(screen.getByRole("button", { name: "다음" }));
     }
+    // Every attempt carries a learning_session_id (server dedups credit by it).
+    const sessionId = attempt.mock.calls[0][1].learning_session_id;
+    expect(sessionId).toBeTruthy();
+
     // Retry instead of Complete → back to the first question with a clean answer
     // state, and neither the completion sheet nor the summary modal showing.
     await userEvent.click(screen.getByRole("button", { name: "다시 시작" }));
@@ -261,6 +266,14 @@ describe("SessionTopik — answer flow (incorrect → retry → correct)", () =>
     expect(submitBtn()).toBeDisabled();
     expect(screen.queryByTestId("complete")).not.toBeInTheDocument();
     expect(screen.queryByRole("group", { name: "복습 완료!" })).not.toBeInTheDocument();
+
+    // Re-answering after the restart keeps the SAME session id, so the server
+    // treats it as a retry and does not re-award points.
+    await userEvent.click(option("1"));
+    await userEvent.click(submitBtn());
+    await screen.findByRole("button", { name: "다음" });
+    const retryCall = attempt.mock.calls[attempt.mock.calls.length - 1][1];
+    expect(retryCall.learning_session_id).toBe(sessionId);
   });
 
   it("does not re-submit or double-count on a rapid double-tap of Submit", async () => {

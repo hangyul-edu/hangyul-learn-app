@@ -392,19 +392,18 @@ export function SessionTopik() {
   }
 
   // 다시 시작 from the completion sheet: redo the SAME set from the first
-  // question (no regeneration). Re-answers are fresh submissions, so — like any
-  // correct custom answer — they count again on the server.
+  // question as pure practice. The first completion already finalized the points
+  // and the completed-question count (server-side, per the session dedup key), so
+  // the retry MUST NOT change either — only the per-question answer state resets.
+  // Points, the correct-answer set, and elapsed time are deliberately kept, so
+  // leaving mid-retry (Back) still retains what the first attempt earned.
   function restartSession() {
     setIdx(0);
     setDrafts({});
     resetQuestionPhase();
-    setCorrectSet(new Set());
-    setAttempted(new Set());
-    setPoints(0);
     setCompleted(false);
     setRetrying(true);
     requestIdRef.current = null;
-    startedAt.current = Date.now();
   }
 
   // Same gate for the CTA at completion and the back chevron.

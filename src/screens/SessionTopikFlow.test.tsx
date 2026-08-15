@@ -28,8 +28,8 @@ vi.mock("../components/SessionChrome", () => ({
   ),
 }));
 vi.mock("../components/SessionCompleteModal", () => ({
-  SessionCompleteModal: ({ correctCount }: { correctCount: number }) => (
-    <div data-testid="complete">완료 {correctCount}</div>
+  SessionCompleteModal: ({ correctCount, points }: { correctCount: number; points: number }) => (
+    <div data-testid="complete">완료 {correctCount} {points}P</div>
   ),
 }));
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn() }) }));
@@ -88,6 +88,16 @@ const correctRes = (id: string, current: number) => ({
   points_earned: 10,
   completed_now: true,
   daily_progress: { target: 3, current, achieved: current >= 3 },
+});
+// A retry re-answer: the server dedups within the session, so it grades correct
+// but awards nothing and leaves the goal count unchanged (completed_now false).
+const retryRes = (id: string) => ({
+  attempt_id: `att-r-${id}`,
+  correct: true,
+  status: "graded",
+  points_earned: 0,
+  completed_now: false,
+  daily_progress: { target: 3, current: 3, achieved: true },
 });
 
 function renderScreen() {
@@ -238,15 +248,19 @@ describe("SessionTopik — answer flow (incorrect → retry → correct)", () =>
       }
       await userEvent.click(btn);
     }
-    expect(await screen.findByTestId("complete")).toHaveTextContent("완료 3");
+    // The first completion finalizes 3 correct answers and 30P (3 × 10).
+    expect(await screen.findByTestId("complete")).toHaveTextContent("완료 3 30P");
   });
 
-  it("다시 시작 restarts the set from the first question, reusing the same learning session", async () => {
+  it("다시 시작 re-solves the set without changing the finalized count or points", async () => {
     attempt
       .mockResolvedValueOnce(correctRes("A", 1))
       .mockResolvedValueOnce(correctRes("B", 2))
       .mockResolvedValueOnce(correctRes("C", 3))
-      .mockResolvedValueOnce(correctRes("A", 3)); // re-answer A after restart
+      // Retry: the server dedups, so each re-answer earns 0 and doesn't advance.
+      .mockResolvedValueOnce(retryRes("A"))
+      .mockResolvedValueOnce(retryRes("B"))
+      .mockResolvedValueOnce(retryRes("C"));
     renderScreen();
     for (const q of ["A", "B", "C"]) {
       await screen.findByText(`문제 ${q}`);
@@ -259,21 +273,25 @@ describe("SessionTopik — answer flow (incorrect → retry → correct)", () =>
     const sessionId = attempt.mock.calls[0][1].learning_session_id;
     expect(sessionId).toBeTruthy();
 
-    // Retry instead of Complete → back to the first question with a clean answer
-    // state, and neither the completion sheet nor the summary modal showing.
+    // 다시 시작 → back to the first question, clean answer state, no summary yet.
     await userEvent.click(screen.getByRole("button", { name: "다시 시작" }));
     await screen.findByText("문제 A");
     expect(submitBtn()).toBeDisabled();
     expect(screen.queryByTestId("complete")).not.toBeInTheDocument();
-    expect(screen.queryByRole("group", { name: "복습 완료!" })).not.toBeInTheDocument();
 
-    // Re-answering after the restart keeps the SAME session id, so the server
-    // treats it as a retry and does not re-award points.
-    await userEvent.click(option("1"));
-    await userEvent.click(submitBtn());
-    await screen.findByRole("button", { name: "다음" });
-    const retryCall = attempt.mock.calls[attempt.mock.calls.length - 1][1];
-    expect(retryCall.learning_session_id).toBe(sessionId);
+    // Re-solve all three; each re-answer reuses the SAME session id and earns 0.
+    for (const q of ["A", "B", "C"]) {
+      await screen.findByText(`문제 ${q}`);
+      await userEvent.click(option("1"));
+      await userEvent.click(submitBtn());
+      const btn = await screen.findByRole("button", { name: q === "C" ? "완료" : "다음" });
+      await userEvent.click(btn);
+    }
+    const calls = attempt.mock.calls;
+    expect(calls[calls.length - 1][1].learning_session_id).toBe(sessionId);
+    // The summary still shows the FIRST completion's 3 answers and 30P — the
+    // retry earned nothing and must not have zeroed them out.
+    expect(await screen.findByTestId("complete")).toHaveTextContent("완료 3 30P");
   });
 
   it("does not re-submit or double-count on a rapid double-tap of Submit", async () => {

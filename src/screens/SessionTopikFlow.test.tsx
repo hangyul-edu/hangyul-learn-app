@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
@@ -228,15 +228,39 @@ describe("SessionTopik — answer flow (incorrect → retry → correct)", () =>
       await userEvent.click(submitBtn());
       const btn = await screen.findByRole("button", { name: q === "C" ? "완료" : "다음" });
       if (q === "C") {
-        // The final 완료 lives in a bottom-up completion sheet (like Review)…
-        expect(screen.getByRole("group", { name: "학습 완료" })).toContainElement(btn);
+        // The final step shows the same bottom sheet as Review — 다시 시작 + 완료.
+        const sheet = screen.getByRole("group", { name: "복습 완료!" });
+        expect(sheet).toContainElement(btn);
+        expect(within(sheet).getByRole("button", { name: "다시 시작" })).toBeInTheDocument();
       } else {
-        // …intermediate answers do not open the sheet.
-        expect(screen.queryByRole("group", { name: "학습 완료" })).not.toBeInTheDocument();
+        // …intermediate answers keep the inline 다음, with no sheet.
+        expect(screen.queryByRole("group", { name: "복습 완료!" })).not.toBeInTheDocument();
       }
       await userEvent.click(btn);
     }
     expect(await screen.findByTestId("complete")).toHaveTextContent("완료 3");
+  });
+
+  it("다시 시작 on the completion sheet restarts the set from the first question", async () => {
+    attempt
+      .mockResolvedValueOnce(correctRes("A", 1))
+      .mockResolvedValueOnce(correctRes("B", 2))
+      .mockResolvedValueOnce(correctRes("C", 3));
+    renderScreen();
+    for (const q of ["A", "B", "C"]) {
+      await screen.findByText(`문제 ${q}`);
+      await userEvent.click(option("1"));
+      await userEvent.click(submitBtn());
+      await screen.findByRole("button", { name: q === "C" ? "완료" : "다음" });
+      if (q !== "C") await userEvent.click(screen.getByRole("button", { name: "다음" }));
+    }
+    // Retry instead of Complete → back to the first question with a clean answer
+    // state, and neither the completion sheet nor the summary modal showing.
+    await userEvent.click(screen.getByRole("button", { name: "다시 시작" }));
+    await screen.findByText("문제 A");
+    expect(submitBtn()).toBeDisabled();
+    expect(screen.queryByTestId("complete")).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "복습 완료!" })).not.toBeInTheDocument();
   });
 
   it("does not re-submit or double-count on a rapid double-tap of Submit", async () => {

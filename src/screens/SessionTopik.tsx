@@ -3,7 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SessionChrome } from "../components/SessionChrome";
 import { SessionCompleteModal } from "../components/SessionCompleteModal";
-import { TopikCompleteSheet } from "../components/TopikCompleteSheet";
+import { ReviewCompleteSheet } from "../components/ReviewCompleteSheet";
+import { REVIEW_SESSION_COPY } from "../lib/reviewSessionCopy";
 import { quizAttemptBody, type AnswerValue } from "../components/QuestionView";
 import { randomUuid } from "../lib/uuid";
 import { TopikQuestion, canSubmitTopik } from "../components/topik/TopikQuestion";
@@ -100,6 +101,8 @@ export function SessionTopik() {
   const qc = useQueryClient();
   const { me } = useAuth();
   const copy = TOPIK_SESSION_COPY[normalizeLanguage(me?.app_language)];
+  // Completion sheet reuses the Review-Learning bottom sheet verbatim (다시 시작 / 완료).
+  const reviewCopy = REVIEW_SESSION_COPY[normalizeLanguage(me?.app_language)];
 
   const dash = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
   const topik = dash.data?.tracks.find((t) => t.category === "topik");
@@ -365,6 +368,21 @@ export function SessionTopik() {
     }
   }
 
+  // 다시 시작 from the completion sheet: redo the SAME set from the first
+  // question (no regeneration). Re-answers are fresh submissions, so — like any
+  // correct custom answer — they count again on the server.
+  function restartSession() {
+    setIdx(0);
+    setDrafts({});
+    resetQuestionPhase();
+    setCorrectSet(new Set());
+    setAttempted(new Set());
+    setPoints(0);
+    setCompleted(false);
+    requestIdRef.current = null;
+    startedAt.current = Date.now();
+  }
+
   // Same gate for the CTA at completion and the back chevron.
   function finishOrExit() {
     if (correctSet.size > 0) setCompleted(true);
@@ -550,10 +568,16 @@ export function SessionTopik() {
         </div>
       )}
     </SessionChrome>
-    {/* Bottom-up completion sheet on the final correct answer — its 완료 finalizes
-        the session and opens the summary modal (mirrors TOPIK Review Learning). */}
+    {/* Bottom-up completion sheet on the final correct answer — identical to the
+        one TOPIK Review Learning shows: 다시 시작 (redo the set) + 완료 (finalize,
+        opening the summary modal). */}
     {phase === "correct" && isLastStep && !completed && cur != null && (
-      <TopikCompleteSheet onComplete={next} />
+      <ReviewCompleteSheet
+        leftLabel={reviewCopy.restart}
+        onLeft={restartSession}
+        onComplete={next}
+        copy={reviewCopy}
+      />
     )}
     {completed && (
       <SessionCompleteModal mode="topik" correctCount={correctSet.size} points={points} onConfirm={exitSession} />

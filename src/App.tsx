@@ -14,6 +14,7 @@ import { APP_NAME } from "./lib/config";
 
 import { Welcome } from "./screens/Welcome";
 import { Login } from "./screens/Login";
+import { AuthComplete } from "./screens/AuthComplete";
 import { Signup } from "./screens/Signup";
 import { Forgot } from "./screens/Forgot";
 import { SetupProfile } from "./screens/SetupProfile";
@@ -114,6 +115,9 @@ const router = createBrowserRouter(
         <Route path="/signup" element={<RequireGuest><Signup /></RequireGuest>} />
         <Route path="/forgot" element={<RequireGuest><Forgot /></RequireGuest>} />
         <Route path="/reset-password" element={<RequireGuest><ResetPassword /></RequireGuest>} />
+        {/* Social-login callback landing — swaps the one-time code for tokens.
+            Unguarded so the exchange can set the session without a guard race. */}
+        <Route path="/auth/complete" element={<AuthComplete />} />
 
         {/* Legal documents — viewable by guests and signed-in users */}
         <Route path="/policy" element={<PolicyList />} />

@@ -1,4 +1,5 @@
 import { http } from "../lib/http";
+import { API_BASE_URL } from "../lib/config";
 import { randomUuid } from "../lib/uuid";
 import type {
   AppSettings,
@@ -79,6 +80,13 @@ export const authApi = {
     http.post<TokenResponse>("/auth/login/email", { email, password, auto_login }, { auth: false }),
   social: (provider: SocialProvider, id_token: string) =>
     http.post<TokenResponse>("/auth/login/social", { provider, id_token }, { auth: false }),
+  // Real web login: a full-page navigation to the backend, which redirects to
+  // the provider's actual authorization screen. No token is ever handled here.
+  socialStartUrl: (provider: SocialProvider, returnTo = "/") =>
+    `${API_BASE_URL}/auth/social/${provider}/start?return_to=${encodeURIComponent(returnTo)}`,
+  // After the provider callback, the SPA swaps the one-time login_code for tokens.
+  socialExchange: (login_code: string) =>
+    http.post<TokenResponse>("/auth/social/exchange", { login_code }, { auth: false }),
   recoverEmail: (verification_token: string, name: string) =>
     http.post<{ email: string }>("/auth/email/recover", { verification_token, name }, { auth: false }),
   resetVerify: (email: string, phone_verification_token: string) =>

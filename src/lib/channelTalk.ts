@@ -71,3 +71,29 @@ export function bootChannelTalk(): void {
     hideChannelButtonOnBoot: true,
   });
 }
+
+/**
+ * Re-identify the current signed-in member with the ChannelTalk SDK.
+ *
+ * ChannelTalk's user *verification* (member hash) is a `boot` parameter, so we
+ * re-boot with the member id + the server-signed `memberHash`, upgrading the
+ * anonymous session into a verified one so the member can't be impersonated in
+ * the support inbox. Called on an explicit user action (the FAQ support
+ * button), never in a loop. No-op when unconfigured or the SDK isn't loaded.
+ */
+export function identifyChannelTalkUser(params: {
+  memberId: string;
+  memberHash?: string | null;
+  name?: string | null;
+}): void {
+  if (typeof window === "undefined" || !isChannelTalkConfigured()) return;
+  const channel = window.ChannelIO;
+  if (typeof channel !== "function") return;
+  channel("boot", {
+    pluginKey: CHANNEL_TALK_PLUGIN_KEY,
+    memberId: params.memberId,
+    ...(params.memberHash ? { memberHash: params.memberHash } : {}),
+    ...(params.name ? { profile: { name: params.name } } : {}),
+    hideChannelButtonOnBoot: true,
+  });
+}

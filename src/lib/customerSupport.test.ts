@@ -57,3 +57,44 @@ describe("openCustomerSupportChat", () => {
     expect(openCustomerSupportChat()).toBe(false);
   });
 });
+
+describe("openCustomerSupportChat — verified identification", () => {
+  afterEach(() => {
+    delete (window as unknown as { ChannelIO?: unknown }).ChannelIO;
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("re-boots with memberId + memberHash when a hash and plugin key are present", async () => {
+    vi.stubEnv("VITE_CHANNEL_TALK_PLUGIN_KEY", "test-plugin-key");
+    vi.resetModules();
+    const { openCustomerSupportChat: open } = await import("./customerSupport");
+
+    const ChannelIO = vi.fn();
+    (window as unknown as { ChannelIO: unknown }).ChannelIO = ChannelIO;
+
+    const ok = open({ id: "u3", nickname: "김", name: "Kim", memberHash: "deadbeef" });
+
+    expect(ok).toBe(true);
+    const bootCall = ChannelIO.mock.calls.find((c) => c[0] === "boot");
+    expect(bootCall?.[1]).toMatchObject({
+      pluginKey: "test-plugin-key",
+      memberId: "u3",
+      memberHash: "deadbeef",
+    });
+    // Verified path must NOT fall back to the unverified updateUser.
+    expect(ChannelIO).not.toHaveBeenCalledWith("updateUser", expect.anything());
+    expect(ChannelIO).toHaveBeenLastCalledWith("showMessenger");
+  });
+
+  it("passes memberHash to the native bridge profile", () => {
+    const postMessage = vi.fn();
+    (window as unknown as { ReactNativeWebView: unknown }).ReactNativeWebView = { postMessage };
+
+    openCustomerSupportChat({ id: "u4", nickname: "이", memberHash: "cafef00d" });
+
+    const payload = JSON.parse(postMessage.mock.calls[0][0]);
+    expect(payload.profile).toMatchObject({ memberId: "u4", memberHash: "cafef00d" });
+    delete (window as unknown as { ReactNativeWebView?: unknown }).ReactNativeWebView;
+  });
+});

@@ -18,6 +18,8 @@
  * app-level concern — so a missing SDK can't spin into an init loop.
  */
 
+import { identifyChannelTalkUser } from "./channelTalk";
+
 type ChannelIO = (command: string, ...args: unknown[]) => void;
 
 declare global {
@@ -28,11 +30,14 @@ declare global {
 }
 
 /** Minimal, already-approved member fields ChannelTalk may use to attach the
- * conversation to a known logged-in user. No auth tokens, no learning data. */
+ * conversation to a known logged-in user. No auth tokens, no learning data.
+ * `memberHash` is the server-signed HMAC for ChannelTalk user verification
+ * (null/absent → the user is identified without verification). */
 export interface SupportChatUser {
   id: string;
   name?: string | null;
   nickname?: string | null;
+  memberHash?: string | null;
 }
 
 /** Message type the native shell listens for to open ChannelTalk. */
@@ -47,7 +52,11 @@ const NATIVE_MESSAGE_TYPE = "OPEN_CUSTOMER_SUPPORT_CHAT";
  */
 export function openCustomerSupportChat(user?: SupportChatUser | null): boolean {
   const profile = user
-    ? { memberId: user.id, name: user.nickname ?? user.name ?? undefined }
+    ? {
+        memberId: user.id,
+        name: user.nickname ?? user.name ?? undefined,
+        memberHash: user.memberHash ?? undefined,
+      }
     : null;
 
   // 1) Native app shell bridge (mobile wrapper owns the real SDK).
@@ -65,7 +74,18 @@ export function openCustomerSupportChat(user?: SupportChatUser | null): boolean 
   const channel = typeof window !== "undefined" ? window.ChannelIO : undefined;
   if (typeof channel === "function") {
     try {
-      if (profile) channel("updateUser", { memberId: profile.memberId, profile: { name: profile.name } });
+      if (profile?.memberHash) {
+        // Verified identification is a boot parameter — delegate to the
+        // SDK-owner module, which re-boots with memberId + memberHash.
+        identifyChannelTalkUser({
+          memberId: profile.memberId,
+          memberHash: profile.memberHash,
+          name: profile.name,
+        });
+      } else if (profile) {
+        // Unverified fallback (no hash available): attach the id + name only.
+        channel("updateUser", { memberId: profile.memberId, profile: { name: profile.name } });
+      }
       channel("showMessenger");
       return true;
     } catch {

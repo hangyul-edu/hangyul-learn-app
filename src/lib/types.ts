@@ -787,6 +787,13 @@ export interface Faq {
   question: string;
   answer: string;
 }
+/** Identity the client feeds to the ChannelTalk SDK. `member_hash` is present
+ * only when the backend has a verification secret configured; otherwise the
+ * user is identified without verification. */
+export interface ChannelTalkIdentity {
+  member_id: string;
+  member_hash: string | null;
+}
 /** Notice list-row shape — summary fields only (no body). Title is already
  * localized server-side to the requested language (with fallback). */
 export interface NoticeSummary {

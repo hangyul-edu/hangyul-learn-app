@@ -1,4 +1,6 @@
+import { useQuery } from "@tanstack/react-query";
 import { openCustomerSupportChat } from "../../lib/customerSupport";
+import { supportApi } from "../../api/endpoints";
 import { useAuth } from "../../hooks/auth";
 import { useToast } from "../../hooks/toast";
 
@@ -15,9 +17,28 @@ export function SupportChatButton() {
   const { me } = useAuth();
   const toast = useToast();
 
+  // Server-signed identity for verified ChannelTalk identification. Prefetched
+  // once the user is logged in so the hash is ready by the time they tap; the
+  // hash is stable for the session, so it never needs refetching. A pending or
+  // failed fetch simply falls back to unverified identification.
+  const identity = useQuery({
+    queryKey: ["channel-talk-identity"],
+    queryFn: supportApi.channelTalkIdentity,
+    enabled: Boolean(me),
+    staleTime: Infinity,
+    retry: false,
+  });
+
   function handleClick() {
     const ok = openCustomerSupportChat(
-      me ? { id: me.user_id, name: me.name, nickname: me.nickname } : null,
+      me
+        ? {
+            id: me.user_id,
+            name: me.name,
+            nickname: me.nickname,
+            memberHash: identity.data?.member_hash ?? null,
+          }
+        : null,
     );
     if (!ok) {
       toast.error("상담 채팅을 열 수 없어요. 잠시 후 다시 시도해 주세요.");

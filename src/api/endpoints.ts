@@ -7,6 +7,7 @@ import type {
   Banner,
   Course,
   DailyLearningActivity,
+  ChannelTalkIdentity,
   DashboardSummary,
   ExamResult,
   ExamSet,
@@ -456,4 +457,8 @@ export const supportApi = {
     http.get<Notice>(`/support/notices/${encodeURIComponent(noticeId)}`, { lang }),
   markNoticeRead: (noticeId: string) =>
     http.post<void>(`/support/notices/${encodeURIComponent(noticeId)}/read`),
+  // Server-signed identity for verified ChannelTalk identification. Auth
+  // required; member_hash is null when no verification secret is configured.
+  channelTalkIdentity: () =>
+    http.get<ChannelTalkIdentity>("/support/channel-talk/identity"),
 };

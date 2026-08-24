@@ -1,4 +1,4 @@
-# 한글 · Hangyul — Member App (Frontend)
+# 한귤 · Hangyul — Member App (Frontend)
 
 A polished, mobile-first **consumer app** for Hangyul, built with **React + Vite +
 TypeScript**. It is a real language-learning experience (home dashboard,

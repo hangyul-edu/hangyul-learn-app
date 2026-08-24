@@ -90,6 +90,9 @@ function renderScreen() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // jsdom doesn't implement scrollIntoView; the screen scrolls its card list
+  // after mutations. Stub it so those calls don't throw (matches League.test).
+  Element.prototype.scrollIntoView = vi.fn();
   setMethods();
   setRecovery(NO_RECOVERY);
 });

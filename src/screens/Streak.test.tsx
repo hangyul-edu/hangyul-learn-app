@@ -100,38 +100,49 @@ describe("Streak calendar — completed-day markers", () => {
   // The calendar-completion tests key off learning days, not the sun/today.
   beforeEach(() => summary.mockResolvedValue({ studied_today: false }));
 
-  const pill = (day: number, y = 2026, m = 7) =>
+  // The calendar always opens on the current month (Streak reads new Date()),
+  // so the payloads + label assertions are built relative to "now" rather than
+  // pinned to a literal month — otherwise the tests rot when the date rolls to
+  // a different month (the sibling "marks today" test uses the same approach).
+  const NOW = new Date();
+  const Y = NOW.getFullYear();
+  const M = NOW.getMonth() + 1;
+  // Previous month (with year rollover) for the navigation test.
+  const PREV_M = M === 1 ? 12 : M - 1;
+  const PREV_Y = M === 1 ? Y - 1 : Y;
+
+  const pill = (day: number, y = Y, m = M) =>
     screen.queryByLabelText(`${y}년 ${m}월 ${day}일, 학습 완료`);
 
   it("marks a learning day with a pill showing the date number and 완료", async () => {
     // Day 2 studied but goal NOT achieved → still marked (learning-day rule).
-    streakCalendar.mockResolvedValue(mkCal(2026, 7, [2], { goalAchieved: false }));
+    streakCalendar.mockResolvedValue(mkCal(Y, M, [2], { goalAchieved: false }));
     renderStreak();
-    const marker = await screen.findByLabelText("2026년 7월 2일, 학습 완료");
+    const marker = await screen.findByLabelText(`${Y}년 ${M}월 2일, 학습 완료`);
     expect(within(marker).getByText("2")).toBeInTheDocument();
     expect(within(marker).getByText("완료")).toBeInTheDocument();
   });
 
   it("does not mark a day without learning activity", async () => {
-    streakCalendar.mockResolvedValue(mkCal(2026, 7, [2]));
+    streakCalendar.mockResolvedValue(mkCal(Y, M, [2]));
     renderStreak();
-    await screen.findByLabelText("2026년 7월 2일, 학습 완료");
+    await screen.findByLabelText(`${Y}년 ${M}월 2일, 학습 완료`);
     // Day 5 has no activity → plain cell, no pill.
     expect(pill(5)).not.toBeInTheDocument();
-    expect(screen.getByLabelText("2026년 7월 5일")).toBeInTheDocument();
+    expect(screen.getByLabelText(`${Y}년 ${M}월 5일`)).toBeInTheDocument();
   });
 
   it("renders no pills when the month has no learning days", async () => {
-    streakCalendar.mockResolvedValue(mkCal(2026, 7, []));
+    streakCalendar.mockResolvedValue(mkCal(Y, M, []));
     renderStreak();
-    await screen.findByLabelText("2026년 7월 1일"); // grid rendered
+    await screen.findByLabelText(`${Y}년 ${M}월 1일`); // grid rendered
     expect(screen.queryAllByText("완료")).toHaveLength(0);
   });
 
   it("marks several learning days in the same month, each with its own pill", async () => {
-    streakCalendar.mockResolvedValue(mkCal(2026, 7, [2, 3, 10]));
+    streakCalendar.mockResolvedValue(mkCal(Y, M, [2, 3, 10]));
     renderStreak();
-    await screen.findByLabelText("2026년 7월 2일, 학습 완료");
+    await screen.findByLabelText(`${Y}년 ${M}월 2일, 학습 완료`);
     expect(pill(3)).toBeInTheDocument();
     expect(pill(10)).toBeInTheDocument();
     expect(screen.getAllByText("완료")).toHaveLength(3);
@@ -139,16 +150,16 @@ describe("Streak calendar — completed-day markers", () => {
 
   it("updates markers when navigating to the previous month", async () => {
     streakCalendar.mockImplementation((_y: number, m: number) =>
-      Promise.resolve(m === 6 ? mkCal(2026, 6, [15]) : mkCal(2026, 7, [2])),
+      Promise.resolve(m === PREV_M ? mkCal(PREV_Y, PREV_M, [15]) : mkCal(Y, M, [2])),
     );
     renderStreak();
-    await screen.findByLabelText("2026년 7월 2일, 학습 완료");
+    await screen.findByLabelText(`${Y}년 ${M}월 2일, 학습 완료`);
 
     await userEvent.click(screen.getByLabelText("이전 달"));
 
-    // June's marker appears; July's is gone.
-    expect(await screen.findByLabelText("2026년 6월 15일, 학습 완료")).toBeInTheDocument();
-    expect(screen.queryByLabelText("2026년 7월 2일, 학습 완료")).not.toBeInTheDocument();
+    // The previous month's marker appears; the current month's is gone.
+    expect(await screen.findByLabelText(`${PREV_Y}년 ${PREV_M}월 15일, 학습 완료`)).toBeInTheDocument();
+    expect(screen.queryByLabelText(`${Y}년 ${M}월 2일, 학습 완료`)).not.toBeInTheDocument();
     expect(screen.getAllByText("완료")).toHaveLength(1);
   });
 

@@ -315,7 +315,6 @@ export interface Course {
   track_id: string;
   title: string;
   description: string | null;
-  level: number | null;
   cover_image_url: string | null;
   lesson_count: number;
   completed_lesson_count: number;

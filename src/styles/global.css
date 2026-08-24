@@ -10115,6 +10115,16 @@ textarea.input {
   max-width: var(--app-max);
   margin: 0 auto;
 }
+/* On desktop the app is a rounded card (see .app-frame: 24px margin, 34px
+   radius). Inset + round the dim overlay to the same shape so its corners
+   match the frame instead of squaring off past it. */
+@media (min-width: 620px) {
+  .llc {
+    top: 24px;
+    bottom: 24px;
+    border-radius: 34px;
+  }
+}
 .llc__card {
   width: 100%;
   max-width: 360px;

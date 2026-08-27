@@ -5,6 +5,7 @@ import { Screen } from "../components/layout/Screen";
 import { Card, Chip } from "../components/ui/kit";
 import { Async, EmptyState, SkeletonList } from "../components/ui/states";
 import { quizApi } from "../api/endpoints";
+import { TOPIK_GRADES } from "../lib/levels";
 import type { Quiz } from "../lib/types";
 
 const SECTION_LABEL: Record<string, string> = { listening: "듣기", reading: "읽기", writing: "쓰기" };
@@ -60,7 +61,7 @@ export function Topik() {
           <div className="section-title">문제 은행</div>
           <div className="chiprow" style={{ marginBottom: 12 }}>
             <Chip active={level === undefined} onClick={() => setLevel(undefined)}>전체</Chip>
-            {[1, 2, 3, 4, 5, 6].map((l) => (
+            {TOPIK_GRADES.map((l) => (
               <Chip key={l} active={level === l} onClick={() => setLevel(l)}>
                 {l}급
               </Chip>

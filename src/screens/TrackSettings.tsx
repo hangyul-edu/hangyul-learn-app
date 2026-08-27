@@ -6,10 +6,11 @@ import { UnsavedChangesModal } from "../components/UnsavedChangesModal";
 import { settingsApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
+import { CONVERSATION_LEVEL_MAX, TOPIK_GRADE_MAX } from "../lib/levels";
 
 const CFG = {
-  conversation: { title: "실전 회화", maxLevel: 10, cols: 5, levelLabel: (n: number) => `Lv.${n}`, srLevel: (n: number) => `회화 레벨 ${n}` },
-  topik: { title: "TOPIK", maxLevel: 6, cols: 3, levelLabel: (n: number) => `${n}급`, srLevel: (n: number) => `TOPIK ${n}급` },
+  conversation: { title: "실전 회화", maxLevel: CONVERSATION_LEVEL_MAX, cols: 5, levelLabel: (n: number) => `Lv.${n}`, srLevel: (n: number) => `회화 레벨 ${n}` },
+  topik: { title: "TOPIK", maxLevel: TOPIK_GRADE_MAX, cols: 3, levelLabel: (n: number) => `${n}급`, srLevel: (n: number) => `TOPIK ${n}급` },
 } as const;
 
 const GOALS: { n: number; mode: string; mint?: boolean }[] = [

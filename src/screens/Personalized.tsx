@@ -139,7 +139,8 @@ export function Personalized() {
                   <div className="plearn__review-actions">
                     <button
                       className="plearn__review-pill"
-                      onClick={() => nav("/saved", { state: { tab: "sentence", filter: "auto_wrong" } })}
+                      /* No `tab` — Saved opens on the Practice Settings priority. */
+                      onClick={() => nav("/saved", { state: { filter: "auto_wrong" } })}
                       aria-label={t("personalized.retryWrong")}
                     >
                       <img className="plearn__review-icon" src={icRepeat} alt="" aria-hidden="true" />
@@ -147,7 +148,7 @@ export function Personalized() {
                     </button>
                     <button
                       className="plearn__review-pill"
-                      onClick={() => nav("/saved", { state: { tab: "sentence", filter: "favorite" } })}
+                      onClick={() => nav("/saved", { state: { filter: "favorite" } })}
                       aria-label={t("personalized.reviewFavorites")}
                     >
                       <img className="plearn__review-icon plearn__review-icon--star" src={icStar} alt="" aria-hidden="true" />

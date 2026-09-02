@@ -3,6 +3,7 @@ import { StrictMode } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter, useNavigate } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Quiz } from "../lib/types";
 
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn() }) }));
@@ -54,7 +55,26 @@ function ReviewStub() {
 // Renders a realistic history [origin, /saved] and mounts under StrictMode so the
 // dev mount→unmount→mount double-invoke is exercised — the exact condition that
 // broke the earlier consume-once restore.
-function renderRoundTrip(savedEntry: string | { pathname: string; state?: unknown }) {
+/** `first` seeds the Practice Settings priority the way the app does — Saved
+ *  reads the track order straight off the cached ["dashboard"] summary. */
+function renderRoundTrip(
+  savedEntry: string | { pathname: string; state?: unknown },
+  first: "conversation" | "topik" = "conversation",
+) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const order = first === "topik" ? ["topik", "conversation"] : ["conversation", "topik"];
+  qc.setQueryData(["dashboard"], {
+    tracks: order.map((category, i) => ({
+      track_id: `t_${category}`,
+      category,
+      display_order: i + 1,
+      name: category,
+      level: 1,
+      level_label: "Lv.1",
+      next_lesson_id: null,
+      goal: { key: "daily", label: "", target: 5, current: 0, achieved: false },
+    })),
+  });
   const router = createMemoryRouter(
     [
       { path: "/saved", element: <Saved /> },
@@ -64,9 +84,11 @@ function renderRoundTrip(savedEntry: string | { pathname: string; state?: unknow
   );
   return render(
     <I18nProvider language="ko">
-      <StrictMode>
-        <RouterProvider router={router} />
-      </StrictMode>
+      <QueryClientProvider client={qc}>
+        <StrictMode>
+          <RouterProvider router={router} />
+        </StrictMode>
+      </QueryClientProvider>
     </I18nProvider>,);
 }
 
@@ -98,5 +120,23 @@ describe("Saved — Questions tab restored when returning from a review", () => 
     await switchToQuestionsAndOpenReview();
     await userEvent.click(screen.getByRole("button", { name: "back-to-saved" }));
     await expectQuestionsTab();
+  });
+});
+
+describe("Saved — first tab follows the Practice Settings priority", () => {
+  it("opens on Sentences when Conversation is first", async () => {
+    renderRoundTrip("/saved", "conversation");
+    expect(await screen.findByRole("button", { name: /저장한 문장/ })).toBeInTheDocument();
+  });
+
+  it("opens on Questions when TOPIK is first", async () => {
+    renderRoundTrip("/saved", "topik");
+    expect(await screen.findByRole("button", { name: /저장한 문제/ })).toBeInTheDocument();
+  });
+
+  it("an explicit nav tab still wins over the priority", async () => {
+    // Kept so a caller that really does mean one tab can still say so.
+    renderRoundTrip({ pathname: "/saved", state: { tab: "sentence" } }, "topik");
+    expect(await screen.findByRole("button", { name: /저장한 문장/ })).toBeInTheDocument();
   });
 });

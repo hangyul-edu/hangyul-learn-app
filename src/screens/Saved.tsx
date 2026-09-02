@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation, type TranslationKey } from "../i18n";
 import { SkeletonList } from "../components/ui/states";
 import { sentenceApi, quizApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
-import type { Quiz, SavedSentenceItem } from "../lib/types";
+import type { DashboardSummary, Quiz, SavedSentenceItem } from "../lib/types";
 import icBookmarkFilled from "../assets/brand/ic-24-bookmark-filled.svg";
 import svPlay from "../assets/brand/sv-play.svg";
 import icTrash from "../assets/brand/ic-trash.svg";
@@ -147,20 +148,34 @@ export function Saved() {
   const modeHint: Mode | null =
     savedModeHint && savedModeHint.locKey === loc.key ? savedModeHint.mode : null;
 
+  // Which track opens first is the user's Practice Settings priority, not a
+  // fixed default. The dashboard's tracks are already in that order —
+  // PersonalizedSettings persists the order and invalidates ["dashboard"] — and
+  // every route into Saved comes from a screen that has already loaded it, so
+  // this reads straight from the cache: no extra request and no flash of the
+  // wrong tab. A cold cache falls back to Sentences, as before.
+  const qc = useQueryClient();
+  const preferredMode: Mode =
+    qc.getQueryData<DashboardSummary>(["dashboard"])?.tracks?.[0]?.category === "topik"
+      ? "problem"
+      : "sentence";
+
   // Initial tab precedence:
   //   full snapshot › the tab we were on when we left for a review (modeHint) ›
-  //   explicit navigation state › the Sentences default.
+  //   explicit navigation state › the Practice Settings priority.
   // modeHint is set ONLY when leaving Saved for a review, so it is a reliable
   // "returning from a review" signal and must beat `entry.tab` — which is the
-  // STALE navigation state of this history entry (e.g. Personalized opens /saved
-  // with tab:"sentence"), not the tab the user was actually on when they left.
+  // STALE navigation state of this history entry, not the tab the user was
+  // actually on when they left.
   const initialMode: Mode = snap
     ? snap.mode
     : modeHint
       ? modeHint
       : entry?.tab === "quiz"
         ? "problem"
-        : "sentence";
+        : entry?.tab === "sentence"
+          ? "sentence"
+          : preferredMode;
   const [mode, setMode] = useState<Mode>(initialMode);
   const [source, setSource] = useState<Source>(snap ? snap.source : entry?.filter === "favorite" ? "bookmark" : "wrong");
   const [sort, setSort] = useState<Sort>(snap ? snap.sort : "latest");

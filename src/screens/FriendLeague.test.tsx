@@ -144,9 +144,12 @@ describe("Friend League screen", () => {
     expect(desc.textContent).toContain("친구를 추가하고");
     expect(desc.textContent).toContain("함께 경쟁해보세요!");
     expect(desc.querySelector("br")).toBeInTheDocument();
-    // Outlined add button with a plus icon (SVG, not a raw '+').
+    // Outlined add button carrying the exported ic_24_plus glyph (LEG-011
+    // 1658:23890), not a raw '+' and not a hand-drawn path.
     const add = screen.getByRole("button", { name: "친구 추가" });
-    expect(add.querySelector("svg")).toBeInTheDocument();
+    const plus = add.querySelector("img.ic-plus");
+    expect(plus).toBeInTheDocument();
+    expect(add.querySelector("svg")).toBeNull();
     // No podium in the empty state.
     expect(document.querySelector(".fl__podiums")).not.toBeInTheDocument();
   });
@@ -164,8 +167,8 @@ describe("Friend League screen", () => {
     mockLang = "en";
     api.friendRankings.mockResolvedValue({ ...full, entries: [full.entries[3]], me: full.entries[3] });
     renderFriend();
-    expect(await screen.findByRole("heading", { name: "No friends can join your Friend League yet" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Add Friend" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "No friends in your league yet" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add" })).toBeInTheDocument();
   });
 
   it("does not show the empty state for a real fetch error (retryable)", async () => {

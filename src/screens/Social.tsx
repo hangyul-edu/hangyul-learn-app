@@ -13,6 +13,7 @@ import { errorMessage } from "../lib/http";
 import { timeAgo } from "../lib/format";
 import type { Friend, FriendRequest } from "../lib/types";
 import { DetailHeader } from "../components/DetailHeader";
+import { PlusIcon } from "../components/PlusIcon";
 
 type Tab = "friends" | "received" | "sent";
 
@@ -74,12 +75,6 @@ const nameOf = (
   u: { nickname?: string | null },
   t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
 ) => u.nickname ?? t("home.defaultNickname");
-
-const PlusIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M12 5v14M5 12h14" stroke="#8a8f96" strokeWidth="2.3" strokeLinecap="round" />
-  </svg>
-);
 
 /* -------------------------------- rows ---------------------------------- */
 function FriendRow({ friend, copy, onRemove }: { friend: Friend; copy: FmCopy; onRemove: () => void }) {

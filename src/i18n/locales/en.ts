@@ -961,7 +961,8 @@ export const en: Catalog = {
 
   /** Friend League empty state. */
   friendLeague: {
-    emptyTitle: "No friends can join your Friend League yet",
+    /* LEG-011 (1658:23877) — English strings supplied against that frame. */
+    emptyTitle: "No friends in your league yet",
     emptyLine1: "Add friends and",
     emptyLine2: "compete together!",
     rankingAria: "Friend League ranking",
@@ -969,7 +970,7 @@ export const en: Catalog = {
     rowA11y: "Rank {rank}, {name}{league}, {points} points{me}",
     leagueSuffix: ", {league}",
     meSuffix: ", you",
-    addFriend: "Add Friend",
+    addFriend: "Add",
   },
 
   /** Shared UI primitives (states, fields, selects) and network errors. */

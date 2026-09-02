@@ -8,6 +8,7 @@ import { TIER_META, type LeagueTier } from "../lib/league";
 import { useTranslation } from "../i18n";
 import type { RankingEntry } from "../lib/types";
 import { useAuthOptional } from "../hooks/auth";
+import { PlusIcon } from "../components/PlusIcon";
 
 /** "Green League" / "Green 리그" — the suffix differs per language. */
 const useTierLabel = () => {
@@ -30,14 +31,6 @@ function useEmptyCopy() {
     line2: t("friendLeague.emptyLine2"),
     addFriend: t("friendLeague.addFriend"),
   };
-}
-
-function PlusIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 5v14M5 12h14" stroke="#8a8f96" strokeWidth="2.3" strokeLinecap="round" />
-    </svg>
-  );
 }
 
 /** Minimal, illustration-free empty state — shown only for a confirmed empty

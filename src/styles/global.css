@@ -12568,7 +12568,13 @@ textarea.input {
   background: var(--brand-500);
 }
 .lg__history {
-  /* Figma node 960:23376 — r8, 1px Gray 3, Body 8 SemiBold 14 / 20 */
+  /* Figma node 960:23376 — r8, 1px Gray 3, Body 8 SemiBold 14 / 20.
+     LEG-011 (1658:23883) pins it 14 from the frame edge, which is 6 beyond the
+     page's 20px inset; as a plain flex item the row overflowed and it drifted to
+     369.7 instead of 361. Same escape the full-bleed rule under the tabs uses. */
+  position: absolute;
+  right: -6px;
+  top: 6px;
   flex-shrink: 0;
   padding: 7px 16px;
   border: 1px solid var(--border-strong);
@@ -14859,37 +14865,54 @@ textarea.input {
   background: #fff;
 }
 .fl-empty__title {
+  /* 1658:23888 — Heading 8 in BLACK, not Gray 7. */
   margin: 0;
   text-align: center;
   font-size: 18px;
   font-weight: 600;
   line-height: 25.2px;
-  color: var(--ink);
+  color: #000;
 }
 .fl-empty__desc {
-  margin: 6px 0 0;
+  /* 1658:23887 — Body 6 (Medium 15 / 22.3) in Gray 5, not Regular at 22.5. */
+  /* 6.6 under the title, 12.2 above the button — LEG-011 draws the title box
+     ending at 370.6, the copy at 377.2..421.8 and the button top at 434. */
+  margin: 6.6px 0 0;
   text-align: center;
   font-size: 15px;
-  font-weight: 400;
-  line-height: 22.5px;
+  font-weight: 500;
+  line-height: 22.3px;
   color: var(--ink-3);
 }
 /* 1658:23889 — 104x36, the 16px plus glyph 16 in, label 20 tall. */
 .fl-empty__add {
-  margin-top: 12px;
+  /* LEG-011 `btn` (1658:23889) is the same rounded rectangle as the friends
+     header button: r8 with a 1px Gray 3 stroke and a Body 8 (SemiBold 14 / 20)
+     label — not a pill, and not Bold. 15px of padding rather than Figma's 16
+     because Figma strokes inside, so the 1px border comes out of the inset. */
+  margin-top: 12.2px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   height: 36px;
-  padding: 8px 16px;
-  border: 1.5px solid var(--border-strong);
-  border-radius: var(--r-full);
+  padding: 0 15px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-xs);
   background: var(--surface);
   color: var(--ink);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 20px;
   cursor: pointer;
+}
+.ic-plus {
+  /* ic_24_plus is a 16x16 frame around the 14x14 vector (inset 12.5%). */
+  display: block;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 14px;
+  object-fit: contain;
 }
 .fl-empty__add:active {
   background: var(--surface-2);

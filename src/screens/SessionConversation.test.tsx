@@ -297,6 +297,24 @@ describe("SessionConversation — correct-answer bottom sheet", () => {
     expect(container.querySelector(".casheet__scrim")).not.toBeInTheDocument();
   });
 
+  it("the left tile is 다시 시작 — never 다시 듣기 — and re-arms the item without playing audio", async () => {
+    const { sentenceApi } = await import("../api/endpoints");
+    recSentences.mockResolvedValue({ items: [SENTENCE, SENTENCE_2] });
+    blankAttempt.mockResolvedValue(CORRECT);
+    renderScreen();
+    await answerFirstCorrectly();
+
+    expect(screen.queryByRole("button", { name: "다시 듣기" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "다시 시작" }));
+
+    // Same reset the review sheet performs: the verdict clears, the sheet closes
+    // and the SAME item is answerable again — the session does not advance.
+    await waitFor(() => expect(screen.queryByText("정답이에요!")).not.toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: "다음 문제로" })).not.toBeInTheDocument();
+    expect(screen.getByTestId("counter")).toHaveTextContent("0/2");
+    expect(sentenceApi.audio).not.toHaveBeenCalled();
+  });
+
   it("pressing 다음 advances to the next item and closes the sheet", async () => {
     recSentences.mockResolvedValue({ items: [SENTENCE, SENTENCE_2] });
     blankAttempt.mockResolvedValue(CORRECT);

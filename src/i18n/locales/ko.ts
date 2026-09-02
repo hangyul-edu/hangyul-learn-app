@@ -1248,7 +1248,10 @@ export const ko = {
     nextQuestion: "다음 문제로",
     /** TAL-018 / COU-019 label the quiz-session restart 다시 풀기. */
     solveAgain: "다시 풀기",
-    listenAgain: "다시 듣기",
+    /* The left tile re-arms the current step. TAL-042's sentence review reads
+       다시 시작 (784:60714), and every English twin of these two-tile sheets
+       reads Retry — the 다시 듣기 in the Korean TAL-008/011 frames is stale. */
+    retry: "다시 시작",
     complete: "완료",
     learningComplete: "학습 완료",
     next: "다음",
@@ -1266,7 +1269,6 @@ export const ko = {
     correctExclaim: "정답이에요!",
     correctA11y: "정답입니다. {korean}. {translation}",
     alreadyDone: "이 문제는 완료되었어요",
-    audioError: "음성을 재생하지 못했어요.",
     sentenceLoadError: "문장을 불러오지 못했어요.",
     questionLoadError: "문제를 불러오지 못했어요.",
     dailySentenceGoal: "목표 하루 학습 문장",

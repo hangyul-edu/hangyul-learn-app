@@ -621,7 +621,7 @@ export function SessionConversation() {
   // reviewed again within the SAME session. `reviewSessionIdRef` is intentionally
   // NOT regenerated, so re-answering correctly is deduped server-side and never
   // awards review points a second time (only a brand-new session can).
-  function reviewRestart(s: Sentence) {
+  function retryItem(s: Sentence) {
     setResult(null);
     setAttemptMode(null);
     setTyped("");
@@ -649,30 +649,6 @@ export function SessionConversation() {
       n.delete(s.sentence_id);
       return n;
     });
-  }
-
-  // 다시 듣기 — replay the current sentence's audio. Overlap-safe: a re-tap stops
-  // the previous playback and restarts cleanly; it never closes the sheet,
-  // changes progress, or re-submits an answer.
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [replaying, setReplaying] = useState(false);
-  async function replayAudio(s: Sentence) {
-    try {
-      setReplaying(true);
-      audioRef.current?.pause();
-      const { url } = await sentenceApi.audio(s.sentence_id);
-      const el = new Audio(url);
-      audioRef.current = el;
-      el.onended = () => setReplaying(false);
-      el.onerror = () => {
-        setReplaying(false);
-        toast.error(t("session.audioError"));
-      };
-      await el.play();
-    } catch {
-      setReplaying(false);
-      toast.error(t("session.audioError"));
-    }
   }
 
   // Show the summary only if ≥1 item was correct; otherwise return via the
@@ -925,23 +901,23 @@ export function SessionConversation() {
         </>
       )}
     </SessionChrome>
-    {/* Correct-answer bottom sheet. Intermediate (다시 듣기 / 다음, no blur) vs
-        final (다시 듣기 / 완료, blurred background). The mode is derived from the
-        session's own item state, not a hardcoded count. */}
+    {/* Correct-answer bottom sheet. Intermediate (다시 시작 / 다음, no blur) vs
+        final (다시 시작 / 완료, blurred background). The mode is derived from the
+        session's own item state, not a hardcoded count. The left tile re-arms
+        this item — the same action the review sheet runs — never audio replay. */}
     {cur != null && result?.correct && !completed && !isReview && (
       <CorrectAnswerSheet
         mode={idx >= total - 1 ? "complete" : "next"}
-        onReplay={() => replayAudio(cur)}
+        onRetry={() => retryItem(cur)}
         onNext={next}
         onComplete={next}
-        replaying={replaying}
       />
     )}
     {/* Review completion: a two-button sheet (다시 시작 / 완료), then the reward modal. */}
     {cur != null && result?.correct && isReview && !rewardOpen && (
       <ReviewCompleteSheet
         leftLabel={reviewCopy.restart}
-        onLeft={() => reviewRestart(cur)}
+        onLeft={() => retryItem(cur)}
         onComplete={() => setRewardOpen(true)}
         copy={reviewCopy}
       />

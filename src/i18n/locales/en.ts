@@ -770,8 +770,8 @@ export const en: Catalog = {
   reviewSession: {
     sentenceTitle: "Saved sentence",
     questionTitle: "Saved question",
-    /* 784:60714 / 893:23120 — both review modals label the left tile "Retry" in
-       English, where Korean distinguishes 다시 시작 from 다시 듣기. */
+    /* 784:60714 / 893:23120 — every English twin of these two-tile sheets labels
+       the left tile "Retry". */
     restart: "Retry",
     complete: "Done",
     rewardTitle: "Review complete!",
@@ -1263,7 +1263,7 @@ export const en: Catalog = {
     answerNext: "Correct, continue",
     nextQuestion: "Next question",
     solveAgain: "Retry",
-    listenAgain: "Listen again",
+    retry: "Retry",
     complete: "Done",
     learningComplete: "Session complete",
     next: "Next",
@@ -1280,7 +1280,6 @@ export const en: Catalog = {
     correctExclaim: "Correct!",
     correctA11y: "Correct. {korean}. {translation}",
     alreadyDone: "You already completed this one",
-    audioError: "Couldn't play the audio.",
     sentenceLoadError: "Couldn't load the sentences.",
     questionLoadError: "Couldn't load the questions.",
     dailySentenceGoal: "Daily Target", // 798:76717

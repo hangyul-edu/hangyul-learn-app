@@ -4,10 +4,10 @@ import icArrow from "../assets/brand/ic-16-arrow.svg";
  * Bottom sheet shown after a CORRECT personalized-learning answer. Two mutually
  * exclusive modes with a distinct visual hierarchy:
  *
- * - "next"     — more items remain. Buttons: 다시 듣기 / 다음. No scrim; the
+ * - "next"     — more items remain. Buttons: 다시 시작 / 다음. No scrim; the
  *                learning screen behind stays fully interactive-looking.
  * - "complete" — the final required item was just completed correctly. Buttons:
- *                다시 듣기 / 완료. A light dim scrim de-emphasizes (and blocks) the
+ *                다시 시작 / 완료. A light dim scrim de-emphasizes (and blocks) the
  *                learning screen behind the sheet — NOT blurred, so the learner
  *                can still read the item they just completed. The session
  *                finishes only when the user presses 완료.
@@ -16,18 +16,17 @@ export type CorrectAnswerSheetMode = "next" | "complete";
 
 export function CorrectAnswerSheet({
   mode,
-  onReplay,
+  onRetry,
   onNext,
   onComplete,
-  replaying,
   advancing,
   completing,
 }: {
   mode: CorrectAnswerSheetMode;
-  onReplay: () => void;
+  /** Re-arms the current item so it can be answered again — NOT an audio replay. */
+  onRetry: () => void;
   onNext: () => void;
   onComplete: () => void;
-  replaying?: boolean;
   advancing?: boolean;
   completing?: boolean;
 }) {
@@ -46,12 +45,13 @@ export function CorrectAnswerSheet({
         <div className="casheet__row">
           <button
             type="button"
+            /* --replay is the shared class for this sheet's left tile; the
+               review sheet uses it for the same retry action. */
             className="casheet__btn casheet__btn--replay"
-            onClick={onReplay}
-            disabled={replaying}
-            aria-label={t("session.listenAgain")}
+            onClick={onRetry}
+            aria-label={t("session.retry")}
           >
-            {replaying ? spinner : t("session.listenAgain")}
+            {t("session.retry")}
           </button>
 
           {mode === "next" ? (

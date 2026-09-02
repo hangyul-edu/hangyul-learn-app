@@ -2,10 +2,10 @@ import type { ReviewSessionCopy } from "../lib/reviewSessionCopy";
 
 /**
  * Bottom action sheet shown after a saved item is reviewed correctly. Two equal
- * buttons over a dimmed (not blurred), non-interactive review screen — a secondary action on
- * the left (다시 시작 to redo, or 다시 듣기 for a listening item) and 완료 on the
- * right to finalize and open the reward modal. Reuses the correct-answer sheet's
- * styling (casheet).
+ * buttons over a dimmed (not blurred), non-interactive review screen — a secondary
+ * action on the left (redo the item) and 완료 on the right to finalize and open
+ * the reward modal. Every TOPIK question kind uses the same left action; only a
+ * sentence review varies it. Reuses the correct-answer sheet's styling (casheet).
  */
 export function ReviewCompleteSheet({
   leftLabel,

@@ -7,7 +7,6 @@ export function useReviewSessionCopy() {
     sentenceTitle: t("reviewSession.sentenceTitle"),
     questionTitle: t("reviewSession.questionTitle"),
     restart: t("reviewSession.restart"),
-    listenAgain: t("reviewSession.listenAgain"),
     complete: t("reviewSession.complete"),
     rewardTitle: t("reviewSession.rewardTitle"),
     rewardSubtitle: t("reviewSession.rewardSubtitle"),

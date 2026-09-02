@@ -6,7 +6,7 @@ import { useTranslation } from "../i18n";
 import { SessionChrome } from "../components/SessionChrome";
 import { ReviewCompleteSheet } from "../components/ReviewCompleteSheet";
 import { ReviewRewardModal } from "../components/ReviewRewardModal";
-import { TopikQuestion, canSubmitTopik, questionKind } from "../components/topik/TopikQuestion";
+import { TopikQuestion, canSubmitTopik } from "../components/topik/TopikQuestion";
 import { TopikResult } from "../components/topik/TopikResult";
 import { ResultHeader, type ResultStatus } from "../components/topik/ResultHeader";
 import { quizAttemptBody, type AnswerValue } from "../components/QuestionView";
@@ -279,13 +279,12 @@ export function SessionReview() {
 
       {completed && !rewardOpen && (
         <ReviewCompleteSheet
-          /* TAL-046 (674:10333 / EN 784:60771): a question review offers
-             다시 풀기 / "Retry"; only a listening item offers 다시 듣기. */
-          leftLabel={
-            quiz && questionKind(quiz) === "listening_multiple_choice"
-              ? copy.listenAgain
-              : t("session.solveAgain")
-          }
+          /* Reading, listening and writing reviews all get the same sheet: the
+             left tile re-solves the item (다시 풀기 / "Retry"). There is no
+             listening-only replay here — TAL-046 (674:10333) labels even a
+             reading question 다시 듣기, so that wording was never a per-kind
+             distinction, and the action has always been `restart`. */
+          leftLabel={t("session.solveAgain")}
           onLeft={restart}
           onComplete={() => setRewardOpen(true)}
           copy={copy}

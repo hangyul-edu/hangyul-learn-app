@@ -165,7 +165,7 @@ describe("SessionReview — saved TOPIK question", () => {
     expect(await screen.findByText("SAVED[origin]")).toBeInTheDocument();
   });
 
-  it("uses '다시 듣기' (not '다시 풀기') as the left button for a listening question", async () => {
+  it("offers 다시 풀기 — never a listening-only replay — for a listening question", async () => {
     get.mockResolvedValue({
       ...QUIZ,
       quiz_id: "q2",
@@ -178,8 +178,53 @@ describe("SessionReview — saved TOPIK question", () => {
     await userEvent.click((await screen.findAllByRole("radio"))[0]);
     await userEvent.click(screen.getByRole("button", { name: "제출" }));
 
-    expect(await screen.findByRole("button", { name: "다시 듣기" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "다시 풀기" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "다시 풀기" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "다시 듣기" })).not.toBeInTheDocument();
+  });
+
+  it("다시 풀기 re-arms a listening question instead of replaying its audio", async () => {
+    get.mockResolvedValue({
+      ...QUIZ,
+      quiz_id: "q2",
+      question_type: "listening_multiple_choice",
+      prompt: "대화를 듣고 알맞은 것을 고르십시오.",
+      material: { kind: "audio", html: null, image_url: null, audio: null },
+    });
+    attempt.mockResolvedValue({ attempt_id: "a3", correct: true, points_earned: 5, status: "graded" });
+    renderReview();
+    await userEvent.click((await screen.findAllByRole("radio"))[0]);
+    await userEvent.click(screen.getByRole("button", { name: "제출" }));
+    await userEvent.click(await screen.findByRole("button", { name: "다시 풀기" }));
+
+    // Same reset as a reading item: the sheet closes, the question is answerable
+    // again, and no audio playback was kicked off.
+    expect(screen.queryByRole("button", { name: "완료" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "제출" })).toBeDisabled();
+    expect(audio).not.toHaveBeenCalled();
+  });
+
+  it("offers the same 다시 풀기 sheet for a writing question", async () => {
+    get.mockResolvedValue({
+      ...QUIZ,
+      quiz_id: "q3",
+      question_type: "writing_fill_blanks",
+      prompt: "빈칸에 알맞은 말을 쓰십시오.",
+      answer: { format: "short_answer", choices: [], blanks: [{ key: "1", answer: "덕분에" }] },
+    });
+    attempt.mockResolvedValue({
+      attempt_id: "a4",
+      correct: true,
+      points_earned: 5,
+      status: "graded",
+      writing: { score: 9, max_score: 10, suggestions: [], grammar_issues: [], corrected_text: null },
+    });
+    renderReview();
+    await userEvent.type(await screen.findByRole("textbox"), "덕분에");
+    await userEvent.click(screen.getByRole("button", { name: "제출" }));
+
+    expect(await screen.findByRole("button", { name: "다시 풀기" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "완료" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "다시 듣기" })).not.toBeInTheDocument();
   });
 
   it("an incorrect answer stays on the item with no sheet and allows retry", async () => {

@@ -773,7 +773,6 @@ export const en: Catalog = {
     /* 784:60714 / 893:23120 — both review modals label the left tile "Retry" in
        English, where Korean distinguishes 다시 시작 from 다시 듣기. */
     restart: "Retry",
-    listenAgain: "Listen again",
     complete: "Done",
     rewardTitle: "Review complete!",
     /* 1976:29395 — TAL-047 EN carries the 🔥 that the Korean frame (794:76274)

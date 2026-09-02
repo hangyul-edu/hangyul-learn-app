@@ -779,7 +779,6 @@ export const ko = {
     sentenceTitle: "저장한 문장",
     questionTitle: "저장한 문제",
     restart: "다시 시작",
-    listenAgain: "다시 듣기",
     complete: "완료",
     rewardTitle: "복습 완료!",
     rewardSubtitle: "확실히 익히고, 포인트까지",

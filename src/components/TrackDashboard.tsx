@@ -142,7 +142,7 @@ export function TrackDashboard({
 
       <section className={`home__hero ${done ? "is-done" : ""}`} aria-label={t("home.trackStatus", { name: title })}>
         {done && (
-          <div className="home__hero-banner" role="status">
+          <div className="home__hero-goaldone" role="status">
             {t("personalized.goalAchieved")}
           </div>
         )}
@@ -170,7 +170,12 @@ export function TrackDashboard({
           <Gauge ratio={ratio} done={done} />
         </div>
         <button className="home__hero-cta" onClick={onStart}>
-          {t(done ? "personalized.additional" : current > 0 ? "personalized.continueLearning" : "personalized.startNow")}
+          {/* The completed card keeps the same CTA as the in-progress one:
+              1825:28960 reads "Continue learning" and its Korean twin
+              1825:26963 "이어서 학습하기". Only the label was state-dependent —
+              onStart is the same action either way — so `done` no longer
+              swaps in the Extra Practice wording. */}
+          {t(done || current > 0 ? "personalized.continueLearning" : "personalized.startNow")}
         </button>
       </section>
     </>

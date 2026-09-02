@@ -101,8 +101,10 @@ describe("Home — additional learning after the daily goal is 100%", () => {
   it("Conversation: opens the count modal, then starts an additional session with the chosen count", async () => {
     summary.mockResolvedValue(doneTracks());
     renderHome();
-    // The CTA reads 추가 학습하기 once the goal is done.
-    await userEvent.click(await screen.findByRole("button", { name: "추가 학습하기" }));
+    // The CTA keeps the in-progress wording once the goal is done —
+    // 1825:26963 reads 이어서 학습하기 in the 100% frame. Tapping it still
+    // opens the additional-learning flow, which is what this asserts.
+    await userEvent.click(await screen.findByRole("button", { name: "이어서 학습하기" }));
     expect(await screen.findByText(/추가할 문장 수를 선택해 주세요/)).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("radio", { name: "10개" }));
@@ -114,9 +116,9 @@ describe("Home — additional learning after the daily goal is 100%", () => {
   it("TOPIK: section modal first, THEN the count modal, then starts with both", async () => {
     summary.mockResolvedValue(doneTracks());
     renderHome();
-    await screen.findByRole("button", { name: "추가 학습하기" }); // wait for load
+    await screen.findByRole("button", { name: "이어서 학습하기" }); // wait for load
     await userEvent.click(screen.getByRole("tab", { name: "TOPIK" }));
-    await userEvent.click(screen.getByRole("button", { name: "추가 학습하기" }));
+    await userEvent.click(screen.getByRole("button", { name: "이어서 학습하기" }));
 
     // Section first — the count modal is NOT shown yet.
     expect(await screen.findByText("학습할 파트를 선택하세요")).toBeInTheDocument();
@@ -138,7 +140,7 @@ describe("Home — additional learning after the daily goal is 100%", () => {
   it("unsubscribed: Start goes to the subscription screen and creates no session", async () => {
     summary.mockResolvedValue({ ...doneTracks(), paywall_required: true });
     renderHome();
-    await userEvent.click(await screen.findByRole("button", { name: "추가 학습하기" }));
+    await userEvent.click(await screen.findByRole("button", { name: "이어서 학습하기" }));
     await screen.findByText(/추가할 문장 수를 선택해 주세요/);
     await userEvent.click(screen.getByRole("button", { name: /시작할게요/ }));
     await waitFor(() => expect(screen.getByText("SUBSCRIPTION")).toBeInTheDocument());

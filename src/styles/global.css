@@ -738,11 +738,16 @@ textarea.input {
   animation: fade 0.2s;
   padding: 0;
 }
-/* cp_G_01_modals sits at y=321 in a 812 frame — 21.5px above the true centre,
-   which the extra bottom padding reproduces. */
+/* cp_G_01_modals is CENTRED in the 812 board, not raised. Two independent
+   instances agree: the friend-remove dialog (LEG-012 1612:24912) is 171 tall at
+   y=321 and the language-saved modal (MOR-020 2407:27539) is 255 tall at y=279
+   — both centre on 406.5 against the board's 406. The old note read the 321 as
+   an offset from centre and added 43px of bottom padding to reproduce it, which
+   instead lifted every centred modal 21.5 ABOVE where Figma puts it. Symmetric
+   padding restores it. */
 .overlay--center {
   align-items: center;
-  padding: 20px 20px 63px;
+  padding: 20px;
 }
 /* Contained within the phone frame (absolute, not fixed) so the sheet is
    clipped to the frame's rounded corners — same as the League guide sheet. */
@@ -2576,10 +2581,13 @@ textarea.input {
   padding: 0;
   border: none;
   background: none;
-  /* Body 6 — Medium 15 / 22.3 */
+  /* Body 6 — Medium 15 / 22.3, but TRM-001 (1:1618) rounds each link's node box
+     to 23 and measures the 34 gap against that, so the rows land on 124 / 181 /
+     238. Carrying the fractional 22.3 gave a 56.3 pitch and drifted 1.4 by the
+     third row. */
   font-size: 15px;
   font-weight: 500;
-  line-height: 22.3px;
+  line-height: 23px;
   color: var(--ink);
   cursor: pointer;
 }
@@ -3382,9 +3390,13 @@ textarea.input {
 }
 /* Each shape's frame inset resolved against the 375x812 frame, then shifted up
    by the 44px status bar the app does not draw. */
-/* ㄹ (1:12525) — inset 10.2% / -7.27% / 70.94% / 62.77%. */
+/* ㄹ (1:12525) — inset 10.2% / -7.27% / 70.94% / 62.77%. Figma states these as
+   percentages of the frame, so the RIGHT one is the anchor: -7.27% of 375 is
+   -27.26, i.e. the shape hangs 27.26 past the right edge. Pinning it by `left`
+   at the 375 reference held there but pulled it back inside the frame on
+   anything wider (27.7 INSIDE at 430), losing the bleed the design wants. */
 .langpick__jamo--r {
-  left: 235.4px;
+  right: -27.26px;
   top: 38.8px;
   width: 166.9px;
   height: 153.2px;
@@ -3396,20 +3408,28 @@ textarea.input {
   width: 127.4px;
   height: 115.2px;
 }
-/* ㅇ (1:12489) — inset 67.62% / -2.31% / 18.71% / 62.63%. */
+/* ㅇ (1:12489) — inset 67.62% / -2.31% / 18.71% / 62.63%; -2.31% of 375 is
+   -8.66 past the right edge. Same right-anchoring as ㄹ. */
 .langpick__jamo--o {
-  left: 234.9px;
+  right: -8.66px;
   top: 505.1px;
   width: 148.8px;
   height: 111px;
 }
 .langpick__title {
-  /* 1:12772 — Bold 28 / 30.659, Gray 7, centred in a 321-wide box at y 159. */
+  /* 1:12772 — Bold 28 / 30.659, Gray 7, in a 321x45 box at y159. The box is a
+     fixed-height Figma text frame, so its content is CENTRED in the 45 and
+     overflows it symmetrically; top-aligning an auto-height box put the Korean
+     one line 7 high and the two-line English one 30 low. */
   position: absolute;
   left: 50%;
   top: 115px;
   transform: translateX(-50%);
   width: 321px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin: 0;
   text-align: center;
   white-space: pre-line;
@@ -3419,9 +3439,19 @@ textarea.input {
   font-size: 28px;
   line-height: 30.659px;
 }
+/* 784:53414 sets the English title's box 22 higher (137 against 159) so its
+   second line still clears the cards. */
+:root:lang(en) .langpick__title {
+  top: 93px;
+}
 .langpick__cards {
+  /* The pair is a centred group, not a left-pinned one: AME-001 spans 20..356
+     in a 375 board, i.e. centred on 188 against the frame's 187.5. A fixed
+     `left: 20` reproduced that at 375 but left the group 74 short of the right
+     edge at 430 and 124 at 480, reading as shifted left. */
   position: absolute;
-  left: 20px;
+  left: calc(50% + 0.5px);
+  transform: translateX(-50%);
   top: 238px;
   width: 336px;
   height: 257px;
@@ -3435,20 +3465,31 @@ textarea.input {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-/* 1:12748 — 162 wide at the left gutter, Brand 1 at 5% behind a 0.437px hairline. */
+/* AME-001 has TWO card styles — selected and unselected — not an English one
+   and a Korean one. The frame happens to draw English selected, and that mock
+   state had been baked into `--en` (Brand 1 at 5% behind an orange hairline,
+   orange text), so the English card stayed orange even with Korean chosen and
+   the screen showed two orange cards. Only the geometry is per-card now: the
+   frames are scaled a hair differently, hence 162/0.437/6.992 against
+   161/0.871/6.965.
+
+   Unselected is 1:12509: white behind a Gray 2 hairline with Gray 6 text. */
 .langpick__card--en {
   left: 0;
   width: 162px;
-  border: 0.437px solid #ff6700;
+  border: 0.437px solid #ecedf0;
   border-radius: 6.992px;
-  background: rgba(255, 103, 0, 0.05);
-  color: #ff6700;
+  background: #ffffff;
+  color: #5a636a;
+  /* AME-001 stacks TWO layers per card — a back one carrying the shadow
+     (1:12748 `shadow-[0px_4px_4px_0px_rgba(0,0,0,0.1)]`, 1:12745
+     `drop-shadow-[0px_4px_2px…]`, i.e. sigma 2 = the same 4 blur) and a front
+     one carrying the fill. Reading only the front node made batch 201 call this
+     shadow invented and delete it; the render disagrees — the frame is
+     fdfdfd/fafafa/f5f5f5 in the three pixels left of the card where the app was
+     pure white. It is on BOTH cards, selected or not. */
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
 }
-.langpick__card--en.is-on {
-  background: rgba(255, 103, 0, 0.1);
-  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
-}
-/* 1:12745 — 161 wide at 195, white behind a 0.871px Gray 2 hairline. */
 .langpick__card--ko {
   left: 175px;
   width: 161px;
@@ -3456,12 +3497,17 @@ textarea.input {
   border-radius: 6.965px;
   background: #ffffff;
   color: #5a636a;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
 }
-.langpick__card--ko.is-on {
+/* Selected is 1:12513: Brand 1 at 10% behind a Brand 1 hairline. No shadow —
+   neither card node carries one; the 0 4px 4px black 25% here was invented. */
+/* The selected fill is the two tinted layers composited — 5% behind 10% — which
+   the frame renders as #FFE8D9, i.e. Brand 1 at 15% over white. Taking the
+   front layer's 10% alone left it a visible step too pale (#FFF0E5). */
+.langpick__card.is-on {
   border-color: #ff6700;
-  background: rgba(255, 103, 0, 0.1);
+  background: rgba(255, 103, 0, 0.15);
   color: #ff6700;
-  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
 }
 .langpick__glyph {
   /* "abc" is Bold 40, "가나다" Bold 32; both ride the same 36.471 line. */
@@ -3493,6 +3539,12 @@ textarea.input {
    hung off the English card's top-left corner. */
 .langpick__hook {
   position: absolute;
+  /* Placed against the RENDER, not the declared box. 1:12516 reports its outer
+     frame at card-relative y -110.47, and batch 201 moved the hook up to satisfy
+     that — but measuring the artwork's ink left of the card (x<20, where neither
+     the title nor the card fill reach) puts its top at 211 in the frame, which
+     -95.4 reproduces and -103.44 overshot to 203. The declared box bounds more
+     than the drawn shape. */
   left: -109.44px;
   top: -95.4px;
   width: 190px;
@@ -4258,29 +4310,64 @@ textarea.input {
      second 0.05 reads 0.094 / 0.086 / 0.067. */
   box-shadow: 0 4px 4px rgba(0, 0, 0, 0.05), 0 4px 2px rgba(0, 0, 0, 0.04);
 }
-/* Completed-goal achievement banner */
-.home__hero-banner {
+/* Completed-goal status indicator — cp_G_03_toast (1825:28968 EN / 1825:26971
+   KO), the 100%-complete state of the personalized card. Batches 178 and 185
+   recorded this element as having no Figma counterpart and left its clamp() and
+   its invented 0 8px 18px shadow in place; 1825:28948 is that counterpart, so
+   both are now retired.
+
+   300x37 pinned 16 under the card's top edge and centred (17.5 either side of
+   the 335 card). The component master declares px-[50px], but the instance is
+   fixed at 300 and its text measures 248 in the render — 50 a side would not
+   fit, so the padding here is the modest inset that actually clears it and the
+   text centres on the pill. */
+.home__hero-goaldone {
+  box-sizing: border-box;
+  /* Container-based, NOT a fixed 300: the frame's 300-in-a-335-card is 1.5
+     inside the card's 16px gutter on each side, i.e. 3 narrower than the CTA,
+     which is what makes the two read as one grid. `--app-max` is 480, so the
+     card is fluid — a literal 300px held at the 375 reference but fell to 76.9%
+     of the card at 430 while the CTA grew to 358, which is what made it read as
+     a compact pill. Expressed as the gutter inset, it stays ~90% of the card and
+     3 narrower than the CTA at every width. */
+  min-height: 37px;
+  margin: 16px 1.5px 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  min-height: clamp(60px, 15vw, 74px);
-  margin-bottom: clamp(18px, 4vw, 26px);
-  padding: 10px 16px;
-  border-radius: 20px;
+  gap: 10px;
+  /* 8/9 vertical is what makes the 37 height with the 20 line box. The side
+     padding is only a guard against the text touching the ends: Chrome renders
+     the English message at 275 (Figma's export measures it 248, the emoji
+     differs), so 12 a side left just 1px of slack at the 375 reference and
+     wrapped it to two lines at 360. */
+  padding: 8px 8px 9px;
+  border-radius: 9px;
   background: #66cccc;
-  color: #fff;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: clamp(18px, 5.4vw, 22px);
-  box-shadow: 0 8px 18px rgba(80, 70, 60, 0.14);
+  color: #ffffff;
+  text-align: center;
+  /* Body 8 — SemiBold 14 / 20, not a 22px display-800 face. */
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  /* dy 4 / stdDeviation 2 / black 10%. */
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
+}
+/* The card stays 299 in the completed state — 1825:28948 keeps the same height
+   as the base card and lets the indicator take the empty top rather than push
+   everything down. `.home__hero-top`'s 64 padding-top exists to place the title
+   when there is no indicator, so in this state it double-counts with it and grew
+   the card to 370. Dropping it only here leaves the base card untouched. */
+.home__hero.is-done .home__hero-top {
+  padding-top: 0;
 }
 @media (prefers-reduced-motion: no-preference) {
-  .home__hero.is-done .home__hero-banner {
-    animation: hero-banner-in 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  .home__hero.is-done .home__hero-goaldone {
+    animation: hero-goaldone-in 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.1);
   }
 }
-@keyframes hero-banner-in {
+@keyframes hero-goaldone-in {
   from {
     opacity: 0;
     transform: translateY(-8px);
@@ -11895,11 +11982,14 @@ textarea.input {
 /* States */
 /* PUS-002 centres a single Body 6 line on the frame (1678:25777). */
 .ntf__empty {
+  /* PUS-002 (1678:25671) puts the line at y=395, 154 wide from x=111. This box
+     opens at 131 under the filter chips, so it clears 264 — pinned, not centred
+     with a 106px bottom bias, which landed the text 22.3 (one line) low. */
   flex: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 0 32px 106px;
+  padding: 264px 32px 0;
   text-align: center;
 }
 .ntf__empty-title {
@@ -15958,19 +16048,25 @@ textarea.input {
    landscape, tablets, and larger fonts — no fixed margins or absolute
    coordinates. No icon, card, border, or background. */
 .ntc__empty {
+  /* NOT-001's empty variant (2431:26037) puts the line at y=394. This box opens
+     at 94 under the nav, so it clears 300 — pinned rather than centred, which
+     landed the text at 463. The clamp() gutter goes with it: the frame's text
+     box is 420 wide (wider than the screen), so nothing constrains it
+     horizontally and the page's own 20 is the honest value. */
   flex: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 24px clamp(24px, 8vw, 40px);
+  padding: 300px 20px 0;
 }
 .ntc__empty-text {
+  /* Body 6 — Medium 15 / 22.3 in Gray 5; the 1.6 here resolved to 24. */
   margin: 0;
   text-align: center;
   color: var(--ink-3);
   font-size: 15px;
   font-weight: 500;
-  line-height: 1.6;
+  line-height: 22.3px;
 }
 
 /* List rows */

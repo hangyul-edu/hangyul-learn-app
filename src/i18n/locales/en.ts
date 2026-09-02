@@ -50,7 +50,7 @@ export const en: Catalog = {
     startNow: "Start Now",
     continueLearning: "Continue learning",
     additionalLearning: "Extra Practice",
-    goalAchieved: "Today's goal is 100% complete! Amazing ✨",
+    goalAchieved: "Today's goal 100% complete! Amazing! ✨", // I1825:28968;8597:58503
     /** 1825:28585 / 1825:28591 */
     shortcutClasses: "Classes",
     shortcutReview: "Review",
@@ -1084,7 +1084,7 @@ export const en: Catalog = {
     topikTrack: "TOPIK",
     settings: "Practice settings",
     review: "Review",
-    goalAchieved: "Today's goal is 100% complete! Amazing ✨",
+    goalAchieved: "Today's goal 100% complete! Amazing! ✨", // I1825:28968;8597:58503
     keepGoing: "You got this!",
     startNow: "Start Now",
     continueLearning: "Continue learning",

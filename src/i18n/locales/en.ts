@@ -770,12 +770,16 @@ export const en: Catalog = {
   reviewSession: {
     sentenceTitle: "Saved sentence",
     questionTitle: "Saved question",
-    restart: "Start over",
+    /* 784:60714 / 893:23120 — both review modals label the left tile "Retry" in
+       English, where Korean distinguishes 다시 시작 from 다시 듣기. */
+    restart: "Retry",
     listenAgain: "Listen again",
     complete: "Done",
     rewardTitle: "Review complete!",
-    rewardSubtitle: "Nail it down — and earn points too",
-    confirm: "Confirm",
+    /* 1976:29395 — TAL-047 EN carries the 🔥 that the Korean frame (794:76274)
+       does not; the CTA reads OK, not Confirm (1976:29386). */
+    rewardSubtitle: "Mastered it, points too! 🔥",
+    confirm: "OK",
     closeA11y: "Close review complete dialog",
     rewardA11y: "Review complete. You earned {points} points.",
     reviewSentenceA11y: "Review this sentence",

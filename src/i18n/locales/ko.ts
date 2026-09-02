@@ -1263,7 +1263,7 @@ export const ko = {
     blankWord: "빈칸에 들어갈 말",
     blankHint: "힌트: {hint}",
     /** TAL-006 (1718:29976) revises TAL-005's "완성해요" to "완성해봐요". */
-    fillBlank: "빈칸을 채워 완성해봐요",
+    fillBlank: "빈칸을 채워 완성해봐요✨", // 1718:30000
     correctExclaim: "정답이에요!",
     correctA11y: "정답입니다. {korean}. {translation}",
     alreadyDone: "이 문제는 완료되었어요",

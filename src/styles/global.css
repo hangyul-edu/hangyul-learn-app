@@ -5291,8 +5291,12 @@ textarea.input {
 .sess__minbody > * {
   width: 100%;
 }
-/* TAL-045 keeps the card 333 wide in review mode too, i.e. x=21 in the 335
-   column — `width: 100%` above was stretching it to the full gutter. */
+/* TAL-045 puts the review card at x=21, i.e. 1px inside the 20px gutter column
+   — NOT at a literal 333, which is only what that inset happens to measure on a
+   375 board. `--app-max` is 480, so pinning the width left the card 77% of the
+   frame at 430 and 69% at 480 against Figma's 88.8%, which is what made the
+   review screens read as undersized. Expressed as the 1px inset it keeps the
+   proportion at every width. */
 .sess--minimal .sess__minbody {
   /* TAL-041 pins the card rather than centring it in the leftover height: the
      mascot ends at app-y 95 and the card starts at 214, so 119 between them.
@@ -5301,9 +5305,20 @@ textarea.input {
 }
 
 .sess--minimal .sess__minbody > .sess__card {
-  width: 333px;
-  margin-inline: auto;
+  /* `.sess__minbody` is a column flex with align-items:center, so `auto` would
+     size the card to its content — it has to stretch to the gutter column and
+     take the 1px inset from its margins. */
+  width: auto;
+  align-self: stretch;
+  margin-inline: 1px;
   margin-top: 119px;
+}
+/* The TOPIK card opens higher than the conversation one: TAL-045 (1718:25894)
+   and TAL-046 (1718:25998) both put it at y=194 where TAL-041 puts the sentence
+   card at 258. The body starts at 139, so that is 55 rather than 119 — one
+   shared offset had the question card sitting 64 low. */
+.sess--minimal .sess__minbody > .sess__card--topik {
+  margin-top: 55px;
 }
 .sess__header {
   /* cp_B_01_topNav — a flat 50px bar. */
@@ -5639,7 +5654,23 @@ textarea.input {
   gap: 21px;
   padding: 30px 22px;
   border-radius: 16px;
-  box-shadow: 0 10px 26px rgba(35, 30, 25, 0.1);
+  /* No shadow: 1718:25896 is bg-white + r16 with no effect, and TAL-045 renders
+     the page ground (fffbf2) right up to the card's edge at x=21 — the
+     0 10px 26px rgba(35,30,25,.1) here was invented. Explicitly none, or the
+     card inherits `.sess__card`'s 0 4px 73.6px. The conversation card is a
+     different case and keeps that one (1718:29999). */
+  box-shadow: none;
+  /* 1718:25896 fills solid white, where the conversation card is 80%. */
+  background: #ffffff;
+}
+/* 1718:25901 — the TOPIK card titles its own header in Heading 8 (SemiBold
+   18 / 25.2) and Brand color 1, not the conversation card's Bold 15 / 20.3 in
+   Gray 7, which `.sess__instr` was applying to both. */
+.sess__card--topik .sess__instr {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 25.2px;
+  color: #ff6700;
 }
 .sess__card--topik .tq {
   gap: 21px;
@@ -6824,14 +6855,14 @@ textarea.input {
 
 /* ============================ Session-complete modal ============================ */
 .scomp {
-  /* TAL-033 (1938:28525) / TAL-047 put the card at y=247, i.e. 21.5 above the
-     body's true centre — the extra bottom padding supplies that bias. */
+  /* TAL-047 (794:76247) puts the card at y=246 and TAL-033 (1938:28526) at y=247
+     in an 812 frame — a 319-tall card centred on 406, i.e. dead centre either way. */
   position: fixed;
   inset: 0;
   z-index: 160;
   display: grid;
   place-items: center;
-  padding: 24px 24px 67px;
+  padding: 24px;
 }
 .scomp__backdrop {
   /* TAL-013 (1938:28209) — a 60% scrim with an 11.45px blur. */
@@ -6850,47 +6881,68 @@ textarea.input {
   width: 296px;
   max-width: 100%;
   height: 319px;
-  border: 0.5px solid #ffffff;
   border-radius: 20px;
   background: linear-gradient(144.87deg, #fffcf5 7.41%, #fffbf0 52.87%, #ffead1 88.98%);
   padding: 30px 20px 20px;
-  /* TAL-013 (1938:28211) / TAL-047 (794:76247): cp_G_01_modals carries no
-     drop shadow — the card reads only against the blurred scrim. */
+  /* TAL-013 (1938:28211) / TAL-047 (794:76247): cp_G_01_modals carries no drop
+     shadow — the card reads only against the blurred scrim. The 0.5px white edge
+     is drawn as an inset ring rather than a border because Chromium rounds a
+     hairline border up to a whole device pixel, which would push every child
+     (badge, copy, CTA, discs) 1px off the Figma coordinates below. */
+  box-shadow: inset 0 0 0 0.5px #ffffff;
   text-align: center;
   overflow: hidden;
   animation: pop 0.24s cubic-bezier(0.2, 0.9, 0.3, 1.1);
 }
 .scomp__close {
-  /* ic_B_topNav — a 24px glyph at (251.5, 16.5) of the card. */
+  /* 794:76260 — a 24px ic_B_topNav glyph at (251.5, 16.5) of the card, riding the
+     30px #FFF7F2 disc of 794:76255. The 34px box is only the tap target, so it is
+     centred on the glyph; top/right resolve against the padding box, i.e. inside
+     the card's 0.5px border. */
   position: absolute;
-  top: 6.5px;
-  right: 10.5px;
+  top: 11.5px;
+  right: 15.5px;
   width: 34px;
   height: 34px;
   border: none;
   background: none;
+  padding: 0;
   cursor: pointer;
   display: grid;
   place-items: center;
   z-index: 2;
+}
+.scomp__close::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: #fff7f2;
+}
+.scomp__close-icon {
+  position: relative;
+  display: block;
+  width: 24px;
+  height: 24px;
 }
 .scomp__dot {
   position: absolute;
   border-radius: 50%;
   pointer-events: none;
 }
-/* 1938:28226-29 — four loose discs scattered behind the badge. */
+/* 794:76262-65 / 1938:28541-44 — four loose discs scattered behind the badge;
+   Ellipse 1061 and 1059 fill #FFD3B8, Ellipse 1060 and 1062 plain white. */
 .scomp__dot--1 {
   width: 30px;
   height: 30px;
-  background: #ffe3c4;
+  background: #ffd3b8;
   top: 29.5px;
   left: 19.5px;
 }
 .scomp__dot--2 {
   width: 25px;
   height: 25px;
-  background: #ffe3c4;
+  background: #ffd3b8;
   top: 84.5px;
   left: 242.5px;
 }
@@ -6915,7 +6967,8 @@ textarea.input {
   height: 106px;
   margin: 9px auto 0;
 }
-.scomp__medal-svg {
+.scomp__medal-img {
+  display: block;
   width: 100%;
   height: 100%;
 }
@@ -6923,7 +6976,7 @@ textarea.input {
   /* 1938:28222 — a 57-wide #FF8C42 pill at (167.5, 32.5), SemiBold 15 / 18.75. */
   position: absolute;
   top: -6.5px;
-  right: -21.5px;
+  right: -23.5px;
   width: 57px;
   background: #ff8c42;
   color: #fff;
@@ -6957,7 +7010,7 @@ textarea.input {
   /* cp_C_01_primaryBtn — 256x42 at (19.5, 244.5), Bold 15 / 20. */
   width: 256px;
   height: 42px;
-  margin-top: 16px;
+  margin-top: 15.5px;
   border: none;
   border-radius: 12px;
   background: #ff6700;
@@ -8403,8 +8456,10 @@ textarea.input {
   width: 100%;
   max-width: var(--app-max);
   /* TAL-008 (572:19278) — 182 tall from y=586, r16 top corners. The 29 of
-     padding puts the tiles at y=615, and 42 + the home indicator closes it. */
-  background: #fff;
+     padding puts the tiles at y=615, and 42 + the home indicator closes it.
+     TAL-042's sheet (572:9786) fills at 80% white, not opaque, so the warm
+     ground tints it the way the frame shows. */
+  background: rgba(255, 255, 255, 0.8);
   border-radius: 16px 16px 0 0;
   box-shadow: 0 4px 73.6px rgba(77, 35, 57, 0.25);
   padding: 29px 0 calc(42px + var(--safe-bottom));

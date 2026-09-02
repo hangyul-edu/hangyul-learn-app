@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "../i18n";
 
 /**
  * Second-step withdrawal gate: current-password confirmation. Opened only after
@@ -26,6 +27,7 @@ export function WithdrawPasswordModal({
   onCancel: () => void;
   onSubmit: (password: string) => void;
 }) {
+  const { t } = useTranslation();
   const [password, setPassword] = useState("");
   const [emptyErr, setEmptyErr] = useState(false);
   const [dirty, setDirty] = useState(false); // typed since the last submit → hide server error
@@ -97,7 +99,7 @@ export function WithdrawPasswordModal({
     onSubmit(password);
   }
 
-  const shownError = emptyErr ? "비밀번호를 입력해주세요." : dirty ? null : error;
+  const shownError = emptyErr ? t("withdrawPassword.empty") : dirty ? null : error;
 
   return (
     <div className="overlay overlay--center wd__overlay">
@@ -109,12 +111,8 @@ export function WithdrawPasswordModal({
         aria-labelledby="wdp-title"
         aria-describedby="wdp-desc"
       >
-        <h2 className="wd__title" id="wdp-title">비밀번호 입력</h2>
-        <p className="wd__guide" id="wdp-desc">
-          회원님의 안전한 탈퇴 진행을 위해
-          <br />
-          비밀번호를 입력해주세요
-        </p>
+        <h2 className="wd__title" id="wdp-title">{t("withdrawPassword.title")}</h2>
+        <p className="wd__guide" id="wdp-desc">{t("withdrawPassword.guide")}</p>
 
         <input
           ref={inputRef}
@@ -124,8 +122,8 @@ export function WithdrawPasswordModal({
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
-          placeholder="비밀번호를 입력해주세요"
-          aria-label="현재 비밀번호"
+          placeholder={t("withdrawPassword.placeholder")}
+          aria-label={t("withdrawPassword.a11y")}
           aria-invalid={!!shownError}
           value={password}
           disabled={loading}
@@ -142,10 +140,10 @@ export function WithdrawPasswordModal({
 
         <div className="wd__actions">
           <button className="wd__btn wd__btn--cancel" onClick={onCancel} disabled={loading}>
-            취소
+            {t("common.cancel")}
           </button>
-          <button className="wd__btn wd__btn--go" onClick={submit} disabled={loading} aria-label="회원 탈퇴 진행">
-            {loading ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : "탈퇴"}
+          <button className="wd__btn wd__btn--go" onClick={submit} disabled={loading} aria-label={t("withdraw.confirmA11y")}>
+            {loading ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("withdraw.confirm")}
           </button>
         </div>
       </div>

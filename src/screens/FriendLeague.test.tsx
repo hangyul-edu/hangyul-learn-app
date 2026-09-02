@@ -18,11 +18,15 @@ vi.mock("../api/endpoints", () => ({
     createInvitation: vi.fn().mockResolvedValue({ token: "tok" }),
   },
 }));
-let mockLang = "ko";
-vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: mockLang } }) }));
+let mockLang: "ko" | "en" = "ko";
+vi.mock("../hooks/auth", () => ({
+  useAuth: () => ({ me: { app_language: mockLang } }),
+  useAuthOptional: () => ({ me: { app_language: mockLang } }),
+}));
 
 import { gameApi } from "../api/endpoints";
 import { FriendLeague } from "./FriendLeague";
+import { I18nProvider } from "../i18n";
 
 const api = gameApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -51,16 +55,18 @@ const full: RankingResponse = {
 function renderFriend() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}>
-      <ToastProvider>
-        <MemoryRouter initialEntries={["/league"]}>
-          <Routes>
-            <Route path="/league" element={<FriendLeague />} />
-          </Routes>
-        </MemoryRouter>
-      </ToastProvider>
-    </QueryClientProvider>,
-  );
+    // Mirrors <LanguageSync>: the provider adopts the profile language.
+    <I18nProvider language={mockLang}>
+      <QueryClientProvider client={qc}>
+        <ToastProvider>
+          <MemoryRouter initialEntries={["/league"]}>
+            <Routes>
+              <Route path="/league" element={<FriendLeague />} />
+            </Routes>
+          </MemoryRouter>
+        </ToastProvider>
+      </QueryClientProvider>
+    </I18nProvider>,);
 }
 
 beforeEach(() => {
@@ -109,7 +115,7 @@ describe("Friend League screen", () => {
     renderFriend();
     const list = await screen.findByRole("list", { name: "친구 리그 순위" });
     const rows = within(list).getAllByRole("listitem");
-    const medalCount = (li: HTMLElement) => li.querySelectorAll("svg").length;
+    const medalCount = (li: HTMLElement) => li.querySelectorAll(".rank-medal").length;
     expect(medalCount(rows[0])).toBeGreaterThan(0);
     expect(medalCount(rows[1])).toBeGreaterThan(0);
     expect(medalCount(rows[2])).toBeGreaterThan(0);

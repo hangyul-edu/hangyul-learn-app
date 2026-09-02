@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
+import { I18nProvider } from "../i18n";
 import { ToastProvider } from "../hooks/toast";
 import type { Me } from "../lib/types";
 
@@ -54,15 +55,18 @@ function renderEdit() {
   );
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   render(
-    <QueryClientProvider client={qc}>
-      <ToastProvider>
-        <RouterProvider router={router} />
-      </ToastProvider>
-    </QueryClientProvider>,
+    // Assertions below are written against the Korean design frames.
+    <I18nProvider language="ko">
+      <QueryClientProvider client={qc}>
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>
+      </QueryClientProvider>
+    </I18nProvider>,
   );
 }
 
-const backBtn = () => screen.getByRole("button", { name: "뒤로" });
+const backBtn = () => screen.getByRole("button", { name: "뒤로 가기" });
 const modal = () => screen.queryByRole("alertdialog");
 
 beforeEach(() => vi.clearAllMocks());
@@ -136,6 +140,12 @@ describe("EditProfile unsaved-changes guard", () => {
     await userEvent.click(screen.getAllByRole("radio")[0]);
     await userEvent.click(screen.getByRole("button", { name: "저장하기" }));
     await waitFor(() => expect(api.updateProfile).toHaveBeenCalledTimes(1));
+    // AME-006 (2231:24627) confirms the save with a modal; navigation happens
+    // when the user acknowledges it, so the unsaved-changes guard must not fire
+    // either before or after that.
+    expect(await screen.findByText("프로필이 변경되었습니다")).toBeInTheDocument();
+    expect(modal()).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "확인" }));
     expect(await screen.findByText("PROFILE_SCREEN")).toBeInTheDocument();
     expect(modal()).not.toBeInTheDocument();
   });

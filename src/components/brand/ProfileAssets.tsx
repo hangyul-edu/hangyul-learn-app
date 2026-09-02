@@ -1,117 +1,97 @@
+import type { CSSProperties } from "react";
+import type { TranslationKey } from "../../i18n";
+import profilePlaceholderArt from "../../assets/brand/profile-placeholder.svg";
+import avatar01Art from "../../assets/brand/avatar-01.svg";
+import avatar02Art from "../../assets/brand/avatar-02.svg";
+import avatar03Art from "../../assets/brand/avatar-03.svg";
 /**
- * Profile-registration visuals — implemented as inline SVG because the repo
- * ships no raster/vector character or logo assets. The three characters reuse
- * the Hangyul tangerine mascot style (see AuthBrand) with distinct accessories
- * and background tints, matching the reference.
+ * Profile-registration visuals. The default placeholder and the three mascot
+ * characters are the artworks exported from Figma AME-006 "프로필 변경"
+ * (290:13195) — do not redraw them; re-export from that frame if the design
+ * changes.
  */
 
 /* -------------------- Large preview placeholder -------------------- */
 
-/** White citrus mark shown inside the placeholder's inner circle. */
-function WhiteMark({ size = 46 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-      <path d="M34 13c4-5 10-6 14-5 .5 3-.6 8.4-5.2 10.5-3.7 1.7-7 .3-7.9-.5-.8-1.5-1.2-3.2.9-5z" fill="#fff" />
-      <ellipse cx="32" cy="39" rx="20" ry="18.5" fill="#fff" />
-      <ellipse cx="32" cy="39" rx="20" ry="18.5" fill="#eef0f3" opacity="0.0" />
-      <path d="M32 39l7-10M32 39l-9-6M32 39l3 11M32 39l-6-1" stroke="#d2d6db" strokeWidth="1.4" strokeLinecap="round" />
-      <circle cx="32" cy="39" r="4.2" fill="#d2d6db" />
-    </svg>
-  );
-}
-
-/** Default circular profile preview: layered gray placeholder. */
+/**
+ * Default circular profile image — exported whole from Figma AME-006
+ * (Group 1410118219, node 290:13284). The grey ring, inner disc and the
+ * smiling tangerine mark are one artwork there, so the two nested CSS circles
+ * this used to stack are gone with it.
+ */
 export function ProfilePlaceholder() {
-  return (
-    <div className="setupp__placeholder" aria-hidden="true">
-      <div className="setupp__placeholder-inner">
-        <WhiteMark />
-      </div>
-    </div>
-  );
+  return <img className="setupp__placeholder" src={profilePlaceholderArt} alt="" aria-hidden="true" />;
 }
 
 /* ----------------------------- Characters ----------------------------- */
 
-/** Shared tangerine body + face. */
-function Tangerine() {
-  return (
-    <>
-      <ellipse cx="50" cy="58" rx="26" ry="24" fill="#F5872E" />
-      <ellipse cx="50" cy="58" rx="26" ry="24" fill="url(#pShine)" />
-      <circle cx="41" cy="57" r="2.5" fill="#3A2418" />
-      <circle cx="59" cy="57" r="2.5" fill="#3A2418" />
-      <path d="M43 65c2 2 12 2 14 0" stroke="#3A2418" strokeWidth="2.4" strokeLinecap="round" fill="none" />
-      <ellipse cx="37" cy="63" rx="3" ry="2" fill="#FBB27A" opacity="0.85" />
-      <ellipse cx="63" cy="63" rx="3" ry="2" fill="#FBB27A" opacity="0.85" />
-    </>
-  );
+/* Tints and artwork sizes read off AME-006 (290:13195). Each character's art
+   is exported at its natural size and Figma draws it 1:1 inside the 80px
+   button — 69 x 64.262 / 62.844 x 54.245 (tilted 3.77deg) / 57.542 x 40.242 —
+   so the picker renders them at those exact dimensions rather than scaling one
+   shared percentage, which over-sized the 2nd and 3rd characters. */
+const CHAR_META = {
+  AVATAR_01: { bg: "#FCEFE3", w: 69, h: 64.2618, rotate: 0, dx: -0.06, dy: -1.75 },
+  AVATAR_02: { bg: "#EAEFD2", w: 62.8439, h: 54.5923, rotate: 3.77, dx: -1.31, dy: 2.63 },
+  AVATAR_03: { bg: "#E7EAF2", w: 57.5421, h: 40.2419, rotate: 0, dx: -0.19, dy: 0 },
+} as const;
+
+/** The artwork URL for a character (for callers that place it themselves). */
+export function characterArtSrc(variant: AvatarKey) {
+  return CHAR_ART[variant];
 }
 
-const CHAR_META = {
-  AVATAR_01: { label: "안경 쓴 귤 캐릭터", bg: "#ffffff" },
-  AVATAR_02: { label: "초록 학사모 귤 캐릭터", bg: "#EEF4CF" },
-  AVATAR_03: { label: "학사모와 책을 든 귤 캐릭터", bg: "#E7EBF4" },
-} as const;
+/**
+ * Centres a character on its INK rather than on its bounding box.
+ *
+ * The three exports are not drawn centred inside their own viewBoxes — measured
+ * at 8x supersample, and after AVATAR_02's 3.77deg tilt, the visible artwork
+ * sits (0.06, 1.75) / (1.31, -2.63) / (0.19, 0) away from each box's centre. So
+ * `place-items: center` alone lands the box centre on the circle's centre and
+ * leaves the character itself visibly low / high-and-right. `dx`/`dy` above are
+ * the measured offsets negated; they are quoted at the 80px picker size and
+ * scale with the frame.
+ */
+export function characterArtStyle(variant: AvatarKey, frame = 80): CSSProperties {
+  const m = CHAR_META[variant];
+  const k = frame / 80;
+  const t = [`translate(${(m.dx * k).toFixed(3)}px, ${(m.dy * k).toFixed(3)}px)`];
+  if (m.rotate) t.push(`rotate(${m.rotate}deg)`);
+  return {
+    width: m.w * k,
+    height: m.h * k,
+    display: "block",
+    transform: t.join(" "),
+  };
+}
 
 export type AvatarKey = keyof typeof CHAR_META;
 export const AVATAR_KEYS = Object.keys(CHAR_META) as AvatarKey[];
-export const avatarLabel = (k: AvatarKey) => CHAR_META[k].label;
+/** The accessible name lives in the catalogs; callers pass this to `t()`. */
+export const avatarLabelKey = (k: AvatarKey): TranslationKey => `avatars.${k}`;
 export const avatarBg = (k: AvatarKey) => CHAR_META[k].bg;
 
+const CHAR_ART: Record<AvatarKey, string> = {
+  AVATAR_01: avatar01Art,
+  AVATAR_02: avatar02Art,
+  AVATAR_03: avatar03Art,
+};
+
+/**
+ * One of the three Hangyul mascot characters, exported from Figma
+ * AME-006 "\uD504\uB85C\uD544 \uBCC0\uACBD" (290:13195): groups 1410118298 / 1410118292 /
+ * 1410118290. Each artwork has its own aspect (they strike different poses and
+ * hold different props), so it is contained inside the caller's square box
+ * rather than stretched to it.
+ */
 export function CharacterArt({ variant, fill = "62%" }: { variant: AvatarKey; fill?: string }) {
   return (
-    <svg viewBox="0 0 100 100" width={fill} height={fill} aria-hidden="true" focusable="false">
-      <defs>
-        <radialGradient id="pShine" cx="0.35" cy="0.32" r="0.75">
-          <stop offset="0" stopColor="#FFB56B" stopOpacity="0.9" />
-          <stop offset="0.55" stopColor="#FFB56B" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-
-      {variant === "AVATAR_01" && (
-        <>
-          {/* raised arms */}
-          <path d="M27 54c-6-4-10-10-10-16" stroke="#F5872E" strokeWidth="6" strokeLinecap="round" fill="none" />
-          <path d="M73 54c6-4 10-10 10-16" stroke="#F5872E" strokeWidth="6" strokeLinecap="round" fill="none" />
-          <Tangerine />
-          {/* leaf + stem — drawn in front of the body, growing from the head top */}
-          <path d="M50 35c0-4 .4-7 .9-9" stroke="#3F8F3C" strokeWidth="2.4" strokeLinecap="round" fill="none" />
-          <path d="M51 30c4-6 11-7 15-6 .6 3.4-.7 9.6-6 12-4.2 1.9-8 .3-9-.6-.9-1.7-1.4-3.6 0-5.4z" fill="#5FB65B" />
-          {/* blue glasses */}
-          <circle cx="41" cy="57" r="6.5" fill="none" stroke="#2F6BE0" strokeWidth="2.4" />
-          <circle cx="59" cy="57" r="6.5" fill="none" stroke="#2F6BE0" strokeWidth="2.4" />
-          <path d="M47.5 56h5" stroke="#2F6BE0" strokeWidth="2.4" />
-        </>
-      )}
-
-      {variant === "AVATAR_02" && (
-        <>
-          <Tangerine />
-          {/* green graduation cap */}
-          <path d="M26 34l24-9 24 9-24 9-24-9z" fill="#4E9A54" />
-          <path d="M35 39v8c0 3 30 3 30 0v-8" fill="none" stroke="#3F8144" strokeWidth="2.4" />
-          <path d="M74 34v9" stroke="#3F8144" strokeWidth="2.2" strokeLinecap="round" />
-          <circle cx="74" cy="45" r="2.2" fill="#E7C24B" />
-        </>
-      )}
-
-      {variant === "AVATAR_03" && (
-        <>
-          {/* arms holding items */}
-          <path d="M28 58c-6 1-10 4-11 9" stroke="#F5872E" strokeWidth="6" strokeLinecap="round" fill="none" />
-          <path d="M72 58c6 1 10 4 11 9" stroke="#F5872E" strokeWidth="6" strokeLinecap="round" fill="none" />
-          <rect x="10" y="64" width="12" height="12" rx="2" fill="#3F6BE0" />
-          <rect x="78" y="64" width="13" height="10" rx="1.5" fill="#E9873A" stroke="#C56A22" strokeWidth="1.4" />
-          <Tangerine />
-          {/* dark graduation cap */}
-          <path d="M26 33l24-9 24 9-24 9-24-9z" fill="#2C333B" />
-          <path d="M35 38v8c0 3 30 3 30 0v-8" fill="none" stroke="#1F2731" strokeWidth="2.4" />
-          <path d="M74 33v9" stroke="#1F2731" strokeWidth="2.2" strokeLinecap="round" />
-          <circle cx="74" cy="45" r="2.2" fill="#E7C24B" />
-        </>
-      )}
-    </svg>
+    <img
+      src={CHAR_ART[variant]}
+      alt=""
+      aria-hidden="true"
+      style={{ width: fill, height: fill, objectFit: "contain", display: "block" }}
+    />
   );
 }
 
@@ -123,7 +103,10 @@ export function CharacterAvatar({ variant, selected }: { variant: AvatarKey; sel
       style={{ background: avatarBg(variant) }}
       aria-hidden="true"
     >
-      <CharacterArt variant={variant} />
+      {/* Natural-size art, centred by the button's own `place-items: center`
+          (AME-006 centres all three; only the 2nd is nudged 4.5 low there,
+          which reads as a slip). */}
+      <img src={CHAR_ART[variant]} alt="" aria-hidden="true" style={characterArtStyle(variant, 80)} />
     </span>
   );
 }

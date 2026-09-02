@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "../../i18n";
 import { openCustomerSupportChat } from "../../lib/customerSupport";
 import { supportApi } from "../../api/endpoints";
 import { useAuth } from "../../hooks/auth";
@@ -14,6 +15,7 @@ import { useToast } from "../../hooks/toast";
  * scrolling content and stays inside the 480px app viewport.
  */
 export function SupportChatButton() {
+  const { t } = useTranslation();
   const { me } = useAuth();
   const toast = useToast();
 
@@ -41,14 +43,14 @@ export function SupportChatButton() {
         : null,
     );
     if (!ok) {
-      toast.error("상담 채팅을 열 수 없어요. 잠시 후 다시 시도해 주세요.");
+      toast.error(t("faq.chatSupportError"));
     }
   }
 
   return (
-    <button type="button" className="faq__support" onClick={handleClick} aria-label="채팅 상담하기">
+    <button type="button" className="faq__support" onClick={handleClick} aria-label={t("faq.chatSupport")}>
       <span className="faq__support-icon" aria-hidden="true">💬</span>
-      <span>채팅 상담하기</span>
+      <span>{t("faq.chatSupport")}</span>
     </button>
   );
 }

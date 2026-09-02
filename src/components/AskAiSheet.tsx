@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "../i18n";
 import { aiApi } from "../api/endpoints";
 import { ChatSheetView } from "./ChatSheetView";
 import { errorMessage } from "../lib/http";
@@ -31,6 +32,7 @@ export interface AskContext {
  * responses are ignored after unmount, preventing cross-item bleed.
  */
 export function AskAiSheet({ open, context, onClose }: { open: boolean; context: AskContext; onClose: () => void }) {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [convId, setConvId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -109,7 +111,7 @@ export function AskAiSheet({ open, context, onClose }: { open: boolean; context:
     <ChatSheetView
       messages={messages}
       loading={loading}
-      errorText={initError ? "설명을 불러오지 못했어요." : null}
+      errorText={initError ? t("misc.explanationError") : null}
       onRetry={startThread}
       draft={draft}
       sending={sending}

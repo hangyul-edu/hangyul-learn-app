@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation, type TranslationKey } from "../i18n";
 import { authApi } from "../api/endpoints";
 import { useLoginFlow } from "../hooks/loginFlow";
 import { LoadingState, ErrorState } from "../components/ui/states";
@@ -10,14 +11,15 @@ import { LoadingState, ErrorState } from "../components/ui/states";
  * single-use `login_code` (or a `social_error`). We swap the code for the real
  * tokens and route the user onward via the normal login flow.
  */
-const ERROR_TEXT: Record<string, string> = {
-  cancelled: "로그인을 취소했어요.",
-  invalid_state: "로그인 세션이 만료되었어요. 다시 시도해 주세요.",
-  not_configured: "이 제공자의 로그인이 아직 설정되지 않았어요.",
-  login_failed: "로그인을 완료하지 못했어요. 다시 시도해 주세요.",
+const ERROR_TEXT: Record<string, TranslationKey> = {
+  cancelled: "authComplete.cancelled",
+  invalid_state: "authComplete.invalidState",
+  not_configured: "authComplete.notConfigured",
+  login_failed: "authComplete.loginFailed",
 };
 
 export function AuthComplete() {
+  const { t } = useTranslation();
   const [params] = useSearchParams();
   const completeLogin = useLoginFlow();
   const nav = useNavigate();
@@ -54,7 +56,7 @@ export function AuthComplete() {
       <div className="screen">
         <div className="screen__body" style={{ display: "grid", placeItems: "center" }}>
           <ErrorState
-            message={ERROR_TEXT[error] ?? ERROR_TEXT.login_failed}
+            message={t(ERROR_TEXT[error] ?? ERROR_TEXT.login_failed)}
             onRetry={() => nav("/welcome", { replace: true })}
           />
         </div>
@@ -64,7 +66,7 @@ export function AuthComplete() {
   return (
     <div className="screen">
       <div className="screen__body" style={{ display: "grid", placeItems: "center" }}>
-        <LoadingState text="로그인 중…" />
+        <LoadingState text={t("authComplete.loading")} />
       </div>
     </div>
   );

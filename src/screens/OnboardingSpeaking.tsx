@@ -1,4 +1,6 @@
-import { CharacterArt } from "../components/brand/ProfileAssets";
+import { useTranslation, type TranslationKey } from "../i18n";
+import { OnboardingShell, OnboardingOption } from "./OnboardingShell";
+import mascotWave from "../assets/brand/onb-mascot-wave.svg";
 
 /**
  * Speaking-level options. `id` is the stable backend `speaking_level` value
@@ -6,35 +8,19 @@ import { CharacterArt } from "../components/brand/ProfileAssets";
  * "advanced","fluent"]`); `label` is the visible copy. Order = increasing
  * ability, matching the reference. Labels are never sent to the API.
  */
-const LEVELS: { id: string; label: string }[] = [
-  { id: "beginner", label: "처음이에요" },
-  { id: "elementary", label: "단어만" },
-  { id: "intermediate", label: "간단한 문장" },
-  { id: "advanced", label: "일상 대화" },
-  { id: "fluent", label: "유창" },
+const LEVELS: { id: string; label: TranslationKey }[] = [
+  { id: "beginner", label: "onboarding.speakingNone" },
+  { id: "elementary", label: "onboarding.speakingWords" },
+  { id: "intermediate", label: "onboarding.speakingSimple" },
+  { id: "advanced", label: "onboarding.speakingDaily" },
+  { id: "fluent", label: "onboarding.speakingFluent" },
 ];
 
-/** Decorative lower-right character (reuses AVATAR_01) with a soft shadow and
- *  two small held props. Non-interactive. */
-function SpeakingCharacter() {
-  return (
-    <div className="onbs__art" aria-hidden="true">
-      <span className="onbs__prop onbs__prop--teal" />
-      <span className="onbs__prop onbs__prop--orange" />
-      <span className="onbs__char">
-        <CharacterArt variant="AVATAR_01" fill="100%" />
-      </span>
-      <span className="onbs__shadow" />
-    </div>
-  );
-}
-
 /**
- * First conversation-track onboarding question — Korean speaking level. Faithful
- * visual for the existing Onboarding step 1 (conversation branch); it owns no
- * state or API logic. The parent keeps the `speaking` draft (a stable
- * `speaking_level` id) and the branch routing; selecting a card only updates
- * that draft, and 다음 advances to the next conversation question.
+ * First conversation-track onboarding question — Korean speaking level. Figma
+ * AUR-003 (KO 40:6921, EN 784:53576). It owns no state or API logic: the parent
+ * keeps the `speaking` draft (a stable `speaking_level` id) and the branch
+ * routing; selecting a row only updates that draft, and 다음 advances.
  */
 export function OnboardingSpeaking({
   value,
@@ -50,63 +36,36 @@ export function OnboardingSpeaking({
   /** 0–1 position of this question in the flow (drives the progress bar). */
   progress: number;
 }) {
-  const pct = Math.round(Math.min(1, Math.max(0, progress)) * 100);
+  const { t } = useTranslation();
 
   return (
-    <div className="screen onbq">
-      <div className="onbq__scroll">
-        <div className="onbq__inner">
-          <button className="onbq__back" onClick={onBack} aria-label="뒤로">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
+    <OnboardingShell progress={progress} onBack={onBack}>
+      <h1 className="onbq__q">{t("onboarding.speakingQ")}</h1>
 
-          <div
-            className="onbq__progress"
-            role="progressbar"
-            aria-valuenow={pct}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="온보딩 진행률"
-          >
-            <div className="onbq__progress-fill" style={{ width: `${pct}%` }} />
-          </div>
-
-          <h1 className="onbq__q">한국어 말하기 수준은 어느 정도인가요?</h1>
-
-          <div className="onbq__answers" role="radiogroup" aria-label="한국어 말하기 수준">
-            {LEVELS.map((lv) => (
-              <button
-                key={lv.id}
-                type="button"
-                className={`onbq__answer ${value === lv.id ? "is-selected" : ""}`}
-                role="radio"
-                aria-checked={value === lv.id}
-                aria-label={lv.label}
-                onClick={() => onSelect(lv.id)}
-              >
-                {lv.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="onbq__spacer" />
-
-          <SpeakingCharacter />
-
-          <button
-            type="button"
-            className="onbq__next"
-            onClick={onNext}
-            disabled={!value}
-            aria-disabled={!value}
-            aria-label="다음"
-          >
-            다음
-          </button>
-        </div>
+      <div className="onbq__answers" role="radiogroup" aria-label={t("onboarding.speakingA11y")}>
+        {LEVELS.map((lv) => (
+          <OnboardingOption
+            key={lv.id}
+            label={t(lv.label)}
+            selected={value === lv.id}
+            onSelect={() => onSelect(lv.id)}
+            a11y={t(lv.label)}
+          />
+        ))}
       </div>
-    </div>
+
+      {/* Group 1410118495 (222:7059) — 148.05x122 at (200, 583). */}
+      <img className="onbq__art onbq__art--wave" src={mascotWave} alt="" aria-hidden="true" />
+
+      <button
+        type="button"
+        className="onbq__next"
+        onClick={onNext}
+        disabled={!value}
+        aria-disabled={!value}
+      >
+        {t("onboarding.next")}
+      </button>
+    </OnboardingShell>
   );
 }

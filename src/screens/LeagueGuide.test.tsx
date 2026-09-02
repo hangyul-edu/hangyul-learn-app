@@ -1,12 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { LEAGUE_POINT_RULES, LEAGUE_PROMOTION, LEAGUE_SCHEDULE } from "../lib/league";
+import { LEAGUE_POINT_RULES } from "../lib/league";
+import { I18nProvider, translate } from "../i18n";
+
+/** The guide's copy now lives in the catalogs; assert against the Korean. */
+const ko = (key: Parameters<typeof translate>[1]) => translate("ko", key);
 import { LeagueGuideSheet } from "./LeagueGuide";
 
 function renderGuide() {
   const onClose = vi.fn();
-  const utils = render(<LeagueGuideSheet onClose={onClose} />);
+  const utils = render(
+    // Assertions are written against the Korean design frames.
+    <I18nProvider language="ko">
+      <LeagueGuideSheet onClose={onClose} />
+    </I18nProvider>,
+  );
   return { onClose, ...utils };
 }
 
@@ -33,13 +42,13 @@ describe("Regular League guide sheet", () => {
     expect(within(dialog).getByText(/전 세계 학습자들과 경쟁하며/)).toBeInTheDocument();
     expect(within(dialog).getByText(/도전할수록 더 빠르게 성장할 수 있어요/)).toBeInTheDocument();
     // Banner illustration on the right of the hero.
-    expect(dialog.querySelector(".lgg__banner svg")).toBeInTheDocument();
+    expect(dialog.querySelector(".lgg__banner .lgg__banner-art")).toBeInTheDocument();
   });
 
   it("renders the schedule card with the authoritative season copy", () => {
     renderGuide();
     const dialog = screen.getByRole("dialog");
-    expect(within(dialog).getByText(LEAGUE_SCHEDULE.rangeLabel)).toBeInTheDocument();
+    expect(within(dialog).getByText(ko("league.scheduleRange"))).toBeInTheDocument();
     expect(within(dialog).getByText("(일요일 21시에 결과 발표)")).toBeInTheDocument();
     expect(within(dialog).getByText(/미국 동부 시간\(ET\) 기준/)).toBeInTheDocument();
   });
@@ -48,8 +57,8 @@ describe("Regular League guide sheet", () => {
     renderGuide();
     const dialog = screen.getByRole("dialog");
     const tiers = dialog.querySelector(".lgg__tiers") as HTMLElement;
-    expect(within(tiers).getByText(LEAGUE_PROMOTION.headline)).toBeInTheDocument();
-    expect(tiers).toHaveAttribute("aria-label", LEAGUE_PROMOTION.aria);
+    expect(within(tiers).getByText(ko("league.promotionHeadline"))).toBeInTheDocument();
+    expect(tiers).toHaveAttribute("aria-label", ko("league.promotionAria"));
     // Exactly five tiers in reference order (Green..Golden).
     const names = Array.from(tiers.querySelectorAll(".lgg__tier-name")).map((n) => n.textContent);
     expect(names).toEqual(["Green", "Lime", "Yellow", "Orange", "Golden"]);
@@ -58,7 +67,8 @@ describe("Regular League guide sheet", () => {
     const goldenTier = within(tiers).getByText("Golden").closest(".lgg__tier") as HTMLElement;
     expect(within(greenTier).getByText("(강등 없음)")).toBeInTheDocument();
     expect(within(goldenTier).getByText("(승급 없음)")).toBeInTheDocument();
-    expect(tiers.querySelectorAll(".lgg__tier-badge svg")).toHaveLength(5);
+    // Each tier shows its exported Figma citrus artwork (`.citrus > img`).
+    expect(tiers.querySelectorAll(".lgg__tier-badge .citrus__art")).toHaveLength(5);
   });
 
   it("renders the dashed point-section title and the 2x2 point grid in order", () => {
@@ -76,11 +86,13 @@ describe("Regular League guide sheet", () => {
     const dialog = screen.getByRole("dialog");
     // Values come straight from LEAGUE_POINT_RULES (mirrors backend POINT_RULES).
     LEAGUE_POINT_RULES.forEach((rule) => {
-      const card = within(dialog).getByText(rule.label).closest(".lgg__pt") as HTMLElement;
+      const card = within(dialog).getByText(ko(rule.label)).closest(".lgg__pt") as HTMLElement;
       expect(within(card).getByText(rule.points)).toBeInTheDocument();
-      rule.details.forEach((detail) => expect(within(card).getByText(detail)).toBeInTheDocument());
+      rule.details.forEach((detail) =>
+        expect(within(card).getByText(ko(detail))).toBeInTheDocument(),
+      );
       // Card announces the full activity for screen readers.
-      expect(card).toHaveAttribute("aria-label", rule.aria);
+      expect(card).toHaveAttribute("aria-label", ko(rule.aria));
     });
   });
 

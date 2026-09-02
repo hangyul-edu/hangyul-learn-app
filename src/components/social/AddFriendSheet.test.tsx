@@ -17,11 +17,12 @@ vi.mock("../../api/endpoints", () => ({
     createInvitation: vi.fn(),
   },
 }));
-let mockLang = "ko";
+let mockLang: "ko" | "en" = "ko";
 vi.mock("../../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: mockLang } }) }));
 
 import { friendApi } from "../../api/endpoints";
 import { AddFriendSheet, IncomingFriendRequestSheet } from "./AddFriendSheet";
+import { I18nProvider } from "../../i18n";
 
 const api = friendApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -35,10 +36,12 @@ const rec = (
 function wrap(node: ReactNode) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}>
-      <ToastProvider>{node}</ToastProvider>
-    </QueryClientProvider>,
-  );
+    // Mirrors <LanguageSync>: the provider adopts the profile language.
+    <I18nProvider language={mockLang}>
+      <QueryClientProvider client={qc}>
+        <ToastProvider>{node}</ToastProvider>
+      </QueryClientProvider>
+    </I18nProvider>,);
 }
 
 beforeEach(() => {

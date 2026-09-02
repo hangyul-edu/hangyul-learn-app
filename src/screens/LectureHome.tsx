@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation, type TranslationKey } from "../i18n";
 import { useQuery } from "@tanstack/react-query";
 import { DailyLearningSun } from "../components/DailyLearningSun";
-import { CharacterArt } from "../components/brand/ProfileAssets";
 import { SkeletonList } from "../components/ui/states";
 import { ChatbotBottomSheet } from "../components/ChatbotBottomSheet";
+import chatbotFab from "../assets/brand/chatbot-fab.svg";
 import { bannerApi, dashboardApi, learnApi, subApi } from "../api/endpoints";
 import type { Banner, Lecture } from "../lib/types";
 
@@ -13,9 +14,9 @@ import type { Banner, Lecture } from "../lib/types";
 // nothing is pre-filtered by the user's learning level.
 type TrackFilter = "all" | "track_conversation" | "track_topik";
 
-const TRACK_LABELS: Record<string, string> = {
-  track_conversation: "회화",
-  track_topik: "TOPIK",
+const TRACK_LABEL_KEYS: Record<string, TranslationKey> = {
+  track_conversation: "courses.trackConversation",
+  track_topik: "trackSettings.topikTitle",
 };
 
 const prefersReducedMotion = () =>
@@ -23,6 +24,7 @@ const prefersReducedMotion = () =>
 
 /* --------------------------- Banner carousel --------------------------- */
 function BannerCarousel() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const q = useQuery({ queryKey: ["banners"], queryFn: bannerApi.list, staleTime: 60_000 });
   const banners: Banner[] = q.data?.banners ?? [];
@@ -62,12 +64,12 @@ function BannerCarousel() {
   if (banners.length === 0)
     return (
       <div className="lechome__banner-empty">
-        <p className="lechome__banner-empty-text">표시할 배너가 없어요</p>
+        <p className="lechome__banner-empty-text">{t("courses.noBanners")}</p>
       </div>
     );
 
   return (
-    <section className="lechome__carousel" aria-roledescription="carousel" aria-label="광고 배너">
+    <section className="lechome__carousel" aria-roledescription="carousel" aria-label={t("courses.bannerAria")}>
       <div
         className="lechome__banners"
         ref={trackRef}
@@ -82,7 +84,7 @@ function BannerCarousel() {
             className={`lechome__banner ${b.action_url ? "is-link" : ""}`}
             role={b.action_url ? "button" : "img"}
             tabIndex={b.action_url ? 0 : -1}
-            aria-label={`${b.alt_text} (배너 ${i + 1}/${banners.length})`}
+            aria-label={t("courses.bannerItemA11y", { alt: b.alt_text, i: i + 1, total: banners.length })}
             onClick={() => open(b)}
             onKeyDown={(e) => e.key === "Enter" && open(b)}
           >
@@ -109,14 +111,15 @@ function BannerCarousel() {
 
 /* ----------------------------- Lecture card ---------------------------- */
 function LectureCard({ lecture, isPremium }: { lecture: Lecture; isPremium: boolean }) {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const showFree = lecture.access === "free" && !isPremium;
-  const marker = lecture.completed ? "완료" : lecture.started ? "이어보기" : null;
+  const marker = lecture.completed ? t("courses.done") : lecture.started ? t("courses.resume") : null;
   return (
     <button
       className="lechome__card"
       onClick={() => nav(`/lectures/${lecture.lecture_id}`)}
-      aria-label={`${lecture.title}${marker ? `, ${marker}` : ""}${showFree ? ", 무료 강의" : ""}`}
+      aria-label={`${lecture.title}${marker ? `, ${marker}` : ""}${showFree ? t("courses.freeSuffix") : ""}`}
     >
       <div className="lechome__thumb">
         {lecture.thumbnail_url ? (
@@ -142,8 +145,11 @@ function TrackSection({
   lectures: Lecture[];
   isPremium: boolean;
 }) {
+  const { t } = useTranslation();
   if (lectures.length === 0) return null;
-  const title = `${TRACK_LABELS[trackId] ?? trackId} 강의`;
+  const title = t("courses.trackLabel", {
+    name: TRACK_LABEL_KEYS[trackId] ? t(TRACK_LABEL_KEYS[trackId]) : trackId,
+  });
   return (
     <section className="lechome__section" aria-label={title}>
       <h2 className="lechome__section-title">{title}</h2>
@@ -160,6 +166,7 @@ function TrackSection({
 
 /* ------------------------------ Screen --------------------------------- */
 export function LectureHome() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
   const [filter, setFilter] = useState<TrackFilter>("all");
@@ -194,25 +201,29 @@ export function LectureHome() {
     <div className="screen lechome">
       <div className="lechome__scroll">
         <header className="lechome__header">
-          <h1 className="lechome__title">강의</h1>
+          <h1 className="lechome__title">{t("courses.title")}</h1>
           <button
             className="plearn__streak lechome__streak"
             onClick={() => nav("/streak")}
-            aria-label={streak != null ? `연속 학습 ${streak}일, 달력 열기` : "연속 학습, 달력 열기"}
+            aria-label={
+              streak != null
+                ? t("courses.streakCalendarA11y", { days: streak })
+                : t("courses.streakCalendarPlainA11y")
+            }
           >
-            <DailyLearningSun size={22} />
+            <DailyLearningSun size={14} />
             <span>{streak ?? "-"}</span>
           </button>
         </header>
 
         <BannerCarousel />
 
-        <div className="lechome__filters" role="tablist" aria-label="트랙 필터">
+        <div className="lechome__filters" role="tablist" aria-label={t("courses.trackFilter")}>
           {(
             [
-              ["all", "전체"],
-              ["track_conversation", "회화"],
-              ["track_topik", "TOPIK"],
+              ["all", t("courses.trackAll")],
+              ["track_conversation", t("courses.trackConversation")],
+              ["track_topik", t("courses.trackTopik")],
             ] as const
           ).map(([value, label]) => (
             <button
@@ -236,12 +247,12 @@ export function LectureHome() {
           </div>
         ) : feed.isError ? (
           <div className="lechome__err">
-            <span>강의를 불러오지 못했어요.</span>
-            <button className="lechome__retry" onClick={() => feed.refetch()}>다시 시도</button>
+            <span>{t("courses.loadError")}</span>
+            <button className="lechome__retry" onClick={() => feed.refetch()}>{t("common.retry")}</button>
           </div>
         ) : total === 0 ? (
           <div className="lechome__course-empty">
-            <p className="lechome__course-empty-text">아직 등록된 강의가 없어요</p>
+            <p className="lechome__course-empty-text">{t("courses.empty")}</p>
           </div>
         ) : (
           <div className="lechome__sections">
@@ -259,10 +270,9 @@ export function LectureHome() {
 
       {/* Floating chatbot button — opens the shared chatbot bottom sheet in
           place (same component as Personalized Learning), not a separate route. */}
-      <button className="plearn__fab" onClick={() => setChatOpen(true)} aria-label="AI 챗봇과 자유롭게 대화하기">
-        <span className="plearn__fab-face">
-          <CharacterArt variant="AVATAR_01" fill="100%" />
-        </span>
+      {/* Same exported chatbot button as Practice (Figma 1825:29302). */}
+      <button className="plearn__fab" onClick={() => setChatOpen(true)} aria-label={t("courses.chatbotA11y")}>
+        <img className="plearn__fab-art" src={chatbotFab} alt="" aria-hidden="true" />
       </button>
 
       <ChatbotBottomSheet open={chatOpen} source="lecture" onClose={() => setChatOpen(false)} />

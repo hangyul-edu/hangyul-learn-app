@@ -10,7 +10,9 @@
     "preview": "vite preview --port 5173",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "assets:clean": "node scripts/clean-figma-svg.mjs src/assets/brand/*.svg",
+    "assets:check": "node scripts/clean-figma-svg.mjs --check src/assets/brand/*.svg"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.59.0",

@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
+import { useTranslation } from "../i18n";
 
 /**
  * Shared temporary-failure alert modal (withdrawal failed / logout failed / …).
@@ -18,6 +19,7 @@ export function FailModal({
   description: ReactNode;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
 
@@ -69,18 +71,13 @@ export function FailModal({
         aria-labelledby="wfa-title"
         aria-describedby="wfa-desc"
       >
-        <div className="wfa__icon" aria-hidden="true">
-          <svg width="46" height="46" viewBox="0 0 48 48" fill="none">
-            <path d="M24 9L43 40H5L24 9z" stroke="#FF6F78" strokeWidth="2.6" strokeLinejoin="round" />
-            <path d="M24 20v9" stroke="#FF6F78" strokeWidth="2.8" strokeLinecap="round" />
-            <circle cx="24" cy="34" r="1.7" fill="#FF6F78" />
-          </svg>
-        </div>
+        {/* SET-007 draws the failure mark as the ⚠ character, not a vector. */}
+        <div className="wfa__icon" aria-hidden="true">⚠</div>
 
         <h2 className="wfa__title" id="wfa-title">{title}</h2>
         <p className="wfa__body" id="wfa-desc">{description}</p>
 
-        <button className="wfa__btn" onClick={onClose}>확인</button>
+        <button className="wfa__btn" onClick={onClose}>{t("common.confirm")}</button>
       </div>
     </div>
   );

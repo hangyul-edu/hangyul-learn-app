@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
 import type { SessionLevelUp } from "../lib/types";
 import { LevelUp } from "./LevelUp";
+import { I18nProvider } from "../i18n";
 
 const conv: SessionLevelUp = {
   track_id: "track_conversation",
@@ -34,10 +35,11 @@ function renderLevelUp(levelUp?: SessionLevelUp, from?: string) {
   );
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
-    <QueryClientProvider client={qc}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
+    <I18nProvider language="ko">
+      <QueryClientProvider client={qc}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </I18nProvider>,);
 }
 
 describe("LevelUp screen", () => {
@@ -50,12 +52,12 @@ describe("LevelUp screen", () => {
     expect(screen.getByText("01:00")).toBeInTheDocument(); // 3600s → HH:mm
     expect(screen.getByText("학습한 문장")).toBeInTheDocument();
     expect(screen.getByText("10")).toBeInTheDocument();
-    expect(screen.getByText("대단한걸!✨")).toBeInTheDocument();
   });
 
   it("uses TOPIK wording (급 + 학습한 문제)", () => {
     renderLevelUp(topik);
-    expect(screen.getByText(/토픽 2급 달성/)).toBeInTheDocument();
+    // 572:23250 — the TOPIK frame drops the "토픽" prefix and adds the 🎉.
+    expect(screen.getByText("2급 달성! 🎉")).toBeInTheDocument();
     expect(screen.getByText("1급")).toBeInTheDocument();
     expect(screen.getByText("2급")).toBeInTheDocument();
     expect(screen.getByText("학습한 문제")).toBeInTheDocument();

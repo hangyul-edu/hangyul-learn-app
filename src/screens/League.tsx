@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "../i18n";
 import { useQuery } from "@tanstack/react-query";
 import { Async, ErrorState, LoadingState, SkeletonList } from "../components/ui/states";
-import { MedalIcon, RankAvatar } from "../components/brand/RankBits";
+import { MedalIcon, RankAvatar, withSelfProfile } from "../components/brand/RankBits";
 import { CitrusBadge } from "../components/brand/LeagueGuideArt";
 import { gameApi } from "../api/endpoints";
 import { LEAGUE_TIERS, TIER_META, tierIndex, type LeagueTier } from "../lib/league";
@@ -11,30 +12,32 @@ import { LeagueLifecycleModal, useLeagueLifecycle } from "./LeagueLifecycleModal
 import { LeagueGuideSheet } from "./LeagueGuide";
 import { FriendLeague } from "./FriendLeague";
 import { MyPoints } from "./MyPoints";
+import { useAuthOptional } from "../hooks/auth";
 
 type Tab = "regular" | "friend" | "points";
 
 /* ------------------------------ helpers -------------------------------- */
-/** Human "Nd Nh Nm" remaining until a season's end (from real backend timing). */
-function countdown(endsAt: string, now = Date.now()): string {
+/** Remaining time until a season's end (from real backend timing), or null when
+ *  it has already elapsed so the caller can show the "ending soon" wording. */
+function countdown(endsAt: string, now = Date.now()): { d: number; h: number; m: number } | null {
   const ms = new Date(endsAt).getTime() - now;
-  if (Number.isNaN(ms) || ms <= 0) return "곧 종료돼요";
+  if (Number.isNaN(ms) || ms <= 0) return null;
   const mins = Math.floor(ms / 60000);
-  const d = Math.floor(mins / 1440);
-  const h = Math.floor((mins % 1440) / 60);
-  const m = mins % 60;
-  return `${d}일 ${h}시간 ${m}분`;
+  return { d: Math.floor(mins / 1440), h: Math.floor((mins % 1440) / 60), m: mins % 60 };
 }
 
 /** Official league tier image — colourful citrus for reached tiers, greyed +
  *  padlocked for future ones. */
 function LeagueBadge({ tier, reached, current }: { tier: LeagueTier; reached: boolean; current: boolean }) {
+  const { t } = useTranslation();
   return (
     <CitrusBadge
       tier={tier}
       locked={!reached}
       className={`lg__badge ${current ? "is-current" : ""}`}
-      label={`${TIER_META[tier].label}${current ? ", 현재 리그" : reached ? "" : ", 잠김"}`}
+      label={`${t("league.tierLabel", { tier: TIER_META[tier].name })}${
+        current ? `, ${t("league.currentLeague")}` : reached ? "" : `, ${t("league.locked")}`
+      }`}
     />
   );
 }
@@ -47,6 +50,7 @@ function LeagueBadge({ tier, reached, current }: { tier: LeagueTier; reached: bo
  * to re-center the current league, and it never mutates the fixed title/timer.
  */
 function LeagueCarousel({ currentTier }: { currentTier: LeagueTier }) {
+  const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
   const currentRef = useRef<HTMLDivElement | null>(null);
   const slotsRef = useRef<(HTMLDivElement | null)[]>([]);
@@ -102,7 +106,7 @@ function LeagueCarousel({ currentTier }: { currentTier: LeagueTier }) {
       onScroll={onScroll}
       onTouchEnd={() => recenter("smooth")}
       onPointerUp={() => recenter("smooth")}
-      aria-label="리그 진행 상황"
+      aria-label={t("league.progressA11y")}
     >
       <div className="lg__carousel-track">
         {LEAGUE_TIERS.map((tier, i) => (
@@ -126,6 +130,10 @@ function LeagueCarousel({ currentTier }: { currentTier: LeagueTier }) {
 
 /* --------------------------- ranking list ------------------------------ */
 function RankingList({ entries, meId }: { entries: RankingEntry[]; meId?: string }) {
+  const { t } = useTranslation();
+  // The standings endpoint can lag a profile change, so the signed-in user's own
+  // avatar comes from /users/me instead of from their ranking row.
+  const me = useAuthOptional()?.me ?? null;
   const meRef = useRef<HTMLLIElement>(null);
   const anchored = useRef(false);
   // Initial scroll anchors around the current user's row (once per fresh load).
@@ -146,12 +154,17 @@ function RankingList({ entries, meId }: { entries: RankingEntry[]; meId?: string
             ref={isMe ? meRef : undefined}
             className={`lg__rank ${isMe ? "is-me" : ""}`}
             aria-current={isMe ? "true" : undefined}
-            aria-label={`${e.rank}위 ${e.nickname ?? "회원"}${isMe ? " (나)" : ""} ${e.points}포인트`}
+            aria-label={t("league.rankRowA11y", {
+              rank: e.rank,
+              name: e.nickname ?? t("league.defaultNickname"),
+              me: isMe ? t("league.meSuffix") : "",
+              points: e.points,
+            })}
           >
             <span className="lg__rank-no">{e.rank}</span>
-            <RankAvatar entry={e} />
+            <RankAvatar entry={withSelfProfile(e, me)} />
             <span className="lg__rank-name">
-              {e.nickname ?? "회원"}
+              {e.nickname ?? t("league.defaultNickname")}
             </span>
             {medal && <MedalIcon rank={e.rank} />}
             <span className="lg__rank-pts">{e.points}P</span>
@@ -164,6 +177,7 @@ function RankingList({ entries, meId }: { entries: RankingEntry[]; meId?: string
 
 /* -------------------------------- screen ------------------------------- */
 export function League() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   // Optional deep-link, e.g. `/league?tab=points` (used by the /points route).
   const [params] = useSearchParams();
@@ -190,28 +204,28 @@ export function League() {
   const currentTier = (mine.data?.tier ?? "green") as LeagueTier;
 
   return (
-    <div className="screen lg">
+    <div className={`screen lg lg--${tab}`}>
       <div className="screen__body screen__body--nav lg__body">
-        {/* Segmented sub-tabs + 히스토리 */}
+        {/* Segmented sub-tabs + history */}
         <div className="lg__tabs">
-          <div className="lg__tabset" role="tablist" aria-label="리그">
+          <div className="lg__tabset" role="tablist" aria-label={t("league.tablistA11y")}>
             <button role="tab" aria-selected={tab === "regular"} className={`lg__tab ${tab === "regular" ? "is-active" : ""}`} onClick={() => setTab("regular")}>
-              정규 리그
+              {t("league.tabRegular")}
             </button>
             <button role="tab" aria-selected={tab === "friend"} className={`lg__tab ${tab === "friend" ? "is-active" : ""}`} onClick={() => setTab("friend")}>
-              친구 리그
+              {t("league.tabFriends")}
             </button>
             <button role="tab" aria-selected={tab === "points"} className={`lg__tab ${tab === "points" ? "is-active" : ""}`} onClick={() => setTab("points")}>
-              My 포인트
+              {t("league.myPoints")}
             </button>
           </div>
           {tab === "friend" ? (
-            <button className="lg__history" onClick={() => nav("/social")} aria-label="친구 관리">
-              친구 관리
+            <button className="lg__history" onClick={() => nav("/social")} aria-label={t("league.manageFriends")}>
+              {t("league.manageFriends")}
             </button>
           ) : (
-            <button className="lg__history" onClick={() => nav("/league/history")} aria-label="리그 히스토리 보기">
-              히스토리
+            <button className="lg__history" onClick={() => nav("/league/history")} aria-label={t("league.historyA11y")}>
+              {t("league.history")}
             </button>
           )}
         </div>
@@ -227,7 +241,7 @@ export function League() {
           /* Wait for the authoritative lifecycle before rendering ranking/empty
              so the correct modal/state shows without flashing the wrong screen. */
           lifecycle.error ? (
-            <ErrorState message="리그 정보를 불러오지 못했어요." onRetry={() => lifecycle.refetch()} />
+            <ErrorState message={t("league.loadError")} onRetry={() => lifecycle.refetch()} />
           ) : (
             <LoadingState />
           )
@@ -245,23 +259,32 @@ export function League() {
                   <div className="lg__empty-badge" aria-hidden="true">
                     <LeagueBadge tier="green" reached={false} current={false} />
                   </div>
-                  <p className="lg__empty-title">아직 참가 중인 리그가 없어요</p>
+                  <p className="lg__empty-title">{t("league.noLeague")}</p>
                   <p className="lg__empty-desc">
-                    학습을 시작하고
+                    {t("league.emptyLine1")}
                     <br />
-                    리그에 도전해보세요!
+                    {t("league.emptyLine2")}
                   </p>
                 </div>
               ) : (
                 <>
                   <LeagueCarousel currentTier={currentTier} />
                   <div className="lg__title-row">
-                    <span className="lg__title">{TIER_META[currentTier]?.label ?? m.tier_label}</span>
-                    <button className="lg__info-btn" onClick={() => setInfo(true)} aria-label="리그 안내 열기">
+                    <span className="lg__title">{TIER_META[currentTier] ? t("league.tierLabel", { tier: TIER_META[currentTier].name }) : m.tier_label}</span>
+                    <button className="lg__info-btn" onClick={() => setInfo(true)} aria-label={t("league.openGuide")}>
                       ?
                     </button>
                   </div>
-                  {season.data?.ends_at && <p className="lg__timer">남은 시간: {countdown(season.data.ends_at, nowTick)}</p>}
+                  {season.data?.ends_at && (
+                    <p className="lg__timer">
+                      {(() => {
+                        const left = countdown(season.data.ends_at, nowTick);
+                        return left
+                          ? t("league.timeLeft", { time: t("league.countdown", left) })
+                          : t("league.endingSoon");
+                      })()}
+                    </p>
+                  )}
 
                   <Async
                     loading={regular.isLoading}
@@ -272,7 +295,7 @@ export function League() {
                   >
                     {(r) =>
                       r.entries.length === 0 ? (
-                        <p className="lg__empty-desc" style={{ marginTop: 32 }}>아직 순위가 없어요</p>
+                        <p className="lg__empty-desc" style={{ marginTop: 32 }}>{t("league.noRanking")}</p>
                       ) : (
                         <RankingList entries={r.entries} meId={r.me?.user_id} />
                       )

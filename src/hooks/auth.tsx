@@ -150,3 +150,13 @@ export function useAuth(): AuthCtx {
   if (!c) throw new Error("useAuth must be used within AuthProvider");
   return c;
 }
+
+/**
+ * Non-throwing view of the auth context, for components that legitimately
+ * render outside a provider (unauthenticated routes, isolated render tests).
+ * Returns null there instead of blowing up. Use `useAuth` anywhere a session is
+ * genuinely required.
+ */
+export function useAuthOptional(): AuthCtx | null {
+  return useContext(Ctx) ?? null;
+}

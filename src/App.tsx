@@ -7,11 +7,13 @@ import {
   RouterProvider,
   useLocation,
 } from "react-router-dom";
+import { useEffect } from "react";
 import type { ReactNode } from "react";
 import { useAuth } from "./hooks/auth";
+import { useI18n } from "./i18n";
 import { AppShell } from "./components/layout/AppShell";
-import { APP_NAME } from "./lib/config";
 
+import { Splash } from "./screens/Splash";
 import { Welcome } from "./screens/Welcome";
 import { Login } from "./screens/Login";
 import { AuthComplete } from "./screens/AuthComplete";
@@ -45,6 +47,7 @@ import { FaqDetail } from "./screens/FaqDetail";
 import { NoticeList } from "./screens/NoticeList";
 import { NoticeDetail } from "./screens/NoticeDetail";
 import { AttendanceGate } from "./components/AttendanceGate";
+import { OfflineGate } from "./components/OfflineScreen";
 import { CourseDetail } from "./screens/Courses";
 import { LectureHome } from "./screens/LectureHome";
 import { Lecture } from "./screens/Lecture";
@@ -66,19 +69,9 @@ import { Policy, PolicyList } from "./screens/Policy";
 import { FindEmailResult } from "./screens/FindEmailResult";
 import { FindEmailNoMatch } from "./screens/FindEmailNoMatch";
 import { ResetPassword } from "./screens/ResetPassword";
+import { LanguagePicker } from "./screens/LanguagePicker";
+import { loadStoredLanguage } from "./lib/language";
 
-function Splash() {
-  return (
-    <div className="app-frame">
-      <div className="state" style={{ flex: 1, justifyContent: "center" }}>
-        <div className="hangul-lg" style={{ fontSize: 56, color: "var(--brand-500)" }}>
-          {APP_NAME}
-        </div>
-        <span className="spinner" />
-      </div>
-    </div>
-  );
-}
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { status, me } = useAuth();
@@ -94,6 +87,10 @@ function RequireGuest({ children }: { children: ReactNode }) {
   const { status } = useAuth();
   if (status === "booting") return <Splash />;
   if (status === "signed-in") return <Navigate to="/home" replace />;
+  // First launch: AME-001 asks which language to start in before anything else.
+  // Once a choice is stored (or the user is signed in and takes it from their
+  // profile) this never fires again.
+  if (loadStoredLanguage() === null) return <Navigate to="/setup/language" replace />;
   return <>{children}</>;
 }
 
@@ -110,6 +107,8 @@ const router = createBrowserRouter(
   createRoutesFromElements(
     <Route element={<AppFrame />}>
         {/* Public */}
+        {/* First-run language chooser — sits ahead of every guest screen. */}
+        <Route path="/setup/language" element={<LanguagePicker />} />
         <Route path="/welcome" element={<RequireGuest><Welcome /></RequireGuest>} />
         <Route path="/login" element={<RequireGuest><Login /></RequireGuest>} />
         <Route path="/signup" element={<RequireGuest><Signup /></RequireGuest>} />
@@ -192,14 +191,29 @@ const router = createBrowserRouter(
   ),
 );
 
+/**
+ * Adopts `app_language` from the signed-in profile so the choice follows the
+ * user across devices. The provider ignores it once a local choice exists, so
+ * a profile refetch can never override what the user picked here.
+ */
+function LanguageSync() {
+  const { me } = useAuth();
+  const { adoptProfileLanguage } = useI18n();
+  useEffect(() => {
+    adoptProfileLanguage(me?.app_language);
+  }, [me?.app_language, adoptProfileLanguage]);
+  return null;
+}
+
 export function App() {
   return (
-    <>
+    <OfflineGate>
+      <LanguageSync />
       <RouterProvider router={router} />
       {/* App-root daily attendance: fires the check-in once per signed-in
           session and shows the completion modal for a fresh, points-awarding
           check-in (overlays whatever screen is active). */}
       <AttendanceGate />
-    </>
+    </OfflineGate>
   );
 }

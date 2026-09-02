@@ -16,11 +16,11 @@ function Medal({ points }: { points: number }) {
         <circle cx="60" cy="72" r="26" fill="#F2A93B" />
         <circle cx="60" cy="72" r="26" fill="url(#reviewMedalShine)" />
         <circle cx="60" cy="72" r="20" fill="none" stroke="#E1902C" strokeWidth="2" />
-        <path d="M60 60l3.6 7.4 8.1 1-5.9 5.6 1.5 8L60 79.3 52.7 83l1.5-8-5.9-5.6 8.1-1L60 60z" fill="#FFF3D6" />
+        <path d="M60 60l3.6 7.4 8.1 1-5.9 5.6 1.5 8L60 79.3 52.7 83l1.5-8-5.9-5.6 8.1-1L60 60z" fill="#fff7e0" />
         <defs>
           <radialGradient id="reviewMedalShine" cx="0.38" cy="0.32" r="0.7">
-            <stop offset="0" stopColor="#FFD98A" stopOpacity="0.9" />
-            <stop offset="0.6" stopColor="#FFD98A" stopOpacity="0" />
+            <stop offset="0" stopColor="#ffdc7e" stopOpacity="0.9" />
+            <stop offset="0.6" stopColor="#ffdc7e" stopOpacity="0" />
           </radialGradient>
         </defs>
       </svg>

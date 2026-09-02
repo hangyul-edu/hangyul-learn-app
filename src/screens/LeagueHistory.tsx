@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { EmptyState, ErrorState, LoadingState, SkeletonList, Spinner } from "../components/ui/states";
 import { CitrusBadge } from "../components/brand/LeagueGuideArt";
-import { useAuth } from "../hooks/auth";
 import { TIER_META, type LeagueTier } from "../lib/league";
-import { normalizeLanguage, type AppLanguage } from "../lib/language";
+import lhBanner from "../assets/brand/lh-season-banner.svg";
+import { useTranslation, type TranslationKey } from "../i18n";
 import { gameApi } from "../api/endpoints";
 import type { LeagueHistoryItem, LeagueHistorySeason } from "../lib/types";
 
@@ -14,69 +14,66 @@ type More = "idle" | "loading" | "done" | "error";
 
 /* ------------------------------ localization ---------------------------- */
 type Quarter = "spring" | "summer" | "fall" | "winter";
-const QUARTER_LABEL: Record<AppLanguage, Record<Quarter, string>> = {
-  ko: { spring: "봄", summer: "여름", fall: "가을", winter: "겨울" },
-  en: { spring: "Spring", summer: "Summer", fall: "Fall", winter: "Winter" },
+/** Quarter → catalog key; the season name itself is localized. */
+const QUARTER_KEYS: Record<Quarter, TranslationKey> = {
+  spring: "leagueHistory.quarterSpring",
+  summer: "leagueHistory.quarterSummer",
+  fall: "leagueHistory.quarterFall",
+  winter: "leagueHistory.quarterWinter",
 };
-const EN_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-const LH_COPY = {
-  ko: {
-    title: "리그 히스토리",
-    back: "뒤로 가기",
-    ongoing: "진행 중",
-    emptyTitle: "이 시즌의 리그 기록이 없어요",
-    emptyDesc: "참여한 리그 기록이 생기면 여기에 표시됩니다.",
-    seasonError: "시즌 정보를 불러오지 못했어요.",
-    listError: "리그 기록을 불러오지 못했어요.",
-    loadMore: "다시 불러오기",
-    listAria: "리그 기록",
-    seasonPickerAria: "시즌 목록",
-    // Hero line 2, e.g. "봄 시즌 리그".
-    heroName: (q: Quarter) => `${QUARTER_LABEL.ko[q]} 시즌 리그`,
-    // Selector option, e.g. "2026 봄 시즌".
-    optionLabel: (year: number, q: Quarter) => `${year} ${QUARTER_LABEL.ko[q]} 시즌`,
-    selectAria: (label: string) => `${label} 선택됨, 시즌 변경`,
-  },
-  en: {
-    title: "League History",
-    back: "Go back",
-    ongoing: "In Progress",
-    emptyTitle: "No league history for this season",
-    emptyDesc: "Your league records will appear here once you participate.",
-    seasonError: "Couldn't load seasons.",
-    listError: "Couldn't load league history.",
-    loadMore: "Load more",
-    listAria: "League history",
-    seasonPickerAria: "Seasons",
-    heroName: (q: Quarter) => `${QUARTER_LABEL.en[q]} League`,
-    optionLabel: (year: number, q: Quarter) => `${year} ${QUARTER_LABEL.en[q]} Season`,
-    selectAria: (label: string) => `${label} selected, change season`,
-  },
-} as const;
+/** League-history copy, bound to the active language (`leagueHistory.*`). */
+function useLhCopy() {
+  const { t } = useTranslation();
+  return {
+    title: t("leagueHistory.title"),
+    back: t("common.back"),
+    ongoing: t("leagueHistory.ongoing"),
+    emptyTitle: t("leagueHistory.emptyTitle"),
+    emptyDesc: t("leagueHistory.emptyDesc"),
+    seasonError: t("leagueHistory.seasonError"),
+    listError: t("leagueHistory.listError"),
+    loadMore: t("leagueHistory.loadMore"),
+    listAria: t("leagueHistory.listAria"),
+    seasonPickerAria: t("leagueHistory.seasonPickerAria"),
+    heroName: (q: Quarter) => t("leagueHistory.heroName", { quarter: t(QUARTER_KEYS[q]) }),
+    optionLabel: (year: number, q: Quarter) =>
+      t("leagueHistory.optionLabel", { year, quarter: t(QUARTER_KEYS[q]) }),
+    selectAria: (label: string) => t("leagueHistory.selectAria", { label }),
+  };
+}
 
 /* ------------------------------ formatting ------------------------------ */
 // ISO date "2026-04-27" → "04.27".
 const mmdd = (iso: string) => `${iso.slice(5, 7)}.${iso.slice(8, 10)}`;
-const spokenDate = (iso: string, lang: AppLanguage) => {
+/** ISO date spoken for screen readers, in the active language. */
+const spokenDate = (
+  iso: string,
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+) => {
   const [, m, d] = iso.split("-");
-  return lang === "ko" ? `${m}월 ${Number(d)}일` : `${EN_MONTHS[Number(m) - 1]} ${Number(d)}`;
+  return t("leagueHistory.spokenDate", { m: Number(m), d: Number(d) });
 };
 
-function rowAria(item: LeagueHistoryItem, lang: AppLanguage): string {
-  const tier = TIER_META[item.tier as LeagueTier]?.label ?? item.tier_label ?? "";
-  const range =
-    lang === "ko"
-      ? `${spokenDate(item.week_start, "ko")}부터 ${spokenDate(item.week_end, "ko")}까지`
-      : `${spokenDate(item.week_start, "en")} to ${spokenDate(item.week_end, "en")}`;
-  const status = item.is_current ? `, ${LH_COPY[lang].ongoing}` : "";
+function rowAria(
+  item: LeagueHistoryItem,
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+): string {
+  const meta = TIER_META[item.tier as LeagueTier];
+  const tier = meta ? t("league.tierLabel", { tier: meta.name }) : item.tier_label ?? "";
+  const range = t("leagueHistory.rangeA11y", {
+    from: spokenDate(item.week_start, t),
+    to: spokenDate(item.week_end, t),
+  });
+  const status = item.is_current ? `, ${t("leagueHistory.ongoing")}` : "";
   const rank =
     item.rank != null
-      ? lang === "ko"
-        ? `, ${item.is_current ? "현재 " : ""}${item.rank}위`
-        : `, ${item.is_current ? "currently " : ""}rank ${item.rank}`
+      ? t("leagueHistory.rankA11y", {
+          current: item.is_current ? t("leagueHistory.currentPrefix") : "",
+          rank: item.rank,
+        })
       : "";
-  const pts = lang === "ko" ? `, ${item.points}포인트` : `, ${item.points} points`;
+  const pts = t("leagueHistory.pointsA11y", { points: item.points });
   return `${tier}, ${range}${status}${rank}${pts}`;
 }
 
@@ -92,28 +89,9 @@ function dedupById(items: LeagueHistoryItem[]): LeagueHistoryItem[] {
 }
 
 /* -------------------------------- art ----------------------------------- */
-/** Decorative hanging striped pennant in the season hero (no rank/number). */
+/** Season banner — Figma's own `Group 1410118688` (393:16605), 119x180. */
 function SeasonBanner() {
-  return (
-    <svg className="lh__banner" viewBox="0 0 96 150" aria-hidden="true" focusable="false">
-      <defs>
-        <clipPath id="lhBannerClip">
-          <path d="M22 30h52v72l-26-13-26 13z" />
-        </clipPath>
-      </defs>
-      <path d="M48 3v25" stroke="#c8ccd2" strokeWidth="3" strokeLinecap="round" />
-      <rect x="14" y="24" width="68" height="9" rx="4.5" fill="#d7dce1" />
-      <circle cx="16" cy="28.5" r="7.5" fill="#c3c9d1" />
-      <circle cx="80" cy="28.5" r="7.5" fill="#c3c9d1" />
-      <g clipPath="url(#lhBannerClip)">
-        <rect x="22" y="30" width="13" height="82" fill="#ffe07a" />
-        <rect x="35" y="30" width="13" height="82" fill="#fff2c2" />
-        <rect x="48" y="30" width="13" height="82" fill="#ffe07a" />
-        <rect x="61" y="30" width="13" height="82" fill="#fff2c2" />
-      </g>
-      <path d="M22 30h52v72l-26-13-26 13z" fill="none" stroke="#f2c94c" strokeWidth="2" />
-    </svg>
-  );
+  return <img className="lh__banner" src={lhBanner} alt="" aria-hidden="true" />;
 }
 
 /** The user's league badge for that period — the official citrus tier image,
@@ -127,28 +105,41 @@ function LeagueTierIcon({ tier }: { tier: string }) {
   );
 }
 
-/** Vertical pennant rank badge: colored for ranks 1–3, neutral gray otherwise. */
+/**
+ * Rank ribbon — Group 1410118683 (LEG-009 390:15855): a 27x27 bookmark in the
+ * rank's colour with a gold stripe masked inside it and the rank in Gray 5.
+ * The geometry is Figma's own `Vector 1345` / `Vector 1346` / `Rectangle 25847`;
+ * only the outer fill changes with the rank, exactly as the frame varies it.
+ */
+const RANK_FILL: Record<number, string> = { 1: "#b91d00", 2: "#004ab9", 3: "#007d00" };
+
+/**
+ * Rank ribbon — Group 1410118683 (LEG-009). The bookmark is Figma's exported
+ * `Vector 1345`, used as a mask so one asset serves every rank colour; the
+ * 14.294-wide band inside it is #FFDD6E on the podium and #DBDDDF otherwise,
+ * and the rank sits on top in Bold 10 / Gray 5.
+ */
 function RankPennant({ rank }: { rank: number | null }) {
-  const top3 = rank != null && rank <= 3;
-  const color = rank === 1 ? "#f0483a" : rank === 2 ? "#3b82f6" : rank === 3 ? "#22c55e" : "#aab2ba";
+  const podium = rank != null && rank <= 3;
+  const color = (rank != null && RANK_FILL[rank]) || "#adb4ba";
   return (
-    <span className={`lh__pennant ${top3 ? "is-top3" : ""}`} aria-hidden="true">
-      <svg viewBox="0 0 30 44" width="30" height="44">
-        <path d="M4 2h22a2 2 0 0 1 2 2v30l-13-7-13 7V4a2 2 0 0 1 2-2z" fill={color} />
-        {top3 && <circle cx="15" cy="8" r="3.8" fill="#ffd23f" />}
-      </svg>
+    <span className="lh__pennant" aria-hidden="true">
+      <span className="lh__pennant-flag" style={{ background: color }}>
+        <span className="lh__pennant-band" style={{ background: podium ? "#ffdd6e" : "#dbdddf" }} />
+      </span>
       <span className="lh__pennant-num">{rank ?? "-"}</span>
     </span>
   );
 }
 
 /* -------------------------------- rows ---------------------------------- */
-function HistoryRow({ item, lang }: { item: LeagueHistoryItem; lang: AppLanguage }) {
+function HistoryRow({ item }: { item: LeagueHistoryItem }) {
+  const { t } = useTranslation();
   return (
-    <li className="lh__row" aria-label={rowAria(item, lang)}>
+    <li className="lh__row" aria-label={rowAria(item, t)}>
       <LeagueTierIcon tier={item.tier} />
       <span className="lh__row-date">{`${mmdd(item.week_start)}~${mmdd(item.week_end)}`}</span>
-      {item.is_current && <span className="lh__ongoing">{LH_COPY[lang].ongoing}</span>}
+      {item.is_current && <span className="lh__ongoing">{t("leagueHistory.ongoing")}</span>}
       <span className="lh__row-spacer" />
       <RankPennant rank={item.rank} />
       <span className="lh__row-pts">{item.points}P</span>
@@ -159,9 +150,7 @@ function HistoryRow({ item, lang }: { item: LeagueHistoryItem; lang: AppLanguage
 /* -------------------------------- screen -------------------------------- */
 export function LeagueHistory() {
   const nav = useNavigate();
-  const { me } = useAuth();
-  const lang = normalizeLanguage(me?.app_language);
-  const copy = LH_COPY[lang];
+  const copy = useLhCopy();
   const labelOf = (s: LeagueHistorySeason) => copy.optionLabel(s.year, s.quarter as Quarter);
 
   const seasons = useQuery({ queryKey: ["league-history-seasons"], queryFn: gameApi.leagueHistorySeasons });
@@ -252,7 +241,7 @@ export function LeagueHistory() {
       <header className="lh__header">
         <button className="lh__back" onClick={() => nav(-1)} aria-label={copy.back}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M15 5l-7 7 7 7" stroke="#272c30" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M15 5l-7 7 7 7" stroke="#262c31" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
         <h1 className="lh__title">{copy.title}</h1>
@@ -283,7 +272,7 @@ export function LeagueHistory() {
                   <span className="lh__season-name">
                     {copy.heroName(selectedSeason.quarter as Quarter)}
                     <svg className={`lh__chevron ${dropOpen ? "is-open" : ""}`} width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path d="M6 9l6 6 6-6" stroke="#272c30" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M6 9l6 6 6-6" stroke="#262c31" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </span>
                 </button>
@@ -327,7 +316,7 @@ export function LeagueHistory() {
                 <>
                   <ul className="lh__rows" role="list" aria-label={copy.listAria}>
                     {items.map((item) => (
-                      <HistoryRow key={item.league_week_id} item={item} lang={lang} />
+                      <HistoryRow key={item.league_week_id} item={item} />
                     ))}
                   </ul>
                   <div className="lh__foot" ref={sentinel}>

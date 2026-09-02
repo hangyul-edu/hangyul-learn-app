@@ -7,6 +7,7 @@
  * avatar/button primitives stay presentational.
  */
 import { useMemo, useState } from "react";
+import { useTranslation } from "../../i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sheet } from "../ui/Modal";
 import { Button } from "../ui/kit";
@@ -14,157 +15,77 @@ import { CountrySelect } from "../ui/CountrySelect";
 import { SkeletonList } from "../ui/states";
 import { RankAvatar } from "../brand/RankBits";
 import { friendApi } from "../../api/endpoints";
-import { useAuth } from "../../hooks/auth";
 import { useToast } from "../../hooks/toast";
 import { errorMessage } from "../../lib/http";
 import { NATIONALITIES } from "../../lib/format";
 import { hashPhone, isLikelyPhone } from "../../lib/phone";
 import { getContactPhoneHashes } from "../../lib/contacts";
-import { normalizeLanguage, type AppLanguage } from "../../lib/language";
 import type { RecommendedUser } from "../../lib/types";
 
 /* ------------------------------ localization ---------------------------- */
-interface AddCopy {
-  title: string;
-  close: string;
-  infoAcceptance: string;
-  infoVisibility: string;
-  searchPlaceholder: string;
-  searchAria: string;
-  search: string;
-  suggested: string;
-  suggestedSub: string;
-  noRecommendations: string;
-  invite: string;
-  inviteAria: string;
-  sendRequest: string;
-  cancelRequest: string;
-  accept: string;
-  friendsLabel: string;
-  notFoundTitle: string;
-  notFoundSub: string;
-  requestSent: string;
-  requestCancelled: string;
-  requestAccepted: string;
-  linkCopied: string;
-  linkCopyFailed: string;
-  ctaState: (name: string, rel: RecommendedUser["relationship"]) => string;
+/** Add-friend sheet copy, bound to the active language (`addFriend.*`). */
+function useAddCopy() {
+  const { t } = useTranslation();
+  return {
+    title: t("addFriend.title"),
+    close: t("addFriend.close"),
+    infoAcceptance: t("addFriend.infoAcceptance"),
+    infoVisibility: t("addFriend.infoVisibility"),
+    searchPlaceholder: t("addFriend.searchPlaceholder"),
+    searchAria: t("addFriend.searchAria"),
+    search: t("addFriend.search"),
+    suggested: t("addFriend.suggested"),
+    suggestedSub: t("addFriend.suggestedSub"),
+    noRecommendations: t("addFriend.noRecommendations"),
+    invite: t("addFriend.invite"),
+    inviteAria: t("addFriend.inviteAria"),
+    sendRequest: t("addFriend.sendRequest"),
+    cancelRequest: t("addFriend.cancelRequest"),
+    accept: t("addFriend.accept"),
+    friendsLabel: t("addFriend.friendsLabel"),
+    notFoundTitle: t("addFriend.notFoundTitle"),
+    notFoundSub: t("addFriend.notFoundSub"),
+    requestSent: t("addFriend.requestSent"),
+    requestCancelled: t("addFriend.requestCancelled"),
+    requestAccepted: t("addFriend.requestAccepted"),
+    linkCopied: t("addFriend.linkCopied"),
+    linkCopyFailed: t("addFriend.linkCopyFailed"),
+    ctaState: (name: string, rel: string) =>
+      t(
+        rel === "friends"
+          ? "addFriend.ctaFriends"
+          : rel === "request_sent"
+            ? "addFriend.ctaRequestSent"
+            : rel === "request_received"
+              ? "addFriend.ctaRequestReceived"
+              : "addFriend.ctaCanRequest",
+        { name },
+      ),
+  };
 }
 
-const ADD_COPY: Record<AppLanguage, AddCopy> = {
-  ko: {
-    title: "친구 추가",
-    close: "친구 추가 닫기",
-    infoAcceptance: "친구가 신청을 수락하면 서로 친구가 됩니다.",
-    infoVisibility: "친구는 내 리그 현황과 프로필을 볼 수 있습니다.",
-    searchPlaceholder: "전화번호로 찾기",
-    searchAria: "전화번호로 친구 찾기",
-    search: "검색",
-    suggested: "추천 친구",
-    suggestedSub: "연락처 기반으로 친구를 추천했어요!",
-    noRecommendations: "추천할 친구가 없어요",
-    invite: "친구 신청 링크 보내기",
-    inviteAria: "친구 신청 링크 공유하기",
-    sendRequest: "친구 신청",
-    cancelRequest: "요청 취소",
-    accept: "수락",
-    friendsLabel: "친구",
-    notFoundTitle: "해당 전화번호로 가입한 사용자를 찾을 수 없어요",
-    notFoundSub: "번호를 확인하거나 친구 신청 링크를 보내보세요.",
-    requestSent: "친구 신청을 보냈어요",
-    requestCancelled: "요청을 취소했어요",
-    requestAccepted: "친구가 되었어요!",
-    linkCopied: "링크가 복사되었어요. 친구에게 링크를 보내보세요!",
-    linkCopyFailed: "링크를 복사하지 못했어요. 다시 시도해 주세요.",
-    ctaState: (name, rel) =>
-      rel === "friends"
-        ? `${name}, 이미 친구`
-        : rel === "request_sent"
-          ? `${name}, 요청 취소 가능`
-          : rel === "request_received"
-            ? `${name}, 수락 가능`
-            : `${name}, 친구 신청 가능`,
-  },
-  en: {
-    title: "Add Friend",
-    close: "Close add friend",
-    infoAcceptance: "You will become friends when they accept your request.",
-    infoVisibility: "Friends can view your League status and profile.",
-    searchPlaceholder: "Search by phone number",
-    searchAria: "Find a friend by phone number",
-    search: "Search",
-    suggested: "Suggested Friends",
-    suggestedSub: "Suggested from your contacts",
-    noRecommendations: "No friends to suggest",
-    invite: "Send Friend Invitation Link",
-    inviteAria: "Share friend invitation link",
-    sendRequest: "Send Friend Request",
-    cancelRequest: "Cancel Request",
-    accept: "Accept",
-    friendsLabel: "Friends",
-    notFoundTitle: "No user is registered with that phone number",
-    notFoundSub: "Check the number or send an invitation link.",
-    requestSent: "Friend request sent",
-    requestCancelled: "Request cancelled",
-    requestAccepted: "You're now friends!",
-    linkCopied: "Link copied. Send it to your friend!",
-    linkCopyFailed: "Couldn't copy the link. Please try again.",
-    ctaState: (name, rel) =>
-      rel === "friends"
-        ? `${name}, already friends`
-        : rel === "request_sent"
-          ? `${name}, request can be cancelled`
-          : rel === "request_received"
-            ? `${name}, can accept`
-            : `${name}, can send request`,
-  },
-};
-
-interface IncomingCopy {
-  title: string;
-  close: string;
-  infoRequested: (name: string) => string;
-  infoVisibility: string;
-  reject: string;
-  accept: string;
-  loadError: string;
-  retry: string;
-  accepted: (name: string) => string;
-  rejected: string;
+/** Incoming friend-request sheet copy (`incomingRequest.*`). */
+function useIncomingCopy() {
+  const { t } = useTranslation();
+  return {
+    title: t("incomingRequest.title"),
+    close: t("incomingRequest.close"),
+    infoRequested: (name: string) => t("incomingRequest.infoRequested", { name }),
+    infoVisibility: t("incomingRequest.infoVisibility"),
+    reject: t("incomingRequest.reject"),
+    accept: t("incomingRequest.accept"),
+    loadError: t("incomingRequest.loadError"),
+    retry: t("common.retry"),
+    accepted: (name: string) => t("incomingRequest.accepted", { name }),
+    rejected: t("incomingRequest.rejected"),
+  };
 }
-
-const INCOMING_COPY: Record<AppLanguage, IncomingCopy> = {
-  ko: {
-    title: "친구 요청",
-    close: "친구 요청 닫기",
-    infoRequested: (name) => `${name}님이 친구를 신청했어요`,
-    infoVisibility: "수락하면 서로의 리그 현황과 프로필을 볼 수 있습니다",
-    reject: "거절",
-    accept: "수락",
-    loadError: "요청을 불러오지 못했어요.",
-    retry: "다시 시도",
-    accepted: (name) => `${name}님과 친구가 되었어요!`,
-    rejected: "요청을 거절했어요",
-  },
-  en: {
-    title: "Friend Request",
-    close: "Close friend request",
-    infoRequested: (name) => `${name} sent you a friend request`,
-    infoVisibility: "Accept to view each other's League status and profiles",
-    reject: "Reject",
-    accept: "Accept",
-    loadError: "Couldn't load the request.",
-    retry: "Try again",
-    accepted: (name) => `You're now friends with ${name}!`,
-    rejected: "Request rejected",
-  },
-};
 
 const nameOf = (u: { nickname?: string | null }, fallback: string) => u.nickname ?? fallback;
 
 const CloseIcon = () => (
   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M6 6l12 12M18 6L6 18" stroke="#272c30" strokeWidth="2.2" strokeLinecap="round" />
+    <path d="M6 6l12 12M18 6L6 18" stroke="#262c31" strokeWidth="2.2" strokeLinecap="round" />
   </svg>
 );
 const SearchIcon = () => (
@@ -206,9 +127,7 @@ function InfoBox({ lines }: { lines: string[] }) {
 
 /* ----------------------------- Add Friend ------------------------------- */
 export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { me } = useAuth();
-  const lang = normalizeLanguage(me?.app_language);
-  const copy = ADD_COPY[lang];
+  const copy = useAddCopy();
   const toast = useToast();
   const qc = useQueryClient();
   const refreshSocial = useSocialRefresh();
@@ -428,8 +347,8 @@ export function IncomingFriendRequestSheet({
   open: boolean;
   onClose: () => void;
 }) {
-  const { me } = useAuth();
-  const copy = INCOMING_COPY[normalizeLanguage(me?.app_language)];
+  const copy = useIncomingCopy();
+  const { t } = useTranslation();
   const toast = useToast();
   const refreshSocial = useSocialRefresh();
   const [busy, setBusy] = useState(false);
@@ -440,7 +359,10 @@ export function IncomingFriendRequestSheet({
     enabled: open && !!requestId,
   });
   const request = q.data;
-  const requesterName = useMemo(() => (request ? nameOf(request, "회원") : ""), [request]);
+  const requesterName = useMemo(
+    () => (request ? nameOf(request, t("home.defaultNickname")) : ""),
+    [request, t],
+  );
 
   async function respond(fn: () => Promise<unknown>, done: string, plain = false) {
     if (busy || !requestId) return;
@@ -460,7 +382,7 @@ export function IncomingFriendRequestSheet({
 
   return (
     <Sheet open={open} onClose={onClose} bare contained label={copy.title}>
-      <div className="afs">
+      <div className="afs afs--incoming">
         <SheetHeader title={copy.title} closeLabel={copy.close} onClose={onClose} />
 
         {q.isLoading && !request ? (
@@ -478,7 +400,8 @@ export function IncomingFriendRequestSheet({
           <>
             <InfoBox lines={[copy.infoRequested(requesterName), copy.infoVisibility]} />
             <div className="afs__result">
-              <RankAvatar entry={request} size={72} />
+              {/* 893:32778 — 60px in LEG-020. */}
+              <RankAvatar entry={request} size={60} />
               <div className="afs__result-name">{requesterName}</div>
             </div>
             <div className="afs__actions">

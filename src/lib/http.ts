@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "./config";
+import { resolveMessage } from "../i18n/current";
 
 /** Normalized API error. Carries the backend `code` (the real contract) + a friendly message. */
 export class ApiError extends Error {
@@ -16,7 +17,7 @@ export class ApiError extends Error {
 
 export class NetworkError extends Error {
   constructor() {
-    super("네트워크에 연결할 수 없어요. 인터넷 연결을 확인해 주세요.");
+    super("httpError.network");
     this.name = "NetworkError";
   }
 }
@@ -138,10 +139,10 @@ export async function apiFetch<T = unknown>(path: string, opts: RequestOptions =
 }
 
 function friendlyFallback(status: number): string {
-  if (status >= 500) return "일시적인 서버 오류예요. 잠시 후 다시 시도해 주세요.";
-  if (status === 404) return "요청한 정보를 찾을 수 없어요.";
-  if (status === 403) return "권한이 없어요.";
-  return "요청을 처리하지 못했어요.";
+  if (status >= 500) return "httpError.server";
+  if (status === 404) return "httpError.notFound";
+  if (status === 403) return "httpError.forbidden";
+  return "httpError.badRequest";
 }
 
 export const http = {
@@ -158,10 +159,17 @@ export const http = {
     apiFetch<T>(p, { ...o, method: "POST", form }),
 };
 
-/** Turn any thrown value into a user-friendly message. */
+/**
+ * Turn any thrown value into a user-friendly message in the active language.
+ *
+ * The value is a mix: the server's own `detail` sentence when it sends one, and
+ * one of our `httpError.*` catalog keys when it does not. `resolveMessage`
+ * translates the latter and passes the former through untouched, so callers can
+ * keep rendering the result directly.
+ */
 export function errorMessage(e: unknown): string {
-  if (e instanceof ApiError) return e.detail;
-  if (e instanceof NetworkError) return e.message;
-  if (e instanceof Error && e.message) return e.message;
-  return "알 수 없는 오류가 발생했어요.";
+  if (e instanceof ApiError) return resolveMessage(e.detail);
+  if (e instanceof NetworkError) return resolveMessage(e.message);
+  if (e instanceof Error && e.message) return resolveMessage(e.message);
+  return resolveMessage("httpError.unknown");
 }

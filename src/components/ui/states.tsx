@@ -1,15 +1,17 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "../../i18n";
 import { Button } from "./kit";
 
 export function Spinner({ large }: { large?: boolean }) {
   return <span className={`spinner ${large ? "spinner--lg" : ""}`} />;
 }
 
-export function LoadingState({ text = "불러오는 중…" }: { text?: string }) {
+export function LoadingState({ text }: { text?: string }) {
+  const { t } = useTranslation();
   return (
     <div className="state">
       <Spinner large />
-      <div className="state__text">{text}</div>
+      <div className="state__text">{text ?? t("ui.loading")}</div>
     </div>
   );
 }
@@ -25,25 +27,27 @@ export function EmptyState({
   text?: string;
   action?: ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="state">
       <div className="state__emoji">{emoji}</div>
       <div className="state__title">{title}</div>
-      {text && <div className="state__text">{text}</div>}
+      {text && <div className="state__text">{text ?? t("ui.loading")}</div>}
       {action}
     </div>
   );
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className="state">
       <div className="state__emoji">😵</div>
-      <div className="state__title">문제가 생겼어요</div>
+      <div className="state__title">{t("ui.errorTitle")}</div>
       <div className="state__text">{message}</div>
       {onRetry && (
         <Button variant="secondary" size="sm" onClick={onRetry}>
-          다시 시도
+          {t("common.retry")}
         </Button>
       )}
     </div>
@@ -80,10 +84,11 @@ export function Async<T>({
   skeleton?: ReactNode;
   children: (d: T) => ReactNode;
 }) {
+  const { t } = useTranslation();
   if (loading && data === undefined) return <>{skeleton ?? <LoadingState />}</>;
   if (error && data === undefined)
-    return <ErrorState message={(error as Error)?.message || "오류가 발생했어요."} onRetry={onRetry} />;
+    return <ErrorState message={(error as Error)?.message || t("ui.errorBody")} onRetry={onRetry} />;
   if (data === undefined) return null;
-  if (isEmpty && isEmpty(data)) return <>{empty ?? <EmptyState title="아직 항목이 없어요" />}</>;
+  if (isEmpty && isEmpty(data)) return <>{empty ?? <EmptyState title={t("ui.emptyTitle")} />}</>;
   return <>{children(data)}</>;
 }

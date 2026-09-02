@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
+import { I18nProvider } from "../i18n";
 import { ToastProvider } from "../hooks/toast";
 
 vi.mock("../api/endpoints", () => ({
@@ -30,13 +31,16 @@ const settings = (over: Record<string, unknown> = {}) => ({
 function renderSettings() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}>
-      <ToastProvider>
-        <MemoryRouter>
-          <Settings />
-        </MemoryRouter>
-      </ToastProvider>
-    </QueryClientProvider>,
+    // Assertions below are written against the Korean design frames.
+    <I18nProvider language="ko">
+      <QueryClientProvider client={qc}>
+        <ToastProvider>
+          <MemoryRouter>
+            <Settings />
+          </MemoryRouter>
+        </ToastProvider>
+      </QueryClientProvider>
+    </I18nProvider>,
   );
 }
 

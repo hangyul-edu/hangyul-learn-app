@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "../i18n";
 import { Screen } from "../components/layout/Screen";
 import { Button, Card } from "../components/ui/kit";
 import { EmptyState } from "../components/ui/states";
@@ -9,6 +10,7 @@ import { errorMessage } from "../lib/http";
 import type { RecQuota, Sentence } from "../lib/types";
 
 export function Recommendations() {
+  const { t } = useTranslation();
   const toast = useToast();
   const [prompt, setPrompt] = useState("");
   const [items, setItems] = useState<Sentence[] | null>(null);
@@ -49,22 +51,22 @@ export function Recommendations() {
   }
 
   return (
-    <Screen title="AI 추천 문장" back>
+    <Screen title={t("recommend.title")} back>
       <Card variant="soft" style={{ marginBottom: 16 }}>
-        <div className="field__label" style={{ marginBottom: 8 }}>어떤 상황의 문장이 필요하세요?</div>
+        <div className="field__label" style={{ marginBottom: 8 }}>{t("recommend.prompt")}</div>
         <div style={{ display: "flex", gap: 8 }}>
-          <TextField placeholder="예: 카페에서 주문하기 (선택)" value={prompt} onChange={(e) => setPrompt(e.target.value)} />
-          <Button style={{ height: 50, whiteSpace: "nowrap" }} loading={busy} onClick={recommend}>추천</Button>
+          <TextField placeholder={t("recommend.placeholder")} value={prompt} onChange={(e) => setPrompt(e.target.value)} />
+          <Button style={{ height: 50, whiteSpace: "nowrap" }} loading={busy} onClick={recommend}>{t("recommend.cta")}</Button>
         </div>
         {quota?.remaining_today != null && (
-          <div className="dim" style={{ fontSize: 12, marginTop: 8 }}>오늘 남은 추천: {quota.remaining_today}회</div>
+          <div className="dim" style={{ fontSize: 12, marginTop: 8 }}>{t("courses.quotaRemaining", { n: quota.remaining_today })}</div>
         )}
       </Card>
 
       {items === null ? (
-        <EmptyState emoji="✨" title="맞춤 문장을 추천해드려요" text="원하는 상황을 입력하거나 그냥 추천 버튼을 눌러보세요." />
+        <EmptyState emoji="✨" title={t("recommend.heading")} text={t("recommend.hint")} />
       ) : items.length === 0 ? (
-        <EmptyState emoji="🤔" title="추천 결과가 없어요" text="다른 상황으로 다시 시도해 보세요." />
+        <EmptyState emoji="🤔" title={t("recommend.empty")} text={t("recommend.emptyDesc")} />
       ) : (
         <div className="stack" style={{ gap: 10 }}>
           {items.map((s) => (

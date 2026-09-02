@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation, type TranslationKey } from "../i18n";
 import { useQuery } from "@tanstack/react-query";
 import { EmptyState, ErrorState, LoadingState, SkeletonList, Spinner } from "../components/ui/states";
 import { useAuth } from "../hooks/auth";
@@ -10,79 +11,57 @@ type Phase = "loading" | "ready" | "error";
 type More = "idle" | "loading" | "done" | "error";
 
 /* ------------------------------ localization ---------------------------- */
-const MP_COPY = {
-  ko: {
-    currentLeague: "이번 리그 포인트",
-    emptyTitle: "아직 이번 리그에서 적립된 포인트가 없어요",
-    emptyDesc: "학습을 시작하면 이번 리그 포인트가 적립됩니다.",
-    error: "포인트를 불러오지 못했어요.",
-    loadMore: "더 보기",
-    listAria: "포인트 적립 내역",
-  },
-  en: {
-    currentLeague: "Points in This League",
-    emptyTitle: "No points earned in this league yet",
-    emptyDesc: "Start learning to earn points in this league.",
-    error: "Couldn't load your points.",
-    loadMore: "Load more",
-    listAria: "Point history",
-  },
-} as const;
+/** My-Points copy + reward-reason titles, bound to the active language. */
+function usePointsCopy() {
+  const { t } = useTranslation();
+  return {
+    currentLeague: t("points.currentLeague"),
+    emptyTitle: t("points.emptyTitle"),
+    emptyDesc: t("points.emptyDesc"),
+    error: t("points.error"),
+    loadMore: t("points.loadMore"),
+    listAria: t("points.listAria"),
+    /** Reward reason → title. A stable enum mapping; never parses server text. */
+    title: (reason: string) =>
+      t(
+        reason === "attendance" || reason === "attendance_streak_bonus"
+          ? "points.reasonAttendance"
+          : reason === "sentence_complete"
+            ? "points.reasonSentence"
+            : reason === "lecture_complete"
+              ? "points.reasonLecture"
+              : reason === "saved_sentence_review"
+                ? "points.reasonReview"
+                : "points.reasonLevelUp",
+      ),
+  };
+}
 
-// Reward reason → localized title (stable enum mapping, never parses server text).
-const TITLE: Record<AppLanguage, Record<string, string>> = {
-  ko: {
-    attendance: "출석 체크",
-    attendance_streak_bonus: "출석 체크",
-    sentence_complete: "맞춤 학습",
-    lecture_complete: "강의 시청",
-    saved_sentence_review: "복습",
-    level_up_bonus: "레벨업",
-  },
-  en: {
-    attendance: "Attendance",
-    attendance_streak_bonus: "Attendance",
-    sentence_complete: "Customized Learning",
-    lecture_complete: "Course",
-    saved_sentence_review: "Review",
-    level_up_bonus: "Level Up",
-  },
-};
-
-function describe(tx: PointTransaction, lang: AppLanguage): string {
+/**
+ * Reward reason → detail line. A stable enum mapping over the catalog; never
+ * parses server text. `t` is passed in since this runs outside React.
+ */
+function describe(
+  tx: PointTransaction,
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+): string {
   const d = tx.detail ?? {};
   const isQuestion = d.item_type === "question";
-  if (lang === "ko") {
-    switch (tx.reason) {
-      case "attendance":
-        return "일일 출석";
-      case "attendance_streak_bonus":
-        return d.streak_days ? `연속 ${d.streak_days}일 출석 보너스` : "연속 출석 보너스";
-      case "sentence_complete":
-        return isQuestion ? "문제 학습 완료" : "문장 학습 완료";
-      case "lecture_complete":
-        return "강의 시청 완료";
-      case "saved_sentence_review":
-        return isQuestion ? "문제 복습 완료" : "문장 복습 완료";
-      case "level_up_bonus":
-        return d.level ? `레벨 ${d.level} 달성` : "레벨업 보너스";
-      default:
-        return "";
-    }
-  }
   switch (tx.reason) {
     case "attendance":
-      return "Daily attendance";
+      return t("points.descAttendance");
     case "attendance_streak_bonus":
-      return d.streak_days ? `${d.streak_days}-day attendance streak bonus` : "Attendance streak bonus";
+      return d.streak_days
+        ? t("points.descStreakBonusDays", { days: String(d.streak_days) })
+        : t("points.descStreakBonus");
     case "sentence_complete":
-      return isQuestion ? "Question completed" : "Sentence completed";
+      return t(isQuestion ? "points.descQuestionDone" : "points.descSentenceDone");
     case "lecture_complete":
-      return "Course completed";
+      return t("points.descLectureDone");
     case "saved_sentence_review":
-      return isQuestion ? "Question review completed" : "Sentence review completed";
+      return t(isQuestion ? "points.descQuestionReview" : "points.descSentenceReview");
     case "level_up_bonus":
-      return d.level ? `Reached level ${d.level}` : "Level-up bonus";
+      return d.level ? t("points.descLevelReached", { level: String(d.level) }) : t("points.descLevelUpBonus");
     default:
       return "";
   }
@@ -130,15 +109,20 @@ function groupByMonth(items: PointTransaction[], lang: AppLanguage): MonthGroup[
 
 /* -------------------------------- rows ---------------------------------- */
 function PointRow({ tx, lang }: { tx: PointTransaction; lang: AppLanguage }) {
-  const title = TITLE[lang][tx.reason] ?? tx.reason;
-  const desc = describe(tx, lang);
+  const { t } = useTranslation();
+  const copy = usePointsCopy();
+  const title = copy.title(tx.reason) ?? tx.reason;
+  const desc = describe(tx, t);
   const negative = tx.amount < 0;
   const amount = `${negative ? "−" : "+"}${Math.abs(tx.amount).toLocaleString()} P`;
   const date = dateLabel(new Date(tx.occurred_at), lang);
-  const aria =
-    lang === "ko"
-      ? `${title}, ${desc}, ${Math.abs(tx.amount)}포인트 ${negative ? "차감" : "적립"}, ${date}`
-      : `${title}, ${desc}, ${negative ? "minus " : "plus "}${Math.abs(tx.amount)} points, ${date}`;
+  const aria = t("points.rowA11y", {
+    title,
+    desc,
+    amount: Math.abs(tx.amount),
+    direction: t(negative ? "points.directionDeducted" : "points.directionEarned"),
+    date,
+  });
   return (
     <li className="mp__row" aria-label={aria}>
       <div className="mp__row-main">
@@ -157,7 +141,7 @@ function PointRow({ tx, lang }: { tx: PointTransaction; lang: AppLanguage }) {
 export function MyPoints() {
   const { me } = useAuth();
   const lang = normalizeLanguage(me?.app_language);
-  const copy = MP_COPY[lang];
+  const copy = usePointsCopy();
 
   // Current weekly-league total — refetch on entry/focus so it reflects newly
   // awarded points and the weekly reset without an app restart.

@@ -12,11 +12,12 @@ vi.mock("../api/endpoints", () => ({
     leagueHistory: vi.fn(),
   },
 }));
-let mockLang = "ko";
+let mockLang: "ko" | "en" = "ko";
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: mockLang } }) }));
 
 import { gameApi } from "../api/endpoints";
 import { LeagueHistory } from "./LeagueHistory";
+import { I18nProvider } from "../i18n";
 
 const api = gameApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -56,15 +57,17 @@ const summerPage: LeagueHistoryResponse = {
 function renderScreen() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={["/league", "/league/history"]} initialIndex={1}>
-        <Routes>
-          <Route path="/league" element={<div>LEAGUE_SCREEN</div>} />
-          <Route path="/league/history" element={<LeagueHistory />} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
-  );
+    // Mirrors <LanguageSync>: the provider adopts the profile language.
+    <I18nProvider language={mockLang}>
+      <QueryClientProvider client={qc}>
+        <MemoryRouter initialEntries={["/league", "/league/history"]} initialIndex={1}>
+          <Routes>
+            <Route path="/league" element={<div>LEAGUE_SCREEN</div>} />
+            <Route path="/league/history" element={<LeagueHistory />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </I18nProvider>,);
 }
 
 // Route history() calls to the right season's page(s).
@@ -206,22 +209,28 @@ describe("League History screen", () => {
     expect(document.querySelectorAll(".lh__rows .lh__tier")).toHaveLength(2);
   });
 
-  it("uses a colored top-3 pennant for rank 1-3 and a gray one for rank 4+", async () => {
+  it("uses a colored top-3 ribbon for rank 1-3 and a gray one for rank 4+", async () => {
     // Page 2 has rank 1; page 1 has rank 30 (gray) and rank 10 (gray).
     renderScreen();
     const rank30Row = (await screen.findByText("04.27~05.03")).closest("li")!;
     expect(within(rank30Row).getByText("30")).toBeInTheDocument();
-    // Rank 30 pennant is not a top-3 (no yellow accent).
-    expect(rank30Row.querySelector(".lh__pennant.is-top3")).not.toBeInTheDocument();
-    expect(rank30Row.querySelector(".lh__pennant")).toBeInTheDocument();
+    // LEG-009 (390:15855) varies only the bookmark's fill — Gray 4 outside the
+    // top three, never a separate accent shape. The bookmark itself is Figma's
+    // exported `Vector 1345` applied as a mask, so the rank colour is the
+    // element's background rather than a path fill.
+    expect(rank30Row.querySelector<HTMLElement>(".lh__pennant-flag")!.style.background).toBe(
+      "rgb(173, 180, 186)",
+    );
   });
 
-  it("marks the rank-1 row's pennant as top-3 (colored accent)", async () => {
+  it("colours the rank-1 row's ribbon with the first-place fill", async () => {
     api.leagueHistory.mockResolvedValue({ ...springPage2, next_cursor: null }); // single rank-1 row
     renderScreen();
     const row = (await screen.findByText("04.13~04.19")).closest("li")!;
     expect(within(row).getByText("1")).toBeInTheDocument();
-    expect(row.querySelector(".lh__pennant.is-top3")).toBeInTheDocument();
+    expect(row.querySelector<HTMLElement>(".lh__pennant-flag")!.style.background).toBe(
+      "rgb(185, 29, 0)",
+    );
   });
 
   it("exposes an accessible label with tier, dates, status, rank, and points", async () => {

@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "../i18n";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { supportApi } from "../api/endpoints";
 import { FAQ_CATEGORIES, findFaqCategory } from "../lib/faqCategories";
 import { errorMessage } from "../lib/http";
 import { EmptyState, ErrorState, SkeletonList } from "../components/ui/states";
-import { ChevronRight } from "../components/brand/HomeIcons";
 import { FaqHeader, LoadMoreSentinel, QuestionCard } from "../components/faq/FaqPieces";
 import { SupportChatButton } from "../components/faq/SupportChatButton";
 import type { Faq as FaqItem } from "../lib/types";
+import icSearch from "../assets/brand/ic-24-search.svg";
+import icChevron from "../assets/brand/ic-16-chevron-gray.svg";
 
 /** Remembers each list's scroll offset so returning from a detail restores it.
  * Keyed by the URL search string (category / query), which fully identifies a
@@ -39,6 +41,7 @@ function dedupe(pages: { items: FaqItem[] }[] | undefined): FaqItem[] {
 }
 
 export function Faq() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const [params, setParams] = useSearchParams();
   const categorySlug = params.get("category") ?? undefined;
@@ -125,15 +128,15 @@ export function Faq() {
               onChange={(e) => setInput(e.target.value)}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
-              placeholder="무엇이든 물어보세요"
-              aria-label="FAQ 검색"
+              placeholder={t("faq.askAnything")}
+              aria-label={t("faq.searchAria")}
               enterKeyHint="search"
             />
             <span className="faq__search-icon" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.8" />
-                <path d="M20 20l-3.2-3.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-              </svg>
+              {/* ic_24_search (I879:22447;3021:65661) — Group 5719, a 19.44
+                  glyph in a 24 box, stroke Gray 3 at 2.2. Was a hand-drawn
+                  20px circle+line at 1.8. */}
+              <img className="faq__search-ic" src={icSearch} alt="" width={19.4448} height={19.4448} />
             </span>
           </div>
         </div>
@@ -149,8 +152,11 @@ export function Faq() {
                   onClick={() => setParams({ category: c.slug })}
                 >
                   <span className="faq__cat-emoji" aria-hidden="true">{c.emoji}</span>
-                  <span className="faq__cat-label">{c.label}</span>
-                  <ChevronRight size={20} color="#c3b9ab" />
+                  <span className="faq__cat-label">{t(c.label)}</span>
+                  {/* Comp (568:19568) — the Gray 4 chevron, 16px box. */}
+                  <span className="faq__cat-chevron" aria-hidden="true">
+                    <img src={icChevron} alt="" width={6.5} height={11.5} />
+                  </span>
                 </button>
               ))}
             </div>
@@ -159,7 +165,7 @@ export function Faq() {
           {mode === "category" && category && (
             <>
               <h2 className="faq__heading">
-                <span aria-hidden="true">{category.emoji}</span> {category.label}
+                <span aria-hidden="true">{category.emoji}</span> {t(category.label)}
               </h2>
               <ListBody
                 loading={categoryList.isLoading}
@@ -167,7 +173,7 @@ export function Faq() {
                 items={items}
                 onRetry={() => categoryList.refetch()}
                 onOpen={openDetail}
-                empty={<EmptyState emoji="💭" title="등록된 질문이 없어요" />}
+                empty={<EmptyState emoji="💭" title={t("faq.noQuestions")} />}
                 hasNext={!!categoryList.hasNextPage}
                 isFetchingNext={categoryList.isFetchingNextPage}
                 loadMore={categoryList.fetchNextPage}
@@ -178,7 +184,7 @@ export function Faq() {
           {mode === "search" && (
             <>
               <h2 className="faq__heading" role="status" aria-live="polite">
-                <span aria-hidden="true">🔎</span> 검색 결과 {searchList.isLoading ? "" : items.length}
+                <span aria-hidden="true">🔎</span> {t("faq.searchResults")} {searchList.isLoading ? "" : items.length}
               </h2>
               <ListBody
                 loading={searchList.isLoading}
@@ -189,8 +195,8 @@ export function Faq() {
                 empty={
                   <EmptyState
                     emoji="🔍"
-                    title="검색 결과가 없어요"
-                    text="다른 검색어로 다시 찾아보세요"
+                    title={t("faq.noResults")}
+                    text={t("faq.noResultsDesc")}
                   />
                 }
                 hasNext={!!searchList.hasNextPage}

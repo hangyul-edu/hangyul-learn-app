@@ -21,6 +21,7 @@ vi.mock("../api/endpoints", () => ({
 
 import { gameApi } from "../api/endpoints";
 import { League } from "./League";
+import { I18nProvider } from "../i18n";
 
 const api = gameApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -68,18 +69,19 @@ const rankings = { season_id: "2026-W28", group_id: "g", entries: [{ rank: 1, us
 function renderLeague() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}>
-      <ToastProvider>
-        <MemoryRouter initialEntries={["/league"]}>
-          <Routes>
-            <Route path="/league" element={<League />} />
-            <Route path="/league/result" element={<div>RESULT_SCREEN</div>} />
-            <Route path="/points" element={<div>POINTS</div>} />
-          </Routes>
-        </MemoryRouter>
-      </ToastProvider>
-    </QueryClientProvider>,
-  );
+    <I18nProvider language="ko">
+      <QueryClientProvider client={qc}>
+        <ToastProvider>
+          <MemoryRouter initialEntries={["/league"]}>
+            <Routes>
+              <Route path="/league" element={<League />} />
+              <Route path="/league/result" element={<div>RESULT_SCREEN</div>} />
+              <Route path="/points" element={<div>POINTS</div>} />
+            </Routes>
+          </MemoryRouter>
+        </ToastProvider>
+      </QueryClientProvider>
+    </I18nProvider>,);
 }
 
 beforeEach(() => {
@@ -178,11 +180,12 @@ describe("League lifecycle gate", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
-  it("preparing modal shows the dynamic next-start time (KST), not a hardcode", async () => {
+  it("preparing modal shows the dynamic next-start time (ET), not a hardcode", async () => {
     api.leagueLifecycle.mockResolvedValue(waiting);
     renderLeague();
     const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).getByText(/\(KST\)에 시작됩니다/)).toBeInTheDocument();
+    // 784:57731 quotes the league boundary in US Eastern, its authoritative zone.
+    expect(within(dialog).getByText(/\(ET\)에 시작됩니다/)).toBeInTheDocument();
   });
 
   it("swaps preparing → new-league when the backend reports availability on foreground", async () => {

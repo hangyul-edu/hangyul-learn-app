@@ -21,6 +21,41 @@ class TestRequest {
 }
 globalThis.Request = TestRequest as unknown as typeof Request;
 
+// This jsdom build exposes no Web Storage, so anything persisting state (the
+// auth session, the language choice) would otherwise always take its failure
+// path under test. A plain in-memory Storage keeps that behaviour exercisable.
+// Production code still guards every access — storage is genuinely absent in
+// private-mode browsers.
+if (typeof globalThis.localStorage === "undefined") {
+  class MemoryStorage implements Storage {
+    private store = new Map<string, string>();
+    get length() {
+      return this.store.size;
+    }
+    key(i: number) {
+      return [...this.store.keys()][i] ?? null;
+    }
+    getItem(k: string) {
+      return this.store.get(k) ?? null;
+    }
+    setItem(k: string, v: string) {
+      this.store.set(k, String(v));
+    }
+    removeItem(k: string) {
+      this.store.delete(k);
+    }
+    clear() {
+      this.store.clear();
+    }
+  }
+  const storage = new MemoryStorage();
+  Object.defineProperty(globalThis, "localStorage", { value: storage, configurable: true });
+  Object.defineProperty(globalThis, "sessionStorage", {
+    value: new MemoryStorage(),
+    configurable: true,
+  });
+}
+
 // jsdom has no IntersectionObserver (used by infinite-scroll sentinels). A no-op
 // stub is enough — tests drive pagination via the API mock, not real scrolling.
 class TestIntersectionObserver {

@@ -29,6 +29,7 @@ vi.mock("../api/endpoints", () => ({
 }));
 
 import { Saved } from "./Saved";
+import { I18nProvider } from "../i18n";
 
 const QUIZ = {
   quiz_id: "q1",
@@ -62,10 +63,11 @@ function renderRoundTrip(savedEntry: string | { pathname: string; state?: unknow
     { initialEntries: ["/home", savedEntry], initialIndex: 1 },
   );
   return render(
-    <StrictMode>
-      <RouterProvider router={router} />
-    </StrictMode>,
-  );
+    <I18nProvider language="ko">
+      <StrictMode>
+        <RouterProvider router={router} />
+      </StrictMode>
+    </I18nProvider>,);
 }
 
 async function switchToQuestionsAndOpenReview() {

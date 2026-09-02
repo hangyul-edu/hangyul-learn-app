@@ -71,6 +71,7 @@ class MockMediaRecorder {
 }
 
 import { SessionConversation } from "./SessionConversation";
+import { I18nProvider } from "../i18n";
 
 const SENTENCE = {
   sentence_id: "sen_thanks_01",
@@ -89,10 +90,11 @@ function renderScreen() {
     initialEntries: ["/"],
   });
   return render(
-    <QueryClientProvider client={qc}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
+    <I18nProvider language="ko">
+      <QueryClientProvider client={qc}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </I18nProvider>,);
 }
 
 beforeEach(() => {

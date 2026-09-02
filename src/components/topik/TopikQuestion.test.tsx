@@ -10,10 +10,12 @@ vi.mock("../../api/endpoints", () => ({
 import { TopikQuestion, questionKind, canSubmitTopik } from "./TopikQuestion";
 import type { AnswerValue } from "../QuestionView";
 import { countTopikChars } from "../../lib/topikChars";
-import { TOPIK_SESSION_COPY } from "../../lib/topikSessionCopy";
+import { buildTopikSessionCopy } from "../../lib/topikSessionCopy";
+import { I18nProvider, translate } from "../../i18n";
 import type { AnswerFormat, Quiz } from "../../lib/types";
 
-const copy = TOPIK_SESSION_COPY.ko;
+/** Assertions below are written against the Korean design copy. */
+const copy = buildTopikSessionCopy((k, v) => translate("ko", k, v));
 
 function makeQuiz(over: Partial<Quiz> & { answer?: Partial<Quiz["answer"]> }): Quiz {
   return {
@@ -75,7 +77,11 @@ const ESSAY = makeQuiz({
 /** Controlled wrapper so interactions update the rendered value. */
 function Harness({ quiz, initial = {} }: { quiz: Quiz; initial?: AnswerValue }) {
   const [value, setValue] = useState<AnswerValue>(initial);
-  return <TopikQuestion quiz={quiz} value={value} onChange={setValue} copy={copy} />;
+  return (
+    <I18nProvider language="ko">
+      <TopikQuestion quiz={quiz} value={value} onChange={setValue} copy={copy} />
+    </I18nProvider>
+  );
 }
 
 describe("questionKind", () => {

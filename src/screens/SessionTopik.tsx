@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "../i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SessionChrome } from "../components/SessionChrome";
 import { SessionCompleteModal } from "../components/SessionCompleteModal";
 import { ReviewCompleteSheet } from "../components/ReviewCompleteSheet";
-import { REVIEW_SESSION_COPY } from "../lib/reviewSessionCopy";
+import { useReviewSessionCopy } from "../lib/reviewSessionCopy";
 import { quizAttemptBody, type AnswerValue } from "../components/QuestionView";
 import { randomUuid } from "../lib/uuid";
 import { TopikQuestion, canSubmitTopik } from "../components/topik/TopikQuestion";
@@ -14,10 +15,8 @@ import { SavePlusIcon } from "../components/brand/HomeIcons";
 import { LoadingState, ErrorState } from "../components/ui/states";
 import { recApi, quizApi, dashboardApi, learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
-import { useAuth } from "../hooks/auth";
 import { errorMessage } from "../lib/http";
-import { normalizeLanguage } from "../lib/language";
-import { TOPIK_SESSION_COPY } from "../lib/topikSessionCopy";
+import { useTopikSessionCopy } from "../lib/topikSessionCopy";
 import type { Quiz, QuizAttemptResult, TopikSection } from "../lib/types";
 
 // In-progress TOPIK session snapshot, persisted so a refresh restores the same
@@ -90,6 +89,7 @@ function isRetryableWrong(result: QuizAttemptResult): boolean {
 }
 
 export function SessionTopik() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const loc = useLocation();
   const toast = useToast();
@@ -104,10 +104,9 @@ export function SessionTopik() {
   // listening only if the screen is reached without a selection (deep link).
   const section: TopikSection = navState?.section ?? "listening";
   const qc = useQueryClient();
-  const { me } = useAuth();
-  const copy = TOPIK_SESSION_COPY[normalizeLanguage(me?.app_language)];
+  const copy = useTopikSessionCopy();
   // Completion sheet reuses the Review-Learning bottom sheet verbatim (다시 시작 / 완료).
-  const reviewCopy = REVIEW_SESSION_COPY[normalizeLanguage(me?.app_language)];
+  const reviewCopy = useReviewSessionCopy();
 
   const dash = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
   const topik = dash.data?.tracks.find((t) => t.category === "topik");
@@ -499,28 +498,30 @@ export function SessionTopik() {
         <span className={typeCode ? "sess__dropdown-val" : "sess__dropdown-ph"}>
           {typeCode
             ? (() => {
-                const t = types.data?.items.find((x) => x.code === typeCode);
-                return t ? `[유형${t.number_label}] ${t.title_ko}` : "선택됨";
+                const sel = types.data?.items.find((x) => x.code === typeCode);
+                return sel
+                  ? t("session.topikTypeLabel", { n: sel.number_label, title: sel.title_ko })
+                  : t("session.selected");
               })()
-            : "✨ 더 집중해서 풀어보고 싶은 문제 유형을 선택해보세요"}
+            : t("session.topikTypePrompt")}
         </span>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d={openPanel ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6"} stroke="#8a929a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
       {openPanel && (
-        <ul className="sess__dropdown-list" role="listbox" aria-label="TOPIK 문제 유형">
-          {(types.data?.items ?? []).map((t) => (
-            <li key={t.code} role="option" aria-selected={typeCode === t.code}>
+        <ul className="sess__dropdown-list" role="listbox" aria-label={t("session.topikTypeAria")}>
+          {(types.data?.items ?? []).map((item) => (
+            <li key={item.code} role="option" aria-selected={typeCode === item.code}>
               <button
-                className={`sess__dropdown-item ${typeCode === t.code ? "is-selected" : ""}`}
+                className={`sess__dropdown-item ${typeCode === item.code ? "is-selected" : ""}`}
                 onClick={() => {
-                  setTypeCode(t.code);
+                  setTypeCode(item.code);
                   setOpenPanel(false);
-                  void loadSet(t.code);
+                  void loadSet(item.code);
                 }}
               >
-                [유형{t.number_label}] {t.title_ko}
+                {t("session.topikTypeLabel", { n: item.number_label, title: item.title_ko })}
               </button>
             </li>
           ))}
@@ -532,8 +533,8 @@ export function SessionTopik() {
   return (
     <>
     <SessionChrome
-      title={`토픽 ${grade}급`}
-      heading="목표 하루 학습 문제"
+      title={t("session.topikGrade", { n: grade })}
+      heading={t("session.dailyQuestionGoal")}
       correct={shownCurrent}
       total={shownTotal}
       progress={progress}
@@ -548,7 +549,7 @@ export function SessionTopik() {
       }
     >
       {error ? (
-        <ErrorState message="문제를 불러오지 못했어요." onRetry={() => loadSet(typeCode)} />
+        <ErrorState message={t("session.questionLoadError")} onRetry={() => loadSet(typeCode)} />
       ) : !cur ? (
         <LoadingState />
       ) : (
@@ -596,7 +597,8 @@ export function SessionTopik() {
         opening the summary modal). */}
     {phase === "correct" && isLastStep && !completed && cur != null && (
       <ReviewCompleteSheet
-        leftLabel={reviewCopy.restart}
+        /* TAL-018 (673:13337) labels this 다시 풀기, not the review flow's 다시 시작. */
+        leftLabel={t("session.solveAgain")}
         onLeft={restartSession}
         onComplete={next}
         copy={reviewCopy}

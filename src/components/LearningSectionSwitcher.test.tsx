@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 import { LearningSectionSwitcher, type LearningSection } from "./LearningSectionSwitcher";
+import { I18nProvider } from "../i18n";
 
 function Loc() {
   return <div data-testid="loc">{useLocation().pathname}</div>;
@@ -11,29 +12,30 @@ function Loc() {
 
 function renderAt(current: LearningSection, path = "/streak") {
   return render(
-    <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route
-          path="/streak"
-          element={
-            <>
-              <LearningSectionSwitcher current="streak" />
-              <Loc />
-            </>
-          }
-        />
-        <Route
-          path="/learning-management"
-          element={
-            <>
-              <LearningSectionSwitcher current="management" />
-              <Loc />
-            </>
-          }
-        />
-      </Routes>
-    </MemoryRouter>,
-  );
+    <I18nProvider language="ko">
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route
+            path="/streak"
+            element={
+              <>
+                <LearningSectionSwitcher current="streak" />
+                <Loc />
+              </>
+            }
+          />
+          <Route
+            path="/learning-management"
+            element={
+              <>
+                <LearningSectionSwitcher current="management" />
+                <Loc />
+              </>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    </I18nProvider>,);
   // Guard against an unused-var lint when current isn't the route default.
   void current;
 }
@@ -88,12 +90,13 @@ describe("LearningSectionSwitcher", () => {
 
   it("closes when the backdrop is tapped, without navigating", async () => {
     const { container } = render(
-      <MemoryRouter initialEntries={["/streak"]}>
-        <Routes>
-          <Route path="/streak" element={<><LearningSectionSwitcher current="streak" /><Loc /></>} />
-        </Routes>
-      </MemoryRouter>,
-    );
+      <I18nProvider language="ko">
+        <MemoryRouter initialEntries={["/streak"]}>
+          <Routes>
+            <Route path="/streak" element={<><LearningSectionSwitcher current="streak" /><Loc /></>} />
+          </Routes>
+        </MemoryRouter>
+      </I18nProvider>,);
     await userEvent.click(trigger());
     const overlay = container.querySelector(".lsw__overlay")!;
     await userEvent.click(overlay);

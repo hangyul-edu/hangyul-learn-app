@@ -50,6 +50,7 @@ vi.mock("../api/endpoints", () => ({
 }));
 
 import { SessionTopik } from "./SessionTopik";
+import { I18nProvider } from "../i18n";
 
 function mc(id: string) {
   return {
@@ -106,10 +107,11 @@ function renderScreen() {
     initialEntries: [{ pathname: "/", state: { section: "reading" } }],
   });
   return render(
-    <QueryClientProvider client={qc}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
+    <I18nProvider language="ko">
+      <QueryClientProvider client={qc}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </I18nProvider>,);
 }
 
 const submitBtn = () => screen.getByRole("button", { name: "제출" });
@@ -238,10 +240,10 @@ describe("SessionTopik — answer flow (incorrect → retry → correct)", () =>
       await userEvent.click(submitBtn());
       const btn = await screen.findByRole("button", { name: q === "C" ? "완료" : "다음" });
       if (q === "C") {
-        // The final step shows the same bottom sheet as Review — 다시 시작 + 완료.
+        // The final step shows the same bottom sheet as Review — 다시 풀기 + 완료.
         const sheet = screen.getByRole("group", { name: "복습 완료!" });
         expect(sheet).toContainElement(btn);
-        expect(within(sheet).getByRole("button", { name: "다시 시작" })).toBeInTheDocument();
+        expect(within(sheet).getByRole("button", { name: "다시 풀기" })).toBeInTheDocument();
       } else {
         // …intermediate answers keep the inline 다음, with no sheet.
         expect(screen.queryByRole("group", { name: "복습 완료!" })).not.toBeInTheDocument();
@@ -252,7 +254,7 @@ describe("SessionTopik — answer flow (incorrect → retry → correct)", () =>
     expect(await screen.findByTestId("complete")).toHaveTextContent("완료 3 30P");
   });
 
-  it("다시 시작 re-solves the set without changing the finalized count or points", async () => {
+  it("다시 풀기 re-solves the set without changing the finalized count or points", async () => {
     attempt
       .mockResolvedValueOnce(correctRes("A", 1))
       .mockResolvedValueOnce(correctRes("B", 2))
@@ -273,8 +275,8 @@ describe("SessionTopik — answer flow (incorrect → retry → correct)", () =>
     const sessionId = attempt.mock.calls[0][1].learning_session_id;
     expect(sessionId).toBeTruthy();
 
-    // 다시 시작 → back to the first question, clean answer state, no summary yet.
-    await userEvent.click(screen.getByRole("button", { name: "다시 시작" }));
+    // 다시 풀기 → back to the first question, clean answer state, no summary yet.
+    await userEvent.click(screen.getByRole("button", { name: "다시 풀기" }));
     await screen.findByText("문제 A");
     expect(submitBtn()).toBeDisabled();
     expect(screen.queryByTestId("complete")).not.toBeInTheDocument();

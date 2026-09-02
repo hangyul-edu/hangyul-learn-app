@@ -17,6 +17,7 @@ let authState: {
 vi.mock("../hooks/auth", () => ({ useAuth: () => authState }));
 
 import { AttendanceGate } from "./AttendanceGate";
+import { I18nProvider } from "../i18n";
 
 const FRESH = {
   checked_in_today: false,
@@ -30,10 +31,11 @@ const ALREADY = { ...FRESH, checked_in_today: true, points_awarded: 0 };
 function renderGate() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}>
-      <AttendanceGate />
-    </QueryClientProvider>,
-  );
+    <I18nProvider language="ko">
+      <QueryClientProvider client={qc}>
+        <AttendanceGate />
+      </QueryClientProvider>
+    </I18nProvider>,);
 }
 
 const dialog = () => screen.queryByRole("dialog");
@@ -118,10 +120,14 @@ describe("AttendanceGate", () => {
   it("checks in only once and does not re-show after a re-render", async () => {
     const { rerender } = renderGate();
     await screen.findByRole("dialog");
+    // Must keep the same wrapper shape, or React remounts the gate and the
+    // check-in fires a second time for reasons unrelated to the gate's guard.
     rerender(
-      <QueryClientProvider client={new QueryClient()}>
-        <AttendanceGate />
-      </QueryClientProvider>,
+      <I18nProvider language="ko">
+        <QueryClientProvider client={new QueryClient()}>
+          <AttendanceGate />
+        </QueryClientProvider>
+      </I18nProvider>,
     );
     await new Promise((r) => setTimeout(r, 0));
     expect(checkIn).toHaveBeenCalledTimes(1);

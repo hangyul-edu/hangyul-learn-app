@@ -12,10 +12,11 @@ vi.mock("../api/endpoints", () => ({
 }));
 
 const EMPTY_KO = "아직 등록된 공지사항이 없어요";
-const EMPTY_EN = "There are no notices yet.";
+const EMPTY_EN = "There are no notices yet";
 
 import { supportApi } from "../api/endpoints";
 import { NoticeList } from "./NoticeList";
+import { I18nProvider } from "../i18n";
 
 const api = supportApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -43,7 +44,7 @@ function NoticeIdProbe() {
   return <div>DETAIL:{noticeId}</div>;
 }
 
-function renderScreen() {
+function renderScreen(language: "ko" | "en" = "ko") {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const router = createMemoryRouter(
     [
@@ -54,10 +55,11 @@ function renderScreen() {
     { initialEntries: ["/profile", "/more/notices"], initialIndex: 1 },
   );
   return render(
-    <QueryClientProvider client={qc}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
+    <I18nProvider language={language}>
+      <QueryClientProvider client={qc}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </I18nProvider>,);
 }
 
 const NOTICE_A = { notice_id: "n_a", title: "가장 최신 공지", body: "본문 A", published_at: "2026-06-29T00:00:00+09:00", is_new: true };
@@ -94,7 +96,9 @@ describe("NoticeList screen", () => {
     await screen.findByText("가장 최신 공지");
     const rows = container.querySelectorAll(".ntc__row");
     expect(rows[0].className).toContain("ntc__row--new");
-    expect(within(rows[0] as HTMLElement).getByLabelText("새 공지")).toHaveTextContent("N");
+    // The badge is the exported 14px disc (Group 7189) — its "N" is a stroked
+    // path in the SVG, so there is no text content to assert on.
+    expect(within(rows[0] as HTMLElement).getByLabelText("새 공지")).toHaveClass("ntc__badge");
     // Normal notice: no badge, no tint.
     expect(rows[1].className).not.toContain("ntc__row--new");
     expect(within(rows[1] as HTMLElement).queryByLabelText("새 공지")).toBeNull();
@@ -139,7 +143,7 @@ describe("NoticeList screen", () => {
   it("shows the empty state with English copy when the app language is en", async () => {
     mockMe = { app_language: "en" };
     api.notices.mockResolvedValue({ items: [], next_cursor: null });
-    renderScreen();
+    renderScreen("en");
     expect(await screen.findByText(EMPTY_EN)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Notices" })).toBeInTheDocument();
   });
@@ -189,7 +193,7 @@ describe("NoticeList screen", () => {
 
   it("requests the notices in the current app language (cache key + param)", async () => {
     mockMe = { app_language: "en" };
-    renderScreen();
+    renderScreen("en");
     // English chrome, and the request carries lang=en.
     expect(await screen.findByRole("heading", { name: "Notices" })).toBeInTheDocument();
     expect(api.notices).toHaveBeenCalledWith(expect.objectContaining({ lang: "en" }));
@@ -209,7 +213,7 @@ describe("NoticeList screen", () => {
       ],
       next_cursor: null,
     });
-    renderScreen();
+    renderScreen("en");
     // The exact server-provided (localized) title is shown as-is.
     expect(await screen.findByText("Welcome to Hangyul")).toBeInTheDocument();
     expect(api.notices).toHaveBeenCalledWith(expect.objectContaining({ lang: "en" }));

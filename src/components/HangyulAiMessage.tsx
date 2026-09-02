@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { CharacterArt } from "./brand/ProfileAssets";
+import { useTranslation } from "../i18n";
+import chatbotFab from "../assets/brand/chatbot-fab.svg";
 
 /**
  * One 한귤AI chat response, rendered as a single overlapped message group:
@@ -14,7 +15,7 @@ import { CharacterArt } from "./brand/ProfileAssets";
  */
 export function HangyulAiMessage({
   children,
-  senderName = "한귤AI",
+  senderName,
   bubbleClassName,
   bubbleAriaLabel,
 }: {
@@ -25,13 +26,17 @@ export function HangyulAiMessage({
   /** Accessible label for non-text bubbles (e.g. the typing indicator). */
   bubbleAriaLabel?: string;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="askai__ai">
       <div className="askai__ai-head">
+        {/* The same chatbot artwork the Personalized FAB uses (chatbot-fab.svg
+            — Rectangle 25703 with its ring and shadow), just drawn at COU-020's
+            34.99 face instead of the FAB's 62. */}
         <span className="askai__ai-face" aria-hidden="true">
-          <CharacterArt variant="AVATAR_01" fill="100%" />
+          <img className="askai__ai-face-art" src={chatbotFab} alt="" />
         </span>
-        <span className="askai__ai-name">{senderName}</span>
+        <span className="askai__ai-name">{senderName ?? t("misc.aiName")}</span>
       </div>
       <div
         className={`askai__msg askai__msg--ai${bubbleClassName ? ` ${bubbleClassName}` : ""}`}

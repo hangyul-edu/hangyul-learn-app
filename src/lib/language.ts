@@ -1,10 +1,9 @@
 /**
  * Single source of truth for the app's supported display languages.
  *
- * The app has no full i18n framework yet (UI strings are Korean literals), so
- * this module holds the supported-language config + the Language Settings
- * screen's copy keyed by language. When a real i18n layer is introduced, this
- * is the config it should build on rather than duplicating the language list.
+ * This module owns the language *identity* (what a language is, how a value is
+ * normalized to one, where the choice is persisted). The message catalogs and
+ * the React binding live in `src/i18n`, which builds on this.
  */
 export type AppLanguage = "en" | "ko";
 
@@ -13,46 +12,48 @@ export const SUPPORTED_LANGUAGES: { code: AppLanguage; nativeLabel: string }[] =
   { code: "ko", nativeLabel: "한국어" },
 ];
 
-/** Clamp any stored/returned value to a supported language; default is `en`. */
+export const DEFAULT_LANGUAGE: AppLanguage = "en";
+
+/** Where the choice survives a reload, ahead of the profile round-trip. */
+export const LANGUAGE_STORAGE_KEY = "hangyul.language.v1";
+
+const CODES = new Set<string>(SUPPORTED_LANGUAGES.map((l) => l.code));
+
+/**
+ * Clamp any stored, server-returned, or browser-reported value to a supported
+ * language. Accepts full locale tags (`ko-KR`, `en_US`) and any casing, since
+ * the value can come from `navigator.language` as well as from our own API.
+ */
 export function normalizeLanguage(value: string | null | undefined): AppLanguage {
-  return value === "ko" ? "ko" : "en";
+  if (!value) return DEFAULT_LANGUAGE;
+  const base = value.toLowerCase().replace("_", "-").split("-")[0];
+  return CODES.has(base) ? (base as AppLanguage) : DEFAULT_LANGUAGE;
 }
 
-/** Localized copy for the Language Settings screen, keyed by the active language. */
-export const LANGUAGE_SETTINGS_COPY: Record<
-  AppLanguage,
-  {
-    title: string;
-    save: string;
-    saveA11y: string;
-    back: string;
-    savedModalTitle: string;
-    savedModalDesc: string;
-    confirm: string;
-    errorToast: string;
-    networkErrorToast: string;
+/** The language to use before any explicit choice exists. */
+export function detectLanguage(): AppLanguage {
+  if (typeof navigator === "undefined") return DEFAULT_LANGUAGE;
+  for (const tag of navigator.languages ?? [navigator.language]) {
+    const base = (tag ?? "").toLowerCase().split("-")[0];
+    if (CODES.has(base)) return base as AppLanguage;
   }
-> = {
-  en: {
-    title: "Language Settings",
-    save: "Save",
-    saveA11y: "Save language setting",
-    back: "Go back",
-    savedModalTitle: "Language settings have been saved",
-    savedModalDesc: "You can now use the app in your selected language",
-    confirm: "Confirm",
-    errorToast: "Unable to save the language setting. Please try again shortly.",
-    networkErrorToast: "Check your network connection and try again.",
-  },
-  ko: {
-    title: "언어 설정",
-    save: "저장",
-    saveA11y: "언어 설정 저장",
-    back: "뒤로 가기",
-    savedModalTitle: "언어 설정이 저장됐습니다",
-    savedModalDesc: "이제부터 선택하신 언어로 이용하실 수 있어요",
-    confirm: "확인",
-    errorToast: "언어 설정을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
-    networkErrorToast: "네트워크 연결을 확인한 후 다시 시도해 주세요.",
-  },
-};
+  return DEFAULT_LANGUAGE;
+}
+
+/** The persisted choice, or null when the user has not chosen one. */
+export function loadStoredLanguage(): AppLanguage | null {
+  try {
+    const raw = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    return raw && CODES.has(raw) ? (raw as AppLanguage) : null;
+  } catch {
+    return null; // private mode / storage disabled
+  }
+}
+
+export function saveStoredLanguage(language: AppLanguage): void {
+  try {
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+  } catch {
+    /* non-fatal: the profile still carries the choice across devices */
+  }
+}

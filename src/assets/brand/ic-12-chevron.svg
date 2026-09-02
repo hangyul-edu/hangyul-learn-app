@@ -1,0 +1,8 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+<foreignObject x="-4" y="-4" width="20" height="20"><div xmlns="http://www.w3.org/1999/xhtml" style="backdrop-filter:blur(2px);clip-path:url(#bgblur_0_0_63_clip_path);height:100%;width:100%"></div></foreignObject><g id="ic_B_topNav" data-figma-bg-blur-radius="4">
+<path id="icon" d="M8 10.5L3.5 6L8 1.5" stroke="#ADB4BA" stroke-width="2.2" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<defs>
+<clipPath id="bgblur_0_0_63_clip_path" transform="translate(4 4)"><rect width="12" height="12" rx="4"/>
+</clipPath></defs>
+</svg>

@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "../i18n";
 import {
   HangyulLogo,
   AuthDecor,
@@ -19,6 +20,7 @@ import { useSocialLogin } from "../hooks/socialLogin";
  * short devices don't clip or scroll.
  */
 export function Welcome() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const social = useSocialLogin();
 
@@ -31,37 +33,37 @@ export function Welcome() {
 
         <div className="auth__brand">
           <HangyulLogo />
-          <p className="auth__tagline">작은 귤 한 조각처럼, 매일 한 문장씩</p>
+          <p className="auth__tagline">{t("login.tagline")}</p>
         </div>
 
         <div className="auth__grow auth__grow--mid" />
 
         <div className="auth__actions">
           <button className="auth__btn auth__btn--primary" onClick={() => nav("/login")}>
-            로그인
+            {t("welcome.login")}
           </button>
           <button className="auth__btn auth__btn--outline" onClick={() => nav("/signup")}>
-            회원가입
+            {t("welcome.signup")}
           </button>
           <button
-            className="auth__btn auth__btn--outline"
+            className="auth__btn auth__btn--google"
             onClick={() => social.start("google")}
-            aria-label="Google로 계속하기"
+            aria-label={t("welcome.google")}
           >
             <span className="auth__btn-icon">
               <GoogleIcon />
             </span>
-            Google로 계속하기
+            {t("welcome.google")}
           </button>
           <button
             className="auth__btn auth__btn--apple"
             onClick={() => social.start("apple")}
-            aria-label="Apple로 계속하기"
+            aria-label={t("welcome.apple")}
           >
             <span className="auth__btn-icon">
               <AppleIcon />
             </span>
-            Apple로 계속하기
+            {t("welcome.apple")}
           </button>
         </div>
 
@@ -69,21 +71,21 @@ export function Welcome() {
           <button
             className="auth__circle auth__circle--fb"
             onClick={() => social.start("facebook")}
-            aria-label="Facebook으로 계속하기"
+            aria-label={t("welcome.facebook")}
           >
             <FacebookIcon />
           </button>
           <button
             className="auth__circle auth__circle--kakao"
             onClick={() => social.start("kakao")}
-            aria-label="Kakao로 계속하기"
+            aria-label={t("welcome.kakao")}
           >
             <KakaoIcon />
           </button>
           <button
             className="auth__circle auth__circle--line"
             onClick={() => social.start("line")}
-            aria-label="LINE으로 계속하기"
+            aria-label={t("welcome.line")}
           >
             <LineIcon />
           </button>
@@ -93,10 +95,10 @@ export function Welcome() {
 
         <div className="auth__recovery">
           <button className="auth__link" onClick={() => nav("/forgot", { state: { mode: "email" } })}>
-            이메일 찾기
+            {t("login.findEmail")}
           </button>
           <button className="auth__link" onClick={() => nav("/forgot", { state: { mode: "password" } })}>
-            비밀번호 찾기
+            {t("login.findPassword")}
           </button>
         </div>
       </div>

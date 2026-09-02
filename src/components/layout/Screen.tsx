@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "../../i18n";
 
 export function TopBar({
   title,
@@ -14,11 +15,12 @@ export function TopBar({
   right?: ReactNode;
   transparent?: boolean;
 }) {
+  const { t } = useTranslation();
   const nav = useNavigate();
   return (
     <div className="topbar" style={transparent ? { background: "transparent", borderColor: "transparent" } : undefined}>
       {back && (
-        <button className="topbar__btn topbar__btn--ghost" onClick={onBack ?? (() => nav(-1))} aria-label="뒤로">
+        <button className="topbar__btn topbar__btn--ghost" onClick={onBack ?? (() => nav(-1))} aria-label={t("common.back")}>
           ‹
         </button>
       )}

@@ -1,41 +1,30 @@
-import { CharacterArt } from "../components/brand/ProfileAssets";
+import { useTranslation, type TranslationKey } from "../i18n";
+import { OnboardingShell, OnboardingOption } from "./OnboardingShell";
+import mascotSteps from "../assets/brand/onb-mascot-steps.svg";
 
 /**
  * Daily-goal options. `n` is the stable backend value (onboarding schema
  * `daily_sentence_goal: Literal[5,10,20,30,40]`); `mode` is the visible pill
  * label. The integer is submitted — labels are never sent to the API.
  */
-const GOALS: { n: number; mode: string; rec?: boolean }[] = [
-  { n: 5, mode: "기본 모드" },
-  { n: 10, mode: "추천 루틴 모드", rec: true },
-  { n: 20, mode: "집중 모드" },
-  { n: 30, mode: "몰입 모드" },
-  { n: 40, mode: "정복 모드" },
+const GOALS: { n: number; mode: TranslationKey; rec?: boolean }[] = [
+  { n: 5, mode: "onboarding.goalBasic" },
+  { n: 10, mode: "onboarding.goalRoutine", rec: true },
+  { n: 20, mode: "onboarding.goalFocus" },
+  { n: 30, mode: "onboarding.goalImmersion" },
+  { n: 40, mode: "onboarding.goalConquer" },
 ];
 
-/** Decorative green-cap character (reuses AVATAR_02) standing beside a row of
- *  pale-pink stepping stones. Non-interactive. */
-function GoalCharacter() {
-  return (
-    <div className="onbg__art" aria-hidden="true">
-      <span className="onbg__char">
-        <CharacterArt variant="AVATAR_02" fill="100%" />
-      </span>
-      <span className="onbg__stones">
-        <i />
-        <i />
-        <i />
-        <i />
-      </span>
-    </div>
-  );
-}
-
 /**
- * Final onboarding question — daily goal. Faithful visual for the existing
- * Onboarding step 2 (both branches: `daily_sentence_goal` for conversation,
- * `daily_question_goal` for TOPIK — only the heading differs). It owns no state
- * or API logic: the parent keeps the `goal` draft and calls the existing
+ * Final onboarding question — daily goal. Figma AUR-004: the sentence branch is
+ * KO 2149:24792 / EN 784:53665 and the question branch KO 2149:24877 / EN
+ * AUR-006 1803:24464. Only the heading and the free-plan notice differ.
+ *
+ * Unlike the other question screens this one puts its CTA in `cp_tab` (a white
+ * 98px footer), so the button sits 39px off the bottom instead of 34px, and the
+ * whole content column flows from y=154 rather than being pinned at y=179.
+ *
+ * It owns no state or API logic: the parent keeps the `goal` draft and calls
  * `submit()` on the CTA, which sends the branch-correct field and completes
  * onboarding server-side (level assignment + navigation) only on success.
  */
@@ -47,6 +36,7 @@ export function OnboardingDailyGoal({
   busy,
   progress,
   heading,
+  notice,
 }: {
   value: number;
   onSelect: (n: number) => void;
@@ -57,75 +47,50 @@ export function OnboardingDailyGoal({
   progress: number;
   /** The second heading line (branch-specific: sentences vs. questions). */
   heading: string;
+  /** The free-plan notice (branch-specific, same two-line box). */
+  notice: string;
 }) {
-  const pct = Math.round(Math.min(1, Math.max(0, progress)) * 100);
+  const { t } = useTranslation();
   const valid = GOALS.some((g) => g.n === value);
 
   return (
-    <div className="screen onbq">
-      <div className="onbq__scroll">
-        <div className="onbq__inner">
-          <button className="onbq__back" onClick={onBack} aria-label="뒤로" disabled={busy}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
+    <OnboardingShell progress={progress} onBack={onBack} backDisabled={busy}>
+      <div className="onbg__col">
+        <div className="onbg__heading">
+          <p className="onbg__q1">{t("onboarding.goalLast")}</p>
+          <h1 className="onbg__q2">{heading}</h1>
+        </div>
 
-          <div
-            className="onbq__progress"
-            role="progressbar"
-            aria-valuenow={pct}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="온보딩 진행률"
-          >
-            <div className="onbq__progress-fill" style={{ width: `${pct}%` }} />
-          </div>
+        <p className="onbg__notice">{notice}</p>
 
-          <div className="onbg__heading">
-            <p className="onbg__q1">마지막 질문이에요!</p>
-            <h1 className="onbg__q2">{heading}</h1>
-          </div>
-
-          <div className="onbq__answers" role="radiogroup" aria-label="하루 학습 목표">
-            {GOALS.map((g) => (
-              <button
-                key={g.n}
-                type="button"
-                className={`onbg__card ${value === g.n ? "is-selected" : ""}`}
-                role="radio"
-                aria-checked={value === g.n}
-                aria-label={`${g.n}개, ${g.mode}`}
-                onClick={() => onSelect(g.n)}
-              >
-                <span className="onbg__qty">{g.n}개</span>
-                {g.rec ? (
-                  <span className="onbg__pill onbg__pill--rec">
-                    <span className="onbg__pill-hl">추천</span> 루틴 모드
-                  </span>
-                ) : (
-                  <span className="onbg__pill">{g.mode}</span>
-                )}
-              </button>
-            ))}
-          </div>
-
-          <div className="onbq__spacer" />
-
-          <GoalCharacter />
-
-          <button
-            type="button"
-            className="onbq__next"
-            onClick={onSubmit}
-            disabled={busy || !valid}
-            aria-disabled={busy || !valid}
-            aria-label="바로 시작하기"
-          >
-            {busy ? <span className="spinner" style={{ width: 24, height: 24, borderWidth: 2.5 }} /> : "바로 시작하기"}
-          </button>
+        <div className="onbg__answers" role="radiogroup" aria-label={t("onboarding.goalA11y")}>
+          {GOALS.map((g) => (
+            <OnboardingOption
+              key={g.n}
+              label={t("onboarding.sentenceCount", { n: g.n })}
+              badge={t(g.mode)}
+              recommended={g.rec}
+              selected={value === g.n}
+              onSelect={() => onSelect(g.n)}
+              a11y={t("onboarding.goalOptionA11y", { n: g.n, mode: t(g.mode) })}
+            />
+          ))}
         </div>
       </div>
-    </div>
+
+      {/* Group 1410118493 (2149:24811) — 210.54x92.84 at (133, 600.4). */}
+      <img className="onbq__art onbq__art--steps" src={mascotSteps} alt="" aria-hidden="true" />
+
+      <button
+        type="button"
+        className="onbq__next onbq__next--tab"
+        onClick={onSubmit}
+        disabled={busy || !valid}
+        aria-disabled={busy || !valid}
+        aria-label={t("onboarding.goStart")}
+      >
+        {busy ? <span className="spinner" style={{ width: 24, height: 24, borderWidth: 2.5 }} /> : t("onboarding.goStart")}
+      </button>
+    </OnboardingShell>
   );
 }

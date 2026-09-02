@@ -13,6 +13,7 @@ vi.mock("../api/endpoints", () => ({
 import { supportApi } from "../api/endpoints";
 import { ApiError } from "../lib/http";
 import { NoticeDetail } from "./NoticeDetail";
+import { I18nProvider } from "../i18n";
 
 const api = supportApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -33,10 +34,11 @@ function renderDetail(
   return {
     qc,
     ...render(
-      <QueryClientProvider client={qc}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>,
-    ),
+      <I18nProvider language="ko">
+        <QueryClientProvider client={qc}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </I18nProvider>,),
   };
 }
 

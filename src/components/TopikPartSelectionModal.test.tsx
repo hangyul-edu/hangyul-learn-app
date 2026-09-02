@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { I18nProvider } from "../i18n";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -7,7 +8,7 @@ import { TopikPartSelectionModal } from "./TopikPartSelectionModal";
 function setup(overrides: Partial<Parameters<typeof TopikPartSelectionModal>[0]> = {}) {
   const onClose = vi.fn();
   const onStart = vi.fn();
-  render(<TopikPartSelectionModal open onClose={onClose} onStart={onStart} {...overrides} />);
+  render(<I18nProvider language="ko"><TopikPartSelectionModal open onClose={onClose} onStart={onStart} {...overrides} /></I18nProvider>);
   return { onClose, onStart };
 }
 
@@ -68,7 +69,7 @@ describe("TopikPartSelectionModal", () => {
   it("renders nothing when closed", () => {
     const onClose = vi.fn();
     const onStart = vi.fn();
-    render(<TopikPartSelectionModal open={false} onClose={onClose} onStart={onStart} />);
+    render(<I18nProvider language="ko"><TopikPartSelectionModal open={false} onClose={onClose} onStart={onStart} /></I18nProvider>);
     expect(screen.queryByText("학습할 파트를 선택하세요")).not.toBeInTheDocument();
   });
 });

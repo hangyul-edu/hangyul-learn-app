@@ -1,27 +1,32 @@
 import { useEffect, useRef, type ReactNode } from "react";
+import { useTranslation } from "../i18n";
+import doneBadge from "../assets/brand/ic-modal-done.svg";
 
 /**
  * Shared terminal-success modal (account-withdrawal complete / logout complete).
  * Shown ONLY after the backend confirms the terminal operation — it never calls
- * any API. The top-right X and the orange 확인 perform the identical terminal
- * action (`onClose`): the parent runs the centralized cleanup + navigation reset.
- *
- * Backdrop is non-dismissable; X / 확인 / Escape all complete the flow. Focus is
- * trapped; there is no authenticated screen to return to.
+ * any API. Laid out from MOR-007 (KO 3085:27764 / EN 3085:29141), which carries a single orange
+ * 확인 and no dismiss affordance of its own, so 확인 / Escape are the only ways
+ * out (`onClose`) and the parent runs the centralized cleanup + navigation
+ * reset. Backdrop is non-dismissable; focus is trapped; there is no
+ * authenticated screen to return to.
  */
 export function SuccessModal({
   open,
   title,
   description,
-  closeAriaLabel,
   onClose,
+  icon = doneBadge,
 }: {
   open: boolean;
   title: string;
   description: ReactNode;
-  closeAriaLabel: string;
   onClose: () => void;
+  /** 60px status badge. Defaults to MOR-007's mint disc; AME-006's profile
+   *  modal (2231:24627) uses the green ic-modal-success one instead. */
+  icon?: string;
 }) {
+  const { t } = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -71,22 +76,14 @@ export function SuccessModal({
         aria-labelledby="succ-title"
         aria-describedby="succ-desc"
       >
-        <button className="wdd__close" onClick={onClose} aria-label={closeAriaLabel}>
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M6 6l12 12M18 6L6 18" stroke="#111" strokeWidth="2.2" strokeLinecap="round" />
-          </svg>
-        </button>
-
         <div className="wdd__icon" aria-hidden="true">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <path d="M13 24.5l7 7 15-15" stroke="#55C7CB" strokeWidth="4.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <img src={icon} alt="" />
         </div>
 
         <h2 className="wdd__title" id="succ-title">{title}</h2>
         <p className="wdd__copy" id="succ-desc">{description}</p>
 
-        <button className="wdd__btn" onClick={onClose}>확인</button>
+        <button className="wdd__btn" onClick={onClose}>{t("common.confirm")}</button>
       </div>
     </div>
   );

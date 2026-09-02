@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { translate } from "../i18n";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -15,7 +16,8 @@ vi.mock("../api/endpoints", () => ({
 }));
 
 import { Streak } from "./Streak";
-import { SUN_COPY } from "../components/DailyLearningSun";
+import { SUN_COPY_KEYS } from "../components/DailyLearningSun";
+import { I18nProvider } from "../i18n";
 
 const CAL = {
   current_streak: 4,
@@ -48,12 +50,13 @@ function renderStreak() {
   return {
     qc,
     ...render(
-      <QueryClientProvider client={qc}>
-        <MemoryRouter>
-          <Streak />
-        </MemoryRouter>
-      </QueryClientProvider>,
-    ),
+      <I18nProvider language="ko">
+        <QueryClientProvider client={qc}>
+          <MemoryRouter>
+            <Streak />
+          </MemoryRouter>
+        </QueryClientProvider>
+      </I18nProvider>,),
   };
 }
 
@@ -71,7 +74,7 @@ describe("Streak banner — today-study state", () => {
     expect(screen.getByText(/학습하면 태양이 다시 빛날 거예요!/)).toBeInTheDocument();
     // Sun settles into the off state, and the active copy is never present
     // (no off-sun + active-copy mix).
-    expect(await screen.findByLabelText(SUN_COPY.unlit)).toBeInTheDocument();
+    expect(await screen.findByLabelText(translate("ko", SUN_COPY_KEYS.unlit))).toBeInTheDocument();
     expect(screen.queryByText(/태양이 빛나는 중/)).not.toBeInTheDocument();
   });
 
@@ -80,7 +83,7 @@ describe("Streak banner — today-study state", () => {
     renderStreak();
     expect(await screen.findByText(/태양이 빛나는 중/)).toBeInTheDocument();
     expect(screen.getByText(/꾸준히 4일!/)).toBeInTheDocument();
-    expect(screen.getByLabelText(SUN_COPY.lit)).toBeInTheDocument();
+    expect(screen.getByLabelText(translate("ko", SUN_COPY_KEYS.lit))).toBeInTheDocument();
     expect(screen.queryByText(/연속 학습이 멈췄어요/)).not.toBeInTheDocument();
   });
 
@@ -91,7 +94,7 @@ describe("Streak banner — today-study state", () => {
     // A qualifying study action patches the shared ["dashboard"] query.
     qc.setQueryData(["dashboard"], { studied_today: true });
     await waitFor(() => expect(screen.getByText(/태양이 빛나는 중/)).toBeInTheDocument());
-    expect(screen.getByLabelText(SUN_COPY.lit)).toBeInTheDocument();
+    expect(screen.getByLabelText(translate("ko", SUN_COPY_KEYS.lit))).toBeInTheDocument();
     expect(screen.queryByText(/연속 학습이 멈췄어요/)).not.toBeInTheDocument();
   });
 });

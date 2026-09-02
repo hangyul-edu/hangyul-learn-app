@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useBlocker, useNavigate, useParams } from "react-router-dom";
+import { useTranslation, type TranslationKey } from "../i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SkeletonList } from "../components/ui/states";
 import { UnsavedChangesModal } from "../components/UnsavedChangesModal";
@@ -9,16 +10,28 @@ import { errorMessage } from "../lib/http";
 import { CONVERSATION_LEVEL_MAX, TOPIK_GRADE_MAX } from "../lib/levels";
 
 const CFG = {
-  conversation: { title: "실전 회화", maxLevel: CONVERSATION_LEVEL_MAX, cols: 5, levelLabel: (n: number) => `Lv.${n}`, srLevel: (n: number) => `회화 레벨 ${n}` },
-  topik: { title: "TOPIK", maxLevel: TOPIK_GRADE_MAX, cols: 3, levelLabel: (n: number) => `${n}급`, srLevel: (n: number) => `TOPIK ${n}급` },
+  conversation: {
+    titleKey: "trackSettings.conversationTrack" as TranslationKey,
+    maxLevel: CONVERSATION_LEVEL_MAX,
+    cols: 5,
+    levelLabelKey: "trackSettings.levelLabelConversation" as TranslationKey,
+    srLevelKey: "trackSettings.conversationLevelA11y" as TranslationKey,
+  },
+  topik: {
+    titleKey: "trackSettings.topikTitle" as TranslationKey,
+    maxLevel: TOPIK_GRADE_MAX,
+    cols: 3,
+    levelLabelKey: "trackSettings.gradeLabel" as TranslationKey,
+    srLevelKey: "trackSettings.topikLevelA11y" as TranslationKey,
+  },
 } as const;
 
-const GOALS: { n: number; mode: string; mint?: boolean }[] = [
-  { n: 5, mode: "기본 모드" },
-  { n: 10, mode: "추천 루틴 모드", mint: true },
-  { n: 20, mode: "집중 모드" },
-  { n: 30, mode: "몰입 모드" },
-  { n: 40, mode: "정복 모드" },
+const GOALS: { n: number; mode: TranslationKey; mint?: boolean }[] = [
+  { n: 5, mode: "onboarding.goalBasic" },
+  { n: 10, mode: "onboarding.goalRoutine", mint: true },
+  { n: 20, mode: "onboarding.goalFocus" },
+  { n: 30, mode: "onboarding.goalImmersion" },
+  { n: 40, mode: "onboarding.goalConquer" },
 ];
 
 /**
@@ -30,6 +43,7 @@ const GOALS: { n: number; mode: string; mint?: boolean }[] = [
  * owns the level-change progress reset.
  */
 export function TrackSettings() {
+  const { t } = useTranslation();
   const { category: raw } = useParams<{ category: string }>();
   const category = (raw === "topik" ? "topik" : "conversation") as keyof typeof CFG;
   const cfg = CFG[category];
@@ -45,7 +59,7 @@ export function TrackSettings() {
   const [draftGoal, setDraftGoal] = useState<number | null>(null);
   const origRef = useRef<{ level: number; goal: number } | null>(null);
   const [saving, setSaving] = useState(false);
-  const leavingRef = useRef(false); // set when we intentionally leave (save / 나가기)
+  const leavingRef = useRef(false); // set when we intentionally leave (save / leave)
   const seqRef = useRef(0);
 
   // Capture the server-confirmed originals once, then seed the draft.
@@ -102,7 +116,7 @@ export function TrackSettings() {
       qc.invalidateQueries({ queryKey: ["dashboard"] }); // Home + Custom Learning
       origRef.current = { level: draftLevel, goal: draftGoal }; // clear dirty
       leavingRef.current = true; // deliberate exit — don't trip the blocker
-      toast.success("저장했어요");
+      toast.success(t("trackSettings.saved"));
       goBack();
     } catch (e) {
       if (mySeq !== seqRef.current) return;
@@ -119,18 +133,18 @@ export function TrackSettings() {
       <div className="trkset__scroll">
         <div className="trkset__inner">
           <header className="acct__header">
-            <button className="acct__back" onClick={goBack} aria-label="뒤로">
+            <button className="acct__back" onClick={goBack} aria-label={t("common.back")}>
               <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
-            <h1 className="acct__title">{cfg.title}</h1>
+            <h1 className="acct__title">{t(cfg.titleKey)}</h1>
           </header>
 
           {q.isError ? (
             <div className="clset__err" style={{ marginTop: 24 }}>
-              <span>설정을 불러오지 못했어요.</span>
-              <button className="clset__retry" onClick={() => q.refetch()}>다시 시도</button>
+              <span>{t("trackSettings.loadError")}</span>
+              <button className="clset__retry" onClick={() => q.refetch()}>{t("common.retry")}</button>
             </div>
           ) : (
             <>
@@ -138,14 +152,14 @@ export function TrackSettings() {
               <div className="trkset__section">
                 <div className="trkset__sec-head">
                   <span className="trkset__num" aria-hidden="true">1</span>
-                  <span className="trkset__sec-label">레벨 선택</span>
+                  <span className="trkset__sec-label">{t("trackSettings.levelSection")}</span>
                 </div>
                 {loaded ? (
                   <div
                     className="trkset__levels"
                     style={{ gridTemplateColumns: `repeat(${cfg.cols}, 1fr)` }}
                     role="radiogroup"
-                    aria-label="레벨 선택"
+                    aria-label={t("trackSettings.levelSection")}
                   >
                     {Array.from({ length: maxLevel }, (_, i) => i + 1).map((n) => {
                       const sel = draftLevel === n;
@@ -155,11 +169,11 @@ export function TrackSettings() {
                           type="button"
                           role="radio"
                           aria-checked={sel}
-                          aria-label={`${cfg.srLevel(n)}${sel ? ", 선택됨" : ""}`}
+                          aria-label={`${t(cfg.srLevelKey, { n })}${sel ? t("trackSettings.selectedSuffix") : ""}`}
                           className={`trkset__lv ${sel ? "is-sel" : ""}`}
                           onClick={() => setDraftLevel(n)}
                         >
-                          {cfg.levelLabel(n)}
+                          {t(cfg.levelLabelKey, { n })}
                         </button>
                       );
                     })}
@@ -173,10 +187,10 @@ export function TrackSettings() {
               <div className="trkset__section">
                 <div className="trkset__sec-head">
                   <span className="trkset__num" aria-hidden="true">2</span>
-                  <span className="trkset__sec-label">하루 목표</span>
+                  <span className="trkset__sec-label">{t("trackSettings.goalSection")}</span>
                 </div>
                 {loaded ? (
-                  <div className="trkset__goals" role="radiogroup" aria-label="하루 목표">
+                  <div className="trkset__goals" role="radiogroup" aria-label={t("trackSettings.goalSection")}>
                     {GOALS.map((g) => {
                       const sel = draftGoal === g.n;
                       return (
@@ -185,12 +199,22 @@ export function TrackSettings() {
                           type="button"
                           role="radio"
                           aria-checked={sel}
-                          aria-label={`하루 목표 ${g.n}개, ${g.mode}${sel ? ", 선택됨" : ""}`}
+                          aria-label={`${t("trackSettings.goalA11y", { n: g.n, mode: t(g.mode) })}${sel ? t("trackSettings.selectedSuffix") : ""}`}
                           className={`trkset__goal ${sel ? "is-sel" : ""}`}
                           onClick={() => setDraftGoal(g.n)}
                         >
-                          <span className="trkset__goal-count">{g.n}개</span>
-                          <span className={`trkset__pill ${g.mint ? "trkset__pill--mint" : ""}`}>{g.mode}</span>
+                          <span className="trkset__goal-count">{t("session.countUnit", { n: g.n })}</span>
+                          <span className={`trkset__pill ${g.mint ? "trkset__pill--mint" : ""}`}>
+                            {g.mint ? (
+                              // I1825:33049;1:5489 — two runs, only the first is mint.
+                              <>
+                                <span className="trkset__pill-rec">{t("onboarding.goalRoutineRec")}</span>{" "}
+                                {t("onboarding.goalRoutineBase")}
+                              </>
+                            ) : (
+                              t(g.mode)
+                            )}
+                          </span>
                         </button>
                       );
                     })}
@@ -212,7 +236,7 @@ export function TrackSettings() {
           disabled={!dirty || saving}
           aria-disabled={!dirty || saving}
         >
-          {saving ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : "저장하기"}
+          {saving ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("trackSettings.save")}
         </button>
       </div>
 

@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "../i18n";
+import closeIcon from "../assets/brand/ic-modal-close.svg";
 
 /**
  * Course-access code ("수강권 코드") registration modal. Opening it calls no API;
@@ -30,6 +32,7 @@ export function VoucherModal({
   onClose: () => void;
   onSubmit: (code: string) => void;
 }) {
+  const { t } = useTranslation();
   const [emptyErr, setEmptyErr] = useState(false);
   const [dirty, setDirty] = useState(false); // typed since last submit → hide server error
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -96,7 +99,7 @@ export function VoucherModal({
     onSubmit(value);
   }
 
-  const shownError = emptyErr ? "코드를 입력해주세요." : dirty ? null : error;
+  const shownError = emptyErr ? t("voucher.empty") : dirty ? null : error;
 
   return (
     <div className="overlay overlay--center wd__overlay">
@@ -106,16 +109,12 @@ export function VoucherModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="vou-title"
-        aria-describedby="vou-desc"
       >
-        <button className="wdd__close" onClick={onClose} aria-label="수강권 코드 등록 창 닫기" disabled={loading}>
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M6 6l12 12M18 6L6 18" stroke="#111" strokeWidth="2.2" strokeLinecap="round" />
-          </svg>
+        <button className="vou__close" onClick={onClose} aria-label={t("voucher.closeA11y")} disabled={loading}>
+          <img src={closeIcon} alt="" aria-hidden="true" />
         </button>
 
-        <h2 className="vou__title" id="vou-title">수강권 코드 등록</h2>
-        <p className="vou__guide" id="vou-desc">별도로 받으신 코드가 있으신 경우 등록하실 수 있습니다</p>
+        <h2 className="vou__title" id="vou-title">{t("voucher.title")}</h2>
 
         <input
           ref={inputRef}
@@ -128,7 +127,7 @@ export function VoucherModal({
           spellCheck={false}
           maxLength={40}
           placeholder="ABCD-1234-EFGH"
-          aria-label="수강권 코드"
+          aria-label={t("voucher.codeA11y")}
           aria-invalid={!!shownError}
           value={code}
           disabled={loading}
@@ -146,14 +145,14 @@ export function VoucherModal({
 
         <div className="wd__panel">
           <ul className="wd__list">
-            <li className="wd__item">코드 확인 후 즉시 구독 적용</li>
-            <li className="wd__item">기존 구독 종료 후 순차 적용</li>
-            <li className="wd__item">1회 사용 후 재사용 불가</li>
+            <li className="wd__item">{t("voucher.note1")}</li>
+            <li className="wd__item">{t("voucher.note2")}</li>
+            <li className="wd__item">{t("voucherSuccess.singleUse")}</li>
           </ul>
         </div>
 
         <button className="vou__submit" onClick={submit} disabled={loading || !code.trim()}>
-          {loading ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : "등록하기"}
+          {loading ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("voucher.submit")}
         </button>
       </div>
     </div>

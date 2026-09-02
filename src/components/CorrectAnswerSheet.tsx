@@ -1,3 +1,5 @@
+import { useTranslation } from "../i18n";
+import icArrow from "../assets/brand/ic-16-arrow.svg";
 /**
  * Bottom sheet shown after a CORRECT personalized-learning answer. Two mutually
  * exclusive modes with a distinct visual hierarchy:
@@ -29,6 +31,7 @@ export function CorrectAnswerSheet({
   advancing?: boolean;
   completing?: boolean;
 }) {
+  const { t } = useTranslation();
   const spinner = <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />;
   return (
     <>
@@ -38,7 +41,7 @@ export function CorrectAnswerSheet({
       <div
         className={`casheet casheet--${mode}`}
         role="group"
-        aria-label={mode === "complete" ? "학습 완료" : "정답, 다음으로"}
+        aria-label={t(mode === "complete" ? "session.learningComplete" : "session.answerNext")}
       >
         <div className="casheet__row">
           <button
@@ -46,9 +49,9 @@ export function CorrectAnswerSheet({
             className="casheet__btn casheet__btn--replay"
             onClick={onReplay}
             disabled={replaying}
-            aria-label="다시 듣기"
+            aria-label={t("session.listenAgain")}
           >
-            {replaying ? spinner : "다시 듣기"}
+            {replaying ? spinner : t("session.listenAgain")}
           </button>
 
           {mode === "next" ? (
@@ -57,16 +60,17 @@ export function CorrectAnswerSheet({
               className="casheet__btn casheet__btn--next"
               onClick={onNext}
               disabled={advancing}
-              aria-label="다음 문제로"
+              aria-label={t("session.nextQuestion")}
             >
               {advancing ? (
                 spinner
               ) : (
                 <>
-                  다음
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  {t("session.next")}
+                  <span className="casheet__arrows" aria-hidden="true">
+                    <img src={icArrow} alt="" />
+                    <img src={icArrow} alt="" />
+                  </span>
                 </>
               )}
             </button>
@@ -76,9 +80,9 @@ export function CorrectAnswerSheet({
               className="casheet__btn casheet__btn--complete"
               onClick={onComplete}
               disabled={completing}
-              aria-label="학습 완료"
+              aria-label={t("session.learningComplete")}
             >
-              {completing ? spinner : "완료"}
+              {completing ? spinner : t("session.complete")}
             </button>
           )}
         </div>

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { I18nProvider } from "../../i18n";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -6,7 +7,7 @@ import { CountrySelect } from "./CountrySelect";
 
 function renderSelect(value = "KR") {
   const onChange = vi.fn();
-  const utils = render(<CountrySelect value={value} onChange={onChange} />);
+  const utils = render(<I18nProvider language="ko"><CountrySelect value={value} onChange={onChange} /></I18nProvider>);
   const trigger = screen.getByRole("button", { name: /국가 선택/ });
   return { onChange, trigger, ...utils };
 }
@@ -29,7 +30,8 @@ describe("CountrySelect", () => {
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     // Open → upward caret path.
     expect(document.querySelector("path")).toHaveAttribute("d", "M6 15l6-6 6 6");
-    expect(screen.getByRole("option", { name: /United States/ })).toBeInTheDocument();
+    // Names come from the catalog now, so a ko-rendered list is in Korean.
+    expect(screen.getByRole("option", { name: /미국/ })).toBeInTheDocument();
   });
 
   it("selecting a country reports it and closes the dropdown", async () => {
@@ -37,7 +39,7 @@ describe("CountrySelect", () => {
     const { trigger, onChange } = renderSelect();
     await user.click(trigger);
     // The full-width button inside the option row is the click target.
-    await user.click(screen.getByRole("button", { name: /日本/ }));
+    await user.click(screen.getByRole("button", { name: /일본/ }));
     expect(onChange).toHaveBeenCalledWith("JP");
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
     expect(trigger).toHaveAttribute("aria-expanded", "false");

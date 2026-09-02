@@ -1,20 +1,10 @@
 import { useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { SkeletonList } from "../ui/states";
+import { DetailHeader } from "../DetailHeader";
 
 /** Shared FAQ header: back arrow left, centered "FAQ" title, no right action. */
 export function FaqHeader({ onBack }: { onBack?: () => void }) {
-  const nav = useNavigate();
-  return (
-    <header className="faq__header">
-      <button className="faq__back" onClick={onBack ?? (() => nav(-1))} aria-label="뒤로">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M15 5l-7 7 7 7" stroke="#272c30" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
-      <h1 className="faq__title">FAQ</h1>
-    </header>
-  );
+  return <DetailHeader title="FAQ" onBack={onBack} />;
 }
 
 /** A single question row — gray rounded card, blue "Q." prefix. */

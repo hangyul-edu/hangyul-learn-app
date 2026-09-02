@@ -1,5 +1,13 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import levelupMascot from "../assets/brand/levelup-mascot.svg";
+import levelupMascotTopik from "../assets/brand/levelup-mascot-topik.svg";
+import levelupTopikArc from "../assets/brand/levelup-topik-arc.svg";
+import levelupBubbleTail from "../assets/brand/levelup-bubble-tail.svg";
+import levelupMascotPencil from "../assets/brand/levelup-mascot-pencil.svg";
+import levelupConfetti from "../assets/brand/levelup-confetti.svg";
+import levelupMedal from "../assets/brand/levelup-medal.svg";
+import { useTranslation } from "../i18n";
 import { useQueryClient } from "@tanstack/react-query";
 import type { SessionLevelUp } from "../lib/types";
 
@@ -22,75 +30,60 @@ function fmtDuration(totalSeconds: number): string {
 }
 
 /* ------------------------------- mascot --------------------------------- */
-// Celebratory Hangyul tangerine mascot (graduation cap, open arms, happy face)
-// with confetti — inline SVG, matching the repo's brand-asset convention.
-function LevelUpMascot() {
+// Celebratory Hangyul tangerine with confetti and a speech bubble. The two
+// tracks do NOT share the artwork: TAL-012 draws a bespectacled tangerine
+// sitting on an open book, TAL-032 a graduation-cap tangerine mid-jump over a
+// blurred ground arc. Both are exported artwork, never redrawn.
+function LevelUpMascot({ isTopik }: { isTopik: boolean }) {
+  const { t } = useTranslation();
   return (
-    <div className="lvup__mascot" role="img" aria-label="레벨업을 축하하는 한결 캐릭터">
-      <svg viewBox="0 0 220 210" className="lvup__mascot-svg" aria-hidden="true" focusable="false">
-        {/* confetti */}
-        <g className="lvup__confetti">
-          <rect x="24" y="34" width="9" height="9" rx="2" fill="#5FB65B" transform="rotate(18 28 38)" />
-          <rect x="182" y="30" width="9" height="9" rx="2" fill="#2F6BFF" transform="rotate(-22 186 34)" />
-          <circle cx="46" cy="96" r="5" fill="#FFC24B" />
-          <circle cx="176" cy="104" r="5" fill="#EF6B5B" />
-          <rect x="150" y="60" width="8" height="8" rx="2" fill="#F2A93B" transform="rotate(25 154 64)" />
-          <rect x="58" y="58" width="8" height="8" rx="2" fill="#EF6B5B" transform="rotate(-16 62 62)" />
-          <path d="M110 20l2.4 5 5.4.6-4 3.7 1 5.4-4.8-2.7-4.8 2.7 1-5.4-4-3.7 5.4-.6z" fill="#FFC24B" />
-        </g>
-        {/* soft landing glow */}
-        <ellipse cx="110" cy="182" rx="52" ry="12" fill="#F7C98A" opacity="0.45" />
-        {/* arms (open) */}
-        <path d="M64 120c-14 2-24 10-30 22" stroke="#EE8B2E" strokeWidth="9" strokeLinecap="round" fill="none" />
-        <path d="M156 120c14 2 24 10 30 22" stroke="#EE8B2E" strokeWidth="9" strokeLinecap="round" fill="none" />
-        {/* body */}
-        <ellipse cx="110" cy="120" rx="52" ry="50" fill="#F5872E" />
-        <ellipse cx="110" cy="120" rx="52" ry="50" fill="url(#lvupShine)" />
-        {/* face */}
-        <circle cx="94" cy="118" r="4.6" fill="#3A2418" />
-        <circle cx="126" cy="118" r="4.6" fill="#3A2418" />
-        <path d="M96 132c4.4 5 19.6 5 24 0" stroke="#3A2418" strokeWidth="4.4" strokeLinecap="round" fill="none" />
-        <ellipse cx="82" cy="130" rx="6" ry="4" fill="#FBB27A" opacity="0.85" />
-        <ellipse cx="138" cy="130" rx="6" ry="4" fill="#FBB27A" opacity="0.85" />
-        {/* graduation cap */}
-        <path d="M110 60L70 76l40 16 40-16z" fill="#3F8F3C" />
-        <path d="M110 74l24-9.6v14c0 6-11 10-24 10s-24-4-24-10v-14z" fill="#357A33" opacity="0.9" />
-        <rect x="150" y="70" width="3" height="20" rx="1.5" fill="#357A33" />
-        <circle cx="151.5" cy="92" r="4" fill="#FFC24B" />
-        <defs>
-          <radialGradient id="lvupShine" cx="0.35" cy="0.3" r="0.75">
-            <stop offset="0" stopColor="#FFB56B" stopOpacity="0.9" />
-            <stop offset="0.55" stopColor="#FFB56B" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-      </svg>
-      <div className="lvup__bubble" aria-hidden="true">대단한걸!✨</div>
+    <div className="lvup__mascot">
+      <span className="lvup__art" role="img" aria-label={t("levelUp.characterA11y")}>
+        {/* Confetti field — 231:6869 / 572:23256, identical in both frames. */}
+        <img className="lvup__confetti" src={levelupConfetti} alt="" aria-hidden="true" />
+        {isTopik ? (
+          <>
+            {/* 3179:36111 — the export carries the mascot's white glow, so it
+                is wider/taller than the 146.9x123.83 node box. */}
+            <img
+              className="lvup__mascot-art lvup__mascot-art--topik"
+              src={levelupMascotTopik}
+              alt=""
+              aria-hidden="true"
+            />
+            {/* 3179:36135 — the blurred ground arc the jump lands on. */}
+            <img className="lvup__arc" src={levelupTopikArc} alt="" aria-hidden="true" />
+          </>
+        ) : (
+          <>
+            <img className="lvup__mascot-art" src={levelupMascot} alt="" aria-hidden="true" />
+            {/* 3179:36179 — the pencil is a sibling of the artwork, drawn over
+                it, so it is missing from the mascot export. TAL-032 has none. */}
+            <img className="lvup__pencil" src={levelupMascotPencil} alt="" aria-hidden="true" />
+          </>
+        )}
+      </span>
+
+      {/* inputField 3179:36143 (TAL-012) / 3179:36109 (TAL-032). Only TAL-032
+          draws the pointer tail (Vector 1231, 572:23299). */}
+      <p className={`lvup__bubble${isTopik ? " lvup__bubble--topik" : ""}`}>
+        {t(isTopik ? "levelUp.bubbleTopik" : "levelUp.bubbleConversation")}
+      </p>
+      {isTopik && (
+        <img className="lvup__bubble-tail" src={levelupBubbleTail} alt="" aria-hidden="true" />
+      )}
     </div>
   );
 }
 
 /* -------------------------------- medal --------------------------------- */
 function Medal() {
-  return (
-    <svg viewBox="0 0 120 120" className="lvup__medal" aria-hidden="true">
-      <path d="M44 20l12 30 8-5 8 5 12-30z" fill="#EF6B5B" />
-      <path d="M50 20l10 26 10-26z" fill="#D9534A" />
-      <circle cx="60" cy="74" r="28" fill="#F2A93B" />
-      <circle cx="60" cy="74" r="28" fill="url(#lvupMedalShine)" />
-      <circle cx="60" cy="74" r="21" fill="none" stroke="#E1902C" strokeWidth="2.2" />
-      <path d="M60 60l4 8.2 9 1.1-6.5 6.2 1.6 8.9L60 88.2 51.9 92.4l1.6-8.9-6.5-6.2 9-1.1L60 60z" fill="#FFF3D6" />
-      <defs>
-        <radialGradient id="lvupMedalShine" cx="0.38" cy="0.32" r="0.7">
-          <stop offset="0" stopColor="#FFD98A" stopOpacity="0.9" />
-          <stop offset="0.6" stopColor="#FFD98A" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-    </svg>
-  );
+  /* Figma 744:46888 — the 27.85x36 medal is exported artwork. */
+  return <img className="lvup__medal" src={levelupMedal} alt="" aria-hidden="true" />;
 }
-
 /* -------------------------------- screen -------------------------------- */
 export function LevelUp() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const loc = useLocation();
   const qc = useQueryClient();
@@ -120,11 +113,11 @@ export function LevelUp() {
   const isTopik = track === "topik";
   const prev = levelUp.previous_level;
   const next = levelUp.current_level;
-  const unit = isTopik ? "문제" : "문장";
+  const unit = t(isTopik ? "levelUp.unitQuestion" : "levelUp.unitSentence");
 
-  const headline = isTopik ? `토픽 ${next}급 달성! 🎉` : `레벨 ${next} 달성! 🎉`;
-  const prevLabel = isTopik ? `${prev}급` : `Lv.${prev}`;
-  const nextLabel = isTopik ? `${next}급` : `Lv.${next}`;
+  const headline = t(isTopik ? "levelUp.reachedGrade" : "levelUp.reachedLevel", { n: next });
+  const prevLabel = isTopik ? t("levelUp.gradeLabel", { n: prev }) : `Lv.${prev}`;
+  const nextLabel = isTopik ? t("levelUp.gradeLabel", { n: next }) : `Lv.${next}`;
   const duration = fmtDuration(levelUp.seconds_studied_at_previous_level);
 
   function goNextLevel() {
@@ -135,17 +128,20 @@ export function LevelUp() {
   }
 
   return (
-    <div className="screen lvup" role="dialog" aria-modal="true" aria-label="레벨업 결과">
+    <div className="screen lvup" role="dialog" aria-modal="true" aria-label={t("levelUp.resultA11y")}>
       <div className="lvup__scroll">
-        <LevelUpMascot />
+        <LevelUpMascot isTopik={isTopik} />
 
         <p className="lvup__eyebrow">{headline}</p>
-        <h1 className="lvup__heading">대단해요!<br />한 단계 더 나아갔어요!</h1>
+        {/* Figma sets the praise and the follow-on as one line, not two. */}
+        <h1 className="lvup__heading">
+          {t("levelUp.praise")} {t("levelUp.title")}
+        </h1>
 
         <div className="lvup__card">
           <div
             className="lvup__pill"
-            aria-label={`${isTopik ? "토픽 " : "레벨 "}${prev}${isTopik ? "급" : ""}에서 ${next}${isTopik ? "급" : ""}으로 올라갔어요`}
+            aria-label={t(isTopik ? "levelUp.fromToGrade" : "levelUp.fromToLevel", { prev, next })}
           >
             <span className="lvup__pill-prev">{prevLabel}</span>
             <span className="lvup__pill-arrow" aria-hidden="true">→</span>
@@ -154,19 +150,21 @@ export function LevelUp() {
 
           <Medal />
 
-          <div className="lvup__reward" aria-label={`레벨업 보상 ${levelUp.points_awarded} 포인트`}>
+          <div className="lvup__reward" aria-label={t("levelUp.rewardA11y", { points: levelUp.points_awarded })}>
             +{levelUp.points_awarded}p
           </div>
 
           <div className="lvup__stats">
             <div className="lvup__stat">
-              <span className="lvup__stat-label">공부한 시간</span>
-              <span className="lvup__stat-value" aria-label={`공부한 시간 ${duration}`}>{duration}</span>
+              <span className="lvup__stat-label">{t("levelUp.studyTime")}</span>
+              <span className="lvup__stat-value" aria-label={t("levelUp.studyTimeA11y", { duration })}>{duration}</span>
             </div>
             <span className="lvup__stat-divider" aria-hidden="true" />
             <div className="lvup__stat">
-              <span className="lvup__stat-label">학습한 {unit}</span>
-              <span className="lvup__stat-value" aria-label={`학습한 ${unit} ${levelUp.items_studied_at_previous_level}개`}>
+              <span className="lvup__stat-label">
+                {t(isTopik ? "levelUp.studiedQuestions" : "levelUp.studiedSentences")}
+              </span>
+              <span className="lvup__stat-value" aria-label={t("levelUp.itemsA11y", { unit, count: levelUp.items_studied_at_previous_level })}>
                 {levelUp.items_studied_at_previous_level}
               </span>
             </div>
@@ -175,8 +173,8 @@ export function LevelUp() {
       </div>
 
       <div className="lvup__foot">
-        <button className="lvup__cta" onClick={goNextLevel} aria-label="다음 레벨 학습하기">
-          다음 레벨 학습하기
+        <button className="lvup__cta" onClick={goNextLevel} aria-label={t("levelUp.nextLevel")}>
+          {t("levelUp.nextLevel")}
         </button>
       </div>
     </div>

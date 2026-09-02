@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useTranslation } from "../../i18n";
 import type { InputHTMLAttributes, ReactNode } from "react";
 
 export function Field({
@@ -62,6 +63,7 @@ export function PasswordField({
   hint?: ReactNode;
   error?: string | null;
 } & InputHTMLAttributes<HTMLInputElement>) {
+  const { t } = useTranslation();
   const [show, setShow] = useState(false);
   return (
     <TextField
@@ -71,7 +73,7 @@ export function PasswordField({
       type={show ? "text" : "password"}
       right={
         <button type="button" className="input-affix__btn" onClick={() => setShow((s) => !s)}>
-          {show ? "숨기기" : "보기"}
+          {show ? t("ui.hide") : t("ui.show")}
         </button>
       }
       {...rest}

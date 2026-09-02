@@ -23,11 +23,12 @@ vi.mock("../api/endpoints", () => ({
     resolveInvitation: vi.fn(),
   },
 }));
-let mockLang = "ko";
+let mockLang: "ko" | "en" = "ko";
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: mockLang } }) }));
 
 import { friendApi } from "../api/endpoints";
 import { Social } from "./Social";
+import { I18nProvider } from "../i18n";
 
 const api = friendApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -44,17 +45,19 @@ const request = (rid: string, uid: string, nickname: string) => ({
 function renderSocial(initial = "/social") {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}>
-      <ToastProvider>
-        <MemoryRouter initialEntries={["/league", initial]} initialIndex={1}>
-          <Routes>
-            <Route path="/league" element={<div>LEAGUE_SCREEN</div>} />
-            <Route path="/social" element={<Social />} />
-          </Routes>
-        </MemoryRouter>
-      </ToastProvider>
-    </QueryClientProvider>,
-  );
+    // Mirrors <LanguageSync>: the provider adopts the profile language.
+    <I18nProvider language={mockLang}>
+      <QueryClientProvider client={qc}>
+        <ToastProvider>
+          <MemoryRouter initialEntries={["/league", initial]} initialIndex={1}>
+            <Routes>
+              <Route path="/league" element={<div>LEAGUE_SCREEN</div>} />
+              <Route path="/social" element={<Social />} />
+            </Routes>
+          </MemoryRouter>
+        </ToastProvider>
+      </QueryClientProvider>
+    </I18nProvider>,);
 }
 
 beforeEach(() => {
@@ -257,7 +260,7 @@ describe("Friend Management (Social)", () => {
     expect(await screen.findByRole("tab", { name: "Friends 2" })).toBeInTheDocument();
     await screen.findByText("Tara");
     await userEvent.click(within(screen.getByText("Tara").closest("li")!).getByRole("button", { name: "Remove" }));
-    expect(await screen.findByText("Remove Tara from your friends?")).toBeInTheDocument();
-    expect(screen.getByText("They will not be notified.")).toBeInTheDocument();
+    expect(await screen.findByText("Remove Tara as a friend?")).toBeInTheDocument();
+    expect(screen.getByText("No notification will be sent")).toBeInTheDocument();
   });
 });

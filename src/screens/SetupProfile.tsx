@@ -1,11 +1,12 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "../i18n";
 import {
   ProfilePlaceholder,
   CharacterAvatar,
   CameraIcon,
   AVATAR_KEYS,
-  avatarLabel,
+  avatarLabelKey,
   type AvatarKey,
 } from "../components/brand/ProfileAssets";
 import { userApi } from "../api/endpoints";
@@ -15,6 +16,7 @@ import { errorMessage } from "../lib/http";
 import type { ProfileImageType } from "../lib/types";
 
 export function SetupProfile() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const toast = useToast();
   const { setMe } = useAuth();
@@ -36,7 +38,7 @@ export function SetupProfile() {
   async function checkNick() {
     const value = nickname.trim();
     if (value.length < 2) {
-      setCheckMsg({ ok: false, text: "2자 이상 입력해 주세요." });
+      setCheckMsg({ ok: false, text: t("profileSetup.nicknameTooShort") });
       return;
     }
     if (checking) return;
@@ -46,9 +48,9 @@ export function SetupProfile() {
       const res = await userApi.checkNickname(value);
       if (res.available && res.check_token) {
         setCheckToken(res.check_token);
-        setCheckMsg({ ok: true, text: "사용가능한 닉네임입니다." });
+        setCheckMsg({ ok: true, text: t("profileSetup.nicknameAvailable") });
       } else {
-        setCheckMsg({ ok: false, text: "이미 사용 중인 닉네임이에요." });
+        setCheckMsg({ ok: false, text: t("profileSetup.nicknameTaken") });
       }
     } catch (e) {
       setCheckMsg({ ok: false, text: errorMessage(e) });
@@ -87,7 +89,7 @@ export function SetupProfile() {
 
   async function submit() {
     if (!canSubmit) {
-      if (!checkToken) toast.error("닉네임 중복확인을 먼저 해주세요.");
+      if (!checkToken) toast.error(t("profileSetup.checkFirst"));
       return;
     }
     setBusy(true);
@@ -114,13 +116,13 @@ export function SetupProfile() {
     <div className="screen setupp">
       <div className="setupp__scroll">
         <div className="setupp__inner">
-          <h1 className="setupp__title">프로필 등록</h1>
-          <p className="setupp__subtitle">시작에 앞서 프로필을 등록해볼까요?</p>
+          <h1 className="setupp__title">{t("profileSetup.setupTitle")}</h1>
+          <p className="setupp__subtitle">{t("profileSetup.setupSubtitle")}</p>
 
           {/* Profile image */}
-          <div className="setupp__label">프로필 이미지</div>
+          <div className="setupp__label">{t("profileSetup.imageLabel")}</div>
           <div className="setupp__preview">
-            <div className="setupp__preview-circle" role="img" aria-label="프로필 이미지 미리보기">
+            <div className="setupp__preview-circle" role="img" aria-label={t("profileSetup.previewA11y")}>
               {showCustom ? <img src={customUrl!} alt="" className="setupp__preview-img" /> : <ProfilePlaceholder />}
             </div>
           </div>
@@ -130,21 +132,21 @@ export function SetupProfile() {
               className="setupp__photo"
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              aria-label="사진 선택, 사진 라이브러리 열기"
+              aria-label={t("profileSetup.choosePhotoA11y")}
             >
               {uploading ? (
                 <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
               ) : (
                 <CameraIcon />
               )}
-              <span>사진 선택</span>
+              <span>{t("profileSetup.choosePhoto")}</span>
             </button>
             <input ref={fileRef} type="file" accept="image/*" hidden onChange={onFile} />
           </div>
 
           {/* Default characters */}
-          <div className="setupp__label">기본 캐릭터 선택</div>
-          <div className="setupp__chars" role="radiogroup" aria-label="기본 캐릭터 선택">
+          <div className="setupp__label">{t("profileSetup.characterLabel")}</div>
+          <div className="setupp__chars" role="radiogroup" aria-label={t("profileSetup.characterLabel")}>
             {AVATAR_KEYS.map((key) => {
               const selected = imageType === "AVATAR" && avatarKey === key;
               return (
@@ -154,7 +156,7 @@ export function SetupProfile() {
                   className="setupp__char-btn"
                   role="radio"
                   aria-checked={selected}
-                  aria-label={avatarLabel(key)}
+                  aria-label={t(avatarLabelKey(key))}
                   onClick={() => selectCharacter(key)}
                 >
                   <CharacterAvatar variant={key} selected={selected} />
@@ -164,12 +166,12 @@ export function SetupProfile() {
           </div>
 
           {/* Nickname */}
-          <div className="setupp__label">닉네임</div>
+          <div className="setupp__label">{t("profileSetup.nicknameLabel")}</div>
           <div className="setupp__nick-row">
             <input
               className="setupp__nick-input"
-              placeholder="10자이하로 입력하세요"
-              aria-label="닉네임"
+              placeholder={t("profileSetup.nicknamePlaceholderSetup")}
+              aria-label={t("profileSetup.nicknameA11y")}
               value={nickname}
               maxLength={10}
               onChange={(e) => onNicknameChange(e.target.value)}
@@ -179,9 +181,9 @@ export function SetupProfile() {
               className="setupp__nick-btn"
               onClick={checkNick}
               disabled={checking || nickname.trim().length < 2}
-              aria-label="닉네임 중복확인"
+              aria-label={t("profileSetup.checkDuplicateA11y")}
             >
-              {checking ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : "중복확인"}
+              {checking ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : t("profileSetup.checkDuplicate")}
             </button>
           </div>
           <p
@@ -200,9 +202,9 @@ export function SetupProfile() {
             onClick={submit}
             disabled={!canSubmit}
             aria-disabled={!canSubmit}
-            aria-label={canSubmit ? "시작하기" : "닉네임 중복확인을 완료하면 시작할 수 있어요"}
+            aria-label={t(canSubmit ? "profileSetup.start" : "profileSetup.startBlockedA11y")}
           >
-            {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : "시작하기"}
+            {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("profileSetup.start")}
           </button>
         </div>
       </div>

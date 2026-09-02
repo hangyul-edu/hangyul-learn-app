@@ -1,47 +1,97 @@
+/* =====================================================================
+   Design tokens — generated from Figma "앱서비스 디자인_최종안"
+   Source of truth:
+     · style guide_color      node 40:8110
+     · #style guide_Typography node 40:8188
+   Values below are the exact Figma values. Do not eyeball-edit;
+   re-derive from Figma if the style guide changes.
+   ===================================================================== */
 :root {
-  /* ---- Brand: warm orange ---- */
-  --brand-50: #fff7ed;
-  --brand-100: #ffedd5;
-  --brand-200: #fed7aa;
-  --brand-300: #fdba74;
-  --brand-400: #fb923c;
-  --brand-500: #f97316; /* primary */
-  --brand-600: #ea580c;
-  --brand-700: #c2410c;
-  --brand-800: #9a3412;
-  --brand-gradient: linear-gradient(135deg, #fb923c 0%, #f97316 55%, #ea580c 100%);
-  --brand-gradient-soft: linear-gradient(135deg, #fff3e6 0%, #ffe4c9 100%);
-  --auth-orange: #ed712e; /* exact reference orange for the auth screens */
+  /* ---- Brand: Figma "Primary" #FF6700 + Primary Color Palettes ramp ----
+     Figma ships one primary and nine lighter tints (no darker steps).
+     brand-50…500 map onto the Figma ramp exactly; 600/700/800 are
+     shading of #FF6700 for hover/pressed states, which Figma does not
+     define. */
+  --brand-50: #fff7e0;  /* Figma FFF7E0 */
+  --brand-100: #ffeab1; /* Figma FFEAB1 */
+  --brand-200: #ffdc7e; /* Figma FFDC7E */
+  --brand-300: #ffd04a; /* Figma FFD04A */
+  --brand-400: #ffba00; /* Figma FFBA00 */
+  --brand-500: #ff6700; /* Figma FF6700 — Primary */
+  --brand-600: #e65c00; /* derived: primary @ 90% — hover */
+  --brand-700: #cc5200; /* derived: primary @ 80% — pressed */
+  --brand-800: #a34200; /* derived: primary @ 64% */
 
-  /* ---- Neutrals (warm) ---- */
-  --bg: #fbf7f2;
+  /* Intermediate ramp steps Figma defines that the 50–500 scale can't hold.
+     Use for gradients, illustrations and multi-stop fills. */
+  --brand-ramp-2: #ff8700; /* Figma FF8700 */
+  --brand-ramp-3: #ff9900; /* Figma FF9900 */
+  --brand-ramp-4: #ffac00; /* Figma FFAC00 */
+  --brand-ramp-6: #ffc41f; /* Figma FFC41F */
+
+  --brand-gradient: linear-gradient(135deg, #ff9900 0%, #ff8700 55%, #ff6700 100%);
+  --brand-gradient-soft: linear-gradient(135deg, #fff7e0 0%, #ffeab1 100%);
+  --auth-orange: #ff6700; /* was a separate eyeballed orange; Figma uses Primary */
+
+  /* ---- Sub color ---- */
+  --sub-2: #66cccc; /* Figma style guide "sub color 2" */
+  --brand-2: #5ecece; /* Figma "Brand color 2" — used on screens; differs from sub-2 */
+
+  /* ---- Neutrals: Figma Black ramp (cool gray, not warm) ---- */
+  --black: #000000;
+  --gray-7: #262c31;
+  --gray-6: #5a636a;
+  --gray-5: #778088;
+  --gray-4: #adb4ba;
+  --gray-3: #dbdddf;
+  --gray-2: #ecedf0;
+  --gray-1: #f4f6f6;
+  --black-100: #25282b;
+  --black-80: #52575c;
+  --black-5: #f9f9fa;
+  --swatch-e6e8eb: #e6e8eb;
+  --swatch-f2f4f5: #f2f4f5;
+  /* "Dark/" ramp used by the screen designs (not on the style guide page) */
+  --dark-gray-2: #d8dbe5;
+  --dark-gray-4: #6e7385;
+  --dark-gray-7: #090a0c;
+
+  /* ---- Semantic surfaces / text ---- */
+  --bg: #f4f6f6;        /* Gray 1 */
   --surface: #ffffff;
-  --surface-2: #fbf5ee;
-  --surface-3: #f4ede3;
-  --border: #efe6da;
-  --border-strong: #e3d6c6;
+  --surface-2: #f9f9fa; /* Black / 5 */
+  --surface-3: #f2f4f5;
+  --border: #ecedf0;       /* Gray 2 */
+  --border-strong: #dbdddf; /* Gray 3 */
 
-  --ink: #2b2019;
-  --ink-2: #6b5d51;
-  --ink-3: #9a8c7d;
+  --ink: #262c31;    /* Gray 7 — primary text */
+  --ink-2: #5a636a;  /* Gray 6 — secondary text */
+  --ink-3: #778088;  /* Gray 5 — tertiary text */
+  --ink-4: #adb4ba;  /* Gray 4 — disabled / placeholder */
   --ink-inverse: #ffffff;
 
-  /* ---- Semantic ---- */
-  --success: #16a34a;
-  --success-bg: #e9f8ef;
-  --warning: #d97706;
-  --warning-bg: #fef3e2;
-  --danger: #dc2626;
-  --danger-bg: #fdeaea;
-  --info: #2563eb;
-  --info-bg: #e8f0fe;
+  /* ---- Semantic status ----
+     Figma labels #547CF1 "Positive" and #F24147 "Negative". */
+  --positive: #547cf1;
+  --negative: #f24147;
+  --danger: #f24147;
+  --danger-bg: #fdecec;
+  --info: #547cf1;
+  --info-bg: #eef2fe;
+  /* Figma has no green: it renders success states in the blue it names
+     "Positive" (e.g. AME-006's "Nickname available." helper, node 1612:22755,
+     is #547CF1). The previous green was invented. */
+  --success: #547cf1;
+  --success-bg: #eef2fe;
+  --warning: #ffac00; /* Figma ramp FFAC00 */
+  --warning-bg: #fff7e0;
 
-  /* ---- League tiers ---- */
+  /* ---- League tiers (not defined in the Figma style guide) ---- */
   --tier-green: #22c55e;
   --tier-lime: #84cc16;
   --tier-yellow: #eab308;
-  --tier-orange: #f97316;
-  --tier-red: #ef4444;
+  --tier-orange: #ff6700;
+  --tier-red: #f24147;
 
   /* ---- Radius ---- */
   --r-xs: 8px;
@@ -52,20 +102,55 @@
   --r-full: 999px;
 
   /* ---- Shadow ---- */
-  --shadow-sm: 0 1px 2px rgba(43, 32, 25, 0.06);
-  --shadow-md: 0 6px 18px rgba(180, 83, 9, 0.08);
-  --shadow-lg: 0 14px 40px rgba(180, 83, 9, 0.14);
-  --shadow-brand: 0 10px 24px rgba(249, 115, 22, 0.32);
+  --shadow-sm: 0 1px 2px rgba(38, 44, 49, 0.06);
+  --shadow-md: 0 6px 18px rgba(38, 44, 49, 0.08);
+  --shadow-lg: 0 14px 40px rgba(38, 44, 49, 0.14);
+  --shadow-brand: 0 10px 24px rgba(255, 103, 0, 0.32);
 
-  /* ---- Type ---- */
-  --font-body: "Noto Sans KR", system-ui, -apple-system, sans-serif;
-  --font-display: "Nunito", "Noto Sans KR", system-ui, sans-serif;
+  /* ---- Type: Figma uses Pretendard for every text style ---- */
+  --font-body: Pretendard, "Pretendard Variable", -apple-system, BlinkMacSystemFont,
+    system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-display: var(--font-body);
+
+  /* Figma typography scale — size / weight / line-height */
+  --t-h1: 600 32px/39.2px var(--font-body);
+  --t-h2: 300 32px/39.2px var(--font-body);
+  --t-h3: 700 28px/39.2px var(--font-body);
+  --t-h4: 300 28px/39.2px var(--font-body);
+  --t-h5: 600 24px/33.6px var(--font-body);
+  --t-h6: 400 24px/33.6px var(--font-body);
+  --t-h7: 600 20px/28px var(--font-body);
+  --t-h8: 600 18px/25.2px var(--font-body);
+  --t-body-1: 400 20px/28px var(--font-body);
+  --t-body-2: 600 16px/22.96px var(--font-body);
+  --t-body-3: 400 16px/22.3px var(--font-body);
+  --t-body-4: 700 15px/22.3px var(--font-body);
+  --t-body-5: 400 15px/22.3px var(--font-body);
+  --t-body-6: 500 15px/22.3px var(--font-body);
+  --t-body-7: 500 14px/22.3px var(--font-body);
+  --t-body-8: 600 14px/21.5px var(--font-body);
+  --t-body-9: 400 14px/21.5px var(--font-body);
+  --t-caption-1: 700 13px/18.8px var(--font-body);
+  --t-caption-2: 600 13px/18.8px var(--font-body);
+  --t-caption-3: 400 13px/18.8px var(--font-body);
+  --t-caption-4: 500 12px/16.5px var(--font-body);
+  --t-caption-5: 600 11px/14px var(--font-body);
+  /* Heading 1 / Heading 2 carry -1 letter-spacing in Figma */
+  --t-tracking-tight: -1px;
 
   /* ---- Layout ---- */
   --app-max: 480px;
-  --nav-h: 84px;
+  /* Figma navi_user (1825:26629) is 88 tall: a 54px control strip over a 34px
+     home-indicator strip. That strip IS the safe-area inset, so the foot tracks
+     the inset rather than reserving 34px unconditionally: ~34 on a device with
+     a home indicator (matching the frame's 88), 0 on the web and on Android,
+     where reserving it left the tab row sitting in the top 54 of an 88-tall bar
+     with dead space beneath — the bar read as too tall and the items too high. */
+  --nav-h: 54px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --nav-foot: var(--safe-bottom);
+  --nav-total: calc(var(--nav-h) + var(--nav-foot));
 }
 
 * {
@@ -78,11 +163,9 @@ body {
   padding: 0;
 }
 body {
-  font-family: var(--font-body);
+  font: var(--t-body-5);
   color: var(--ink);
-  background: #f2e9de;
-  font-size: 15px;
-  line-height: 1.5;
+  background: var(--gray-1);
   -webkit-font-smoothing: antialiased;
 }
 h1,
@@ -90,10 +173,10 @@ h2,
 h3,
 h4 {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--ink);
   margin: 0;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 button,
 input,
@@ -104,9 +187,9 @@ textarea {
   color: inherit;
 }
 a {
-  color: var(--brand-600);
+  color: var(--brand-500);
   text-decoration: none;
 }
 ::selection {
-  background: var(--brand-200);
+  background: var(--brand-100);
 }

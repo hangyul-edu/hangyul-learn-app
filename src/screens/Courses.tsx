@@ -1,53 +1,103 @@
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "../i18n";
 import { useQuery } from "@tanstack/react-query";
-import { Screen } from "../components/layout/Screen";
 import { Async, SkeletonList } from "../components/ui/states";
 import { learnApi } from "../api/endpoints";
-import type { Course } from "../lib/types";
+import type { Course, Lecture } from "../lib/types";
+import coursePlay from "../assets/brand/course-play.svg";
+import courseMic from "../assets/brand/course-mic.png";
+import icCheck from "../assets/brand/ic-16-check.svg";
 
+/** mm:ss — COU-002 prints every lesson's length as a zero-padded clock. */
 function fmtDur(sec: number) {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
 // The lecture tab (LectureHome) is the catalog browser; this file keeps only
 // the course-detail screen reachable at /courses/:courseId.
+
+/**
+ * Course detail — Figma COU-002_강의 선택 (2414:27684 / EN 2397:26680).
+ *
+ * A full-bleed 375x249 cover with the 242x46 "바로 학습하기" straddling its
+ * bottom edge, then 77-tall lesson rows on an 87 pitch: a 70px thumbnail
+ * carrying the Free chip and the play glyph, the title + length, a completion
+ * chip and the speaking-practice mic.
+ */
+function LessonRow({ lesson, onOpen, onPractice }: { lesson: Lecture; onOpen: () => void; onPractice: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <li className="cdet__row">
+      <button className="cdet__thumb" onClick={onOpen} aria-label={lesson.title}>
+        {lesson.thumbnail_url && <img className="cdet__thumb-img" src={lesson.thumbnail_url} alt="" />}
+        {lesson.access === "free" && <span className="cdet__free">Free</span>}
+        <img className="cdet__play" src={coursePlay} alt="" aria-hidden="true" />
+      </button>
+      <button className="cdet__main" onClick={onOpen}>
+        <span className="cdet__title">{lesson.title}</span>
+        <span className="cdet__dur">{fmtDur(lesson.duration_seconds)}</span>
+      </button>
+      <span className={`cdet__status ${lesson.completed ? "is-done" : ""}`}>
+        {lesson.completed && <img className="cdet__status-check" src={icCheck} alt="" aria-hidden="true" />}
+        {t(lesson.completed ? "courses.doneChip" : "courses.notDone")}
+      </span>
+      <button className="cdet__mic" onClick={onPractice} aria-label={t("courses.practiceA11y", { title: lesson.title })}>
+        <img src={courseMic} alt="" aria-hidden="true" />
+      </button>
+    </li>
+  );
+}
+
 export function CourseDetail() {
+  const { t } = useTranslation();
   const { courseId = "" } = useParams();
   const nav = useNavigate();
   const q = useQuery({ queryKey: ["course", courseId], queryFn: () => learnApi.course(courseId) });
 
   return (
-    <Screen title="강의" back>
-      <Async loading={q.isLoading} error={q.error} data={q.data} onRetry={() => q.refetch()} skeleton={<SkeletonList rows={4} />}>
-        {(c: Course) => (
-          <div className="stack" style={{ gap: 16 }}>
-            <div>
-              <h2 style={{ fontSize: 22 }}>{c.title}</h2>
-              {c.description && <p className="muted" style={{ marginTop: 6 }}>{c.description}</p>}
-            </div>
-            <div className="section-title">레슨 {c.lesson_count}개</div>
-            <div className="stack" style={{ gap: 8 }}>
-              {(c.lessons ?? []).map((l, i) => (
-                <button key={l.lecture_id} className="listrow" onClick={() => nav(`/lectures/${l.lecture_id}`)}>
-                  <div className="avatar" style={{ width: 38, height: 38, background: l.completed ? "var(--success-bg)" : "var(--surface-3)", color: l.completed ? "var(--success)" : "var(--ink-2)", fontSize: 15 }}>
-                    {l.completed ? "✓" : i + 1}
-                  </div>
-                  <div className="listrow__main">
-                    <div className="listrow__title">{l.title}</div>
-                    <div className="listrow__sub">
-                      {l.kind === "video" ? "🎬 영상" : l.kind === "listening" ? "🎧 듣기" : "📖 읽기"} · {fmtDur(l.duration_seconds)}
-                      {l.access === "premium" && " · 👑"}
-                    </div>
-                  </div>
-                  <span className="listrow__chev">›</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </Async>
-    </Screen>
+    <div className="screen cdet">
+      <header className="cdet__nav">
+        <button className="cdet__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M15 5l-7 7 7 7" stroke="#262c31" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </header>
+
+      <div className="screen__body screen__body--nav cdet__body">
+        <Async loading={q.isLoading} error={q.error} data={q.data} onRetry={() => q.refetch()} skeleton={<SkeletonList rows={4} />}>
+          {(c: Course) => {
+            const lessons = c.lessons ?? c.lessons_preview ?? [];
+            // "바로 학습하기" resumes the first unfinished lesson, or restarts.
+            const next = lessons.find((l) => !l.completed) ?? lessons[0];
+            return (
+              <>
+                <div className="cdet__hero">
+                  {c.cover_image_url && <img className="cdet__hero-img" src={c.cover_image_url} alt={c.title} />}
+                  {next && (
+                    <button className="cdet__cta" onClick={() => nav(`/lectures/${next.lecture_id}`)}>
+                      {t("courses.startNow")}
+                    </button>
+                  )}
+                </div>
+
+                <ul className="cdet__list" role="list" aria-label={c.title}>
+                  {lessons.map((l) => (
+                    <LessonRow
+                      key={l.lecture_id}
+                      lesson={l}
+                      onOpen={() => nav(`/lectures/${l.lecture_id}`)}
+                      onPractice={() => nav(`/lectures/${l.lecture_id}/practice`)}
+                    />
+                  ))}
+                </ul>
+              </>
+            );
+          }}
+        </Async>
+      </div>
+    </div>
   );
 }

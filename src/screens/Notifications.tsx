@@ -1,28 +1,31 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { SkeletonList } from "../components/ui/states";
 import { notifApi } from "../api/endpoints";
-import { GROUP_LABEL, bucketKey, bucketLabel, relativeTime } from "../lib/notifications";
+import { GROUP_LABEL_KEYS, bucketKey, bucketLabel, relativeTime } from "../lib/notifications";
+import { useTranslation, type TranslationKey } from "../i18n";
 import type { NotificationGroup, NotificationItem } from "../lib/types";
+import { DetailHeader } from "../components/DetailHeader";
 
 /* -------------------------------- config -------------------------------- */
 type Filter = "all" | NotificationGroup;
-const FILTERS: { v: Filter; l: string; dot: string | null }[] = [
-  { v: "all", l: "전체", dot: null },
-  { v: "learning", l: "학습", dot: "#f6c945" }, // yellow
-  { v: "announcement", l: "공지", dot: "#a8e0b0" }, // pale green
-  { v: "social", l: "소셜", dot: "#c9c2ef" }, // pale lavender
+const FILTERS: { v: Filter; l: TranslationKey; dot: string | null }[] = [
+  { v: "all", l: "notifications.all", dot: null },
+  { v: "learning", l: "notifications.learning", dot: "#f6c945" }, // yellow
+  { v: "announcement", l: "notifications.notice", dot: "#a8e0b0" }, // pale green
+  { v: "social", l: "notifications.social", dot: "#c9c2ef" }, // pale lavender
 ];
+/* Badge fills/inks straight from cp_list_not (766:48573 / 48613 / 48657). */
 const BADGE_BG: Record<NotificationGroup, string> = {
-  learning: "#fdf3d0",
-  announcement: "#e3f5e6",
-  social: "#ece8fb",
+  learning: "#ffc420",
+  announcement: "#e9f3dd",
+  social: "#edecff",
 };
 const BADGE_FG: Record<NotificationGroup, string> = {
-  learning: "#8a6d10",
-  announcement: "#2f7a3d",
-  social: "#5b4bb0",
+  learning: "#876300",
+  announcement: "#133b07",
+  social: "#0f0216",
 };
 
 function dedupe(list: NotificationItem[]): NotificationItem[] {
@@ -37,11 +40,6 @@ function dedupe(list: NotificationItem[]): NotificationItem[] {
   return out;
 }
 
-const BackChevron = () => (
-  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M15 5l-7 7 7 7" stroke="#272c30" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
 
 // Pending "mark all read on leave" timer, coordinated at module scope so a
 // StrictMode remount can cancel the fake-unmount's scheduled read-all.
@@ -49,7 +47,7 @@ let leaveReadAllTimer: ReturnType<typeof setTimeout> | null = null;
 
 /* -------------------------------- screen -------------------------------- */
 export function Notifications() {
-  const nav = useNavigate();
+  const { t } = useTranslation();
   const loc = useLocation();
   const qc = useQueryClient();
   const entry = (loc.state as { filter?: Filter } | null) ?? null;
@@ -161,27 +159,19 @@ export function Notifications() {
       const key = bucketKey(n.created_at, now);
       const last = out[out.length - 1];
       if (last && last.key === key) last.items.push(n);
-      else out.push({ key, label: bucketLabel(n.created_at, now), items: [n] });
+      else out.push({ key, label: bucketLabel(n.created_at, t, now), items: [n] });
     }
     return out;
   }, [items]);
 
   const filtered = filter !== "all";
-  const emptyTitle = filtered ? "해당 알림이 없어요" : "아직 알림이 없어요";
-  const emptyBody = filtered
-    ? "선택한 카테고리에 새로운 알림이 생기면 여기에 표시됩니다."
-    : "학습과 소셜 활동에 대한 새로운 소식이 생기면 알려드릴게요.";
+  const emptyTitle = t(filtered ? "notifications.emptyFiltered" : "notifications.emptyAll");
 
   return (
     <div className="screen ntf">
-      <header className="ntf__header">
-        <button className="ntf__back" onClick={() => nav(-1)} aria-label="뒤로 가기">
-          <BackChevron />
-        </button>
-        <h1 className="ntf__title">알림</h1>
-      </header>
+      <DetailHeader title={t("notifications.title")} />
 
-      <div className="ntf__filters" role="tablist" aria-label="알림 카테고리">
+      <div className="ntf__filters" role="tablist" aria-label={t("notifications.categoriesA11y")}>
         {FILTERS.map((f) => {
           const active = filter === f.v;
           return (
@@ -189,14 +179,14 @@ export function Notifications() {
               key={f.v}
               role="tab"
               aria-selected={active}
-              aria-label={`${f.l} 알림 보기`}
+              aria-label={t("notifications.filterA11y", { name: t(f.l) })}
               className={`ntf__chip ${active ? "is-active" : ""}`}
               onClick={() => filter !== f.v && setFilter(f.v)}
             >
               {!active && f.dot && (
                 <span className="ntf__chip-dot" style={{ background: f.dot }} aria-hidden="true" />
               )}
-              {f.l}
+              {t(f.l)}
             </button>
           );
         })}
@@ -207,13 +197,12 @@ export function Notifications() {
           <div className="ntf__pad"><SkeletonList rows={5} height={84} /></div>
         ) : status === "error" ? (
           <div className="ntf__state">
-            <span>알림을 불러오지 못했어요.</span>
-            <button className="ntf__retry" onClick={() => setReloadTick((t) => t + 1)}>다시 시도</button>
+            <span>{t("notifications.loadError")}</span>
+            <button className="ntf__retry" onClick={() => setReloadTick((n) => n + 1)}>{t("common.retry")}</button>
           </div>
         ) : items.length === 0 ? (
           <div className="ntf__empty">
             <p className="ntf__empty-title">{emptyTitle}</p>
-            <p className="ntf__empty-body">{emptyBody}</p>
           </div>
         ) : (
           <div className="ntf__list">
@@ -227,16 +216,25 @@ export function Notifications() {
                       <div
                         className={`ntf__card ${n.read ? "is-read" : "is-unread"}`}
                         role="article"
-                        aria-label={`${n.read ? "" : "새 알림. "}${GROUP_LABEL[n.group]} 알림, ${n.read ? "읽음" : "읽지 않음"}. ${n.title}. ${n.body ?? ""} ${relativeTime(n.created_at)}`}
+                        aria-label={t("notifications.cardA11y", {
+                          newFlag: n.read ? "" : t("notifications.newPrefix"),
+                          group: t(GROUP_LABEL_KEYS[n.group]),
+                          readState: t(n.read ? "notifications.read" : "notifications.unread"),
+                          title: n.title,
+                          body: n.body ?? "",
+                          time: relativeTime(n.created_at, t),
+                        })}
                       >
                         <div className="ntf__card-top">
                           <span className="ntf__badge" style={{ background: BADGE_BG[n.group], color: BADGE_FG[n.group] }}>
-                            {GROUP_LABEL[n.group]}
+                            {t(GROUP_LABEL_KEYS[n.group])}
                           </span>
-                          <span className="ntf__time">{relativeTime(n.created_at)}</span>
+                          <span className="ntf__time">{relativeTime(n.created_at, t)}</span>
                         </div>
-                        <div className="ntf__card-title">{n.title}</div>
-                        {n.body && <div className="ntf__card-body">{n.body}</div>}
+                        <div className="ntf__card-text">
+                          <div className="ntf__card-title">{n.title}</div>
+                          {n.body && <div className="ntf__card-body">{n.body}</div>}
+                        </div>
                       </div>
                     </li>
                   ))}
@@ -247,7 +245,7 @@ export function Notifications() {
               {more === "loading" ? (
                 <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />
               ) : more === "error" ? (
-                <button className="ntf__retry" onClick={() => { setMore("idle"); void loadMore(); }}>더 불러오기</button>
+                <button className="ntf__retry" onClick={() => { setMore("idle"); void loadMore(); }}>{t("notifications.loadMore")}</button>
               ) : null}
             </div>
           </div>

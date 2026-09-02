@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "../i18n";
 import { Screen } from "../components/layout/Screen";
 import { Button } from "../components/ui/kit";
 import { LoadingState } from "../components/ui/states";
@@ -20,6 +21,7 @@ function extractReply(res: { reply?: string; message?: unknown }): string {
 }
 
 export function AiChat() {
+  const { t } = useTranslation();
   const toast = useToast();
   const [convId, setConvId] = useState<string | null>(null);
   const [starting, setStarting] = useState(true);
@@ -33,7 +35,7 @@ export function AiChat() {
       try {
         const c = await aiApi.createConversation();
         setConvId(c.conversation_id);
-        setMessages([{ role: "assistant", content: "안녕하세요! 한국어 학습을 도와드릴게요. 무엇이든 물어보세요 😊" }]);
+        setMessages([{ role: "assistant", content: t("aiChat.greeting") }]);
       } catch (e) {
         toast.error(errorMessage(e));
       } finally {
@@ -57,18 +59,18 @@ export function AiChat() {
       const res = await aiApi.send(convId, content);
       setMessages((m) => [...m, { role: "assistant", content: extractReply(res) }]);
     } catch (e) {
-      setMessages((m) => [...m, { role: "assistant", content: "죄송해요, 답변을 가져오지 못했어요. 잠시 후 다시 시도해 주세요." }]);
+      setMessages((m) => [...m, { role: "assistant", content: t("aiChat.error") }]);
       toast.error(errorMessage(e));
     } finally {
       setSending(false);
     }
   }
 
-  if (starting) return <Screen title="AI 튜터" back><LoadingState text="대화를 준비하고 있어요…" /></Screen>;
+  if (starting) return <Screen title={t("aiChat.title")} back><LoadingState text={t("aiChat.preparing")} /></Screen>;
 
   return (
     <div className="screen">
-      <Screen title="AI 튜터 🤖" back topBar>
+      <Screen title={t("aiChat.titleEmoji")} back topBar>
         <div className="stack" style={{ gap: 10, paddingBottom: 80 }}>
           {messages.map((m, i) => (
             <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
@@ -104,7 +106,7 @@ export function AiChat() {
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "10px 14px calc(12px + var(--safe-bottom))", background: "var(--surface)", borderTop: "1px solid var(--border)", display: "flex", gap: 8 }}>
         <input
           className="input"
-          placeholder="메시지를 입력하세요"
+          placeholder={t("aiChat.inputPlaceholder")}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send()}

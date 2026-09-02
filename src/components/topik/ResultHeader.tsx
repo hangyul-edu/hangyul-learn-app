@@ -57,7 +57,7 @@ export function ResultHeader({
 function CheckBadge() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="11" fill="#5B7FF5" />
+      <circle cx="12" cy="12" r="11" fill="#547cf1" />
       <path
         d="M7 12.5l3.2 3.2L17 8.8"
         stroke="#fff"

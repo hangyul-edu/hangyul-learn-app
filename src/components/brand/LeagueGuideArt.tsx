@@ -1,112 +1,31 @@
 /**
- * Inline SVG art for the Regular League guide sheet. The repo ships no raster
- * assets (brand visuals are built as inline SVG — see ProfileAssets.tsx), so
- * the hero banner, schedule medal, reward-card glyphs, and promotion swords are
- * drawn here to match the reference composition.
+ * Artwork for the Regular League guide sheet and every tier badge, all exported
+ * from Figma LEG-004 (2302:24646) and LEG-001 (893:24353). Nothing here is
+ * redrawn — re-export from those frames if the design changes.
  */
-import { TIER_CITRUS, type LeagueTier, type RewardIconKind } from "../../lib/league";
+import { type LeagueTier, type RewardIconKind } from "../../lib/league";
+import tierGreenArt from "../../assets/brand/league-tier-green.svg";
+import tierLimeArt from "../../assets/brand/league-tier-lime.svg";
+import tierYellowArt from "../../assets/brand/league-tier-yellow.svg";
+import tierOrangeArt from "../../assets/brand/league-tier-orange.svg";
+import tierGoldenArt from "../../assets/brand/league-tier-golden.svg";
+import guideBannerArt from "../../assets/brand/league-guide-banner.svg";
+import rewardAttendanceArt from "../../assets/brand/league-reward-attendance.svg";
+import rewardLearningArt from "../../assets/brand/league-reward-learning.svg";
+import rewardCourseArt from "../../assets/brand/league-reward-course.svg";
+import rewardReviewArt from "../../assets/brand/league-reward-review.svg";
 
-/* --------------------------------- star --------------------------------- */
-/** Points of a 5-point star (top point first), as an SVG path string. */
-function starPath(cx: number, cy: number, outer: number, inner: number): string {
-  const pts = Array.from({ length: 10 }, (_, i) => {
-    const rad = (Math.PI / 180) * (-90 + i * 36);
-    const rr = i % 2 === 0 ? outer : inner;
-    return `${(cx + rr * Math.cos(rad)).toFixed(1)} ${(cy + rr * Math.sin(rad)).toFixed(1)}`;
-  });
-  return `M${pts.join("L")}Z`;
-}
-
-/** Cute, plump star: a thick round-joined outline rounds the tips + valleys so
- *  it reads friendly rather than sharp. */
-function CuteStar({
-  cx,
-  cy,
-  outer,
-  inner,
-  fill,
-  edge,
-  puff,
-}: {
-  cx: number;
-  cy: number;
-  outer: number;
-  inner: number;
-  fill: string;
-  edge: string;
-  puff: number;
-}) {
-  const d = starPath(cx, cy, outer, inner);
-  return (
-    <g>
-      <path d={d} fill={fill} stroke={fill} strokeWidth={puff} strokeLinejoin="round" strokeLinecap="round" />
-      <path d={d} fill="none" stroke={edge} strokeWidth={puff * 0.32} strokeLinejoin="round" strokeLinecap="round" />
-    </g>
-  );
-}
-
-/* --------------------------------- sword -------------------------------- */
-/** One cute sword pointing up, centred on the origin: a chunky rounded blade
- *  with a soft gold guard, brown grip, and round pommel. */
-function CuteSword() {
-  return (
-    <g>
-      {/* blade — thick with a rounded tip, plus a soft centre highlight */}
-      <path d="M0 -17V4" stroke="#e6ecf2" strokeWidth="5.6" strokeLinecap="round" />
-      <path d="M0 -13.5V1.5" stroke="#c9d3dd" strokeWidth="1.4" strokeLinecap="round" />
-      {/* crossguard */}
-      <rect x="-7.6" y="3" width="15.2" height="4" rx="2" fill="#f4b73c" />
-      {/* grip */}
-      <rect x="-2" y="6.4" width="4" height="8.4" rx="2" fill="#b97b3c" />
-      {/* pommel */}
-      <circle cx="0" cy="16.4" r="2.8" fill="#f4b73c" />
-    </g>
-  );
-}
-
-/* ------------------------------ hero banner ----------------------------- */
+/* ------------------------------ guide banner ---------------------------- */
+/**
+ * Hero pennant for the guide sheet — Figma LEG-004 Group 1410118218
+ * (2302:27113): a striped banner with crossed swords hanging from a pole,
+ * 135.43x217 sitting at x=208 and overhanging the orange band.
+ */
 export function GuideBanner() {
-  return (
-    <svg viewBox="0 0 128 150" width="100%" height="100%" aria-hidden="true" focusable="false">
-      <defs>
-        <clipPath id="lgBannerClip">
-          <path d="M30 26h68v82l-34-16-34 16z" />
-        </clipPath>
-      </defs>
-      {/* soft ground shadow to the right/below */}
-      <ellipse cx="70" cy="126" rx="42" ry="9" fill="rgba(120,60,10,0.28)" />
-      {/* top rod + caps */}
-      <rect x="16" y="18" width="96" height="10" rx="5" fill="#d7dce1" />
-      <circle cx="18" cy="23" r="8.5" fill="#c3c9d1" />
-      <circle cx="110" cy="23" r="8.5" fill="#c3c9d1" />
-      {/* banner body with vertical cream/yellow stripes */}
-      <g clipPath="url(#lgBannerClip)">
-        <rect x="30" y="26" width="17" height="90" fill="#fff2cf" />
-        <rect x="47" y="26" width="17" height="90" fill="#ffd75e" />
-        <rect x="64" y="26" width="17" height="90" fill="#fff2cf" />
-        <rect x="81" y="26" width="17" height="90" fill="#ffd75e" />
-      </g>
-      <path d="M30 26h68v82l-34-16-34 16z" fill="none" stroke="#f2c246" strokeWidth="2" />
-      {/* white central medal disc with a thin dashed orange ring */}
-      <circle cx="64" cy="66" r="25" fill="#fffdf6" />
-      <circle cx="64" cy="66" r="21" fill="none" stroke="#f0a23a" strokeWidth="1.4" strokeDasharray="3 3.4" />
-      {/* cute crossed-swords emblem on the medal */}
-      <g transform="translate(64 67)">
-        <g transform="rotate(40)">
-          <CuteSword />
-        </g>
-        <g transform="rotate(-40)">
-          <CuteSword />
-        </g>
-      </g>
-    </svg>
-  );
+  return <img className="lgg__banner-art" src={guideBannerArt} alt="" aria-hidden="true" />;
 }
 
 /* ------------------------------ citrus badge ---------------------------- */
-/** Neutral palette for an unknown tier or a not-yet-reached ("locked") tier. */
-const CITRUS_LOCKED = { rind: "#b4b0a8", fill: "#cdcac2", flesh: "#e9e7e1" };
-
 /**
  * The official league tier image: a colourful segmented citrus badge
  * (green → golden). Used everywhere a league tier is shown — the guide, the
@@ -116,6 +35,21 @@ const CITRUS_LOCKED = { rind: "#b4b0a8", fill: "#cdcac2", flesh: "#e9e7e1" };
  * - `label` makes it an accessible `img`; otherwise it is decorative.
  * - `className` lets callers size it (the square 0–64 viewBox scales to fit).
  */
+/**
+ * The five tier artworks, exported from the league carousel in Figma
+ * LEG-001 (Frame 1410118315, node 893:24353): groups 893:24354 / 24430 / 24506
+ * / 24581 / 24657, left to right. Each is a ~90-vector citrus with its own
+ * rind, leaf, segment shading and highlights, so it is used as-is — there is no
+ * meaningful way to redraw it.
+ */
+const TIER_ART: Record<LeagueTier, string> = {
+  green: tierGreenArt,
+  lime: tierLimeArt,
+  yellow: tierYellowArt,
+  orange: tierOrangeArt,
+  golden: tierGoldenArt,
+};
+
 export function CitrusBadge({
   tier,
   locked = false,
@@ -127,82 +61,39 @@ export function CitrusBadge({
   label?: string;
   className?: string;
 }) {
-  const c = locked ? CITRUS_LOCKED : (TIER_CITRUS[tier as LeagueTier] ?? CITRUS_LOCKED);
-  const leaf = locked ? "#b4b0a8" : "#7cc44a";
-  const leafDark = locked ? "#a09c94" : "#63ac39";
-  const cx = 32;
-  const cy = 37;
-  const r = 15.5;
-  const segments = Array.from({ length: 8 }, (_, i) => {
-    const a = Math.PI / 8 + (i * Math.PI) / 4;
-    return `M${cx} ${cy}L${(cx + r * Math.cos(a)).toFixed(1)} ${(cy + r * Math.sin(a)).toFixed(1)}`;
-  }).join(" ");
+  const art = TIER_ART[tier as LeagueTier] ?? TIER_ART.green;
   const a11y = label
     ? { role: "img" as const, "aria-label": label }
-    : { "aria-hidden": true as const, focusable: false as const };
+    : { "aria-hidden": true as const };
   return (
-    <svg viewBox="0 0 64 64" width="100%" height="100%" className={className} {...a11y}>
-      <ellipse cx="33" cy="58" rx="17" ry="3.4" fill="rgba(120,80,10,0.14)" />
-      {/* leaf + sprig at the top */}
-      <path d="M32 15c1-6 7-9 12.5-8 0.2 6.4-5.2 10.4-12 10z" fill={leaf} />
-      <path d="M31 18c-2.4-1-4-3.2-4-5.8 3.4 0.2 5.6 2.6 5.4 5.8z" fill={leafDark} />
-      {/* rind (thick coloured outline) → body → segmented flesh */}
-      <circle cx={cx} cy={cy} r="20" fill={c.rind} />
-      <circle cx={cx} cy={cy} r="17.4" fill={c.fill} />
-      <circle cx={cx} cy={cy} r={r} fill={c.flesh} />
-      <path d={segments} stroke={c.fill} strokeWidth="1.4" strokeLinecap="round" />
-      <circle cx={cx} cy={cy} r="2.1" fill={c.fill} />
-      {/* soft top-left highlight */}
-      <ellipse cx="25.5" cy="30.5" rx="5.4" ry="3" fill="#ffffff" opacity="0.5" />
+    <span className={`citrus${locked ? " citrus--locked" : ""}${className ? ` ${className}` : ""}`} {...a11y}>
+      <img className="citrus__art" src={art} alt="" aria-hidden="true" />
       {locked && (
-        <g>
-          <rect x="25.5" y="35" width="13" height="10" rx="2.2" fill="#8f8b83" />
-          <path d="M28 35v-2.4a4 4 0 018 0V35" stroke="#8f8b83" strokeWidth="2" fill="none" />
-          <circle cx="32" cy="40" r="1.7" fill="#fff" />
-        </g>
+        /* Padlock for tiers the player has not reached. Figma keeps the locked
+           state as a separate hidden layer set rather than a flat asset, so the
+           fruit is desaturated in CSS and the lock drawn over it. */
+        <svg className="citrus__lock" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <rect x="5.5" y="10" width="13" height="10" rx="2.2" fill="#8f8b83" />
+          <path d="M8 10V7.6a4 4 0 018 0V10" stroke="#8f8b83" strokeWidth="2" fill="none" />
+          <circle cx="12" cy="15" r="1.7" fill="#fff" />
+        </svg>
       )}
-    </svg>
+    </span>
   );
 }
 
 /* --------------------------- reward-card icons -------------------------- */
-const YELLOW = "#ffd23f";
-const YELLOW_EDGE = "#f0b400";
-
-function StarGlyph() {
-  return (
-    <>
-      <CuteStar cx={24} cy={25} outer={15} inner={7.6} fill={YELLOW} edge={YELLOW_EDGE} puff={5} />
-      <ellipse cx="19" cy="20" rx="3.4" ry="2" fill="#ffffff" opacity="0.55" />
-    </>
-  );
-}
-function FlagGlyph() {
-  return (
-    <>
-      <path d="M16 8v34" stroke={YELLOW_EDGE} strokeWidth="3" strokeLinecap="round" />
-      <path d="M18 10c6-3 12 3 18 0v14c-6 3-12-3-18 0z" fill={YELLOW} stroke={YELLOW_EDGE} strokeWidth="1.5" strokeLinejoin="round" />
-    </>
-  );
-}
-function PlayGlyph() {
-  return <path d="M19 15l16 9-16 9z" fill={YELLOW} stroke={YELLOW_EDGE} strokeWidth="1.6" strokeLinejoin="round" />;
-}
-function BookGlyph() {
-  return (
-    <>
-      <path d="M24 15c-4-3-9-3-13-2v20c4-1 9-1 13 2 4-3 9-3 13-2V13c-4-1-9-1-13 2z" fill={YELLOW} stroke={YELLOW_EDGE} strokeWidth="1.5" strokeLinejoin="round" />
-      <path d="M24 15v22" stroke={YELLOW_EDGE} strokeWidth="1.5" />
-    </>
-  );
-}
+/**
+ * The four reward glyphs (Figma 2302:27533 / 27536 / 27549 / 27545) — a dashed
+ * ring around a soft yellow star / flag / play / book, each 45px in the design.
+ */
+const REWARD_ART: Record<RewardIconKind, string> = {
+  attendance: rewardAttendanceArt,
+  learning: rewardLearningArt,
+  course: rewardCourseArt,
+  review: rewardReviewArt,
+};
 
 export function RewardIcon({ kind }: { kind: RewardIconKind }) {
-  const glyph =
-    kind === "attendance" ? <StarGlyph /> : kind === "learning" ? <FlagGlyph /> : kind === "course" ? <PlayGlyph /> : <BookGlyph />;
-  return (
-    <svg viewBox="0 0 48 48" width="30" height="30" aria-hidden="true" focusable="false">
-      {glyph}
-    </svg>
-  );
+  return <img className="lgg__reward-art" src={REWARD_ART[kind]} alt="" aria-hidden="true" />;
 }

@@ -3,24 +3,26 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 import { SessionChrome } from "./SessionChrome";
+import { I18nProvider } from "../i18n";
 
 function renderChrome(minimal: boolean) {
   return render(
-    <MemoryRouter>
-      <SessionChrome
-        title="저장한 문제"
-        heading="목표 하루 학습 문제"
-        panel={<div>AI PANEL</div>}
-        progress={0.5}
-        total={5}
-        correct={2}
-        askContext={null}
-        minimal={minimal}
-      >
-        <div>CARD</div>
-      </SessionChrome>
-    </MemoryRouter>,
-  );
+    <I18nProvider language="ko">
+      <MemoryRouter>
+        <SessionChrome
+          title="저장한 문제"
+          heading="목표 하루 학습 문제"
+          panel={<div>AI PANEL</div>}
+          progress={0.5}
+          total={5}
+          correct={2}
+          askContext={null}
+          minimal={minimal}
+        >
+          <div>CARD</div>
+        </SessionChrome>
+      </MemoryRouter>
+    </I18nProvider>,);
 }
 
 describe("SessionChrome — review (minimal) mode", () => {

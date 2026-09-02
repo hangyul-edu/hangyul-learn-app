@@ -1,12 +1,21 @@
-export function timeAgo(iso?: string | null): string {
+import type { TranslationKey } from "../i18n";
+import type { AppLanguage } from "./language";
+
+type Translate = (key: TranslationKey, vars?: Record<string, string | number>) => string;
+
+/**
+ * Compact relative age ("just now" / N minutes / N hours / N days), formatted in
+ * the active language. `t` is passed in because this runs outside React.
+ */
+export function timeAgo(iso: string | null | undefined, t: Translate, locale = "ko-KR"): string {
   if (!iso) return "";
   const then = new Date(iso).getTime();
   const s = Math.floor((Date.now() - then) / 1000);
-  if (s < 60) return "방금 전";
-  if (s < 3600) return `${Math.floor(s / 60)}분 전`;
-  if (s < 86400) return `${Math.floor(s / 3600)}시간 전`;
-  if (s < 604800) return `${Math.floor(s / 86400)}일 전`;
-  return new Date(iso).toLocaleDateString("ko-KR", { month: "long", day: "numeric" });
+  if (s < 60) return t("time.justNow");
+  if (s < 3600) return t("time.minutesAgo", { n: Math.floor(s / 60) });
+  if (s < 86400) return t("time.hoursAgo", { n: Math.floor(s / 3600) });
+  if (s < 604800) return t("time.daysAgo", { n: Math.floor(s / 86400) });
+  return new Date(iso).toLocaleDateString(locale, { month: "long", day: "numeric" });
 }
 
 // The product's configured display timezone. Notice dates are formatted in
@@ -48,12 +57,35 @@ export function secondsUntil(iso?: string | null): number {
   return Math.max(0, Math.floor((new Date(iso).getTime() - Date.now()) / 1000));
 }
 
+/** Locale tag for Intl formatting in the active app language. */
+export function localeFor(language: AppLanguage): string {
+  return language === "en" ? "en-US" : "ko-KR";
+}
+
+/**
+ * A full date. The designs print "2025년 11월 29일" in Korean and the shortened
+ * "Nov 29, 2025" in English (Figma MOR-010, 624:9777 / 784:62109).
+ */
+export function formatLongDate(iso: string | null | undefined, language: AppLanguage): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString(localeFor(language), {
+    year: "numeric",
+    month: language === "en" ? "short" : "long",
+    day: "numeric",
+  });
+}
+
 export function formatMoney(cents: number, currency = "KRW"): string {
   const amount = currency === "KRW" ? cents : cents / 100;
   try {
     return new Intl.NumberFormat("ko-KR", {
       style: "currency",
       currency,
+      // The designs print "$5.99", not the locale-qualified "US$5.99" the
+      // default `currencyDisplay: "symbol"` produces for USD under ko-KR.
+      currencyDisplay: "narrowSymbol",
       maximumFractionDigits: currency === "KRW" ? 0 : 2,
     }).format(amount);
   } catch {
@@ -78,14 +110,30 @@ export function formatPhone(p?: string | null): string {
   return national || (p ?? "-");
 }
 
-export const NATIONALITIES: { code: string; label: string; dial: string; flag: string }[] = [
-  { code: "KR", label: "대한민국", dial: "+82", flag: "🇰🇷" },
-  { code: "US", label: "United States", dial: "+1", flag: "🇺🇸" },
-  { code: "JP", label: "日本", dial: "+81", flag: "🇯🇵" },
-  { code: "CN", label: "中国", dial: "+86", flag: "🇨🇳" },
-  { code: "VN", label: "Việt Nam", dial: "+84", flag: "🇻🇳" },
-  { code: "TH", label: "ประเทศไทย", dial: "+66", flag: "🇹🇭" },
-  { code: "ID", label: "Indonesia", dial: "+62", flag: "🇮🇩" },
-  { code: "FR", label: "France", dial: "+33", flag: "🇫🇷" },
-  { code: "DE", label: "Deutschland", dial: "+49", flag: "🇩🇪" },
+/**
+ * Supported phone-prefix countries.
+ *
+ * This table carries ONLY locale-independent data — ISO code, dial code, flag —
+ * and points at a catalog key for the display name. It previously mixed the two:
+ * KR held the translation key "ui.defaultCountry" while the other eight held
+ * hardcoded endonyms, so the selector rendered the raw key for Korea and never
+ * localized any of the others. Every name now resolves through `t()`, from one
+ * source, in both locales.
+ */
+export const NATIONALITIES: {
+  code: string;
+  /** Catalog key — resolve with `t()`; never render this directly. */
+  labelKey: TranslationKey;
+  dial: string;
+  flag: string;
+}[] = [
+  { code: "KR", labelKey: "ui.countries.KR", dial: "+82", flag: "🇰🇷" },
+  { code: "US", labelKey: "ui.countries.US", dial: "+1", flag: "🇺🇸" },
+  { code: "JP", labelKey: "ui.countries.JP", dial: "+81", flag: "🇯🇵" },
+  { code: "CN", labelKey: "ui.countries.CN", dial: "+86", flag: "🇨🇳" },
+  { code: "VN", labelKey: "ui.countries.VN", dial: "+84", flag: "🇻🇳" },
+  { code: "TH", labelKey: "ui.countries.TH", dial: "+66", flag: "🇹🇭" },
+  { code: "ID", labelKey: "ui.countries.ID", dial: "+62", flag: "🇮🇩" },
+  { code: "FR", labelKey: "ui.countries.FR", dial: "+33", flag: "🇫🇷" },
+  { code: "DE", labelKey: "ui.countries.DE", dial: "+49", flag: "🇩🇪" },
 ];

@@ -3,17 +3,19 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { Policy, PolicyList } from "./Policy";
+import { I18nProvider } from "../i18n";
 
 function renderFlow(initial = "/policy") {
   return render(
-    <MemoryRouter initialEntries={["/profile", initial]} initialIndex={1}>
-      <Routes>
-        <Route path="/profile" element={<div>MORE</div>} />
-        <Route path="/policy" element={<PolicyList />} />
-        <Route path="/policy/:doc" element={<Policy />} />
-      </Routes>
-    </MemoryRouter>,
-  );
+    <I18nProvider language="ko">
+      <MemoryRouter initialEntries={["/profile", initial]} initialIndex={1}>
+        <Routes>
+          <Route path="/profile" element={<div>MORE</div>} />
+          <Route path="/policy" element={<PolicyList />} />
+          <Route path="/policy/:doc" element={<Policy />} />
+        </Routes>
+      </MemoryRouter>
+    </I18nProvider>,);
 }
 
 describe("Terms & Policies flow", () => {

@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { gameApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
-import { normalizeLanguage } from "../lib/language";
 import { AttendanceModal } from "./AttendanceModal";
 import type { AttendanceCheckIn } from "../lib/types";
 
@@ -37,7 +36,6 @@ function isValidResponse(r: AttendanceCheckIn | undefined | null): r is Attendan
 export function AttendanceGate() {
   const { status, me } = useAuth();
   const qc = useQueryClient();
-  const lang = normalizeLanguage(me?.app_language);
   const [data, setData] = useState<AttendanceModalData | null>(null);
 
   // Attendance must only be recorded once the user has finished onboarding — not
@@ -107,7 +105,6 @@ export function AttendanceGate() {
     <AttendanceModal
       pointsAwarded={data.pointsAwarded}
       streakDays={data.streakDays}
-      lang={lang}
       onClose={() => setData(null)}
     />
   );

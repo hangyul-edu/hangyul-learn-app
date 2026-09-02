@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "../i18n";
 import { HangyulAiMessage } from "./HangyulAiMessage";
 import type { ChatMessage } from "../lib/types";
 
@@ -35,6 +36,7 @@ export function ChatSheetView({
   /** Identifies the surface that opened the sheet (for analytics / e2e). */
   dataSource?: string;
 }) {
+  const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   // Keep the latest message in view. (`scrollTo` is guarded — jsdom lacks it.)
@@ -56,12 +58,12 @@ export function ChatSheetView({
   // box) so the absolute overlay attaches to it — like the League Guide sheet —
   // and the sheet stays fully visible regardless of the page's scroll position.
   return (
-    <div className="askai" role="dialog" aria-modal="true" aria-label="물어보기" data-source={dataSource}>
+    <div className="askai" role="dialog" aria-modal="true" aria-label={t("chat.ask")} data-source={dataSource}>
       <div className="askai__backdrop" onClick={onClose} />
       <div className="askai__sheet">
         <header className="askai__header">
-          <h2 className="askai__title">물어보기</h2>
-          <button className="askai__close" onClick={onClose} aria-label="물어보기 창 닫기">
+          <h2 className="askai__title">{t("chat.ask")}</h2>
+          <button className="askai__close" onClick={onClose} aria-label={t("chat.closeA11y")}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M6 6l12 12M18 6L6 18" stroke="#111" strokeWidth="2" strokeLinecap="round" />
             </svg>
@@ -89,7 +91,7 @@ export function ChatSheetView({
             ),
           )}
           {loading && (
-            <HangyulAiMessage bubbleClassName="askai__msg--loading" bubbleAriaLabel="답변을 불러오는 중">
+            <HangyulAiMessage bubbleClassName="askai__msg--loading" bubbleAriaLabel={t("chat.loading")}>
               <span className="askai__dot" />
               <span className="askai__dot" />
               <span className="askai__dot" />
@@ -100,19 +102,19 @@ export function ChatSheetView({
               <p className="askai__msg-line">{errorText}</p>
               {onRetry && (
                 <button className="askai__retry" onClick={onRetry}>
-                  다시 시도
+                  {t("common.retry")}
                 </button>
               )}
             </HangyulAiMessage>
           )}
         </div>
 
-        <p className="askai__disclaimer">AI 답변은 완벽하지 않거나 실수할 수 있어요. 참고용으로 활용해주세요.</p>
+        <p className="askai__disclaimer">{t("chat.disclaimer")}</p>
 
         <div className="askai__composer">
           <input
             className="askai__input"
-            placeholder="채팅을 입력하세요."
+            placeholder={t("chat.inputPlaceholder")}
             value={draft}
             onChange={(e) => onDraft(e.target.value)}
             onKeyDown={(e) => {
@@ -122,13 +124,13 @@ export function ChatSheetView({
               }
             }}
             maxLength={2000}
-            aria-label="채팅 입력"
+            aria-label={t("chat.inputA11y")}
           />
           <button
             className="askai__send"
             onClick={onSend}
             disabled={!draft.trim() || sending || !canSend}
-            aria-label="메시지 보내기"
+            aria-label={t("chat.send")}
           >
             {sending ? (
               <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />

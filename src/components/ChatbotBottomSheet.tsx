@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "../i18n";
 import { aiApi } from "../api/endpoints";
 import { ChatSheetView } from "./ChatSheetView";
 import { errorMessage } from "../lib/http";
@@ -14,12 +15,10 @@ import type { ChatMessage } from "../lib/types";
  * Personalized Learning conversation never mix. Reopening within the same
  * mount restores the conversation (state is kept while mounted).
  */
-const GREETING: ChatMessage = {
-  message_id: "__greeting__",
-  role: "assistant",
-  content: "무엇이든 물어보세요!",
-  created_at: "",
-};
+/** Built per render so the greeting follows the active language. */
+function greeting(text: string): ChatMessage {
+  return { message_id: "__greeting__", role: "assistant", content: text, created_at: "" };
+}
 
 export function ChatbotBottomSheet({
   open,
@@ -34,7 +33,8 @@ export function ChatbotBottomSheet({
   context?: Record<string, unknown>;
   onClose: () => void;
 }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
+  const { t } = useTranslation();
+  const [messages, setMessages] = useState<ChatMessage[]>([greeting(t("misc.askAnything"))]);
   const [convId, setConvId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -56,7 +56,7 @@ export function ChatbotBottomSheet({
       if (!alive.current) return;
       setConvId(res.conversation.conversation_id);
       if (res.first_assistant_message) {
-        setMessages([GREETING, res.first_assistant_message]);
+        setMessages([greeting(t("misc.askAnything")), res.first_assistant_message]);
       }
     } catch (e) {
       if (alive.current) setError(errorMessage(e));

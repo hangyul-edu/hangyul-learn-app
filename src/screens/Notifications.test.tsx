@@ -16,6 +16,7 @@ vi.mock("../api/endpoints", () => ({
 
 import { notifApi } from "../api/endpoints";
 import { Notifications } from "./Notifications";
+import { I18nProvider } from "../i18n";
 
 const api = notifApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -78,17 +79,18 @@ function LocationProbe() {
 function renderScreen() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={["/notifications"]}>
-        <ToastProvider>
-          <Routes>
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="*" element={<LocationProbe />} />
-          </Routes>
-        </ToastProvider>
-      </MemoryRouter>
-    </QueryClientProvider>,
-  );
+    <I18nProvider language="ko">
+      <QueryClientProvider client={qc}>
+        <MemoryRouter initialEntries={["/notifications"]}>
+          <ToastProvider>
+            <Routes>
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="*" element={<LocationProbe />} />
+            </Routes>
+          </ToastProvider>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </I18nProvider>,);
 }
 
 beforeEach(() => {
@@ -171,18 +173,19 @@ describe("Notifications screen", () => {
     api.list.mockResolvedValue(page([notif({ notification_id: "s", title: "긴급 소식", read: false })]));
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
     render(
-      <StrictMode>
-        <QueryClientProvider client={qc}>
-          <MemoryRouter initialEntries={["/notifications"]}>
-            <ToastProvider>
-              <Routes>
-                <Route path="/notifications" element={<Notifications />} />
-              </Routes>
-            </ToastProvider>
-          </MemoryRouter>
-        </QueryClientProvider>
-      </StrictMode>,
-    );
+      <I18nProvider language="ko">
+        <StrictMode>
+          <QueryClientProvider client={qc}>
+            <MemoryRouter initialEntries={["/notifications"]}>
+              <ToastProvider>
+                <Routes>
+                  <Route path="/notifications" element={<Notifications />} />
+                </Routes>
+              </ToastProvider>
+            </MemoryRouter>
+          </QueryClientProvider>
+        </StrictMode>
+      </I18nProvider>,);
     const card = (await screen.findByText("긴급 소식")).closest(".ntf__card") as HTMLElement;
     expect(card.className).toContain("is-unread"); // still highlighted after mount→unmount→mount
     // Give the (cancelled) fake-unmount timer a tick; it must have been cleared.
@@ -204,7 +207,7 @@ describe("Notifications screen", () => {
   it("shows the all-notifications empty state", async () => {
     api.list.mockResolvedValue(page([]));
     renderScreen();
-    expect(await screen.findByText("아직 알림이 없어요")).toBeInTheDocument();
+    expect(await screen.findByText("아직 새로운 알림이 없어요")).toBeInTheDocument();
   });
 
   it("shows the filtered empty state", async () => {
@@ -221,9 +224,9 @@ describe("Notifications screen", () => {
     let resolve!: (v: unknown) => void;
     api.list.mockReturnValue(new Promise((r) => { resolve = r; }));
     renderScreen();
-    expect(screen.queryByText("아직 알림이 없어요")).not.toBeInTheDocument();
+    expect(screen.queryByText("아직 새로운 알림이 없어요")).not.toBeInTheDocument();
     resolve(page([]));
-    expect(await screen.findByText("아직 알림이 없어요")).toBeInTheDocument();
+    expect(await screen.findByText("아직 새로운 알림이 없어요")).toBeInTheDocument();
   });
 
   it("stale filter responses never replace the current filter's results", async () => {

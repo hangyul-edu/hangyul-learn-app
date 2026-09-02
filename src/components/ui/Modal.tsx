@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "../../i18n";
 import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import { Button } from "./kit";
@@ -111,6 +112,7 @@ export function Dialog({
   onClose,
   emoji,
   title,
+  warn,
   text,
   children,
 }: {
@@ -118,6 +120,8 @@ export function Dialog({
   onClose?: () => void;
   emoji?: string;
   title: ReactNode;
+  /** Brand-orange emphasis line between the title and the body (624:10159). */
+  warn?: ReactNode;
   text?: ReactNode;
   children?: ReactNode;
 }) {
@@ -128,6 +132,7 @@ export function Dialog({
       <div className="dialog" onClick={(e) => e.stopPropagation()}>
         {emoji && <div className="dialog__emoji">{emoji}</div>}
         <div className="dialog__title">{title}</div>
+        {warn && <div className="dialog__warn">{warn}</div>}
         {text && <div className="dialog__text">{text}</div>}
         {children}
       </div>
@@ -135,37 +140,46 @@ export function Dialog({
   );
 }
 
+/**
+ * Two-choice confirmation — Figma cp_G_01_modals (MOR-005 1:5727,
+ * MOR-011 624:10160): the actions sit side by side as two equal 136px buttons
+ * with an 8px gap, cancel first. They were previously stacked.
+ */
 export function ConfirmDialog({
   open,
-  emoji = "❓",
+  emoji,
   title,
+  warn,
   text,
-  confirmLabel = "확인",
-  cancelLabel = "취소",
-  danger,
+  confirmLabel,
+  cancelLabel,
   loading,
   onConfirm,
   onCancel,
 }: {
   open: boolean;
+  /** No Figma confirmation carries a badge; opt in only where one is designed. */
   emoji?: string;
   title: ReactNode;
+  warn?: ReactNode;
   text?: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
-  danger?: boolean;
   loading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   return (
-    <Dialog open={open} onClose={loading ? undefined : onCancel} emoji={emoji} title={title} text={text}>
-      <div className="stack" style={{ gap: 9 }}>
-        <Button variant={danger ? "danger" : "primary"} block loading={loading} onClick={onConfirm}>
-          {confirmLabel}
-        </Button>
+    <Dialog open={open} onClose={loading ? undefined : onCancel} emoji={emoji} title={title} warn={warn} text={text}>
+      {/* Both buttons are cp_C_01_primaryBtn: the dismissing one on bgray.400,
+          the committing one on Brand 1 — never an outline or a red. */}
+      <div className="dialog__actions">
         <Button variant="ghost" block onClick={onCancel} disabled={loading}>
-          {cancelLabel}
+          {cancelLabel ?? t("common.cancel")}
+        </Button>
+        <Button variant="primary" block loading={loading} onClick={onConfirm}>
+          {confirmLabel ?? t("common.confirm")}
         </Button>
       </div>
     </Dialog>

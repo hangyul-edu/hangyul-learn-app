@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "../i18n";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { supportApi } from "../api/endpoints";
-import { useAuth } from "../hooks/auth";
-import { normalizeLanguage } from "../lib/language";
-import { NOTICES_COPY } from "../lib/noticeCopy";
+import { useNoticesCopy } from "../lib/noticeCopy";
 import { formatNoticeListDate } from "../lib/format";
 import { errorMessage } from "../lib/http";
 import { ErrorState, SkeletonList } from "../components/ui/states";
 import type { NoticeSummary } from "../lib/types";
+import { DetailHeader } from "../components/DetailHeader";
+import noticeNewBadge from "../assets/brand/ic-notice-new.svg";
 
 /** Remembers the list scroll offset per language so returning from a detail
  * restores it. Module-scoped so it survives the screen unmounting. */
@@ -30,9 +31,11 @@ function dedupe(pages: { items: NoticeSummary[] }[] | undefined): NoticeSummary[
 export function NoticeList() {
   const nav = useNavigate();
   const loc = useLocation();
-  const { me } = useAuth();
-  const lang = normalizeLanguage(me?.app_language);
-  const copy = NOTICES_COPY[lang];
+  // Notice bodies are server-localized, so the request language must be the
+  // language the chrome is rendering in — that is the i18n layer's, which the
+  // profile only seeds.
+  const { language: lang } = useTranslation();
+  const copy = useNoticesCopy();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const list = useInfiniteQuery({
@@ -88,12 +91,7 @@ export function NoticeList() {
 
   return (
     <div className="ntc">
-      <header className="ntc__header">
-        <button className="ntc__back" onClick={goBack} aria-label={copy.back}>
-          <BackChevron />
-        </button>
-        <h1 className="ntc__title">{copy.title}</h1>
-      </header>
+      <DetailHeader title={copy.title} onBack={goBack} backLabel={copy.back} />
 
       <div className="ntc__scroll" ref={scrollRef}>
         {initialLoading ? (
@@ -121,10 +119,10 @@ export function NoticeList() {
                 >
                   <span className="ntc__row-titlerow">
                     <span className="ntc__row-title">{n.title}</span>
+                    {/* Group 7189 — a 14px disc whose "N" is a stroked path, not
+                        a text glyph, so it comes from the export. */}
                     {n.is_new && (
-                      <span className="ntc__badge" role="img" aria-label={copy.newBadgeLabel}>
-                        N
-                      </span>
+                      <img className="ntc__badge" src={noticeNewBadge} alt="" role="img" aria-label={copy.newBadgeLabel} />
                     )}
                   </span>
                   <span className="ntc__row-date">{formatNoticeListDate(n.published_at)}</span>
@@ -151,10 +149,3 @@ export function NoticeList() {
   );
 }
 
-function BackChevron() {
-  return (
-    <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}

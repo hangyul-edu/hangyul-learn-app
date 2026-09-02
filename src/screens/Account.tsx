@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "../i18n";
 import { useAuth } from "../hooks/auth";
 import { formatPhone } from "../lib/format";
+import { DetailHeader } from "../components/DetailHeader";
 
 /**
  * Account Management ("계정관리") — read-only summary of account-level identity
@@ -10,49 +12,48 @@ import { formatPhone } from "../lib/format";
  * Profile image + nickname are intentionally NOT here (see Profile Edit).
  */
 export function Account() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const { me } = useAuth();
 
   return (
     <div className="screen acct">
       <div className="acct__scroll">
+        <DetailHeader title={t("account.title")} />
         <div className="acct__inner">
-          <header className="acct__header">
-            <button className="acct__back" onClick={() => nav(-1)} aria-label="뒤로">
-              <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-            <h1 className="acct__title">계정관리</h1>
-          </header>
 
           {/* Name — read-only */}
-          <div className="acct__label" id="acct-name-label">이름</div>
+          {/* The name row is the only one MOR-002 leaves as an unmodified
+              cp_D_01_inputFields instance, so its label keeps the component's
+              own Medium 13 / 1.4 / Gray 7 rather than the Caption 2 / Gray 5 the
+              other three are overridden to. Confirmed in the render: this label
+              samples 38,44,49 where the others sample 119,128,136. */}
+          <div className="acct__label acct__label--name" id="acct-name-label">{t("account.name")}</div>
           <div className="acct__field" role="textbox" aria-readonly="true" aria-labelledby="acct-name-label">
             {me?.name ?? "-"}
           </div>
 
           {/* Phone — read-only number + change (editing lives on /account/phone) */}
-          <div className="acct__label" id="acct-phone-label">휴대폰번호</div>
+          <div className="acct__label" id="acct-phone-label">{t("account.phone")}</div>
           <div className="acct__row">
             <div className="acct__field acct__field--flex" role="textbox" aria-readonly="true" aria-labelledby="acct-phone-label">
               {formatPhone(me?.phone)}
             </div>
-            <button className="acct__action" onClick={() => nav("/account/phone")}>번호 변경</button>
+            <button className="acct__action" onClick={() => nav("/account/phone")}>{t("account.changePhone")}</button>
           </div>
 
           {/* Email — read-only + change */}
-          <div className="acct__label" id="acct-email-label">이메일</div>
+          <div className="acct__label" id="acct-email-label">{t("account.email")}</div>
           <div className="acct__row">
             <div className="acct__field acct__field--flex" role="textbox" aria-readonly="true" aria-labelledby="acct-email-label">
               {me?.email ?? "-"}
             </div>
-            <button className="acct__action" onClick={() => nav("/account/email")}>변경하기</button>
+            <button className="acct__action" onClick={() => nav("/account/email")}>{t("account.change")}</button>
           </div>
 
           {/* Password — outlined full-width action */}
-          <div className="acct__label">비밀번호</div>
-          <button className="acct__pw" onClick={() => nav("/account/password")}>비밀번호 변경</button>
+          <div className="acct__label">{t("account.password")}</div>
+          <button className="acct__pw" onClick={() => nav("/account/password")}>{t("account.changePassword")}</button>
         </div>
       </div>
     </div>

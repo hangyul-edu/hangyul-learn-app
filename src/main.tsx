@@ -5,6 +5,7 @@ import { ApiError } from "./lib/http";
 import { bootChannelTalk } from "./lib/channelTalk";
 import { ToastProvider } from "./hooks/toast";
 import { AuthProvider } from "./hooks/auth";
+import { I18nProvider } from "./i18n";
 import { App } from "./App";
 import "./styles/theme.css";
 import "./styles/global.css";
@@ -43,11 +44,15 @@ if (!redirectToAdminApp()) {
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
       <QueryClientProvider client={queryClient}>
-        <ToastProvider>
-          <AuthProvider>
-            <App />
-          </AuthProvider>
-        </ToastProvider>
+        {/* i18n wraps auth: the profile only seeds the language, so the provider
+            must already exist when <AuthProvider> resolves /users/me. */}
+        <I18nProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <App />
+            </AuthProvider>
+          </ToastProvider>
+        </I18nProvider>
       </QueryClientProvider>
     </React.StrictMode>,
   );

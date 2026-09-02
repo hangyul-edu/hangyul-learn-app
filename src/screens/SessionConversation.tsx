@@ -1,25 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "../i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SessionChrome } from "../components/SessionChrome";
 import { SessionCompleteModal } from "../components/SessionCompleteModal";
-import { SavePlusIcon } from "../components/brand/HomeIcons";
+import icBookmark from "../assets/brand/ic-card-bookmark.svg";
+import icMic from "../assets/brand/ic-session-mic.svg";
+import icBookmarkOn from "../assets/brand/ic-24-bookmark-filled.svg";
 import { CorrectAnswerSheet } from "../components/CorrectAnswerSheet";
 import { ReviewCompleteSheet } from "../components/ReviewCompleteSheet";
 import { ReviewRewardModal } from "../components/ReviewRewardModal";
-import { REVIEW_SESSION_COPY } from "../lib/reviewSessionCopy";
+import { useReviewSessionCopy } from "../lib/reviewSessionCopy";
 import { LoadingState, ErrorState } from "../components/ui/states";
 import { recApi, sentenceApi, dashboardApi, learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
-import { useAuth } from "../hooks/auth";
 import { errorMessage } from "../lib/http";
-import { normalizeLanguage } from "../lib/language";
 import { randomUuid } from "../lib/uuid";
 import {
-  SESSION_CONVERSATION_COPY,
+  useSessionConversationCopy,
   type SessionConversationCopy,
 } from "../lib/sessionConversationCopy";
 import type { BlankAttempt, Sentence, SpeechAttempt } from "../lib/types";
+import icSend from "../assets/brand/ic-send.svg";
+import icQuestion from "../assets/brand/ic-question.svg";
+import icAlert from "../assets/brand/ic-24-alert.svg";
 
 /** Which input produced the last evaluated attempt — decides whether the
  * pronunciation panel (voice only) is shown. */
@@ -128,6 +132,7 @@ function FillSentence({
   submitting: boolean;
   composingRef: React.MutableRefObject<boolean>;
 }) {
+  const { t } = useTranslation();
   if (!hasBlank(sentence)) {
     return <div className="sess__sentence">{sentence.korean}</div>;
   }
@@ -162,14 +167,14 @@ function FillSentence({
                   autoFocus
                   lang="ko"
                   enterKeyHint="go"
-                  aria-label="빈칸에 들어갈 말"
+                  aria-label={t("session.blankWord")}
                 />
               </span>
             ) : (
               <span
                 className="sess__blank"
                 style={{ minWidth: `${widthEm}em` }}
-                aria-label={revealed ? `힌트: ${revealed}` : "빈칸"}
+                aria-label={revealed ? t("session.blankHint", { hint: revealed }) : t("session.blank")}
               >
                 {revealed || " "}
               </span>
@@ -180,46 +185,8 @@ function FillSentence({
   );
 }
 
-/** Blue circular check for the correct-answer feedback card. */
-function CheckIcon() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <circle cx="12" cy="12" r="11" fill="#5D7CFF" />
-      <path d="M7 12.5l3.2 3.2L17 8.8" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-    </svg>
-  );
-}
 
-/** Coral circular warning badge (white exclamation) for the incorrect header. */
-function WarnIcon() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <circle cx="12" cy="12" r="11" fill="#ff5b00" />
-      <path d="M12 6.4v7.2" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" />
-      <circle cx="12" cy="17.2" r="1.4" fill="#fff" />
-    </svg>
-  );
-}
 
-/** Circled question mark for the 힌트보기 (view-hint) chip. Inherits the chip's
- * text colour via currentColor so it stays legible in both idle and pressed
- * states — clearer than the low-contrast ❔ emoji it replaces. */
-function HintIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
-      <path
-        d="M9.1 9.3a2.9 2.9 0 1 1 4.3 2.9c-.9.6-1.4 1.1-1.4 2.1"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="12" cy="17.4" r="1.25" fill="currentColor" />
-    </svg>
-  );
-}
 
 /** Circular pronunciation-accuracy ring: gray inactive track + orange active arc
  * with the clamped percentage centered. Decorative — the accessible value is
@@ -229,8 +196,8 @@ function ScoreRing({ percent }: { percent: number }) {
   const circ = 2 * Math.PI * r;
   const offset = circ * (1 - percent / 100);
   return (
-    <svg className="sess__pron-ring" width="66" height="66" viewBox="0 0 66 66" aria-hidden="true" focusable="false">
-      <circle cx="33" cy="33" r={r} fill="none" stroke="#ececeb" strokeWidth="7" />
+    <svg className="sess__pron-ring" width="63" height="63" viewBox="0 0 66 66" aria-hidden="true" focusable="false">
+      <circle cx="33" cy="33" r={r} fill="none" stroke="#ecedf0" strokeWidth="7" />
       <circle
         cx="33"
         cy="33"
@@ -243,7 +210,7 @@ function ScoreRing({ percent }: { percent: number }) {
         strokeDashoffset={offset}
         transform="rotate(-90 33 33)"
       />
-      <text x="33" y="34" textAnchor="middle" dominantBaseline="central" fontSize="15" fontWeight="800" fill="#272c30">
+      <text x="33" y="34" textAnchor="middle" dominantBaseline="central" fontSize="15" fontWeight="800" fill="#262c31">
         {percent}%
       </text>
     </svg>
@@ -281,14 +248,13 @@ function useRemaining() {
 }
 
 export function SessionConversation() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const loc = useLocation();
   const toast = useToast();
   const qc = useQueryClient();
-  const { me } = useAuth();
-  const lang = normalizeLanguage(me?.app_language);
-  const copy = SESSION_CONVERSATION_COPY[lang];
-  const reviewCopy = REVIEW_SESSION_COPY[lang];
+  const copy = useSessionConversationCopy();
+  const reviewCopy = useReviewSessionCopy();
   // Single-item review mode: reached via /review/sentence/:sentenceId. Reuses the
   // whole answer flow but with one fixed saved sentence, source="review" attempts
   // (server awards review points, skips goal/level), no progress/config chrome,
@@ -697,12 +663,12 @@ export function SessionConversation() {
       el.onended = () => setReplaying(false);
       el.onerror = () => {
         setReplaying(false);
-        toast.error("음성을 재생하지 못했어요.");
+        toast.error(t("session.audioError"));
       };
       await el.play();
     } catch {
       setReplaying(false);
-      toast.error("음성을 재생하지 못했어요.");
+      toast.error(t("session.audioError"));
     }
   }
 
@@ -764,20 +730,18 @@ export function SessionConversation() {
       <div className="sess__prompt">
         <input
           className="sess__prompt-input"
-          placeholder="✨ 원하는 상황을 입력하면 맞춤 문장을 추천해드려요"
+          placeholder={t("session.customPlaceholder")}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          aria-label="맞춤 문장 상황 입력"
+          aria-label={t("session.customInputA11y")}
         />
         <button
           className="sess__prompt-send"
           onClick={() => prompt.trim() && loadSet(prompt.trim())}
           disabled={!prompt.trim() || busy}
-          aria-label="맞춤 문장 추천 받기"
+          aria-label={t("session.customSubmitA11y")}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M4 12l16-7-7 16-2.5-6.5L4 12z" stroke="#8a929a" strokeWidth="1.7" strokeLinejoin="round" />
-          </svg>
+          <img className="sess__prompt-send-ic" src={icSend} alt="" aria-hidden="true" />
         </button>
       </div>
     ),
@@ -788,8 +752,8 @@ export function SessionConversation() {
   return (
     <>
     <SessionChrome
-      title={isReview ? reviewCopy.sentenceTitle : `회화 Lv.${level}`}
-      heading="목표 하루 학습 문장"
+      title={isReview ? reviewCopy.sentenceTitle : t("sessionConversation.levelTitle", { level })}
+      heading={t("session.dailySentenceGoal")}
       correct={correctSet.size}
       total={total}
       progress={progress}
@@ -805,7 +769,7 @@ export function SessionConversation() {
       }
     >
       {error ? (
-        <ErrorState message="문장을 불러오지 못했어요." onRetry={() => loadSet()} />
+        <ErrorState message={t("session.sentenceLoadError")} onRetry={() => loadSet()} />
       ) : !cur ? (
         <LoadingState />
       ) : result?.correct ? (
@@ -816,15 +780,24 @@ export function SessionConversation() {
             <div className="sess__card-top">
               <div className="sess__correct-head">
                 <span className="sess__check">
-                  <CheckIcon />
+                  <span className="badge-check" aria-hidden="true" />
                 </span>
-                <span>정답이에요!</span>
+                <span>{t("session.correctExclaim")}</span>
               </div>
-              <button className="sess__bookmark" onClick={() => toggleSave(cur)} aria-label={saved[cur.sentence_id] ? "저장 해제" : "저장"} aria-pressed={!!saved[cur.sentence_id]}>
-                <SavePlusIcon active={!!saved[cur.sentence_id]} />
+              <button className="sess__bookmark" onClick={() => toggleSave(cur)} aria-label={t(saved[cur.sentence_id] ? "sessionConversation.bookmarkUnsave" : "sessionConversation.bookmarkSave")} aria-pressed={!!saved[cur.sentence_id]}>
+                {/* Group 427318316 (1718:26052) — 18 x 21.5 in the card; both states are
+                    real Figma exports, so nothing here is hand-drawn. */}
+                <img
+                  className="sess__bookmark-ic"
+                  src={saved[cur.sentence_id] ? icBookmarkOn : icBookmark}
+                  alt=""
+                  aria-hidden="true"
+                  width={19.5}
+                  height={22.25}
+                />
               </button>
             </div>
-            <div className="sess__sentence sess__sentence--correct" role="status" aria-label={`정답입니다. ${cur.korean}. ${cur.translation}`}>
+            <div className="sess__sentence sess__sentence--correct" role="status" aria-label={t("session.correctA11y", { korean: cur.korean, translation: cur.translation })}>
               {cur.korean}
             </div>
             <div className="sess__trans">{cur.translation}</div>
@@ -833,11 +806,8 @@ export function SessionConversation() {
           <div className="sess__mic-wrap">
             {/* Item is locked once answered — no second evaluation. Stays visible
                 (sharp in intermediate, blurred in complete) behind the sheet. */}
-            <button className="sess__mic" disabled aria-label="이 문제는 완료되었어요">
-              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <rect x="9" y="3" width="6" height="11" rx="3" fill="#FF5B00" />
-                <path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="#FF5B00" strokeWidth="2" strokeLinecap="round" />
-              </svg>
+            <button className="sess__mic" disabled aria-label={t("session.alreadyDone")}>
+              <img className="sess__mic-ic" src={icMic} alt="" aria-hidden="true" />
             </button>
           </div>
         </>
@@ -848,12 +818,12 @@ export function SessionConversation() {
               {incorrect ? (
                 <div className="sess__incorrect-head" role="status">
                   <span className="sess__warn" aria-hidden="true">
-                    <WarnIcon />
+                    <img className="badge-warn" src={icAlert} alt="" aria-hidden="true" />
                   </span>
                   <span>{copy.incorrectStatus}</span>
                 </div>
               ) : (
-                <p className="sess__instr">빈칸을 채워 완성해봐요✨</p>
+                <p className="sess__instr">{t("session.fillBlank")}</p>
               )}
               <button
                 className="sess__bookmark"
@@ -861,7 +831,16 @@ export function SessionConversation() {
                 aria-label={saved[cur.sentence_id] ? copy.bookmarkUnsave : copy.bookmarkSave}
                 aria-pressed={!!saved[cur.sentence_id]}
               >
-                <SavePlusIcon active={!!saved[cur.sentence_id]} />
+                {/* Group 427318316 (1718:26052) — 18 x 21.5 in the card; both states are
+                    real Figma exports, so nothing here is hand-drawn. */}
+                <img
+                  className="sess__bookmark-ic"
+                  src={saved[cur.sentence_id] ? icBookmarkOn : icBookmark}
+                  alt=""
+                  aria-hidden="true"
+                  width={19.5}
+                  height={22.25}
+                />
               </button>
             </div>
 
@@ -903,7 +882,10 @@ export function SessionConversation() {
                   disabled={hintBusy || answered.has(cur.sentence_id)}
                   aria-busy={hintBusy}
                 >
-                  <HintIcon /> {curStage === "hint" ? copy.answer : copy.hint}
+                  <span className="sess__chip-q" aria-hidden="true">
+                    <img src={icQuestion} alt="" />
+                  </span>
+                  {curStage === "hint" ? copy.answer : copy.hint}
                 </button>
               )}
               <button
@@ -918,7 +900,7 @@ export function SessionConversation() {
                 aria-pressed={keyboard}
                 disabled={!hasBlank(cur)}
               >
-                <span aria-hidden="true">{keyboard ? "🎙" : "⌨"}</span>{" "}
+                {/* 2689:26087 — the mode chip is label-only in Figma. */}
                 {keyboard ? copy.voiceMode : copy.keyboardMode}
               </button>
             </div>
@@ -948,10 +930,9 @@ export function SessionConversation() {
                   aria-label={incorrect ? copy.micRetryA11y : copy.recordA11y}
                 >
                   {scoring ? <span className="spinner" style={{ width: 26, height: 26 }} /> : (
-                    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <rect x="9" y="3" width="6" height="11" rx="3" fill="#FF5B00" />
-                      <path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="#FF5B00" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
+                    /* Group 33277 (673:10472) — disc, glyph and both shadows are
+                       all inside this one export; nothing is redrawn here. */
+                    <img className="sess__mic-ic" src={icMic} alt="" aria-hidden="true" />
                   )}
                 </button>
               )}

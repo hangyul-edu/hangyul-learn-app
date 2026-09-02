@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
+import { useTranslation } from "../i18n";
 import { supportApi } from "../api/endpoints";
 import { ApiError, errorMessage } from "../lib/http";
 import { EmptyState, ErrorState } from "../components/ui/states";
@@ -8,6 +9,7 @@ import { SupportChatButton } from "../components/faq/SupportChatButton";
 import { AnswerBody } from "../components/faq/AnswerBody";
 
 export function FaqDetail() {
+  const { t } = useTranslation();
   const { faqId = "" } = useParams();
 
   // Load the full FAQ by its stable id — the detail page is self-sufficient
@@ -32,8 +34,8 @@ export function FaqDetail() {
           ) : notFound ? (
             <EmptyState
               emoji="🗑️"
-              title="찾을 수 없는 질문이에요"
-              text="삭제되었거나 주소가 올바르지 않아요."
+              title={t("faq.notFoundTitle")}
+              text={t("faq.notFoundBody")}
             />
           ) : faq.isError ? (
             <ErrorState message={errorMessage(faq.error)} onRetry={() => faq.refetch()} />

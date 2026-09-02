@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "../i18n";
 
 /**
  * Logout confirmation modal. Opening it calls no API; only the orange 로그아웃
@@ -21,6 +22,7 @@ export function LogoutModal({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const { t } = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
 
@@ -75,15 +77,15 @@ export function LogoutModal({
         aria-labelledby="lgo-title"
         aria-describedby="lgo-desc"
       >
-        <h2 className="lgo__title" id="lgo-title">로그아웃 하시겠습니까?</h2>
-        <p className="lgo__copy" id="lgo-desc">학습 기록은 계정에 안전하게 저장돼요.</p>
+        <h2 className="lgo__title" id="lgo-title">{t("misc.logoutTitle")}</h2>
+        <p className="lgo__copy" id="lgo-desc">{t("misc.logoutBody")}</p>
 
         <div className="lgo__actions">
           <button className="lgo__btn lgo__btn--cancel" onClick={onCancel} disabled={loading}>
-            취소
+            {t("common.cancel")}
           </button>
           <button className="lgo__btn lgo__btn--go" onClick={onConfirm} disabled={loading}>
-            {loading ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : "로그아웃"}
+            {loading ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("misc.logout")}
           </button>
         </div>
       </div>

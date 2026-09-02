@@ -6,64 +6,91 @@ import { WithdrawModal } from "../components/WithdrawModal";
 import { WithdrawPasswordModal } from "../components/WithdrawPasswordModal";
 import { FailModal } from "../components/FailModal";
 import { SuccessModal } from "../components/SuccessModal";
-import { CharacterArt, ProfilePlaceholder, type AvatarKey } from "../components/brand/ProfileAssets";
-import { ChevronRight } from "../components/brand/HomeIcons";
+import { ProfilePlaceholder, avatarBg, characterArtSrc, characterArtStyle, type AvatarKey } from "../components/brand/ProfileAssets";
+import icChevron from "../assets/brand/ic-16-chevron.svg";
+/* MOR-001's own nickname chevron, exported from ic_16_arrow 1:5563 — 6x10.5,
+   right-pointing, stroked #262C31. Not the 6.5x11.5 ic-16-chevron above. */
+import icNickArrow from "../assets/brand/ic-16-arrow-right-dark.svg";
+import subTrialRibbon from "../assets/brand/sub-trial-ribbon.svg";
+import icStarCheck from "../assets/brand/ic-star-check.svg";
+import icBell from "../assets/brand/ic-24-bell-dark.svg";
+import statTotalDays from "../assets/brand/stat-total-days.svg";
+import statBestStreak from "../assets/brand/stat-best-streak.svg";
+import statCurrentStreak from "../assets/brand/stat-current-streak.svg";
 import { subApi, dashboardApi, authApi } from "../api/endpoints";
 import { http, errorMessage, ApiError, NetworkError } from "../lib/http";
 import { useAuth } from "../hooks/auth";
 import type { Me } from "../lib/types";
+import { useTranslation, type TranslationKey } from "../i18n";
+import { formatLongDate } from "../lib/format";
 
-const MENU: { label: string; to: string }[] = [
-  { label: "계정 관리", to: "/account" },
-  { label: "결제수단 관리", to: "/account/payment" },
-  { label: "언어 설정", to: "/settings/language" },
-  { label: "알림 설정", to: "/settings" },
-  { label: "친구 관리", to: "/social" },
-  { label: "공지 사항", to: "/more/notices" },
-  { label: "FAQ", to: "/faq" },
-  { label: "약관 및 정책", to: "/policy" },
+/**
+ * More menu — Figma MOR-005, English frame 893:33108.
+ *
+ * The English frame is the current one: its eight entries and their order match
+ * the routes the app ships. The Korean frame (1:5697) is stale, listing nine
+ * entries including 오프라인 동영상 학습 and 1:1 문의하기 for features that do not
+ * exist, so it is not used for structure.
+ *
+ * Rendered as plain Body 6 rows with a 34px gap and no chevron or divider.
+ */
+const MENU: { label: TranslationKey; to: string }[] = [
+  { label: "more.account", to: "/account" },
+  { label: "more.payment", to: "/account/payment" },
+  { label: "more.language", to: "/settings/language" },
+  { label: "more.notifications", to: "/settings" },
+  { label: "more.friends", to: "/social" },
+  { label: "more.announcements", to: "/more/notices" },
+  { label: "more.faq", to: "/faq" },
+  { label: "more.terms", to: "/policy" },
 ];
 
+/**
+ * The More-page avatar. `me` (from /users/me, which EditProfile writes through
+ * `setMe`) is the single source of truth, so whatever was picked in Profile
+ * Management shows here — there is no separate default kept on this screen.
+ * The character is ink-centred and per-character sized for the 60px disc, the
+ * same way the AME-006 picker does it.
+ */
 function ProfileAvatar({ me }: { me: Me | null }) {
   if (me?.profile_image_type === "CUSTOM" && me.profile_image_url)
     return <img className="more__avatar-img" src={me.profile_image_url} alt="" />;
-  if (me?.profile_image_type === "AVATAR" && me.avatar_key)
-    return <CharacterArt variant={me.avatar_key as AvatarKey} fill="100%" />;
+  if (me?.profile_image_type === "AVATAR" && me.avatar_key) {
+    const key = me.avatar_key as AvatarKey;
+    return <img src={characterArtSrc(key)} alt="" style={characterArtStyle(key, MORE_AVATAR)} />;
+  }
   return <ProfilePlaceholder />;
 }
 
-function fmtDate(iso?: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+/** Figma 1:5560 — the More page draws the avatar disc at 60px. */
+const MORE_AVATAR = 60;
+
+/** A character carries its own tint; only the no-image state uses the Gray 2 disc. */
+function avatarDiscStyle(me: Me | null) {
+  return me?.profile_image_type === "AVATAR" && me.avatar_key
+    ? { background: avatarBg(me.avatar_key as AvatarKey) }
+    : undefined;
 }
 
-/** Small muted stat icons for the profile summary row. */
-function StatIcon({ kind }: { kind: "total" | "best" | "current" }) {
-  if (kind === "best")
-    return (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M12 3c1 3-2 4-2 7a2 2 0 0 0 4 0c2 1.5 3 3.5 3 6a5 5 0 0 1-10 0c0-4 3-6 5-13z" stroke="#9AA0A7" strokeWidth="1.6" strokeLinejoin="round" />
-      </svg>
-    );
-  if (kind === "current")
-    return (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <rect x="4" y="5" width="16" height="15" rx="3" stroke="#9AA0A7" strokeWidth="1.6" />
-        <path d="M8 3v4M16 3v4M9 14l2 2 4-4" stroke="#9AA0A7" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    );
-  // "total" — stacked layers implying accumulated study days.
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 3l9 4.5-9 4.5-9-4.5L12 3z" stroke="#9AA0A7" strokeWidth="1.6" strokeLinejoin="round" />
-      <path d="M3 12l9 4.5 9-4.5M3 16.5l9 4.5 9-4.5" stroke="#9AA0A7" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+/**
+ * Stat icons — the real emoji artwork exported from MOR-001_더보기메인
+ * (📒 노트 1:5569, 🌤️ 작은 구름 뒤의 태양 1:5587, 🏅 스포츠 메달 1:5604).
+ * Rendered at Figma's 16px; they were previously hand-drawn grey outlines.
+ */
+const STAT_ART: Record<StatKind, string> = {
+  total: statTotalDays,
+  best: statBestStreak,
+  current: statCurrentStreak,
+};
+
+type StatKind = "total" | "best" | "current";
+
+function StatIcon({ kind }: { kind: StatKind }) {
+  return <img className="more__stat-icon" src={STAT_ART[kind]} alt="" aria-hidden="true" />;
 }
 
 export function Profile() {
+  const { t, language } = useTranslation();
   const nav = useNavigate();
   const { me, revokeSession, hardSignOut } = useAuth();
   const [logoutOpen, setLogoutOpen] = useState(false);
@@ -100,7 +127,7 @@ export function Profile() {
     }
   }
 
-  // X / 확인 on the logout-success modal: identical terminal action, run once.
+  // 확인 on the logout-success modal: the single terminal action, run once.
   function finishLogout() {
     if (logoutFinishedRef.current) return;
     logoutFinishedRef.current = true;
@@ -151,7 +178,7 @@ export function Profile() {
     }
   }
 
-  // X / 확인 on the completion modal: identical terminal action, run once.
+  // 확인 on the completion modal: the single terminal action, run once.
   function finishWithdrawal() {
     if (finishedRef.current) return;
     finishedRef.current = true;
@@ -168,9 +195,8 @@ export function Profile() {
     staleTime: 30_000,
   });
 
-  const nickname = me?.nickname ?? me?.name ?? "회원";
-  // Separate Conversation/TOPIK levels make a single "learning level" ambiguous,
-  // so the More page shows total learning days instead.
+  const nickname = me?.nickname ?? me?.name ?? t("home.defaultNickname");
+  // MOR-001_더보기메인 (1:5582) shows 총 학습일 / "Total Study Days" here.
   const totalDays = streak.data?.total_days;
   const best = streak.data?.best;
   const current = streak.data?.current;
@@ -179,7 +205,8 @@ export function Profile() {
   // vs none is derived from the server status, never from UI copy.
   const s = sub.data;
   const subState: "trial" | "paid" | "none" = s?.status === "trial" ? "trial" : s?.is_premium ? "paid" : "none";
-  const nextBilling = fmtDate(s?.current_period_end ?? s?.trial_end);
+  // MOR-001 prints the date in the app language, not always in Korean.
+  const nextBilling = formatLongDate(s?.current_period_end ?? s?.trial_end, language);
   // While loading or on error the state is unknown — render a neutral (paid-style)
   // card, never the orange no-subscription CTA.
   const cardVariant = sub.isLoading || sub.isError ? "paid" : subState;
@@ -192,24 +219,24 @@ export function Profile() {
           <button
             className="more__bell"
             onClick={() => nav("/notifications")}
-            aria-label={hasUnread ? "알림, 새 알림 있음" : "알림"}
+            aria-label={t(hasUnread ? "home.notificationsUnread" : "home.notifications")}
           >
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M6 9a6 6 0 0 1 12 0c0 4 1.2 5.6 2 6.5.5.6.1 1.5-.7 1.5H4.7c-.8 0-1.2-.9-.7-1.5C4.8 14.6 6 13 6 9z" stroke="#272C30" strokeWidth="1.7" strokeLinejoin="round" />
-              <path d="M9.5 20a2.5 2.5 0 0 0 5 0" stroke="#272C30" strokeWidth="1.7" strokeLinecap="round" />
-            </svg>
+            {/* MOR-001 ic_24_bell (1:5627), the real export — same glyph as the
+                Home bell but stroked Gray 7 instead of #FFD04A. Was a pair of
+                hand-drawn paths at 26px with a 1.7 stroke. */}
+            <img className="more__bell-ic" src={icBell} alt="" aria-hidden="true" width={24} height={24} />
             {hasUnread && <span className="more__bell-dot" aria-hidden="true" />}
           </button>
         </header>
 
         {/* Profile summary card */}
         <section className="more__profile">
-          <div className="more__avatar">
+          <div className="more__avatar" style={avatarDiscStyle(me)}>
             <ProfileAvatar me={me} />
           </div>
-          <button className="more__nick" onClick={() => nav("/profile/edit")} aria-label="프로필 변경">
+          <button className="more__nick" onClick={() => nav("/profile/edit")} aria-label={t("more.editProfile")}>
             <span className="more__nick-name">{nickname}</span>
-            <ChevronRight size={20} color="#9AA0A7" />
+            <img className="more__nick-arrow" src={icNickArrow} alt="" aria-hidden="true" />
           </button>
 
           <div className="more__divider" />
@@ -217,18 +244,24 @@ export function Profile() {
           <div className="more__stats">
             <div className="more__stat">
               <StatIcon kind="total" />
-              <span className="more__stat-label">총 학습일</span>
-              <span className="more__stat-val">{totalDays != null ? `${totalDays}일` : "-"}</span>
+              <span className="more__stat-label">{t("more.totalStudyDays")}</span>
+              <span className="more__stat-val">
+                {totalDays != null ? t("more.daysSuffix", { n: totalDays }) : "-"}
+              </span>
             </div>
             <div className="more__stat">
               <StatIcon kind="best" />
-              <span className="more__stat-label">최고 연속일</span>
-              <span className="more__stat-val">{best != null ? `${best}일` : "-"}</span>
+              <span className="more__stat-label">{t("more.bestStreak")}</span>
+              <span className="more__stat-val">
+                {best != null ? t("more.daysSuffix", { n: best }) : "-"}
+              </span>
             </div>
             <div className="more__stat">
               <StatIcon kind="current" />
-              <span className="more__stat-label">현재 연속 출석일</span>
-              <span className="more__stat-val">{current != null ? `${current}일` : "-"}</span>
+              <span className="more__stat-label">{t("more.currentStreak")}</span>
+              <span className="more__stat-val">
+                {current != null ? t("more.daysSuffix", { n: current }) : "-"}
+              </span>
             </div>
           </div>
         </section>
@@ -237,49 +270,61 @@ export function Profile() {
             No-subscription state has TWO separate targets: the status row (→
             Subscription Management) and the 구독하기 CTA (→ plan selection). They
             are sibling buttons, so a CTA tap never triggers the row's action. */}
-        <section className={`more__sub more__sub--${cardVariant}`} aria-label="이용 구독 플랜">
-          <span className="more__sub-label">이용 구독 플랜</span>
+        <section className={`more__sub more__sub--${cardVariant}`} aria-label={t("more.myPlan")}>
+          <span className="more__sub-label">{t("more.myPlan")}</span>
           {sub.isLoading ? (
             <div className="more__sub-skeleton" aria-hidden="true" />
           ) : sub.isError ? (
             <div className="more__sub-errrow" role="status">
-              <span className="more__sub-empty">구독 정보를 불러오지 못했어요</span>
-              <button className="more__sub-retry" onClick={() => sub.refetch()}>다시 시도</button>
+              <span className="more__sub-empty">{t("more.subLoadError")}</span>
+              <button className="more__sub-retry" onClick={() => sub.refetch()}>{t("common.retry")}</button>
             </div>
           ) : subState === "none" ? (
             <>
               <button
                 className="more__sub-plan more__sub-emptyrow"
                 onClick={() => nav("/subscription")}
-                aria-label="이용 중인 구독 플랜이 없어요. 구독 관리로 이동"
+                aria-label={t("more.noPlanA11y")}
               >
                 <span className="more__sub-title-row">
-                  <span className="more__sub-empty">이용 중인 구독 플랜이 없어요</span>
-                  <ChevronRight size={18} color="#9AA0A7" />
+                  <span className="more__sub-empty">{t("more.noPlan")}</span>
+                  <img className="more__sub-chevron" src={icChevron} alt="" aria-hidden="true" />
                 </span>
               </button>
               <button
                 className="more__sub-cta"
                 onClick={() => nav("/subscription/start")}
-                aria-label="구독하기, 요금제와 가격 보기"
+                aria-label={t("more.subscribeA11y")}
               >
-                구독하기
+                {t("more.subscribe")}
               </button>
             </>
           ) : (
             <button
               className="more__sub-plan"
               onClick={() => nav("/subscription")}
-              aria-label={`${s?.plan_name ?? "구독 플랜"}${nextBilling ? `, 다음 결제일 ${nextBilling}` : ""}. 구독 관리로 이동`}
+              aria-label={t("accountFlow.nextBillingA11y", {
+                plan: s?.plan_name ?? t("more.planFallback"),
+                billing: nextBilling ? t("accountFlow.nextBillingSuffix", { date: nextBilling }) : "",
+              })}
             >
-              {subState === "trial" && <span className="more__sub-ribbon">무료체험중</span>}
+              {subState === "trial" && (
+                <span className="more__sub-ribbon">
+                  <img className="more__sub-ribbon-art" src={subTrialRibbon} alt="" aria-hidden="true" />
+                  <span className="more__sub-ribbon-row">
+                    <img className="more__sub-ribbon-check" src={icStarCheck} alt="" aria-hidden="true" />
+                    <span className="more__sub-ribbon-text">{t("more.freeTrial")}</span>
+                  </span>
+                </span>
+              )}
               <span className="more__sub-title-row">
-                <span className="more__sub-title">{s?.plan_name ?? "구독 플랜"}</span>
-                <ChevronRight size={18} color={subState === "trial" ? "#8D734F" : "#9AA0A7"} />
+                <span className="more__sub-title">{s?.plan_name ?? t("more.planFallback")}</span>
+                <img className="more__sub-chevron" src={icChevron} alt="" aria-hidden="true" />
               </span>
               {nextBilling && (
                 <span className="more__sub-billing">
-                  다음 결제일 <b>{nextBilling}</b>
+                  <span>{t("more.nextBilling")}</span>
+                  <span>{nextBilling}</span>
                 </span>
               )}
             </button>
@@ -289,18 +334,18 @@ export function Profile() {
         {/* Menu — plain rows, no cards/icons/chevrons */}
         <nav className="more__menu">
           {MENU.map((m) => (
-            <button key={m.label} className="more__menu-row" onClick={() => nav(m.to)}>
-              {m.label}
+            <button key={m.to} className="more__menu-row" onClick={() => nav(m.to)}>
+              {t(m.label)}
             </button>
           ))}
         </nav>
 
         <div className="more__account-actions">
           <button className="more__muted-action" onClick={() => setWithdrawOpen(true)}>
-            탈퇴하기
+            {t("more.withdraw")}
           </button>
           <button className="more__muted-action" onClick={() => setLogoutOpen(true)}>
-            로그아웃
+            {t("more.logout")}
           </button>
         </div>
       </div>
@@ -314,9 +359,8 @@ export function Profile() {
 
       <SuccessModal
         open={logoutDoneOpen}
-        title="로그아웃됐습니다"
-        description="학습 기록 및 데이터는 계정에 안전하게 보관됩니다"
-        closeAriaLabel="로그아웃 완료 창 닫기"
+        title={t("accountFlow.logoutDoneTitle")}
+        description={t("accountFlow.logoutDoneDesc")}
         onClose={finishLogout}
       />
 
@@ -343,12 +387,12 @@ export function Profile() {
           no logout, no navigation. */}
       <FailModal
         open={withdrawFailOpen}
-        title="탈퇴에 실패했어요"
+        title={t("accountFlow.withdrawFailTitle")}
         description={
           <>
-            일시적인 오류가 발생했어요
+            {t("accountFlow.temporaryError")}
             <br />
-            잠시 후 다시 시도해 주세요
+            {t("accountFlow.tryAgainLater")}
           </>
         }
         onClose={() => {
@@ -360,12 +404,12 @@ export function Profile() {
       {/* Logout failed (temporary). 확인 just closes → user stays signed in on More. */}
       <FailModal
         open={logoutFailOpen}
-        title="로그아웃에 실패했어요"
+        title={t("accountFlow.logoutFailTitle")}
         description={
           <>
-            일시적인 오류가 발생했어요
+            {t("accountFlow.temporaryError")}
             <br />
-            잠시 후 다시 시도해 주세요
+            {t("accountFlow.tryAgainLater")}
           </>
         }
         onClose={() => setLogoutFailOpen(false)}
@@ -373,15 +417,14 @@ export function Profile() {
 
       <SuccessModal
         open={doneOpen}
-        title="탈퇴가 완료됐습니다"
+        title={t("accountFlow.withdrawDoneTitle")}
         description={
           <>
-            그동안 이용해 주셔서 감사합니다
+            {t("accountFlow.withdrawDoneLine1")}
             <br />
-            더 나은 서비스로 다시 찾아뵙겠습니다
+            {t("accountFlow.withdrawDoneLine2")}
           </>
         }
-        closeAriaLabel="탈퇴 완료 창 닫기"
         onClose={finishWithdrawal}
       />
     </div>

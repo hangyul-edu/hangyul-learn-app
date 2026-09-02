@@ -1,33 +1,36 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Async, SkeletonList } from "../components/ui/states";
-import { MedalIcon, RankAvatar } from "../components/brand/RankBits";
+import { MedalIcon, RankAvatar, withSelfProfile } from "../components/brand/RankBits";
 import { AddFriendSheet } from "../components/social/AddFriendSheet";
 import { gameApi } from "../api/endpoints";
-import { useAuth } from "../hooks/auth";
 import { TIER_META, type LeagueTier } from "../lib/league";
-import { normalizeLanguage, type AppLanguage } from "../lib/language";
+import { useTranslation } from "../i18n";
 import type { RankingEntry } from "../lib/types";
+import { useAuthOptional } from "../hooks/auth";
 
-const tierLabel = (tier?: string) => (tier ? TIER_META[tier as LeagueTier]?.label : undefined);
-const displayName = (e: RankingEntry) => e.nickname ?? "회원";
+/** "Green League" / "Green 리그" — the suffix differs per language. */
+const useTierLabel = () => {
+  const { t } = useTranslation();
+  return (tier?: string) => {
+    const meta = tier ? TIER_META[tier as LeagueTier] : undefined;
+    return meta ? t("league.tierLabel", { tier: meta.name }) : undefined;
+  };
+};
+const displayName = (e: RankingEntry, fallback: string) => e.nickname ?? fallback;
 
 /* ------------------------------ empty state ----------------------------- */
 // Localized per the app's copy-object convention (keyed by app_language).
-const EMPTY_COPY: Record<AppLanguage, { title: string; line1: string; line2: string; addFriend: string }> = {
-  ko: {
-    title: "친구 리그에 참가할 친구가 없어요",
-    line1: "친구를 추가하고",
-    line2: "함께 경쟁해보세요!",
-    addFriend: "친구 추가",
-  },
-  en: {
-    title: "No friends can join your Friend League yet",
-    line1: "Add friends and",
-    line2: "compete together!",
-    addFriend: "Add Friend",
-  },
-};
+/** Friend-League empty-state copy (`friendLeague.*`). */
+function useEmptyCopy() {
+  const { t } = useTranslation();
+  return {
+    title: t("friendLeague.emptyTitle"),
+    line1: t("friendLeague.emptyLine1"),
+    line2: t("friendLeague.emptyLine2"),
+    addFriend: t("friendLeague.addFriend"),
+  };
+}
 
 function PlusIcon() {
   return (
@@ -41,8 +44,7 @@ function PlusIcon() {
  *  friend-league result (no eligible friends). The 친구 추가 button opens the
  *  Add Friend bottom sheet in place (it does not leave the League page). */
 function FriendLeagueEmptyState({ onAdd }: { onAdd: () => void }) {
-  const { me } = useAuth();
-  const copy = EMPTY_COPY[normalizeLanguage(me?.app_language)];
+  const copy = useEmptyCopy();
   return (
     <div className="fl-empty">
       <h2 className="fl-empty__title">{copy.title}</h2>
@@ -89,17 +91,20 @@ function Confetti() {
 
 /* ------------------------------ podium ---------------------------------- */
 function PodiumColumn({ entry, rank }: { entry: RankingEntry | undefined; rank: 1 | 2 | 3 }) {
+  // The user's own avatar comes from /users/me, not from the standings row.
+  const me = useAuthOptional()?.me ?? null;
+  const { t } = useTranslation();
   if (!entry) {
     return <div className={`fl__col fl__col--r${rank}`} aria-hidden="true"><div className={`fl__block fl__block--r${rank} is-empty`} /></div>;
   }
-  const name = displayName(entry);
+  const name = displayName(entry, t("home.defaultNickname"));
   return (
-    <div className={`fl__col fl__col--r${rank}`} aria-label={`${rank}위, ${name}, ${entry.points}포인트`}>
+    <div className={`fl__col fl__col--r${rank}`} aria-label={t("friendLeague.podiumA11y", { rank, name, points: entry.points })}>
       {rank === 1 && (
         <div className="fl__champion">
           <Confetti />
           <span className="fl__champion-avatar">
-            <RankAvatar entry={entry} size={62} />
+            <RankAvatar entry={withSelfProfile(entry, me)} size={62} />
           </span>
         </div>
       )}
@@ -128,32 +133,48 @@ function FriendLeagueHero({ top3 }: { top3: RankingEntry[] }) {
 
 /* ---------------------------- ranking list ------------------------------ */
 function FriendRow({ entry, meId }: { entry: RankingEntry; meId?: string }) {
+  const me = useAuthOptional()?.me ?? null;
+  const { t } = useTranslation();
+  const tierLabel = useTierLabel();
   const isMe = entry.user_id === meId;
-  const name = displayName(entry);
+  const name = displayName(entry, t("home.defaultNickname"));
   const league = tierLabel(entry.tier);
   const medal = entry.rank <= 3;
   return (
     <li
       className={`fl__row ${isMe ? "is-me" : ""}`}
       aria-current={isMe ? "true" : undefined}
-      aria-label={`${entry.rank}위, ${name}${league ? `, ${league}` : ""}, ${entry.points}포인트${isMe ? ", 현재 사용자" : ""}`}
+      aria-label={t("friendLeague.rowA11y", {
+        rank: entry.rank,
+        name,
+        league: league ? t("friendLeague.leagueSuffix", { league }) : "",
+        points: entry.points,
+        me: isMe ? t("friendLeague.meSuffix") : "",
+      })}
     >
-      <span className="fl__row-no">{entry.rank}</span>
-      <span className="fl__row-avatar">
-        <RankAvatar entry={entry} size={44} />
+      {/* LEG-010 437:7896 — rank, 50px avatar and the 181-wide name block are
+          one 22px-gap group; the medal and points sit at the right edge. */}
+      <span className="fl__row-main">
+        <span className="fl__row-no">{entry.rank}</span>
+        <span className="fl__row-avatar">
+          <RankAvatar entry={withSelfProfile(entry, me)} size={50} />
+        </span>
+        <span className="fl__row-text">
+          <span className="fl__row-name">{name}</span>
+          {league && <span className="fl__row-league">{league}</span>}
+        </span>
       </span>
-      <span className="fl__row-text">
-        <span className="fl__row-name">{name}</span>
-        {league && <span className="fl__row-league">{league}</span>}
+      <span className="fl__row-right">
+        {medal && <MedalIcon rank={entry.rank} size={22} />}
+        <span className="fl__row-pts">{entry.points}P</span>
       </span>
-      {medal && <MedalIcon rank={entry.rank} size={24} />}
-      <span className="fl__row-pts">{entry.points}P</span>
     </li>
   );
 }
 
 /* ------------------------------- screen --------------------------------- */
 export function FriendLeague() {
+  const { t } = useTranslation();
   const [addOpen, setAddOpen] = useState(false);
   // Refetch on (re)entry + when the tab regains focus so eligibility refreshes
   // after the user returns from friend search / management.
@@ -183,7 +204,7 @@ export function FriendLeague() {
           return (
             <div className="fl">
               <FriendLeagueHero top3={entries.slice(0, 3)} />
-              <ul className="fl__ranks" role="list" aria-label="친구 리그 순위">
+              <ul className="fl__ranks" role="list" aria-label={t("friendLeague.rankingAria")}>
                 {entries.map((entry) => (
                   <FriendRow key={entry.user_id} entry={entry} meId={meId} />
                 ))}

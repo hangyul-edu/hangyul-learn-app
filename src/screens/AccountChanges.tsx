@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "../i18n";
 import { authApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
@@ -16,6 +17,7 @@ import { CountrySelect } from "../components/ui/CountrySelect";
  * Passwords live only in screen-local state — never persisted, logged, or cached.
  */
 export function ChangePassword() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const toast = useToast();
   const { hardSignOut } = useAuth();
@@ -33,11 +35,11 @@ export function ChangePassword() {
   // Compact single-line feedback (most relevant issue only, stable height).
   const msg =
     pw2.length > 0 && pw !== pw2
-      ? "새 비밀번호가 일치하지 않아요."
+      ? t("accountChanges.passwordMismatch")
       : pw.length > 0 && !policyOk
-        ? "영어, 숫자, 특수문자를 포함해 8자리 이상 입력해 주세요."
+        ? t("accountChanges.passwordWeak")
         : cur.length > 0 && pw.length > 0 && pw === cur
-          ? "현재 비밀번호와 다른 비밀번호를 입력해 주세요."
+          ? t("accountChanges.passwordSameAsCurrent")
           : "";
 
   async function submit() {
@@ -49,7 +51,7 @@ export function ChangePassword() {
       setCur("");
       setPw("");
       setPw2("");
-      toast.success("비밀번호를 변경했어요. 다시 로그인해 주세요.");
+      toast.success(t("accountChanges.passwordChanged"));
       hardSignOut();
       nav("/login", { replace: true });
     } catch (e) {
@@ -63,15 +65,15 @@ export function ChangePassword() {
     <div className="screen setupp pwch">
       <div className="setupp__scroll">
         <div className="setupp__inner">
-          <button className="setupp__back" onClick={() => nav(-1)} aria-label="뒤로">
+          <button className="setupp__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
             <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
 
-          <h1 className="setupp__title">비밀번호 변경</h1>
+          <h1 className="setupp__title">{t("accountChanges.passwordTitle")}</h1>
 
-          <label className="setupp__label" htmlFor="pwch-cur">현재 비밀번호</label>
+          <label className="setupp__label" htmlFor="pwch-cur">{t("accountChanges.currentPassword")}</label>
           <input
             id="pwch-cur"
             className="pwch__field"
@@ -79,12 +81,12 @@ export function ChangePassword() {
             autoComplete="current-password"
             autoCapitalize="none"
             autoCorrect="off"
-            placeholder="현재 비밀번호를 입력하세요"
+            placeholder={t("accountChanges.currentPasswordPlaceholder")}
             value={cur}
             onChange={(e) => setCur(e.target.value)}
           />
 
-          <label className="setupp__label" htmlFor="pwch-new">새 비밀번호</label>
+          <label className="setupp__label" htmlFor="pwch-new">{t("accountChanges.newPassword")}</label>
           <input
             id="pwch-new"
             className="pwch__field"
@@ -92,12 +94,12 @@ export function ChangePassword() {
             autoComplete="new-password"
             autoCapitalize="none"
             autoCorrect="off"
-            placeholder="영어, 숫자, 특수문자 포함 8자리 이상을 입력하세요"
+            placeholder={t("accountChanges.newPasswordPlaceholder")}
             value={pw}
             onChange={(e) => setPw(e.target.value)}
           />
 
-          <label className="setupp__label" htmlFor="pwch-confirm">새 비밀번호 확인</label>
+          <label className="setupp__label" htmlFor="pwch-confirm">{t("accountChanges.confirmPassword")}</label>
           <input
             id="pwch-confirm"
             className="pwch__field"
@@ -105,7 +107,7 @@ export function ChangePassword() {
             autoComplete="new-password"
             autoCapitalize="none"
             autoCorrect="off"
-            placeholder="새 비밀번호를 다시 입력하세요"
+            placeholder={t("accountChanges.confirmPasswordPlaceholder")}
             value={pw2}
             onChange={(e) => setPw2(e.target.value)}
           />
@@ -120,9 +122,9 @@ export function ChangePassword() {
             onClick={submit}
             disabled={!canSubmit}
             aria-disabled={!canSubmit}
-            aria-label={canSubmit ? "변경하기" : "모든 조건을 만족하면 비밀번호를 변경할 수 있어요"}
+            aria-label={t(canSubmit ? "accountChanges.change" : "accountChanges.passwordBlockedA11y")}
           >
-            {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : "변경하기"}
+            {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("accountChanges.change")}
           </button>
         </div>
       </div>
@@ -140,6 +142,7 @@ export function ChangePassword() {
  * from the server `expires_at` timestamp (survives re-renders/backgrounding).
  */
 export function ChangePhone() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const toast = useToast();
   const { me, setMe } = useAuth();
@@ -189,7 +192,7 @@ export function ChangePhone() {
   async function send() {
     if (!phoneValid || sending || (vid && resendIn > 0)) return;
     if (sameAsCurrent) {
-      toast.error("현재 사용 중인 번호와 같아요");
+      toast.error(t("accountChanges.phoneSame"));
       return;
     }
     setSending(true);
@@ -201,7 +204,7 @@ export function ChangePhone() {
       setCode("");
       setToken(null);
       setVerifiedFor(null);
-      toast.success("인증번호를 문자로 보냈어요");
+      toast.success(t("accountChanges.codeSentSms"));
     } catch (e) {
       toast.error(errorMessage(e));
     } finally {
@@ -218,7 +221,7 @@ export function ChangePhone() {
       const res = await authApi.confirmPhone(vid!, code);
       setToken(res.verification_token);
       setVerifiedFor(e164); // bind proof to this exact number
-      toast.success("인증이 완료되었어요");
+      toast.success(t("accountChanges.verifiedToast"));
     } catch (e) {
       toast.error(errorMessage(e));
       setCode("");
@@ -235,7 +238,7 @@ export function ChangePhone() {
     try {
       const res = await authApi.changePhone(e164, token!, country);
       if (me) setMe({ ...me, phone: res.phone ?? e164, nationality: country });
-      toast.success("휴대폰 번호를 변경했어요");
+      toast.success(t("accountChanges.phoneChanged"));
       nav(-1);
     } catch (e) {
       toast.error(errorMessage(e));
@@ -244,24 +247,38 @@ export function ChangePhone() {
     }
   }
 
-  const resendLabel = sending ? "전송 중" : !vid ? "인증하기" : resendIn > 0 ? `재전송 ${resendIn}` : "재전송";
-  const feedback = token ? { ok: true, text: "인증이 완료되었어요." } : expired ? { ok: false, text: "인증 시간이 만료되었어요. 재전송해 주세요." } : null;
+  /* MOR-003 keeps this button at a constant 재전송 (a hug-content 83 against the
+     178 phone field). Putting the cooldown count inside the label grew it to 97
+     and squeezed the field to 164, so the countdown moves to the accessible
+     name and the disabled state carries the cue visually — the frame's own
+     countdown is the teal mm:ss inside the code field (2065:25123), which the
+     app already renders. */
+  const resendLabel = sending
+    ? t("accountChanges.sending")
+    : !vid
+      ? t("findEmail.verify")
+      : t("accountChanges.resend");
+  const feedback = token
+    ? { ok: true, text: t("accountChanges.verifiedWithPeriod") }
+    : expired
+      ? { ok: false, text: t("accountChanges.codeExpired") }
+      : null;
 
   return (
     <div className="screen acct pchg">
       <div className="acct__scroll">
         <div className="acct__inner">
           <header className="acct__header">
-            <button className="acct__back" onClick={() => nav(-1)} aria-label="뒤로">
+            <button className="acct__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
               <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
-            <h1 className="acct__title">휴대폰번호 변경</h1>
+            <h1 className="acct__title">{t("accountChanges.phoneTitle")}</h1>
           </header>
 
           {/* Phone number */}
-          <div className="acct__label" id="pchg-phone-label">휴대폰번호</div>
+          <div className="acct__label" id="pchg-phone-label">{t("accountChanges.phoneLabel")}</div>
           <div className="pchg__row">
             <CountrySelect
               value={country}
@@ -289,21 +306,31 @@ export function ChangePhone() {
               className="pchg__resend"
               onClick={send}
               disabled={!phoneValid || sending || (!!vid && resendIn > 0)}
-              aria-label={vid ? "인증번호 재전송" : "인증번호 받기"}
+              aria-label={
+                !vid
+                  ? t("accountChanges.requestCodeA11y")
+                  : resendIn > 0
+                    ? t("accountChanges.resendIn", { n: resendIn })
+                    : t("accountChanges.resendA11y")
+              }
             >
               {resendLabel}
             </button>
           </div>
 
-          {/* Verification code */}
-          <div className="acct__label" id="pchg-code-label">인증번호 입력</div>
+          {/* Verification code — rendered ONLY once a code has actually been
+              requested. `vid` is set from the server's verification_id inside
+              the success path, so a failed request leaves this hidden and no
+              timer running; re-requesting replaces expires_at and restarts it. */}
+          {vid && (<>
+          <div className="acct__label" id="pchg-code-label">{t("findEmail.codeLabel")}</div>
           <div className="pchg__row">
             <div className="pchg__code-wrap">
               <input
                 className="pchg__code"
                 inputMode="numeric"
                 autoComplete="one-time-code"
-                placeholder="인증번호 6자리를 입력하세요"
+                placeholder={t("findEmail.codePlaceholder")}
                 aria-labelledby="pchg-code-label"
                 value={code}
                 maxLength={6}
@@ -313,7 +340,11 @@ export function ChangePhone() {
               <span
                 className="pchg__timer"
                 role="timer"
-                aria-label={vid ? `남은 시간 ${Math.floor(remaining / 60)}분 ${remaining % 60}초` : "인증번호 미요청"}
+                aria-label={
+                  vid
+                    ? t("accountChanges.remainingA11y", { m: Math.floor(remaining / 60), s: remaining % 60 })
+                    : t("accountChanges.codeNotRequestedA11y")
+                }
               >
                 {vid ? mmss : "00:00"}
               </span>
@@ -324,12 +355,13 @@ export function ChangePhone() {
               onClick={confirm}
               disabled={!codeReady || confirming}
             >
-              {confirming ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : "확인"}
+              {confirming ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : t("findEmail.check")}
             </button>
           </div>
           <p className={`pchg__msg ${feedback ? (feedback.ok ? "is-ok" : "is-err") : ""}`} role="status" aria-live="polite">
             {feedback?.text ?? ""}
           </p>
+          </>)}
 
           <div className="pchg__spacer" />
 
@@ -339,9 +371,9 @@ export function ChangePhone() {
             onClick={save}
             disabled={!canSave}
             aria-disabled={!canSave}
-            aria-label={canSave ? "변경하기" : "인증을 완료하면 번호를 변경할 수 있어요"}
+            aria-label={t(canSave ? "accountChanges.change" : "accountChanges.phoneBlockedA11y")}
           >
-            {saving ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : "변경하기"}
+            {saving ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("accountChanges.change")}
           </button>
         </div>
       </div>
@@ -358,6 +390,7 @@ export function ChangePhone() {
  * prior proof; both verification controls show 인증완료 only after server success.
  */
 export function ChangeEmail() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const toast = useToast();
   const { me, setMe } = useAuth();
@@ -404,7 +437,7 @@ export function ChangeEmail() {
   async function send() {
     if (!emailValid || sending || (vid && resendIn > 0)) return;
     if (sameAsCurrent) {
-      toast.error("현재 사용 중인 이메일과 같아요");
+      toast.error(t("accountChanges.emailSame"));
       return;
     }
     setSending(true);
@@ -416,7 +449,7 @@ export function ChangeEmail() {
       setCode("");
       setToken(null);
       setVerifiedFor(null);
-      toast.success("인증번호를 이메일로 보냈어요");
+      toast.success(t("accountChanges.codeSentEmail"));
     } catch (e) {
       toast.error(errorMessage(e));
     } finally {
@@ -433,7 +466,7 @@ export function ChangeEmail() {
       const res = await authApi.confirmEmailChange(vid!, code);
       setToken(res.verification_token);
       setVerifiedFor(emailNorm); // bind proof to this exact email
-      toast.success("인증되었습니다.");
+      toast.success(t("accountChanges.verifiedPeriod"));
     } catch (e) {
       toast.error(errorMessage(e));
       setCode("");
@@ -450,7 +483,7 @@ export function ChangeEmail() {
     try {
       const res = await authApi.changeEmail(emailNorm, token!);
       if (me) setMe({ ...me, email: res.email ?? emailNorm });
-      toast.success("이메일을 변경했어요");
+      toast.success(t("accountChanges.emailChanged"));
       nav(-1);
     } catch (e) {
       toast.error(errorMessage(e));
@@ -459,23 +492,31 @@ export function ChangeEmail() {
     }
   }
 
-  const emailActionLabel = sending ? null : verified ? "인증완료" : !vid ? "인증하기" : resendIn > 0 ? `재전송 ${resendIn}` : "재전송";
+  /* Same as the phone screen: MOR-004's button label is constant, so the
+     cooldown count stays out of it (see the note on `resendLabel`). */
+  const emailActionLabel = sending
+    ? null
+    : verified
+      ? t("findEmail.verified")
+      : !vid
+        ? t("findEmail.verify")
+        : t("accountChanges.resend");
 
   return (
     <div className="screen acct echg">
       <div className="acct__scroll">
         <div className="acct__inner">
           <header className="acct__header">
-            <button className="acct__back" onClick={() => nav(-1)} aria-label="뒤로">
+            <button className="acct__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
               <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
-            <h1 className="acct__title">이메일 변경</h1>
+            <h1 className="acct__title">{t("accountChanges.emailTitle")}</h1>
           </header>
 
           {/* Email */}
-          <div className="acct__label" id="echg-email-label">이메일</div>
+          <div className="acct__label" id="echg-email-label">{t("accountChanges.emailLabel")}</div>
           <div className="pchg__row">
             <input
               className="echg__field"
@@ -498,21 +539,33 @@ export function ChangeEmail() {
               className={`echg__action ${verified ? "is-done" : ""}`}
               onClick={send}
               disabled={!emailValid || sending || verified || (!!vid && resendIn > 0)}
-              aria-label={verified ? "이메일 인증 완료" : vid ? "인증번호 재전송" : "인증번호 받기"}
+              aria-label={
+                verified
+                  ? t("accountChanges.emailVerifiedA11y")
+                  : !vid
+                    ? t("accountChanges.requestCodeA11y")
+                    : resendIn > 0
+                      ? t("accountChanges.resendIn", { n: resendIn })
+                      : t("accountChanges.resendA11y")
+              }
             >
               {emailActionLabel ?? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />}
             </button>
           </div>
 
-          {/* Verification code */}
-          <div className="acct__label" id="echg-code-label">인증번호 입력</div>
+          {/* Verification code — rendered ONLY once a code has actually been
+              requested. `vid` is set from the server's verification_id inside
+              the success path, so a failed request leaves this hidden and no
+              timer running; re-requesting replaces expires_at and restarts it. */}
+          {vid && (<>
+          <div className="acct__label" id="echg-code-label">{t("findEmail.codeLabel")}</div>
           <div className="pchg__row">
             <div className="pchg__code-wrap">
               <input
                 className="echg__field echg__field--code"
                 inputMode="numeric"
                 autoComplete="one-time-code"
-                placeholder="인증번호 6자리를 입력하세요"
+                placeholder={t("findEmail.codePlaceholder")}
                 aria-labelledby="echg-code-label"
                 value={code}
                 maxLength={6}
@@ -523,7 +576,10 @@ export function ChangeEmail() {
                 <span
                   className="pchg__timer"
                   role="timer"
-                  aria-label={`남은 시간 ${Math.floor(remaining / 60)}분 ${remaining % 60}초`}
+                  aria-label={t("accountChanges.remainingA11y", {
+                    m: Math.floor(remaining / 60),
+                    s: remaining % 60,
+                  })}
                 >
                   {mmss}
                 </span>
@@ -534,14 +590,15 @@ export function ChangeEmail() {
               className={`echg__action ${verified ? "is-done" : ""}`}
               onClick={confirm}
               disabled={verified ? true : !codeReady || confirming}
-              aria-label={verified ? "인증 완료됨" : "인증번호 확인"}
+              aria-label={t(verified ? "accountChanges.verifiedDoneA11y" : "findEmail.checkCodeA11y")}
             >
-              {confirming ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : verified ? "인증완료" : "확인"}
+              {confirming ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : verified ? t("findEmail.verified") : t("findEmail.check")}
             </button>
           </div>
           <p className={`echg__msg ${verified ? "is-ok" : expired ? "is-err" : ""}`} role="status" aria-live="polite">
-            {verified ? "인증되었습니다." : expired ? "인증 시간이 만료되었어요. 재전송해 주세요." : ""}
+            {verified ? t("accountChanges.verifiedPeriod") : expired ? t("accountChanges.codeExpired") : ""}
           </p>
+          </>)}
 
           <div className="pchg__spacer" />
 
@@ -551,9 +608,9 @@ export function ChangeEmail() {
             onClick={save}
             disabled={!canSave}
             aria-disabled={!canSave}
-            aria-label={canSave ? "변경하기" : "인증을 완료하면 이메일을 변경할 수 있어요"}
+            aria-label={t(canSave ? "accountChanges.change" : "accountChanges.emailBlockedA11y")}
           >
-            {saving ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : "변경하기"}
+            {saving ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("accountChanges.change")}
           </button>
         </div>
       </div>

@@ -18,6 +18,7 @@ vi.mock("../api/endpoints", () => ({
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn() }) }));
 
 import { SubscriptionPurchase } from "./SubscriptionPurchase";
+import { I18nProvider } from "../i18n";
 
 function Loc() {
   const l = useLocation();
@@ -46,17 +47,18 @@ const METHOD = { method_id: "pm1", kind: "card", provider: "toss_card", status: 
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={["/subscription/start"]}>
-        <Routes>
-          <Route path="/subscription/start" element={<><SubscriptionPurchase /><Loc /></>} />
-          <Route path="/subscription" element={<><div>MANAGE</div><Loc /></>} />
-          <Route path="/account/payment" element={<><div>PAYMENT REG</div><Loc /></>} />
-          <Route path="/policy/refund" element={<div>REFUND POLICY</div>} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
-  );
+    <I18nProvider language="ko">
+      <QueryClientProvider client={qc}>
+        <MemoryRouter initialEntries={["/subscription/start"]}>
+          <Routes>
+            <Route path="/subscription/start" element={<><SubscriptionPurchase /><Loc /></>} />
+            <Route path="/subscription" element={<><div>MANAGE</div><Loc /></>} />
+            <Route path="/account/payment" element={<><div>PAYMENT REG</div><Loc /></>} />
+            <Route path="/policy/refund" element={<div>REFUND POLICY</div>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </I18nProvider>,);
 }
 
 beforeEach(() => {
@@ -72,14 +74,14 @@ describe("SubscriptionPurchase", () => {
   it("eligible account shows the trial variant with the trial CTA + eyebrow", async () => {
     renderPage();
     expect(await screen.findByRole("button", { name: "7일 무료 체험 시작하기" })).toBeInTheDocument();
-    expect(screen.getByText("일주일 무료로 먼저 체험해보세요")).toBeInTheDocument();
+    expect(screen.getByText("일주일 무료로 먼저 체험해보세요.")).toBeInTheDocument();
   });
 
   it("ineligible account shows the paid variant, no trial messaging", async () => {
     mine.mockResolvedValue({ status: "expired", trial_started: true });
     renderPage();
     expect(await screen.findByRole("button", { name: "지금 바로 시작하기" })).toBeInTheDocument();
-    expect(screen.queryByText("일주일 무료로 먼저 체험해보세요")).not.toBeInTheDocument();
+    expect(screen.queryByText("일주일 무료로 먼저 체험해보세요.")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "7일 무료 체험 시작하기" })).not.toBeInTheDocument();
   });
 
@@ -114,7 +116,7 @@ describe("SubscriptionPurchase", () => {
     paymentMethods.mockResolvedValue({ methods: [] });
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: "7일 무료 체험 시작하기" }));
-    expect(await screen.findByText("결제수단 등록이 필요해요")).toBeInTheDocument();
+    expect(await screen.findByText("결제 수단 등록이 필요해요")).toBeInTheDocument();
     expect(startTrial).not.toHaveBeenCalled();
     expect(subscribe).not.toHaveBeenCalled();
   });
@@ -130,7 +132,7 @@ describe("SubscriptionPurchase", () => {
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: "7일 무료 체험 시작하기" }));
     await waitFor(() => expect(startTrial).toHaveBeenCalledWith("p_year"));
-    expect(screen.queryByText("결제수단 등록이 필요해요")).not.toBeInTheDocument();
+    expect(screen.queryByText("결제 수단 등록이 필요해요")).not.toBeInTheDocument();
   });
 
   it("cancel closes the popup without billing; register navigates to payment setup", async () => {
@@ -138,11 +140,11 @@ describe("SubscriptionPurchase", () => {
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: "7일 무료 체험 시작하기" }));
     await userEvent.click(await screen.findByRole("button", { name: "취소" }));
-    expect(screen.queryByText("결제수단 등록이 필요해요")).not.toBeInTheDocument();
+    expect(screen.queryByText("결제 수단 등록이 필요해요")).not.toBeInTheDocument();
     expect(startTrial).not.toHaveBeenCalled();
     // Re-open + register → payment page, selected plan preserved in route state.
     await userEvent.click(screen.getByRole("button", { name: "7일 무료 체험 시작하기" }));
-    await userEvent.click(await screen.findByRole("button", { name: "결제수단 등록하기" }));
+    await userEvent.click(await screen.findByRole("button", { name: "결제 수단 등록" }));
     await waitFor(() => expect(screen.getByText("PAYMENT REG")).toBeInTheDocument());
     expect(screen.getByTestId("loc")).toHaveTextContent('"selectedPlanId":"p_year"');
   });
@@ -174,7 +176,7 @@ describe("SubscriptionPurchase", () => {
 
   it("opens the refund policy page from the link", async () => {
     renderPage();
-    await userEvent.click(await screen.findByRole("button", { name: "환불 정책 보기" }));
+    await userEvent.click(await screen.findByRole("button", { name: "[환불 정책 보기]" }));
     await waitFor(() => expect(screen.getByText("REFUND POLICY")).toBeInTheDocument());
   });
 
@@ -204,8 +206,11 @@ describe("SubscriptionPurchase — plan cards", () => {
 
   it("only the annual card carries the launch ribbon overlapping the card", async () => {
     const { annual, monthly } = await cards();
+    // The ribbon is the exported Figma artwork with the label riding on top,
+    // so the text node is the label inside `.plan__ribbon`.
     const ribbon = within(annual).getByText("런칭 기념 특별 할인");
-    expect(ribbon).toHaveClass("plan__ribbon");
+    expect(ribbon).toHaveClass("plan__ribbon-text");
+    expect(ribbon.closest(".plan__ribbon")).not.toBeNull();
     expect(within(monthly).queryByText("런칭 기념 특별 할인")).not.toBeInTheDocument();
   });
 
@@ -213,7 +218,7 @@ describe("SubscriptionPurchase — plan cards", () => {
     const { annual } = await cards();
     expect(within(annual).getByText("12개월")).toBeInTheDocument();
     // Purple discount badge (upper-right).
-    const hl = within(annual).getByText("최대 54% 할인"); // yellow-highlighted part
+    const hl = within(annual).getByText("최대 54%할인"); // yellow-highlighted part
     expect(hl).toHaveClass("plan__badge-hl");
     expect(hl.closest(".plan__badge")).toHaveClass("plan__badge--purple");
     // A single struck original line covering monthly + annual total.
@@ -250,7 +255,10 @@ describe("SubscriptionPurchase — plan cards", () => {
     expect(monthly).not.toHaveClass("plan--on"); // gray/unselected by default
     const pill = within(monthly).getByText("23% 할인");
     expect(pill).toHaveClass("plan__badge--black");
-    expect(within(monthly).getByText(/\$12\.99\/월/).closest("s")).toBeInTheDocument();
+    // The rule runs through the whole original price, /월 suffix included.
+    expect(within(monthly).getByText("$12.99/월").closest("s")).toBeInTheDocument();
+    // The badge sits on that same row, immediately before the struck price.
+    expect(pill.closest(".plan__month-row")).not.toBeNull();
     const cur = within(monthly).getByText("$9.99");
     expect(cur).toHaveClass("plan__final-main");
     expect(cur.closest(".plan__month-cur")).not.toBeNull();
@@ -277,7 +285,7 @@ describe("SubscriptionPurchase — plan cards", () => {
     });
     renderPage();
     await screen.findByRole("button", { name: "7일 무료 체험 시작하기" });
-    expect(screen.getByText("최대 60% 할인")).toBeInTheDocument(); // server, not 50%
+    expect(screen.getByText("최대 60%할인")).toBeInTheDocument(); // server, not 50%
     expect(screen.getByText("25% 할인")).toBeInTheDocument(); // server, not 20%
     expect(screen.getByText("$5.00")).toBeInTheDocument(); // server current_monthly_cents
     expect(screen.getByText("$9.99/월 ($120.00)").closest("s")).toBeInTheDocument(); // server monthly+total

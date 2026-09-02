@@ -21,10 +21,14 @@ vi.mock("../api/endpoints", () => ({
   friendApi: { recommendations: vi.fn().mockResolvedValue({ recommendations: [] }) },
 }));
 // FriendLeague (rendered on the 친구 리그 tab) reads the app language via useAuth.
-vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: "ko" } }) }));
+vi.mock("../hooks/auth", () => {
+  const ctx = { me: { app_language: "ko" } };
+  return { useAuth: () => ctx, useAuthOptional: () => ctx };
+});
 
 import { gameApi } from "../api/endpoints";
 import { League } from "./League";
+import { I18nProvider } from "../i18n";
 
 const api = gameApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -66,18 +70,19 @@ const rankings: RankingResponse = {
 function renderScreen() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}>
-      <ToastProvider>
-        <MemoryRouter initialEntries={["/league"]}>
-          <Routes>
-            <Route path="/league" element={<League />} />
-            <Route path="/points" element={<div>POINTS_SCREEN</div>} />
-            <Route path="/league/history" element={<div>HISTORY_SCREEN</div>} />
-          </Routes>
-        </MemoryRouter>
-      </ToastProvider>
-    </QueryClientProvider>,
-  );
+    <I18nProvider language="ko">
+      <QueryClientProvider client={qc}>
+        <ToastProvider>
+          <MemoryRouter initialEntries={["/league"]}>
+            <Routes>
+              <Route path="/league" element={<League />} />
+              <Route path="/points" element={<div>POINTS_SCREEN</div>} />
+              <Route path="/league/history" element={<div>HISTORY_SCREEN</div>} />
+            </Routes>
+          </MemoryRouter>
+        </ToastProvider>
+      </QueryClientProvider>
+    </I18nProvider>,);
 }
 
 let scrollIntoView: ReturnType<typeof vi.fn>;
@@ -149,9 +154,9 @@ describe("League screen", () => {
     // Rank 3 is me → highlighted row.
     const meRow = screen.getByRole("listitem", { name: /나야/ });
     expect(meRow).toHaveClass("is-me");
-    // Medals live in svg on ranks 1-3 only. Ranks 4 & 5 have none.
+    // The medal is an exported image (LEG-002 437:8282) on ranks 1-3 only.
     const rows = screen.getAllByRole("listitem");
-    const svgCount = (li: HTMLElement) => li.querySelectorAll("svg").length;
+    const svgCount = (li: HTMLElement) => li.querySelectorAll(".rank-medal").length;
     // Row 4 (마바) and row 5 (사아) have just the avatar's markup, no medal svg.
     const row4 = screen.getByRole("listitem", { name: /마바/ });
     const row5 = screen.getByRole("listitem", { name: /사아/ });

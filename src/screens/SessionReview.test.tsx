@@ -39,6 +39,7 @@ vi.mock("../api/endpoints", () => ({
 }));
 
 import { SessionReview } from "./SessionReview";
+import { I18nProvider } from "../i18n";
 
 const QUIZ = {
   quiz_id: "q1",
@@ -75,10 +76,11 @@ function renderReview() {
   );
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
+    <I18nProvider language="ko">
+      <QueryClientProvider client={qc}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </I18nProvider>,);
 }
 
 beforeEach(() => {
@@ -111,7 +113,7 @@ describe("SessionReview — saved TOPIK question", () => {
     );
     // Two-button sheet, no next.
     expect(await screen.findByRole("button", { name: "완료" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "다시 시작" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "다시 풀기" })).toBeInTheDocument();
     // The Submit button stays in the DOM but hidden, so the vertically-centered
     // card keeps its height (no downward shift) as the sheet slides up — it is
     // reserved, not removed.
@@ -154,7 +156,7 @@ describe("SessionReview — saved TOPIK question", () => {
     expect(await screen.findByText("SAVED[origin]")).toBeInTheDocument();
   });
 
-  it("uses '다시 듣기' (not '다시 시작') as the left button for a listening question", async () => {
+  it("uses '다시 듣기' (not '다시 풀기') as the left button for a listening question", async () => {
     get.mockResolvedValue({
       ...QUIZ,
       quiz_id: "q2",
@@ -168,7 +170,7 @@ describe("SessionReview — saved TOPIK question", () => {
     await userEvent.click(screen.getByRole("button", { name: "제출" }));
 
     expect(await screen.findByRole("button", { name: "다시 듣기" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "다시 시작" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "다시 풀기" })).not.toBeInTheDocument();
   });
 
   it("an incorrect answer stays on the item with no sheet and allows retry", async () => {

@@ -1,11 +1,25 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation, type TranslationKey } from "../i18n";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { dashboardApi, learnApi } from "../api/endpoints";
 import { DailyLearningSun } from "../components/DailyLearningSun";
 import { LearningSectionSwitcher } from "../components/LearningSectionSwitcher";
+// Two assets rather than one rotated one: Polygon 11/12 both cast their shadow
+// straight DOWN (dy 2, no dx), and rotating a single glyph in CSS drags its
+// baked shadow round with it.
+import monthArrowPrev from "../assets/brand/ic-month-arrow-prev.svg";
+import monthArrowNext from "../assets/brand/ic-month-arrow-next.svg";
 
-const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+const WEEKDAY_KEYS: TranslationKey[] = [
+  "streak.sun",
+  "streak.mon",
+  "streak.tue",
+  "streak.wed",
+  "streak.thu",
+  "streak.fri",
+  "streak.sat",
+];
 const pad = (n: number) => String(n).padStart(2, "0");
 
 type Cell = { day: number; inMonth: boolean; weekday: number; date: string | null };
@@ -16,16 +30,23 @@ type Cell = { day: number; inMonth: boolean; weekday: number; date: string | nul
 function buildGrid(year: number, month: number): Cell[] {
   const firstWeekday = new Date(year, month - 1, 1).getDay(); // 0 = Sunday
   const daysInMonth = new Date(year, month, 0).getDate();
+  const prevMonthDays = new Date(year, month - 1, 0).getDate();
   const cells: Cell[] = [];
-  for (let i = 0; i < firstWeekday; i++) cells.push({ day: 0, inMonth: false, weekday: i, date: null });
+  // HMA-001 greys the adjacent-month days rather than blanking them, so the
+  // padding cells carry their real day numbers.
+  for (let i = 0; i < firstWeekday; i++) {
+    cells.push({ day: prevMonthDays - firstWeekday + 1 + i, inMonth: false, weekday: i, date: null });
+  }
   for (let d = 1; d <= daysInMonth; d++) {
     cells.push({ day: d, inMonth: true, weekday: (firstWeekday + d - 1) % 7, date: `${year}-${pad(month)}-${pad(d)}` });
   }
-  while (cells.length % 7 !== 0) cells.push({ day: 0, inMonth: false, weekday: cells.length % 7, date: null });
+  let next = 1;
+  while (cells.length % 7 !== 0) cells.push({ day: next++, inMonth: false, weekday: cells.length % 7, date: null });
   return cells;
 }
 
 export function Streak() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const now = new Date();
   const [view, setView] = useState({ y: now.getFullYear(), m: now.getMonth() + 1 });
@@ -84,9 +105,18 @@ export function Streak() {
       <div className="strk__scroll">
         <div className="strk__inner">
           <header className="strk__header">
-            <button className="strk__back" onClick={() => nav("/home")} aria-label="뒤로">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <button className="strk__back" onClick={() => nav("/home")} aria-label={t("common.back")}>
+              {/* ic_B_topNav variant=back, exactly as HMA-001 exports it —
+                  kept identical to the Learning-management header. */}
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M16 21L7 12L16 3"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeMiterlimit="10"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </button>
             <LearningSectionSwitcher current="streak" />
@@ -97,70 +127,75 @@ export function Streak() {
             <p className="strk__banner-text">
               {studiedToday ? (
                 <>
-                  연속 학습으로 태양이 빛나는 중
+                  {t("streak.litTitle")}
                   <br />
-                  꾸준히 {streak ?? "…"}일!
+                  {t("streak.streakDays", { days: streak ?? "…" })}
                 </>
               ) : (
                 <>
-                  연속 학습이 멈췄어요
+                  {t("streak.unlitTitle")}
                   <br />
-                  학습하면 태양이 다시 빛날 거예요!
+                  {t("streak.unlitDesc")}
                 </>
               )}
             </p>
+            {/* 58, not 50: home-sun.svg's viewBox includes the baked shadow, and
+                HMA-001 draws it bleeding 4px past the 50x50 slot on each side. */}
             <span className="strk__banner-sun">
-              <DailyLearningSun size={56} />
+              <DailyLearningSun size={58} />
             </span>
           </div>
 
           {/* Month navigation */}
           <div className="strk__monthnav">
             <button
-              className="strk__arrow"
+              className="strk__arrow strk__arrow--prev"
               onClick={() => step(-1)}
-              aria-label="이전 달"
+              aria-label={t("streak.prevMonth")}
               disabled={q.isFetching}
             >
-              <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M16 4L8 12l8 8z" fill="#FF5B00" />
-              </svg>
+              <img src={monthArrowPrev} alt="" aria-hidden="true" />
             </button>
             <div className="strk__month">
               <div className="strk__year">{view.y}</div>
-              <div className="strk__month-num" aria-label={`${view.y}년 ${view.m}월`}>
+              <div className="strk__month-num" aria-label={t("streak.monthLabel", { y: view.y, m: view.m })}>
                 {view.m}
               </div>
             </div>
-            <button
-              className="strk__arrow"
-              onClick={() => step(1)}
-              aria-label="다음 달"
-              disabled={atCurrentMonth || q.isFetching}
-              aria-disabled={atCurrentMonth}
-            >
-              <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M8 4l8 8-8 8z" fill={atCurrentMonth ? "#E1E4E6" : "#FF5B00"} />
-              </svg>
-            </button>
+            {/* Forward is only offered while browsing the past. On the current
+                month the control is not rendered at all rather than left in
+                place inert: HMA-001 has no dimmed variant of Polygon 11, so a
+                disabled one would look identical to a live one. Dropping it also
+                keeps it out of the tab order and off screen readers. The arrow
+                is absolutely positioned, so nothing reflows when it goes. */}
+            {!atCurrentMonth && (
+              <button
+                className="strk__arrow strk__arrow--next"
+                onClick={() => step(1)}
+                aria-label={t("streak.nextMonth")}
+                disabled={q.isFetching}
+              >
+                <img src={monthArrowNext} alt="" aria-hidden="true" />
+              </button>
+            )}
           </div>
 
           {/* Weekday header */}
           <div className="strk__weekdays" aria-hidden="true">
-            {WEEKDAYS.map((w) => (
+            {WEEKDAY_KEYS.map((w) => (
               <span key={w} className="strk__weekday">
-                {w}
+                {t(w)}
               </span>
             ))}
           </div>
 
           {/* Calendar grid */}
-          <div className="strk__grid" role="grid" aria-label={`${view.y}년 ${view.m}월 학습 달력`}>
+          <div className="strk__grid" role="grid" aria-label={t("streak.monthAria", { y: view.y, m: view.m })}>
             {grid.map((c, i) => {
               if (!c.inMonth) {
                 return (
-                  <span key={i} className="strk__cell strk__cell--adj" aria-hidden="true">
-                    {/* adjacent-month spacer keeps columns aligned */}
+                  <span key={i} className="strk__cell" aria-hidden="true">
+                    <span className="strk__num strk__num--adj">{c.day}</span>
                   </span>
                 );
               }
@@ -168,9 +203,9 @@ export function Streak() {
               if (isDone) {
                 return (
                   <div key={i} className="strk__cell" role="gridcell">
-                    <div className="strk__done" aria-label={`${view.y}년 ${view.m}월 ${c.day}일, 학습 완료`}>
+                    <div className="strk__done" aria-label={t("streak.dayDoneA11y", { y: view.y, m: view.m, d: c.day })}>
                       <span className="strk__done-day">{c.day}</span>
-                      <span className="strk__done-label">완료</span>
+                      <span className="strk__done-label">{t("streak.done")}</span>
                     </div>
                   </div>
                 );
@@ -179,7 +214,7 @@ export function Streak() {
                 c.weekday === 0 ? "strk__num--sun" : c.weekday === 6 ? "strk__num--sat" : "strk__num--wd";
               return (
                 <div key={i} className="strk__cell" role="gridcell">
-                  <span className={`strk__num ${cls}`} aria-label={`${view.y}년 ${view.m}월 ${c.day}일`}>
+                  <span className={`strk__num ${cls}`} aria-label={t("streak.dayA11y", { y: view.y, m: view.m, d: c.day })}>
                     {c.day}
                   </span>
                 </div>
@@ -189,9 +224,9 @@ export function Streak() {
 
           {q.isError && (
             <div className="strk__error">
-              <p className="muted">학습 기록을 불러오지 못했어요.</p>
+              <p className="muted">{t("streak.loadError")}</p>
               <button className="btn btn--secondary btn--sm" onClick={() => q.refetch()}>
-                다시 시도
+                {t("common.retry")}
               </button>
             </div>
           )}

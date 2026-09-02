@@ -12,6 +12,18 @@ import type { VerificationStart, VerificationConfirm } from "../lib/types";
  * countdown (`secondsLeft`) is derived from the server's `expires_at`, and the
  * resend cooldown from `resend_available_at`, so the timer duration and cooldown
  * come from the backend, not invented locally.
+ *
+ * `requested` is the canonical gate for the code UI: every screen renders its
+ * code input, timer and confirm button ONLY while it is true. It flips on the
+ * server's `verification_id`, which is assigned inside `request()`'s success
+ * path, so:
+ *   - before any request the field does not exist and no timer runs;
+ *   - a FAILED request leaves it false, so the UI stays in its pre-request state
+ *     and only `error` changes;
+ *   - re-requesting overwrites `expires_at`, restarting the countdown, while
+ *     `cooldown` (from `resend_available_at`) blocks spamming;
+ *   - `reset()` — called when a verified identity field is edited — takes the UI
+ *     back to hidden so a stale code or token can never be submitted.
  */
 export function useVerification(opts: {
   start: () => Promise<VerificationStart>;

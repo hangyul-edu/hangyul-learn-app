@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "../i18n";
 import { useQuery } from "@tanstack/react-query";
 import { Screen } from "../components/layout/Screen";
 import { Button } from "../components/ui/kit";
@@ -12,6 +13,7 @@ import { errorMessage } from "../lib/http";
 import type { Quiz, QuizAttemptResult } from "../lib/types";
 
 export function QuizPlay() {
+  const { t } = useTranslation();
   const { quizId = "" } = useParams();
   const nav = useNavigate();
   const toast = useToast();
@@ -33,29 +35,29 @@ export function QuizPlay() {
   }
 
   return (
-    <Screen title="문제 풀기" back>
+    <Screen title={t("study.quizTitle")} back>
       <Async loading={q.isLoading} error={q.error} data={q.data} onRetry={() => q.refetch()}>
         {(quiz: Quiz) => (
           <div className="stack" style={{ gap: 16 }}>
             <QuestionView quiz={quiz} value={value} onChange={setValue} disabled={!!result} />
             {!result ? (
               <Button size="lg" block loading={busy} disabled={!isAnswered(quiz, value)} onClick={() => submit(quiz)}>
-                제출하기
+                {t("study.submit")}
               </Button>
             ) : (
               <div className="card" style={{ borderColor: result.correct ? "var(--success)" : "var(--danger)", background: result.correct ? "var(--success-bg)" : "var(--danger-bg)" }}>
                 <div style={{ fontWeight: 900, fontSize: 18, color: result.correct ? "var(--success)" : "var(--danger)" }}>
-                  {result.correct ? "정답이에요! 🎉" : result.status === "submitted" ? "제출 완료 ✍️" : "아쉬워요 😢"}
+                  {t(result.correct ? "study.quizCorrect" : result.status === "submitted" ? "study.quizSubmitted" : "study.quizWrong")}
                 </div>
-                {result.correct_answer && <div style={{ marginTop: 8, fontSize: 14 }}>정답: <b>{result.correct_answer}</b></div>}
+                {result.correct_answer && <div style={{ marginTop: 8, fontSize: 14 }}>{t("study.answerPrefix")} <b>{result.correct_answer}</b></div>}
                 {result.explanation && <div className="muted" style={{ marginTop: 6, fontSize: 13.5, lineHeight: 1.55 }}>{result.explanation}</div>}
                 <div className="row" style={{ gap: 8, marginTop: 12 }}>
                   {!!result.xp_awarded && <span className="badge badge--brand">+{result.xp_awarded} XP</span>}
                   {!!result.points_earned && <span className="badge badge--brand">⚡ +{result.points_earned}</span>}
-                  {typeof result.score === "number" && <span className="badge">채점 {result.score}점</span>}
+                  {typeof result.score === "number" && <span className="badge">{t("study.scoreBadge", { score: result.score })}</span>}
                 </div>
                 <div style={{ height: 12 }} />
-                <Button block variant="secondary" onClick={() => nav(-1)}>목록으로</Button>
+                <Button block variant="secondary" onClick={() => nav(-1)}>{t("study.backToList")}</Button>
               </div>
             )}
           </div>

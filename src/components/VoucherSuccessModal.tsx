@@ -1,4 +1,6 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "../i18n";
+import successBadge from "../assets/brand/ic-modal-success.svg";
 
 export interface VoucherSuccess {
   /** Outcome-accurate subtitle (immediate vs scheduled), server-derived. */
@@ -25,6 +27,7 @@ export function VoucherSuccessModal({
   data: VoucherSuccess | null;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
 
@@ -76,38 +79,31 @@ export function VoucherSuccessModal({
         aria-labelledby="vsc-title"
         aria-describedby="vsc-desc"
       >
-        <button className="wdd__close" onClick={onClose} aria-label="수강권 코드 등록 완료 창 닫기">
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M6 6l12 12M18 6L6 18" stroke="#111" strokeWidth="2.2" strokeLinecap="round" />
-          </svg>
-        </button>
-
+        {/* MOR-018 carries no dismiss X — 확인 and Escape are the only exits. */}
         <div className="vsc__icon" aria-hidden="true">
-          <svg width="46" height="46" viewBox="0 0 48 48" fill="none">
-            <path d="M13 24.5l7 7 15-15" stroke="#0D6E1B" strokeWidth="4.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <img src={successBadge} alt="" />
         </div>
 
-        <h2 className="vsc__title" id="vsc-title">쿠폰이 등록됐습니다</h2>
+        <h2 className="vsc__title" id="vsc-title">{t("voucherSuccess.title")}</h2>
         <p className="vsc__subtitle" id="vsc-desc">{data.subtitle}</p>
 
-        <div className="vsc__label">적용된 구독</div>
+        <div className="vsc__label">{t("voucherSuccess.appliedPlan")}</div>
         <dl className="wd__panel vsc__panel">
           <div className="vsc__row">
-            <dt className="vsc__k">플랜</dt>
+            <dt className="vsc__k">{t("voucherSuccess.plan")}</dt>
             <dd className="vsc__v">{data.plan}</dd>
           </div>
           <div className="vsc__row">
-            <dt className="vsc__k">구독 유형</dt>
+            <dt className="vsc__k">{t("voucherSuccess.subType")}</dt>
             <dd className="vsc__v">{data.type}</dd>
           </div>
           <div className="vsc__row">
-            <dt className="vsc__k">유효기간</dt>
+            <dt className="vsc__k">{t("voucherSuccess.validity")}</dt>
             <dd className="vsc__v">{data.validity}</dd>
           </div>
         </dl>
 
-        <button className="vsc__confirm" onClick={onClose}>확인</button>
+        <button className="vsc__confirm" onClick={onClose}>{t("common.confirm")}</button>
       </div>
     </div>
   );

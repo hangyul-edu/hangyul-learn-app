@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation, type TranslationKey } from "../i18n";
 import { useQuery } from "@tanstack/react-query";
 import { Screen } from "../components/layout/Screen";
 import { Badge, Button, Card } from "../components/ui/kit";
@@ -11,14 +12,18 @@ import { useToast } from "../hooks/toast";
 import { ApiError, errorMessage } from "../lib/http";
 import type { ExamResult, ExamSet } from "../lib/types";
 
-const SECTION: Record<string, string> = { listening: "듣기", reading: "읽기" };
+const SECTION_KEYS: Record<string, TranslationKey> = {
+  listening: "study.skillListening",
+  reading: "study.skillReading",
+};
 
 export function Exams() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const q = useQuery({ queryKey: ["exams"], queryFn: () => examApi.list() });
   return (
-    <Screen title="TOPIK 기출 모의고사" back>
-      <Async loading={q.isLoading} error={q.error} data={q.data} onRetry={() => q.refetch()} isEmpty={(d) => d.items.length === 0} empty={<EmptyState emoji="🎓" title="모의고사가 없어요" />} skeleton={<SkeletonList rows={5} height={72} />}>
+    <Screen title={t("study.examTitle")} back>
+      <Async loading={q.isLoading} error={q.error} data={q.data} onRetry={() => q.refetch()} isEmpty={(d) => d.items.length === 0} empty={<EmptyState emoji="🎓" title={t("study.examNone")} />} skeleton={<SkeletonList rows={5} height={72} />}>
         {(d) => (
           <div className="stack" style={{ gap: 10 }}>
             {d.items.map((e: ExamSet) => (
@@ -30,10 +35,15 @@ export function Exams() {
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 800, fontSize: 14.5 }}>{e.title}</div>
                     <div className="muted" style={{ fontSize: 12.5, marginTop: 2 }}>
-                      {e.year}년 · {SECTION[e.section]} · {e.question_count}문항 · TOPIK {e.level_band}
+                      {t("study.examMeta", {
+                        year: e.year,
+                        section: t(SECTION_KEYS[e.section]),
+                        count: e.question_count,
+                        band: e.level_band,
+                      })}
                     </div>
                   </div>
-                  {e.access === "premium" ? <Badge tone="premium">👑</Badge> : <Badge tone="success">무료</Badge>}
+                  {e.access === "premium" ? <Badge tone="premium">👑</Badge> : <Badge tone="success">{t("study.examFree")}</Badge>}
                 </div>
               </Card>
             ))}
@@ -45,6 +55,7 @@ export function Exams() {
 }
 
 export function ExamPlay() {
+  const { t } = useTranslation();
   const { examId = "" } = useParams();
   const nav = useNavigate();
   const toast = useToast();
@@ -63,8 +74,8 @@ export function ExamPlay() {
   if (q.error instanceof ApiError && q.error.status === 402 && !locked) setLocked(true);
   if (locked)
     return (
-      <Screen title="모의고사" back>
-        <EmptyState emoji="👑" title="프리미엄 전용이에요" text="기출 모의고사로 실전을 대비하세요." action={<Button onClick={() => nav("/subscription")}>업그레이드</Button>} />
+      <Screen title={t("study.examMock")} back>
+        <EmptyState emoji="👑" title={t("study.examPremium")} text={t("study.examDesc")} action={<Button onClick={() => nav("/subscription")}>{t("study.upgrade")}</Button>} />
       </Screen>
     );
 
@@ -84,7 +95,7 @@ export function ExamPlay() {
   }
 
   return (
-    <Screen title="모의고사" back>
+    <Screen title={t("study.examMock")} back>
       <Async loading={q.isLoading} error={locked ? null : q.error} data={q.data} onRetry={() => q.refetch()}>
         {(exam: ExamSet) => {
           const questions = exam.questions ?? [];
@@ -93,15 +104,15 @@ export function ExamPlay() {
             return (
               <div className="state">
                 <div className="state__emoji">{pct >= 60 ? "🎉" : "💪"}</div>
-                <div className="state__title">채점 완료</div>
+                <div className="state__title">{t("study.examGraded")}</div>
                 <div className="big-num" style={{ fontSize: 44, color: "var(--brand-600)" }}>{result.score} / {result.total}</div>
-                <div className="muted">정답 {pct}%</div>
-                <Button style={{ marginTop: 12 }} onClick={() => nav(-1)}>목록으로</Button>
+                <div className="muted">{t("study.correctPct", { pct })}</div>
+                <Button style={{ marginTop: 12 }} onClick={() => nav(-1)}>{t("study.backToList")}</Button>
               </div>
             );
           }
           const quiz = questions[idx];
-          if (!quiz) return <EmptyState title="문항이 없어요" />;
+          if (!quiz) return <EmptyState title={t("study.examNoItems")} />;
           const last = idx === questions.length - 1;
           return (
             <div className="stack" style={{ gap: 16 }}>
@@ -111,11 +122,11 @@ export function ExamPlay() {
               </div>
               <QuestionView quiz={quiz} value={answers[quiz.quiz_id] ?? {}} onChange={(v) => setAnswers((a) => ({ ...a, [quiz.quiz_id]: v }))} />
               <div className="row" style={{ gap: 10 }}>
-                <Button variant="ghost" disabled={idx === 0} onClick={() => setIdx((i) => i - 1)}>‹ 이전</Button>
+                <Button variant="ghost" disabled={idx === 0} onClick={() => setIdx((i) => i - 1)}>{t("study.prev")}</Button>
                 {last ? (
-                  <Button block loading={busy} onClick={() => submit(exam)}>제출하고 채점</Button>
+                  <Button block loading={busy} onClick={() => submit(exam)}>{t("study.examSubmit")}</Button>
                 ) : (
-                  <Button block disabled={!isAnswered(quiz, answers[quiz.quiz_id] ?? {})} onClick={() => setIdx((i) => i + 1)}>다음 ›</Button>
+                  <Button block disabled={!isAnswered(quiz, answers[quiz.quiz_id] ?? {})} onClick={() => setIdx((i) => i + 1)}>{t("study.next")}</Button>
                 )}
               </div>
             </div>

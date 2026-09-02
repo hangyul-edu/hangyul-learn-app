@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "../i18n";
 import { CountrySelect } from "../components/ui/CountrySelect";
 import { authApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
@@ -16,6 +17,7 @@ import { NATIONALITIES } from "../lib/format";
  * separate password-reset flow is left untouched.
  */
 export function FindEmail() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const toast = useToast();
 
@@ -58,11 +60,11 @@ export function FindEmail() {
 
   function requestSms() {
     if (name.trim().length < 1) {
-      setNameErr("이름을 입력해 주세요.");
+      setNameErr(t("findEmail.nameRequired"));
       return;
     }
     if (localPhone.replace(/\D/g, "").length < 7) {
-      setPhoneErr("휴대폰 번호를 정확히 입력해 주세요.");
+      setPhoneErr(t("findEmail.phoneInvalid"));
       return;
     }
     setNameErr(null);
@@ -100,24 +102,24 @@ export function FindEmail() {
     <div className="screen findemail">
       <div className="findemail__scroll">
         <div className="findemail__inner">
-          <button className="findemail__back" onClick={() => nav(-1)} aria-label="뒤로">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <button className="findemail__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
 
-          <h1 className="findemail__title">이메일 찾기</h1>
-          <p className="findemail__subtitle">가입 시 입력한 이름과 휴대폰번호를 입력해주세요.</p>
+          <h1 className="findemail__title">{t("findEmail.title")}</h1>
+          <p className="findemail__subtitle">{t("findEmail.subtitle")}</p>
 
           {/* Name */}
           <div className="findemail__field">
             <label className="findemail__label" htmlFor="fe-name">
-              이름
+              {t("findEmail.nameLabel")}
             </label>
             <input
               id="fe-name"
               className={`findemail__input ${nameErr ? "is-error" : ""}`}
-              placeholder="이름을 입력하세요"
+              placeholder={t("findEmail.namePlaceholder")}
               value={name}
               onChange={(e) => {
                 setName(e.target.value);
@@ -132,7 +134,7 @@ export function FindEmail() {
           {/* Phone */}
           <div className="findemail__field">
             <label className="findemail__label" htmlFor="fe-phone">
-              휴대폰번호
+              {t("findEmail.phoneLabel")}
             </label>
             <div className="findemail__row">
               <CountrySelect
@@ -148,8 +150,8 @@ export function FindEmail() {
                 className={`findemail__input findemail__input--flex ${phoneErr ? "is-error" : ""}`}
                 inputMode="numeric"
                 autoComplete="tel"
-                placeholder="'-'를 제외하고 입력하세요"
-                aria-label="휴대폰 번호"
+                placeholder={t("findEmail.phonePlaceholder")}
+                aria-label={t("findEmail.phoneA11y")}
                 value={localPhone}
                 onChange={(e) => {
                   setLocalPhone(e.target.value.replace(/\D/g, ""));
@@ -163,18 +165,22 @@ export function FindEmail() {
                 className="findemail__pill"
                 onClick={requestSms}
                 disabled={phoneV.sending || phoneV.cooldown > 0 || phoneV.verified}
-                aria-label="휴대폰 인증번호 요청"
+                aria-label={t("findEmail.requestCodeA11y")}
               >
-                {phoneV.verified ? "인증완료" : phoneV.cooldown > 0 ? `${phoneV.cooldown}s` : "인증하기"}
+                {phoneV.verified ? t("findEmail.verified") : phoneV.cooldown > 0 ? `${phoneV.cooldown}s` : t("findEmail.verify")}
               </button>
             </div>
             {phoneErr && <p className="findemail__err">{phoneErr}</p>}
           </div>
 
-          {/* Verification code */}
+          {/* Verification code — rendered ONLY after a code has actually
+              been requested. `phoneV.requested` is the shared hook's gate:
+              true only once the server returned a verification_id, so a
+              failed request leaves the field hidden and the timer off. */}
+          {phoneV.requested && (
           <div className="findemail__field">
             <label className="findemail__label" htmlFor="fe-code">
-              인증번호 입력
+              {t("findEmail.codeLabel")}
             </label>
             <div className="findemail__row">
               <div className="findemail__code findemail__input--flex">
@@ -183,8 +189,8 @@ export function FindEmail() {
                   className="findemail__code-input"
                   inputMode="numeric"
                   maxLength={6}
-                  placeholder="인증번호 6자리를 입력하세요"
-                  aria-label="인증번호"
+                  placeholder={t("findEmail.codePlaceholder")}
+                  aria-label={t("findEmail.codeA11y")}
                   value={phoneV.code}
                   onChange={(e) => phoneV.setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   disabled={!phoneV.requested || phoneV.verified}
@@ -198,13 +204,14 @@ export function FindEmail() {
                 className="findemail__pill findemail__pill--sm"
                 onClick={phoneV.confirmCode}
                 disabled={phoneV.code.length !== 6 || phoneV.confirming || phoneV.verified}
-                aria-label="인증번호 확인"
+                aria-label={t("findEmail.checkCodeA11y")}
               >
-                {phoneV.verified ? "완료" : "확인"}
+                {phoneV.verified ? t("findEmail.checkDone") : t("findEmail.check")}
               </button>
             </div>
             {phoneV.error && <p className="findemail__err">{phoneV.error}</p>}
           </div>
+          )}
 
           <div className="findemail__spacer" />
 
@@ -214,9 +221,9 @@ export function FindEmail() {
             onClick={submit}
             disabled={!canSubmit}
             aria-disabled={!canSubmit}
-            aria-label={canSubmit ? "이메일 찾기" : "휴대폰 인증을 완료하면 이메일을 찾을 수 있어요"}
+            aria-label={t(canSubmit ? "findEmail.submit" : "findEmail.submitBlockedA11y")}
           >
-            {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : "이메일 찾기"}
+            {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("findEmail.submit")}
           </button>
         </div>
       </div>

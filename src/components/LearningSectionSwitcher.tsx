@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation, type TranslationKey } from "../i18n";
 
 /** The two learning sections reachable from the title dropdown. */
 export type LearningSection = "streak" | "management";
@@ -8,11 +9,10 @@ const ROUTES: Record<LearningSection, string> = {
   streak: "/streak",
   management: "/learning-management",
 };
-// App has no i18n framework yet — chrome strings are Korean literals (as
-// elsewhere). Kept in one place so both pages stay in sync.
-const LABELS: Record<LearningSection, string> = {
-  streak: "연속 학습",
-  management: "학습 관리",
+/** Section labels, kept in one place so both pages stay in sync. */
+const LABEL_KEYS: Record<LearningSection, TranslationKey> = {
+  streak: "misc.sectionStreak",
+  management: "misc.sectionManagement",
 };
 const ORDER: LearningSection[] = ["streak", "management"];
 
@@ -28,6 +28,7 @@ const ORDER: LearningSection[] = ["streak", "management"];
  * (scroll, filters, fetched data) is preserved.
  */
 export function LearningSectionSwitcher({ current }: { current: LearningSection }) {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
   // Anchor the menu directly under the title: centered on the trigger, dropped
@@ -122,12 +123,20 @@ export function LearningSectionSwitcher({ current }: { current: LearningSection 
         className="lsw__trigger"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="학습 섹션 변경"
+        aria-label={t("misc.sectionChangeA11y")}
         onClick={() => setOpen((v) => !v)}
       >
-        {LABELS[current]}
-        <svg className="lsw__chev" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M6 9l6 6 6-6" stroke="#AEB7BE" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+        {t(LABEL_KEYS[current])}
+        {/* ic_16_arrow exactly as HMA-001/002 export it (20x20, #ADB4BA, 2px,
+            square caps). The frame instance is rotated 180deg — done in CSS. */}
+        <svg className="lsw__chev" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path
+            d="M4.6874 12.1875L10.3124 6.56249L15.9374 12.1875"
+            stroke="#ADB4BA"
+            strokeWidth="2"
+            strokeMiterlimit="10"
+            strokeLinecap="square"
+          />
         </svg>
       </button>
 
@@ -137,7 +146,7 @@ export function LearningSectionSwitcher({ current }: { current: LearningSection 
             ref={menuRef}
             className="lsw__menu"
             role="menu"
-            aria-label="학습 섹션"
+            aria-label={t("misc.sectionAria")}
             style={pos ? { top: pos.top, left: pos.left } : undefined}
             onClick={(e) => e.stopPropagation()}
           >
@@ -154,7 +163,7 @@ export function LearningSectionSwitcher({ current }: { current: LearningSection 
                   className={`lsw__option${section === current ? " lsw__option--active" : ""}`}
                   onClick={() => select(section)}
                 >
-                  {LABELS[section]}
+                  {t(LABEL_KEYS[section])}
                 </button>
               </div>
             ))}

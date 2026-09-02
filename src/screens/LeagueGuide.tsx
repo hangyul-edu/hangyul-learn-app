@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "../i18n";
 import {
-  LEAGUE_INTRO_LINES,
+  LEAGUE_INTRO_LINE_KEYS,
   LEAGUE_POINT_RULES,
-  LEAGUE_PROMOTION,
-  LEAGUE_SCHEDULE,
+  LEAGUE_PROMOTION_KEYS,
+  LEAGUE_SCHEDULE_KEYS,
   LEAGUE_TIERS,
-  LEAGUE_TIER_NOTES,
+  LEAGUE_TIER_NOTE_KEYS,
   tierName,
 } from "../lib/league";
 import { CitrusBadge, GuideBanner, RewardIcon } from "../components/brand/LeagueGuideArt";
@@ -16,6 +17,7 @@ import { CitrusBadge, GuideBanner, RewardIcon } from "../components/brand/League
  * `sheet-up` slide convention; content scrolls as one vertical surface.
  */
 export function LeagueGuideSheet({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
   const [closing, setClosing] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const closedRef = useRef(false);
@@ -79,7 +81,7 @@ export function LeagueGuideSheet({ onClose }: { onClose: () => void }) {
         className={`lgg ${closing ? "is-closing" : ""}`}
         role="dialog"
         aria-modal="true"
-        aria-label="정규 리그 안내"
+        aria-label={t("league.guideA11y")}
         ref={cardRef}
         onClick={(e) => e.stopPropagation()}
         onAnimationEnd={() => {
@@ -89,18 +91,18 @@ export function LeagueGuideSheet({ onClose }: { onClose: () => void }) {
         <div className="lgg__scroll">
           {/* Hero */}
           <section className="lgg__hero">
-            <button className="lgg__close" onClick={requestClose} aria-label="정규 리그 안내 닫기">
-              <svg width="29" height="29" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <button className="lgg__close" onClick={requestClose} aria-label={t("league.guideCloseA11y")}>
+              <svg width="17.5" height="17.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M6 6l12 12M18 6L6 18" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" />
               </svg>
             </button>
             <div className="lgg__hero-text">
-              <h1 className="lgg__title">정규 리그</h1>
+              <h1 className="lgg__title">{t("league.guideTitle")}</h1>
               <p className="lgg__desc">
-                {LEAGUE_INTRO_LINES.map((line, i) => (
+                {LEAGUE_INTRO_LINE_KEYS.map((line, i) => (
                   <span key={line}>
                     {i > 0 && <br />}
-                    {line}
+                    {t(line)}
                   </span>
                 ))}
               </p>
@@ -113,14 +115,14 @@ export function LeagueGuideSheet({ onClose }: { onClose: () => void }) {
           <div className="lgg__body">
             {/* Weekly schedule card */}
             <div className="lgg__sched">
-              <div className="lgg__sched-range">{LEAGUE_SCHEDULE.rangeLabel}</div>
-              <div className="lgg__sched-note">{LEAGUE_SCHEDULE.announceLabel}</div>
-              <div className="lgg__sched-note">{LEAGUE_SCHEDULE.timezoneNote}</div>
+              <div className="lgg__sched-range">{t(LEAGUE_SCHEDULE_KEYS.rangeLabel)}</div>
+              <div className="lgg__sched-note">{t(LEAGUE_SCHEDULE_KEYS.announceLabel)}</div>
+              <div className="lgg__sched-note">{t(LEAGUE_SCHEDULE_KEYS.timezoneNote)}</div>
             </div>
 
             {/* Promotion + tier ladder card */}
-            <div className="lgg__tiers" aria-label={LEAGUE_PROMOTION.aria}>
-              <div className="lgg__tiers-head">{LEAGUE_PROMOTION.headline}</div>
+            <div className="lgg__tiers" aria-label={t(LEAGUE_PROMOTION_KEYS.aria)}>
+              <div className="lgg__tiers-head">{t(LEAGUE_PROMOTION_KEYS.headline)}</div>
               <div className="lgg__tiers-inner" role="list">
                 {LEAGUE_TIERS.map((tier) => (
                   <div className="lgg__tier" role="listitem" key={tier}>
@@ -128,7 +130,7 @@ export function LeagueGuideSheet({ onClose }: { onClose: () => void }) {
                       <CitrusBadge tier={tier} />
                     </span>
                     <span className="lgg__tier-name">{tierName(tier)}</span>
-                    <span className="lgg__tier-note">{LEAGUE_TIER_NOTES[tier] ?? " "}</span>
+                    <span className="lgg__tier-note">{LEAGUE_TIER_NOTE_KEYS[tier] ? t(LEAGUE_TIER_NOTE_KEYS[tier]!) : " "}</span>
                   </div>
                 ))}
               </div>
@@ -136,22 +138,20 @@ export function LeagueGuideSheet({ onClose }: { onClose: () => void }) {
 
             {/* League point earning section */}
             <div className="lgg__points">
-              <div className="lgg__points-title">학습할수록 리그 점수(P)가 올라가요</div>
+              <div className="lgg__points-title">{t("league.pointsTitle")}</div>
               <div className="lgg__grid">
                 {LEAGUE_POINT_RULES.map((rule) => (
-                  <div className="lgg__pt" key={rule.id} aria-label={rule.aria}>
-                    <span className="lgg__pt-ring" aria-hidden="true">
-                      <span className="lgg__pt-center">
-                        <RewardIcon kind={rule.id} />
-                      </span>
-                    </span>
-                    <span className="lgg__pt-label">{rule.label}</span>
+                  <div className="lgg__pt" key={rule.id} aria-label={t(rule.aria)}>
+                    {/* The export already carries the dashed ring and the soft
+                        disc, so no wrapper is drawn around it. */}
+                    <RewardIcon kind={rule.id} />
+                    <span className="lgg__pt-label">{t(rule.label)}</span>
                     <span className="lgg__pt-value">{rule.points}</span>
                     <span className="lgg__pt-desc">
                       {rule.details.map((detail, i) => (
                         <span key={detail}>
                           {i > 0 && <br />}
-                          {detail}
+                          {t(detail)}
                         </span>
                       ))}
                     </span>

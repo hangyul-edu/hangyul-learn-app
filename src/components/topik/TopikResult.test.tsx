@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 import { TopikResult } from "./TopikResult";
-import { TOPIK_SESSION_COPY } from "../../lib/topikSessionCopy";
+import { buildTopikSessionCopy } from "../../lib/topikSessionCopy";
+import { translate } from "../../i18n";
 import type { QuizAttemptResult } from "../../lib/types";
 
-const copy = TOPIK_SESSION_COPY.ko;
+/** Assertions below are written against the Korean design copy. */
+const copy = buildTopikSessionCopy((k, v) => translate("ko", k, v));
 
 function renderResult(result: QuizAttemptResult) {
   return render(<TopikResult result={result} copy={copy} />);

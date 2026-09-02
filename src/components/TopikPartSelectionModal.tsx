@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation, type TranslationKey } from "../i18n";
 
 import type { TopikSection } from "../lib/types";
 
 /** English API value → Korean label. Order matches the reference (듣기 first). */
-const OPTIONS: { value: TopikSection; label: string }[] = [
-  { value: "listening", label: "듣기" },
-  { value: "reading", label: "읽기" },
-  { value: "writing", label: "쓰기" },
+const OPTIONS: { value: TopikSection; label: TranslationKey }[] = [
+  { value: "listening", label: "session.partListening" },
+  { value: "reading", label: "session.partReading" },
+  { value: "writing", label: "session.partWriting" },
 ];
 
 /**
@@ -27,6 +28,7 @@ export function TopikPartSelectionModal({
   onClose: () => void;
   onStart: (part: TopikSection) => void;
 }) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<TopikSection>("listening");
   const dialogRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
@@ -81,14 +83,16 @@ export function TopikPartSelectionModal({
         aria-labelledby="tpart-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <button className="tpart__close" onClick={onClose} aria-label="닫기">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M6 6l12 12M18 6L6 18" stroke="#9aa0a6" strokeWidth="2" strokeLinecap="round" />
+        <button className="tpart__close" onClick={onClose} aria-label={t("session.additionalCloseA11y")}>
+          {/* Figma ic_B_topNav — two 16px diagonals, 1.5 round stroke, in a 24 box. */}
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 4L20 20" stroke="#9aa0a6" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M20 4L4 20" stroke="#9aa0a6" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         </button>
 
-        <p className="tpart__eyebrow">오늘은 어떤 파트를 학습해볼까요?</p>
-        <h2 className="tpart__title" id="tpart-title">학습할 파트를 선택하세요</h2>
+        <p className="tpart__eyebrow">{t("session.partTitle")}</p>
+        <h2 className="tpart__title" id="tpart-title">{t("session.partSubtitle")}</h2>
 
         <div className="tpart__options" role="radiogroup" aria-labelledby="tpart-title">
           {OPTIONS.map((o) => {
@@ -102,7 +106,7 @@ export function TopikPartSelectionModal({
                 className={`tpart__option${active ? " tpart__option--active" : ""}`}
                 onClick={() => setSelected(o.value)}
               >
-                {o.label}
+                {t(o.label)}
               </button>
             );
           })}
@@ -111,9 +115,11 @@ export function TopikPartSelectionModal({
         <button
           className="tpart__cta"
           onClick={() => onStart(selected)}
-          aria-label={`${OPTIONS.find((o) => o.value === selected)?.label} 파트로 학습 시작할게요`}
+          aria-label={t("session.partA11y", {
+            label: t(OPTIONS.find((o) => o.value === selected)?.label ?? "session.partReading"),
+          })}
         >
-          시작할게요!
+          {t("session.additionalStart")}
         </button>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation, type TranslationKey } from "../i18n";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sheet, ConfirmDialog } from "../components/ui/Modal";
 import { Button } from "../components/ui/kit";
@@ -10,16 +11,12 @@ import { FailModal } from "../components/FailModal";
 import { subApi, billingApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { ApiError, errorMessage } from "../lib/http";
-import { formatMoney } from "../lib/format";
+import { formatMoney, formatLongDate } from "../lib/format";
 import type { Invoice, MySubscription, Plan } from "../lib/types";
+import { CancelReasonModal } from "../components/CancelReasonModal";
+import { DetailHeader } from "../components/DetailHeader";
 
 /* ---------------- date helpers (locale ko-KR, timezone-safe) ---------------- */
-function fmtLong(iso?: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
-}
 function fmtShort(iso?: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -48,9 +45,16 @@ function str(o: unknown, ...keys: string[]): string | null {
   }
   return null;
 }
-/** Build the applied-subscription detail from the redemption response + refreshed sub. */
-function buildSuccess(applyRes: unknown, fresh: MySubscription): VoucherSuccess {
-  const plan = str(applyRes, "plan_name") ?? fresh.plan_name ?? "프리미엄";
+/**
+ * Build the applied-subscription detail from the redemption response + refreshed
+ * sub. `t` is passed in because this runs outside the component tree.
+ */
+function buildSuccess(
+  applyRes: unknown,
+  fresh: MySubscription,
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+): VoucherSuccess {
+  const plan = str(applyRes, "plan_name") ?? fresh.plan_name ?? t("subscription.planFallback");
   const from = str(applyRes, "current_period_start", "valid_from", "starts_at", "start_at");
   const to =
     str(applyRes, "current_period_end", "valid_until", "ends_at", "end_at") ?? fresh.current_period_end ?? null;
@@ -60,18 +64,21 @@ function buildSuccess(applyRes: unknown, fresh: MySubscription): VoucherSuccess 
     (!!(applyRes as Record<string, unknown>).scheduled || !!(applyRes as Record<string, unknown>).applies_at);
   const validity = from && to ? `${fmtDot(from)}~${fmtDot(to)}` : to ? `~${fmtDot(to)}` : "-";
   return {
-    subtitle: scheduled ? `${plan} 구독이 예약되었어요` : `${plan} 구독이 적용되었어요`,
+    subtitle: t(scheduled ? "subscription.voucherScheduled" : "subscription.voucherApplied", { plan }),
     plan,
-    type: "수강권 쿠폰 적용",
+    type: t("subscription.voucherType"),
     validity,
   };
 }
 
 export function Subscription() {
+  const { t, language } = useTranslation();
   const nav = useNavigate();
   const loc = useLocation();
   const toast = useToast();
   const qc = useQueryClient();
+  /** Bound to the active language so dates re-render when it changes. */
+  const longDate = (iso?: string | null) => formatLongDate(iso, language);
 
   // Arriving from the More card's 구독하기 CTA opens plan selection straight away.
   const [planOpen, setPlanOpen] = useState(() => !!(loc.state as { openPlans?: boolean } | null)?.openPlans);
@@ -81,6 +88,7 @@ export function Subscription() {
   const [couponFailOpen, setCouponFailOpen] = useState(false);
   const [voucherSuccess, setVoucherSuccess] = useState<VoucherSuccess | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [reasonOpen, setReasonOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const mine = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
@@ -133,7 +141,7 @@ export function Subscription() {
     try {
       if (trial) await subApi.startTrial(p.plan_id);
       else await subApi.subscribe(p.plan_id);
-      toast.success(trial ? "무료 체험을 시작했어요! 🎉" : "구독을 시작했어요! 🎉");
+      toast.success(t(trial ? "subscription.trialStarted" : "subscription.subStarted"));
       setPlanOpen(false);
       refresh();
     } catch (e) {
@@ -163,7 +171,7 @@ export function Subscription() {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["invoices-inf"] });
       setVoucherOpen(false);
-      setVoucherSuccess(buildSuccess(applyRes, fresh)); // → success modal
+      setVoucherSuccess(buildSuccess(applyRes, fresh, t)); // → success modal
     } catch (e) {
       if (e instanceof ApiError && e.status >= 400 && e.status < 500) {
         // Code-domain rejection — replace the input modal with the failure modal
@@ -178,12 +186,20 @@ export function Subscription() {
     }
   }
 
-  async function doCancel() {
+  // MOR-011's 해지 does not cancel yet — it hands over to the optional
+  // reason step (MOR-012). Both of that step's buttons finish the cancellation;
+  // only the reason sent with it differs.
+  function toReasonStep() {
+    setCancelOpen(false);
+    setReasonOpen(true);
+  }
+
+  async function doCancel(reason?: string) {
     setBusy(true);
     try {
-      await subApi.cancel();
-      toast.success("해지 예약되었어요");
-      setCancelOpen(false);
+      await subApi.cancel(reason);
+      toast.success(t("subscription.cancelScheduled"));
+      setReasonOpen(false);
       refresh();
     } catch (e) {
       toast.error(errorMessage(e));
@@ -197,7 +213,7 @@ export function Subscription() {
     setBusy(true);
     try {
       await subApi.resume();
-      toast.success("구독을 다시 시작했어요");
+      toast.success(t("subscription.resumed"));
       refresh();
     } catch (e) {
       toast.error(errorMessage(e));
@@ -212,65 +228,80 @@ export function Subscription() {
   const hasSub = !!m && (m.is_premium || ["trial", "active", "cancelled", "grace_period"].includes(status));
   const scheduledCancel = !!m?.cancel_at_period_end;
   const isTrial = status === "trial";
-  const planName = m?.plan_name ?? "프리미엄";
+  const planName = m?.plan_name ?? t("subscription.planFallback");
   const endIso = isTrial ? m?.trial_end ?? m?.current_period_end : m?.current_period_end;
-  const endDate = fmtLong(endIso);
+  const endDate = longDate(endIso);
 
   return (
     <div className="screen subm">
       <div className="subm__scroll">
+        <DetailHeader title={t("subscription.title")} />
         <div className="subm__top">
-          <header className="acct__header">
-            <button className="acct__back" onClick={() => nav(-1)} aria-label="뒤로">
-              <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-            <h1 className="acct__title">구독 관리</h1>
-          </header>
 
-          <h2 className="subm__h">내 구독정보</h2>
+          <h2 className="subm__h">{t("subscription.myPlanHeading")}</h2>
 
           {mine.isLoading ? (
             <SkeletonList rows={1} height={90} />
           ) : mine.isError ? (
             <div className="subm__err">
-              <span>구독 정보를 불러오지 못했어요.</span>
-              <button className="subm__retry" onClick={() => mine.refetch()}>다시 시도</button>
+              <span>{t("subscription.loadError")}</span>
+              <button className="subm__retry" onClick={() => mine.refetch()}>{t("common.retry")}</button>
             </div>
           ) : hasSub ? (
             <div className="subm__sub">
               <div className="subm__srow">
-                <span className="subm__label">이용 구독 플랜</span>
+                <span className="subm__label">{t("subscription.planLabel")}</span>
                 <span className="subm__value">{planName}</span>
               </div>
               {endDate && (
                 <div className="subm__srow">
-                  <span className="subm__label">{scheduledCancel ? "이용 종료일" : "다음 결제일"}</span>
+                  {/* MOR-014 keeps the 다음 결제일 label in the cancelling state
+                      too and adds a 구독 상태 row underneath. */}
+                  <span className="subm__label">{t("subscription.nextBilling")}</span>
                   <span className="subm__value">{endDate}</span>
                 </div>
               )}
-              {scheduledCancel ? (
-                <button className="subm__cancel" onClick={doResume} disabled={busy}>구독 다시 시작하기</button>
-              ) : (
-                ["trial", "active"].includes(status) && (
-                  <button className="subm__cancel" onClick={() => setCancelOpen(true)}>해지하기</button>
-                )
+              {scheduledCancel && (
+                <div className="subm__srow">
+                  <span className="subm__label">{t("subscription.statusLabel")}</span>
+                  <span className="subm__value">{t("subscription.statusCanceling")}</span>
+                </div>
+              )}
+              {!scheduledCancel && ["trial", "active"].includes(status) && (
+                <button className="subm__cancel" onClick={() => setCancelOpen(true)}>{t("subscription.cancel")}</button>
               )}
             </div>
           ) : (
             <div className="subm__nosub">
               <div className="subm__nosub-text">
-                <p className="subm__nosub-1">현재 구독 중인 플랜이 없습니다</p>
-                <p className="subm__nosub-2">지금 구독하고 모든 학습을 자유롭게 이용하세요</p>
+                <p className="subm__nosub-1">{t("subscription.noPlanTitle")}</p>
+                <p className="subm__nosub-2">{t("subscription.noPlanSub")}</p>
               </div>
-              <button className="subm__subscribe" onClick={() => nav("/subscription/start")}>구독하기</button>
+              <button className="subm__subscribe" onClick={() => nav("/subscription/start")}>{t("subscription.subscribe")}</button>
+            </div>
+          )}
+
+          {/* MOR-014 (624:9944) — once a cancellation is scheduled the 해지하기
+              link is replaced by a full-bleed 85px band: three Gray 5 lines and
+              a 111x42 해지 취소 button pinned at (228, 22) inside it. */}
+          {hasSub && scheduledCancel && (
+            <div className="subm__cnotice">
+              <p className="subm__cnotice-text">
+                {t("subscription.cancelNotice1", { date: endDate })}
+                <br />
+                {t("subscription.cancelNotice2")}
+                <br />
+                {t("subscription.cancelNotice3")}
+              </p>
+              <button className="subm__cnotice-btn" onClick={doResume} disabled={busy}>
+                {t("subscription.resume")}
+              </button>
             </div>
           )}
 
           {/* Course-access / voucher code */}
           <div className="subm__voucher">
-            <span className="subm__voucher-label">수강권 코드 등록</span>
+            <span className="subm__voucher-label">{t("subscription.voucherLabel")}</span>
             <button
               className="subm__voucher-btn"
               onClick={() => {
@@ -279,44 +310,58 @@ export function Subscription() {
                 setVoucherOpen(true);
               }}
             >
-              등록하기
+              {t("subscription.register")}
             </button>
           </div>
         </div>
 
         {/* Payment information (cool-gray region to the bottom) */}
         <div className="subm__pay">
-          <h2 className="subm__h">결제 정보</h2>
+          <h2 className="subm__h">{t("subscription.billingHeading")}</h2>
 
           {inv.isLoading ? (
             <SkeletonList rows={4} height={58} />
           ) : inv.isError && rows.length === 0 ? (
             <div className="subm__err">
-              <span>결제 내역을 불러오지 못했어요.</span>
-              <button className="subm__retry" onClick={() => inv.refetch()}>다시 시도</button>
+              <span>{t("subscription.billingLoadError")}</span>
+              <button className="subm__retry" onClick={() => inv.refetch()}>{t("common.retry")}</button>
             </div>
           ) : rows.length === 0 ? (
-            <p className="subm__empty-pay">결제 내역이 없습니다</p>
+            <p className="subm__empty-pay">{t("subscription.noBilling")}</p>
           ) : (
             <>
+              {/* 624:9871 — the date/description pair sits in its own group, 71
+                  from the amount, mirroring the row layout below. */}
               <div className="subm__thead" role="row" aria-hidden="true">
-                <span className="subm__th">날짜</span>
-                <span className="subm__th">설명/기간</span>
-                <span className="subm__th subm__th--amt">결제 금액</span>
+                <span className="subm__thgroup">
+                  <span className="subm__th">{t("subscription.colDate")}</span>
+                  <span className="subm__th subm__th--desc">{t("subscription.colDescription")}</span>
+                </span>
+                <span className="subm__th subm__th--amt">{t("subscription.colAmount")}</span>
               </div>
               <ul className="subm__plist" role="list">
                 {rows.map((r) => (
                   <li
                     key={r.invoice_id}
                     className="subm__prow"
-                    aria-label={`${fmtLong(r.paid_at ?? r.period_start)}, ${r.plan_name}, 이용 기간 ${fmtLong(r.period_start)}부터 ${fmtLong(r.period_end)}까지, 결제 금액 ${formatMoney(r.total.amount_cents, r.total.currency)}`}
+                    aria-label={t("subscription.invoiceA11y", {
+                      date: longDate(r.paid_at ?? r.period_start),
+                      plan: r.plan_name,
+                      from: longDate(r.period_start),
+                      to: longDate(r.period_end),
+                      amount: formatMoney(r.total.amount_cents, r.total.currency),
+                    })}
                   >
-                    <span className="subm__pdate">{fmtShort(r.paid_at ?? r.period_start)}</span>
-                    <div className="subm__pdesc">
-                      <div className="subm__pname">{r.plan_name}</div>
-                      <div className="subm__pperiod">
-                        {fmtSlash(r.period_start)}
-                        <br />- {fmtSlash(r.period_end)}
+                    {/* 624:9876 — date + description are one group 19 apart; the
+                        amount trails it by 66, not flushed to the right edge. */}
+                    <div className="subm__pmain">
+                      <span className="subm__pdate">{fmtShort(r.paid_at ?? r.period_start)}</span>
+                      <div className="subm__pdesc">
+                        <div className="subm__pname">{r.plan_name}</div>
+                        <div className="subm__pperiod">
+                          {fmtSlash(r.period_start)}
+                          <br />- {fmtSlash(r.period_end)}
+                        </div>
                       </div>
                     </div>
                     <span className="subm__pamt">{formatMoney(r.total.amount_cents, r.total.currency)}</span>
@@ -328,7 +373,7 @@ export function Subscription() {
                 {inv.isFetchingNextPage ? (
                   <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} />
                 ) : inv.isFetchNextPageError ? (
-                  <button className="subm__retry" onClick={() => inv.fetchNextPage()}>다시 불러오기</button>
+                  <button className="subm__retry" onClick={() => inv.fetchNextPage()}>{t("subscription.loadMore")}</button>
                 ) : null}
               </div>
             </>
@@ -337,11 +382,11 @@ export function Subscription() {
       </div>
 
       {/* Plan selection (reuses subApi.subscribe / startTrial) */}
-      <Sheet open={planOpen} onClose={() => !busy && setPlanOpen(false)} title="구독 플랜 선택">
+      <Sheet open={planOpen} onClose={() => !busy && setPlanOpen(false)} title={t("subscription.planSheetTitle")}>
         {plans.isLoading ? (
           <SkeletonList rows={2} height={72} />
         ) : planList.length === 0 ? (
-          <p className="subm__empty-pay">이용 가능한 플랜이 없어요.</p>
+          <p className="subm__empty-pay">{t("subscription.noPlansAvailable")}</p>
         ) : (
           <div className="stack" style={{ gap: 10 }}>
             {planList.map((p) => (
@@ -349,12 +394,12 @@ export function Subscription() {
                 <div style={{ flex: 1 }}>
                   <div className="subm__plan-name">{p.name}</div>
                   <div className="subm__plan-sub">
-                    {formatMoney(p.price_cents, p.currency || "KRW")} / {p.interval === "year" ? "년" : "월"}
-                    {p.trial_days ? ` · ${p.trial_days}일 무료` : ""}
+                    {formatMoney(p.price_cents, p.currency || "KRW")} / {t(p.interval === "year" ? "subscription.perYear" : "subscription.perMonth")}
+                    {p.trial_days ? t("subscription.trialDaysFree", { n: p.trial_days }) : ""}
                   </div>
                 </div>
                 <Button size="sm" loading={busy} onClick={() => subscribe(p, !!p.trial_days)}>
-                  {p.trial_days ? "체험 시작" : "구독"}
+                  {t(p.trial_days ? "subscription.startTrial" : "subscription.subscribeShort")}
                 </Button>
               </div>
             ))}
@@ -381,12 +426,12 @@ export function Subscription() {
           preserved for edit-and-retry; no API, no entitlement change. */}
       <FailModal
         open={couponFailOpen}
-        title="쿠폰 등록에 실패했습니다"
+        title={t("subscription.voucherFailTitle")}
         description={
           <>
-            유효하지 않거나 이미 사용된 코드예요
+            {t("subscription.invalidCode")}
             <br />
-            코드를 확인하고 다시 시도해 주세요
+            {t("subscription.invalidCodeSub")}
           </>
         }
         onClose={() => {
@@ -397,16 +442,25 @@ export function Subscription() {
 
       <VoucherSuccessModal open={!!voucherSuccess} data={voucherSuccess} onClose={() => setVoucherSuccess(null)} />
 
+      {/* MOR-011 (624:10155) — no badge; the first body line is Brand 1 and the
+          rest Gray 5, and the dismiss button reads 취소 / Keep Plan. */}
       <ConfirmDialog
         open={cancelOpen}
-        emoji="😢"
-        title="구독을 해지할까요?"
-        text="남은 기간까지는 계속 이용할 수 있어요."
-        confirmLabel="해지하기"
-        danger
+        title={t("subscription.cancelConfirmTitle")}
+        warn={t("subscription.cancelConfirmText")}
+        text={t("subscription.cancelConfirmText2")}
+        cancelLabel={t("subscription.cancelConfirmKeep")}
+        confirmLabel={t("subscription.cancelConfirmGo")}
         loading={busy}
         onCancel={() => setCancelOpen(false)}
-        onConfirm={doCancel}
+        onConfirm={toReasonStep}
+      />
+
+      <CancelReasonModal
+        open={reasonOpen}
+        loading={busy}
+        onSkip={() => !busy && void doCancel()}
+        onSubmit={(reason) => void doCancel(reason)}
       />
     </div>
   );

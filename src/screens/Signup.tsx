@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation, type TranslationKey } from "../i18n";
 import { CountrySelect } from "../components/ui/CountrySelect";
 import { Sheet } from "../components/ui/Modal";
 import { PolicyBody } from "./Policy";
@@ -16,15 +17,22 @@ function emailValid(e: string) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
 }
 
-type AgreeKey = "age" | "terms" | "privacy" | "third";
-const AGREEMENTS: { key: AgreeKey; label: string; underline?: boolean; doc?: PolicyId }[] = [
-  { key: "age", label: "[필수] 만 14세 이상 (미만 시 법정대리인 동의)" },
-  { key: "terms", label: "회원이용약관 (필수)", underline: true, doc: "terms" },
-  { key: "privacy", label: "개인정보수집 및 이용동의 (필수)", doc: "privacy" },
-  { key: "third", label: "개인정보 제 3자 제공 동의 (필수)", doc: "third-party" },
+type AgreeKey = "age" | "terms" | "privacy" | "third" | "marketing" | "serviceNotice" | "adNotice";
+/** The four required consents gate signup; the three optional ones do not.
+ *  All seven are listed in Figma AME-004 (215:6769 / 784:55065). */
+const REQUIRED_AGREEMENTS: AgreeKey[] = ["age", "terms", "privacy", "third"];
+const AGREEMENTS: { key: AgreeKey; label: TranslationKey; underline?: boolean; doc?: PolicyId }[] = [
+  { key: "age", label: "signup.agreeAge" },
+  { key: "terms", label: "signup.agreeTerms", underline: true, doc: "terms" },
+  { key: "privacy", label: "signup.agreePrivacy", doc: "privacy" },
+  { key: "third", label: "signup.agreeThird", doc: "third-party" },
+  { key: "marketing", label: "signup.agreeMarketing" },
+  { key: "serviceNotice", label: "signup.agreeServiceNotice" },
+  { key: "adNotice", label: "signup.agreeAdNotice" },
 ];
 
 export function Signup() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const toast = useToast();
   const completeLogin = useLoginFlow();
@@ -38,7 +46,10 @@ export function Signup() {
   const [confirm, setConfirm] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const [agree, setAgree] = useState({ age: false, terms: false, privacy: false, third: false });
+  const [agree, setAgree] = useState<Record<AgreeKey, boolean>>({
+    age: false, terms: false, privacy: false, third: false,
+    marketing: false, serviceNotice: false, adNotice: false,
+  });
   const [policyOpen, setPolicyOpen] = useState<PolicyId | null>(null);
 
   const dial = useMemo(() => NATIONALITIES.find((n) => n.code === country)?.dial ?? "+82", [country]);
@@ -53,11 +64,13 @@ export function Signup() {
     confirm: authApi.confirmEmail,
   });
 
-  const allAgreed = agree.age && agree.terms && agree.privacy && agree.third;
+  const allAgreed = REQUIRED_AGREEMENTS.every((k) => agree[k]);
+  /** "Agree to all" reflects and toggles every row, optional ones included. */
+  const everyAgreed = AGREEMENTS.every((a) => agree[a.key]);
 
   function requestPhone() {
     if (localPhone.replace(/\D/g, "").length < 7) {
-      setErrors((x) => ({ ...x, phone: "휴대폰 번호를 정확히 입력해 주세요." }));
+      setErrors((x) => ({ ...x, phone: t("findEmail.phoneInvalid") }));
       return;
     }
     setErrors((x) => ({ ...x, phone: "" }));
@@ -65,7 +78,7 @@ export function Signup() {
   }
   function requestEmail() {
     if (!emailValid(email)) {
-      setErrors((x) => ({ ...x, email: "올바른 이메일 형식이 아니에요." }));
+      setErrors((x) => ({ ...x, email: t("findPassword.emailInvalid") }));
       return;
     }
     setErrors((x) => ({ ...x, email: "" }));
@@ -74,13 +87,13 @@ export function Signup() {
 
   function validate(): boolean {
     const e: Record<string, string> = {};
-    if (name.trim().length < 1) e.name = "이름을 입력해 주세요.";
-    if (!phoneV.verified) e.phone = "휴대폰 인증을 완료해 주세요.";
-    if (!emailV.verified) e.email = "이메일 인증을 완료해 주세요.";
+    if (name.trim().length < 1) e.name = t("signup.errName");
+    if (!phoneV.verified) e.phone = t("signup.errPhoneVerify");
+    if (!emailV.verified) e.email = t("signup.errEmailVerify");
     const pw = passwordProblem(password);
-    if (pw) e.password = pw;
-    if (password !== confirm) e.confirm = "비밀번호가 일치하지 않아요.";
-    if (!allAgreed) e.agree = "필수 약관에 모두 동의해 주세요.";
+    if (pw) e.password = t(pw);
+    if (password !== confirm) e.confirm = t("signup.errConfirm");
+    if (!allAgreed) e.agree = t("signup.errAgree");
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -88,7 +101,7 @@ export function Signup() {
   async function submitSignup() {
     if (busy) return;
     if (!validate()) {
-      toast.error("입력 정보를 다시 확인해 주세요.");
+      toast.error(t("signup.errForm"));
       return;
     }
     setBusy(true);
@@ -106,6 +119,9 @@ export function Signup() {
         terms_accepted: agree.terms,
         privacy_accepted: agree.privacy,
         third_party_accepted: agree.third,
+        marketing_consent: agree.marketing,
+        service_notification_consent: agree.serviceNotice,
+        promotional_notification_consent: agree.adNotice,
         marketing_opt_in: false,
         service_notification_opt_in: false,
         ad_notification_opt_in: false,
@@ -122,32 +138,32 @@ export function Signup() {
   }
 
   function toggleAll() {
-    const next = !allAgreed;
-    setAgree({ age: next, terms: next, privacy: next, third: next });
+    const next = !everyAgreed;
+    setAgree(Object.fromEntries(AGREEMENTS.map((a) => [a.key, next])) as Record<AgreeKey, boolean>);
   }
 
   return (
     <div className="screen signup">
       <div className="signup__scroll">
         <div className="signup__inner">
-          <button className="signup__back" onClick={() => nav(-1)} aria-label="뒤로">
-            <svg width="25" height="25" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <button className="signup__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
 
-          <h1 className="signup__title">회원가입</h1>
-          <p className="signup__subtitle">아래 정보들을 입력해주세요.</p>
+          <h1 className="signup__title">{t("signup.title")}</h1>
+          <p className="signup__subtitle">{t("signup.subtitle")}</p>
 
           {/* Name */}
           <div className="signup__field">
             <label className="signup__label" htmlFor="su-name">
-              이름
+              {t("signup.nameLabel")}
             </label>
             <input
               id="su-name"
               className={`signup__input ${errors.name ? "is-error" : ""}`}
-              placeholder="이름을 입력하세요"
+              placeholder={t("signup.namePlaceholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
               onBlur={() => setName((n) => n.trim())}
@@ -158,7 +174,7 @@ export function Signup() {
           {/* Phone */}
           <div className="signup__field">
             <label className="signup__label" htmlFor="su-phone">
-              휴대폰번호
+              {t("findEmail.phoneLabel")}
             </label>
             <div className="signup__row">
               <CountrySelect value={country} onChange={setCountry} />
@@ -167,8 +183,8 @@ export function Signup() {
                 className={`signup__input signup__input--flex ${errors.phone ? "is-error" : ""}`}
                 inputMode="numeric"
                 autoComplete="tel"
-                placeholder="'-'를 제외하고 입력하세요"
-                aria-label="휴대폰 번호"
+                placeholder={t("findEmail.phonePlaceholder")}
+                aria-label={t("findEmail.phoneA11y")}
                 value={localPhone}
                 onChange={(e) => setLocalPhone(e.target.value.replace(/\D/g, ""))}
                 disabled={phoneV.verified}
@@ -178,18 +194,22 @@ export function Signup() {
                 className="signup__pill"
                 onClick={requestPhone}
                 disabled={phoneV.sending || phoneV.cooldown > 0 || phoneV.verified}
-                aria-label="휴대폰 인증번호 요청"
+                aria-label={t("signup.phoneRequestA11y")}
               >
-                {phoneV.verified ? "인증완료" : phoneV.cooldown > 0 ? `${phoneV.cooldown}s` : "인증하기"}
+                {phoneV.verified ? t("findEmail.verified") : phoneV.cooldown > 0 ? `${phoneV.cooldown}s` : t("findEmail.verify")}
               </button>
             </div>
             {errors.phone && <p className="signup__err">{errors.phone}</p>}
           </div>
 
-          {/* Phone code */}
+          {/* Phone code — rendered ONLY after a code has actually been
+              requested. `phoneV.requested` is the shared hook's gate: it is
+              true only once the server has returned a verification_id, so
+              a failed request leaves the field hidden and the timer off. */}
+          {phoneV.requested && (
           <div className="signup__field">
             <label className="signup__label" htmlFor="su-phone-code">
-              인증번호 입력
+              {t("findEmail.codeLabel")}
             </label>
             <div className="signup__row">
               <div className="signup__code signup__input--flex">
@@ -198,8 +218,8 @@ export function Signup() {
                   className="signup__code-input"
                   inputMode="numeric"
                   maxLength={6}
-                  placeholder="인증번호 6자리를 입력하세요"
-                  aria-label="휴대폰 인증번호"
+                  placeholder={t("findEmail.codePlaceholder")}
+                  aria-label={t("signup.phoneCodeLabel")}
                   value={phoneV.code}
                   onChange={(e) => phoneV.setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   disabled={!phoneV.requested || phoneV.verified}
@@ -213,18 +233,19 @@ export function Signup() {
                 className="signup__pill signup__pill--sm"
                 onClick={phoneV.confirmCode}
                 disabled={phoneV.code.length !== 6 || phoneV.confirming || phoneV.verified}
-                aria-label="휴대폰 인증번호 확인"
+                aria-label={t("signup.phoneCodeA11y")}
               >
-                {phoneV.verified ? "완료" : "확인"}
+                {phoneV.verified ? t("findEmail.checkDone") : t("findEmail.check")}
               </button>
             </div>
             {phoneV.error && <p className="signup__err">{phoneV.error}</p>}
           </div>
+          )}
 
           {/* Email */}
           <div className="signup__field">
             <label className="signup__label" htmlFor="su-email">
-              이메일
+              {t("login.emailLabel")}
             </label>
             <div className="signup__row">
               <input
@@ -236,7 +257,7 @@ export function Signup() {
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
-                placeholder="이메일을 입력하세요"
+                placeholder={t("signup.emailPlaceholder")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 onBlur={() => setEmail((v) => v.trim())}
@@ -247,18 +268,22 @@ export function Signup() {
                 className="signup__pill"
                 onClick={requestEmail}
                 disabled={emailV.sending || emailV.cooldown > 0 || emailV.verified}
-                aria-label="이메일 인증번호 요청"
+                aria-label={t("signup.emailRequestA11y")}
               >
-                {emailV.verified ? "인증완료" : emailV.cooldown > 0 ? `${emailV.cooldown}s` : "인증하기"}
+                {emailV.verified ? t("findEmail.verified") : emailV.cooldown > 0 ? `${emailV.cooldown}s` : t("findEmail.verify")}
               </button>
             </div>
             {errors.email && <p className="signup__err">{errors.email}</p>}
           </div>
 
-          {/* Email code */}
+          {/* Email code — rendered ONLY after a code has actually been
+              requested. `emailV.requested` is the shared hook's gate: it is
+              true only once the server has returned a verification_id, so
+              a failed request leaves the field hidden and the timer off. */}
+          {emailV.requested && (
           <div className="signup__field">
             <label className="signup__label" htmlFor="su-email-code">
-              인증번호 입력
+              {t("findEmail.codeLabel")}
             </label>
             <div className="signup__row">
               <div className="signup__code signup__input--flex">
@@ -267,8 +292,8 @@ export function Signup() {
                   className="signup__code-input"
                   inputMode="numeric"
                   maxLength={6}
-                  placeholder="인증번호 6자리를 입력하세요"
-                  aria-label="이메일 인증번호"
+                  placeholder={t("findEmail.codePlaceholder")}
+                  aria-label={t("signup.emailCodeLabel")}
                   value={emailV.code}
                   onChange={(e) => emailV.setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   disabled={!emailV.requested || emailV.verified}
@@ -282,25 +307,26 @@ export function Signup() {
                 className="signup__pill signup__pill--sm"
                 onClick={emailV.confirmCode}
                 disabled={emailV.code.length !== 6 || emailV.confirming || emailV.verified}
-                aria-label="이메일 인증번호 확인"
+                aria-label={t("signup.emailCodeA11y")}
               >
-                {emailV.verified ? "완료" : "확인"}
+                {emailV.verified ? t("findEmail.checkDone") : t("findEmail.check")}
               </button>
             </div>
             {emailV.error && <p className="signup__err">{emailV.error}</p>}
           </div>
+          )}
 
           {/* Password */}
           <div className="signup__field">
             <label className="signup__label" htmlFor="su-pw">
-              비밀번호
+              {t("signup.passwordLabel")}
             </label>
             <input
               id="su-pw"
               className={`signup__input ${errors.password ? "is-error" : ""}`}
               type="password"
               autoComplete="new-password"
-              placeholder="영어, 숫자, 특수문자 포함 8자리 이상을 입력하세요"
+              placeholder={t("signup.passwordPlaceholder")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -310,14 +336,14 @@ export function Signup() {
           {/* Password confirm */}
           <div className="signup__field">
             <label className="signup__label" htmlFor="su-pw2">
-              비밀번호 확인
+              {t("signup.confirmLabel")}
             </label>
             <input
               id="su-pw2"
               className={`signup__input ${errors.confirm ? "is-error" : ""}`}
               type="password"
               autoComplete="new-password"
-              placeholder="비밀번호를 다시 입력하세요"
+              placeholder={t("signup.confirmPlaceholder")}
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
             />
@@ -326,17 +352,17 @@ export function Signup() {
 
           {/* Terms */}
           <div className="signup__terms">
-            <h2 className="signup__terms-title">약관동의</h2>
+            <h2 className="signup__terms-title">{t("signup.termsTitle")}</h2>
 
             <button
               type="button"
               className="signup__agree signup__agree--all"
               role="checkbox"
-              aria-checked={allAgreed}
+              aria-checked={everyAgreed}
               onClick={toggleAll}
             >
-              <span className="signup__agree-label signup__agree-label--all">전체 동의</span>
-              <span className={`signup__check signup__check--dark ${allAgreed ? "is-on" : ""}`} aria-hidden="true">
+              <span className="signup__agree-label signup__agree-label--all">{t("signup.agreeAll")}</span>
+              <span className={`signup__check signup__check--dark ${everyAgreed ? "is-on" : ""}`} aria-hidden="true">
                 <CheckMark />
               </span>
             </button>
@@ -350,19 +376,19 @@ export function Signup() {
                       type="button"
                       className={`signup__agree-label signup__agree-label--btn ${a.underline ? "signup__agree-label--link" : ""}`}
                       onClick={() => setPolicyOpen(a.doc!)}
-                      aria-label={`${a.label} 자세히 보기`}
+                      aria-label={t("signup.viewDetailA11y", { name: t(a.label) })}
                     >
-                      {a.label}
+                      {t(a.label)}
                     </button>
                   ) : (
-                    <span className="signup__agree-label">{a.label}</span>
+                    <span className="signup__agree-label">{t(a.label)}</span>
                   )}
                   <button
                     type="button"
                     className="signup__agree-box"
                     role="checkbox"
                     aria-checked={checked}
-                    aria-label={a.label}
+                    aria-label={t(a.label)}
                     onClick={() => setAgree((s) => ({ ...s, [a.key]: !s[a.key] }))}
                   >
                     <span className={`signup__check signup__check--pale ${checked ? "is-on" : ""}`} aria-hidden="true">
@@ -375,8 +401,8 @@ export function Signup() {
             {errors.agree && <p className="signup__err">{errors.agree}</p>}
           </div>
 
-          <button className="signup__submit" type="button" onClick={submitSignup} disabled={busy} aria-label="회원가입">
-            {busy ? <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2.5 }} /> : "회원가입"}
+          <button className="signup__submit" type="button" onClick={submitSignup} disabled={busy} aria-label={t("signup.submit")}>
+            {busy ? <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2.5 }} /> : t("signup.submit")}
           </button>
         </div>
       </div>

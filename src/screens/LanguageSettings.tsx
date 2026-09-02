@@ -9,24 +9,19 @@ import { settingsApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
 import { ApiError, NetworkError } from "../lib/http";
-import {
-  LANGUAGE_SETTINGS_COPY,
-  SUPPORTED_LANGUAGES,
-  normalizeLanguage,
-  type AppLanguage,
-} from "../lib/language";
+import { SUPPORTED_LANGUAGES, normalizeLanguage, type AppLanguage } from "../lib/language";
+import { useI18n } from "../i18n";
+import { DetailHeader } from "../components/DetailHeader";
 
-const BackChevron = () => (
-  <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
 
 export function LanguageSettings() {
   const nav = useNavigate();
   const qc = useQueryClient();
   const toast = useToast();
   const { me, setMe } = useAuth();
+  // `t` renders in the CURRENT app language; `setLanguage` switches the whole
+  // app once a save is confirmed by the server.
+  const { t, setLanguage } = useI18n();
 
   // Authoritative current language from the backend, seeded from the
   // authenticated-user cache so the correct card shows immediately (no flash of
@@ -45,10 +40,6 @@ export function LanguageSettings() {
     if (pending === null && persisted !== null) setPending(persisted);
   }, [pending, persisted]);
 
-  // Screen chrome is localized in the CURRENT (persisted) app language, not the
-  // pending selection — the app language changes only after Save.
-  const copy = LANGUAGE_SETTINGS_COPY[persisted ?? "en"];
-
   // Shown only after the backend confirms the save; gates the return navigation
   // on the user tapping 확인.
   const [savedOpen, setSavedOpen] = useState(false);
@@ -62,17 +53,22 @@ export function LanguageSettings() {
       // longer dirty and the unsaved-changes guard won't fire.
       const applied = normalizeLanguage(res.app_language);
       if (me) setMe({ ...me, app_language: applied });
+      // Switch the app now that the server has accepted it. This is the only
+      // place the display language changes: chrome above stays in the previous
+      // language until this point, matching the design's post-save modal.
+      setLanguage(applied);
       qc.setQueryData(["settings-language"], { app_language: applied });
       qc.invalidateQueries({ queryKey: ["settings"] }); // derived explanation/AI language
       setSavedOpen(true); // success feedback; navigation waits for 확인
     },
     onError: (e) => {
       // Keep the previous global language and the pending selection for retry.
-      const msg = e instanceof NetworkError
-        ? copy.networkErrorToast
-        : e instanceof ApiError && e.status === 422
-          ? copy.errorToast // validation — safe generic message, no raw payload
-          : copy.errorToast;
+      const msg =
+        e instanceof NetworkError
+          ? t("common.networkError")
+          : e instanceof ApiError && e.status === 422
+            ? t("languageSettings.errorToast") // validation — no raw payload
+            : t("languageSettings.errorToast");
       toast.error(msg);
     },
   });
@@ -117,18 +113,13 @@ export function LanguageSettings() {
 
   return (
     <div className="screen lang">
-      <header className="acct__header">
-        <button className="acct__back" onClick={goBack} aria-label={copy.back}>
-          <BackChevron />
-        </button>
-        <h1 className="acct__title">{copy.title}</h1>
-      </header>
+      <DetailHeader title={t("languageSettings.title")} onBack={goBack} />
 
       <div className="lang__body">
         {loading ? (
           <LoadingState />
         ) : (
-          <div className="lang__list" role="radiogroup" aria-label={copy.title}>
+          <div className="lang__list" role="radiogroup" aria-label={t("languageSettings.title")}>
             {SUPPORTED_LANGUAGES.map(({ code, nativeLabel }) => {
               const selected = pending === code;
               return (
@@ -137,7 +128,7 @@ export function LanguageSettings() {
                   type="button"
                   role="radio"
                   aria-checked={selected}
-                  aria-label={`${nativeLabel}${selected ? ", 선택됨" : ""}`}
+                  aria-label={selected ? `${nativeLabel}, ${t("languageSettings.selected")}` : nativeLabel}
                   className={`lang__card ${selected ? "is-selected" : ""}`}
                   disabled={save.isPending}
                   onClick={() => setPending(code)}
@@ -156,9 +147,9 @@ export function LanguageSettings() {
           loading={save.isPending}
           disabled={loading}
           onClick={onSave}
-          aria-label={copy.saveA11y}
+          aria-label={t("languageSettings.saveA11y")}
         >
-          {copy.save}
+          {t("languageSettings.save")}
         </Button>
       </div>
 
@@ -173,9 +164,9 @@ export function LanguageSettings() {
 
       <LanguageSavedModal
         open={savedOpen}
-        title={copy.savedModalTitle}
-        description={copy.savedModalDesc}
-        confirmLabel={copy.confirm}
+        title={t("languageSettings.savedModalTitle")}
+        description={t("languageSettings.savedModalDesc")}
+        confirmLabel={t("common.confirm")}
         onConfirm={() => {
           // Close once, then return to the previous screen (the current
           // post-save flow). No re-save, no reload; the form is already clean.

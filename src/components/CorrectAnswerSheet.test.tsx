@@ -3,14 +3,16 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CorrectAnswerSheet } from "./CorrectAnswerSheet";
+import { I18nProvider } from "../i18n";
 
 function setup(mode: "next" | "complete", over = {}) {
   const onReplay = vi.fn();
   const onNext = vi.fn();
   const onComplete = vi.fn();
   const utils = render(
-    <CorrectAnswerSheet mode={mode} onReplay={onReplay} onNext={onNext} onComplete={onComplete} {...over} />,
-  );
+    <I18nProvider language="ko">
+      <CorrectAnswerSheet mode={mode} onReplay={onReplay} onNext={onNext} onComplete={onComplete} {...over} />
+    </I18nProvider>,);
   return { onReplay, onNext, onComplete, ...utils };
 }
 

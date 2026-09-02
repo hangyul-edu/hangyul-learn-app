@@ -2,19 +2,21 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AdditionalLearningCountModal } from "./AdditionalLearningCountModal";
+import { I18nProvider } from "../i18n";
 
 function setup(overrides: Partial<Parameters<typeof AdditionalLearningCountModal>[0]> = {}) {
   const onClose = vi.fn();
   const onStart = vi.fn();
   render(
-    <AdditionalLearningCountModal
-      open
-      kind="conversation"
-      onClose={onClose}
-      onStart={onStart}
-      {...overrides}
-    />,
-  );
+    <I18nProvider language="ko">
+      <AdditionalLearningCountModal
+        open
+        kind="conversation"
+        onClose={onClose}
+        onStart={onStart}
+        {...overrides}
+      />
+    </I18nProvider>,);
   return { onClose, onStart };
 }
 
@@ -23,8 +25,9 @@ const count = (n: number) => screen.getByRole("radio", { name: `${n}개` });
 describe("AdditionalLearningCountModal", () => {
   it("does not render when closed", () => {
     const { container } = render(
-      <AdditionalLearningCountModal open={false} kind="conversation" onClose={() => {}} onStart={() => {}} />,
-    );
+      <I18nProvider language="ko">
+        <AdditionalLearningCountModal open={false} kind="conversation" onClose={() => {}} onStart={() => {}} />
+      </I18nProvider>,);
     expect(container).toBeEmptyDOMElement();
   });
 
@@ -73,11 +76,16 @@ describe("AdditionalLearningCountModal", () => {
 
   it("Conversation copy asks for 문장; TOPIK asks for 문제", () => {
     const { unmount } = render(
-      <AdditionalLearningCountModal open kind="conversation" onClose={() => {}} onStart={() => {}} />,
-    );
+      <I18nProvider language="ko">
+        <AdditionalLearningCountModal open kind="conversation" onClose={() => {}} onStart={() => {}} />
+      </I18nProvider>,);
     expect(screen.getByText(/추가할 문장 수를 선택해 주세요/)).toBeInTheDocument();
     unmount();
-    render(<AdditionalLearningCountModal open kind="topik" onClose={() => {}} onStart={() => {}} />);
+    render(
+      <I18nProvider language="ko">
+        <AdditionalLearningCountModal open kind="topik" onClose={() => {}} onStart={() => {}} />
+      </I18nProvider>,
+    );
     expect(screen.getByText(/추가할 문제 수를 선택해 주세요/)).toBeInTheDocument();
   });
 

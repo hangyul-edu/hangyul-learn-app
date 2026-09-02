@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "../i18n";
 import { useMutation, useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { supportApi } from "../api/endpoints";
-import { useAuth } from "../hooks/auth";
-import { normalizeLanguage } from "../lib/language";
-import { NOTICES_COPY } from "../lib/noticeCopy";
+import { useNoticesCopy } from "../lib/noticeCopy";
 import { formatNoticeDetailDate } from "../lib/format";
 import { ApiError, errorMessage } from "../lib/http";
 import { Markdown } from "../lib/markdown";
@@ -19,9 +18,11 @@ export function NoticeDetail() {
   const nav = useNavigate();
   const loc = useLocation();
   const qc = useQueryClient();
-  const { me } = useAuth();
-  const lang = normalizeLanguage(me?.app_language);
-  const copy = NOTICES_COPY[lang];
+  // Notice bodies are server-localized, so the request language must be the
+  // language the chrome is rendering in — that is the i18n layer's, which the
+  // profile only seeds.
+  const { language: lang } = useTranslation();
+  const copy = useNoticesCopy();
 
   // Temporary placeholder metadata (title/date) from the list cache, shown only
   // while the full detail request is in flight — the body still comes from the

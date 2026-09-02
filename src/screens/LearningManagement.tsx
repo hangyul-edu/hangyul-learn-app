@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation, type TranslationKey } from "../i18n";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { learnApi } from "../api/endpoints";
@@ -8,11 +9,11 @@ import { Button } from "../components/ui/kit";
 import { ErrorState } from "../components/ui/states";
 import type { ManagementPeriod, ManagementStats } from "../lib/types";
 
-const PERIODS: { id: ManagementPeriod; label: string }[] = [
-  { id: "7d", label: "최근 7일" },
-  { id: "1m", label: "이번 달" },
-  { id: "3m", label: "최근 3개월" },
-  { id: "1y", label: "최근 1년" },
+const PERIODS: { id: ManagementPeriod; label: TranslationKey }[] = [
+  { id: "7d", label: "learningManagement.last7" },
+  { id: "1m", label: "learningManagement.thisMonth" },
+  { id: "3m", label: "learningManagement.last3m" },
+  { id: "1y", label: "learningManagement.last1y" },
 ];
 
 /** Seconds → "HH:MM" (summary card). */
@@ -20,18 +21,19 @@ function fmtHHMM(seconds: number): string {
   const s = Math.max(0, Math.floor(seconds));
   return `${String(Math.floor(s / 3600)).padStart(2, "0")}:${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}`;
 }
-/** Seconds → compact "1h 33m" / "33m" (chart bar value). */
+/** Seconds → compact "1h33m" / "33m" — unspaced, as HMA-002 labels its bar. */
 function fmtShort(seconds: number): string {
   const s = Math.max(0, Math.floor(seconds));
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
-  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  return h > 0 ? `${h}h${m}m` : `${m}m`;
 }
 
 const BROWSER_TZ =
   typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : undefined;
 
 export function LearningManagement() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const navigatingRef = useRef(false);
   const [period, setPeriod] = useState<ManagementPeriod>("7d");
@@ -66,15 +68,26 @@ export function LearningManagement() {
   }
 
   const empty = !!data && !data.has_any_eligible_learning_record;
-  const headline = empty ? "첫 학습을 기다리고 있어요!" : "꾸준히 쌓이는 기록, 대단해요!";
+  const headline = t(empty ? "learningManagement.waiting" : "learningManagement.praise");
 
   return (
-    <div className="screen lmgmt">
+    // HMA-004 re-typesets the English headline at 20 where HMA-002 uses 18, so
+    // the empty state needs its own hook rather than one blanket EN override.
+    <div className={`screen lmgmt${empty ? " lmgmt--empty" : ""}`}>
       <div className="lmgmt__scroll">
         <header className="strk__header lmgmt__header">
-          <button className="strk__back" onClick={() => nav("/home")} aria-label="뒤로">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <button className="strk__back" onClick={() => nav("/home")} aria-label={t("common.back")}>
+            {/* ic_B_topNav variant=back, exactly as HMA-002 exports it. The
+                hand-drawn 26px chevron was 2px short and sat 1px right. */}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M16 21L7 12L16 3"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeMiterlimit="10"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </button>
           <LearningSectionSwitcher current="management" />
@@ -83,12 +96,12 @@ export function LearningManagement() {
         {q.isError && !data ? (
           <div className="lmgmt__errwrap">
             <ErrorState
-              message={(q.error as Error)?.message || "학습 기록을 불러오지 못했어요."}
+              message={(q.error as Error)?.message || t("learningManagement.loadError")}
               onRetry={() => q.refetch()}
             />
           </div>
         ) : !data ? (
-          <div className="lmgmt__loading" aria-busy="true" aria-label="불러오는 중">
+          <div className="lmgmt__loading" aria-busy="true" aria-label={t("learningManagement.loading")}>
             <div className="skeleton lmgmt__sk-heading" />
             <div className="skeleton lmgmt__sk-card" />
             <div className="skeleton lmgmt__sk-chart" />
@@ -100,12 +113,12 @@ export function LearningManagement() {
             {/* Today's summary — server-provided, HH:MM + combined learning count. */}
             <div className="lmgmt__summary">
               <div className="lmgmt__summary-col">
-                <span className="lmgmt__summary-label">오늘 공부한 시간</span>
+                <span className="lmgmt__summary-label">{t("learningManagement.todayTime")}</span>
                 <span className="lmgmt__summary-value">{fmtHHMM(data.today.study_seconds)}</span>
               </div>
               <div className="lmgmt__summary-divider" aria-hidden="true" />
               <div className="lmgmt__summary-col">
-                <span className="lmgmt__summary-label">오늘의 학습</span>
+                <span className="lmgmt__summary-label">{t("learningManagement.todayHeading")}</span>
                 <span className="lmgmt__summary-value">{data.today.learning_count}</span>
               </div>
             </div>
@@ -114,22 +127,22 @@ export function LearningManagement() {
 
             {empty ? (
               <>
-                <h2 className="lmgmt__section-title">내 학습 기록</h2>
+                <h2 className="lmgmt__section-title">{t("learningManagement.title")}</h2>
                 <div className="lmgmt__history">
                   <div className="lmgmt__empty">
-                    <p className="lmgmt__empty-title">학습 기록이 아직 없어요</p>
+                    <p className="lmgmt__empty-title">{t("learningManagement.emptyTitle")}</p>
                     <p className="lmgmt__empty-desc">
-                      첫 학습을 시작하고
+                      {t("learningManagement.emptyLine1")}
                       <br />
-                      당신의 기록을 만들어 보세요!
+                      {t("learningManagement.emptyLine2")}
                     </p>
                     <Button
                       variant="primary"
                       className="lmgmt__cta"
                       onClick={startLearning}
-                      aria-label="학습 시작하기, 맞춤 학습으로 이동"
+                      aria-label={t("learningManagement.startLearningA11y")}
                     >
-                      학습 시작하기
+                      {t("learningManagement.startLearning")}
                     </Button>
                   </div>
                 </div>
@@ -137,7 +150,7 @@ export function LearningManagement() {
             ) : (
               <>
                 <div className="lmgmt__section">
-                  <h2 className="lmgmt__section-title">내 학습 기록</h2>
+                  <h2 className="lmgmt__section-title">{t("learningManagement.title")}</h2>
                   <PeriodDropdown
                     period={period}
                     open={periodOpen}
@@ -161,20 +174,24 @@ export function LearningManagement() {
 
                 <div className="lmgmt__totals">
                   <div className="lmgmt__totals-col">
-                    <span className="lmgmt__totals-label">학습한 문장 수</span>
+                    <span className="lmgmt__totals-label">{t("learningManagement.sentences")}</span>
                     <span className="lmgmt__totals-value">
                       {chartStale || !selectedBucket
                         ? "–"
-                        : selectedBucket.conversation_sentence_count.toLocaleString()}
+                        : t("learningManagement.countUnit", {
+                            n: selectedBucket.conversation_sentence_count.toLocaleString(),
+                          })}
                     </span>
                   </div>
                   <div className="lmgmt__summary-divider" aria-hidden="true" />
                   <div className="lmgmt__totals-col">
-                    <span className="lmgmt__totals-label">학습한 문제 수</span>
+                    <span className="lmgmt__totals-label">{t("learningManagement.questions")}</span>
                     <span className="lmgmt__totals-value">
                       {chartStale || !selectedBucket
                         ? "–"
-                        : selectedBucket.topik_question_count.toLocaleString()}
+                        : t("learningManagement.countUnit", {
+                            n: selectedBucket.topik_question_count.toLocaleString(),
+                          })}
                     </span>
                   </div>
                 </div>
@@ -202,9 +219,10 @@ function Chart({
   selectedKey: string | undefined;
   onSelect: (key: string) => void;
 }) {
+  const { t } = useTranslation();
   const max = Math.max(1, ...data.buckets.map((b) => b.study_seconds));
   return (
-    <div className="lmgmt__chart" role="group" aria-label="기간별 학습 시간">
+    <div className="lmgmt__chart" role="group" aria-label={t("learningManagement.periodHeading")}>
       {data.buckets.map((b) => {
         const selected = b.key === selectedKey;
         const pct =
@@ -245,6 +263,7 @@ function PeriodDropdown({
   setOpen: (v: boolean) => void;
   onSelect: (p: ManagementPeriod) => void;
 }) {
+  const { t } = useTranslation();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
 
@@ -286,7 +305,7 @@ function PeriodDropdown({
     };
   }, [open, setOpen]);
 
-  const label = PERIODS.find((p) => p.id === period)!.label;
+  const label = t(PERIODS.find((p) => p.id === period)!.label);
   return (
     <>
       <button
@@ -295,19 +314,27 @@ function PeriodDropdown({
         className="lmgmt__period-trigger"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="기간 선택"
+        aria-label={t("learningManagement.periodAria")}
         onClick={() => setOpen(!open)}
       >
-        {label}
+        <span className="lmgmt__period-label">{label}</span>
+        {/* ic_16_arrow as `Group 1410118472` exports it: 20x20, #5A636A, 1.5px,
+            square caps — already pointing down, so no base rotation. */}
         <svg
           className={`lmgmt__period-chev${open ? " lmgmt__period-chev--up" : ""}`}
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
           fill="none"
           aria-hidden="true"
         >
-          <path d="M6 9l6 6 6-6" stroke="#8a929a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M15.9375 6.5625L10.3125 12.1875L4.6875 6.5625"
+            stroke="#5A636A"
+            strokeWidth="1.5"
+            strokeMiterlimit="10"
+            strokeLinecap="square"
+          />
         </svg>
       </button>
       {open && (
@@ -315,7 +342,7 @@ function PeriodDropdown({
           <div
             className="lmgmt__period-menu"
             role="menu"
-            aria-label="기간"
+            aria-label={t("learningManagement.period")}
             style={pos ? { top: pos.top, left: pos.left } : undefined}
             onClick={(e) => e.stopPropagation()}
           >
@@ -329,7 +356,7 @@ function PeriodDropdown({
                   className={`lmgmt__period-option${p.id === period ? " lmgmt__period-option--active" : ""}`}
                   onClick={() => onSelect(p.id)}
                 >
-                  {p.label}
+                  {t(p.label)}
                 </button>
               </div>
             ))}

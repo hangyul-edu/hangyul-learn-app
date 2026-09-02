@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import { I18nProvider } from "../i18n";
 
 /* -------------------------------- mocks --------------------------------- */
 const { summary } = vi.hoisted(() => ({ summary: vi.fn() }));
@@ -31,16 +32,19 @@ const track = (category: "conversation" | "topik", name: string) => ({
 function renderHome() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={["/home"]}>
-        <Routes>
-          <Route path="/home" element={<><Home /><Loc /></>} />
-          <Route path="/session/topik" element={<><div>TOPIK SESSION</div><Loc /></>} />
-          <Route path="/session/conversation" element={<><div>CONVERSATION SESSION</div><Loc /></>} />
-          <Route path="/subscription/start" element={<div>SUBSCRIPTION</div>} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
+    // Assertions below are written against the Korean design frames.
+    <I18nProvider language="ko">
+      <QueryClientProvider client={qc}>
+        <MemoryRouter initialEntries={["/home"]}>
+          <Routes>
+            <Route path="/home" element={<><Home /><Loc /></>} />
+            <Route path="/session/topik" element={<><div>TOPIK SESSION</div><Loc /></>} />
+            <Route path="/session/conversation" element={<><div>CONVERSATION SESSION</div><Loc /></>} />
+            <Route path="/subscription/start" element={<div>SUBSCRIPTION</div>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </I18nProvider>,
   );
 }
 

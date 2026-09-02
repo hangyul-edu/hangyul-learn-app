@@ -1,21 +1,15 @@
 import type { ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation, type TranslationKey } from "../i18n";
 import { POLICIES, type PolicyId } from "../lib/policies";
+import { DetailHeader } from "../components/DetailHeader";
 
 /* ------------------------------- header --------------------------------- */
 /** Borderless More-section app bar (back chevron + centered title), matching
  *  the notification-settings / friend-management headers. */
 export function PolicyHeader({ title }: { title: ReactNode }) {
-  const nav = useNavigate();
   return (
-    <header className="pol__header">
-      <button className="pol__back" onClick={() => nav(-1)} aria-label="뒤로 가기">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M15 5l-7 7 7 7" stroke="#272c30" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
-      <h1 className="pol__title">{title}</h1>
-    </header>
+    <DetailHeader title={title} />
   );
 }
 
@@ -23,11 +17,14 @@ export function PolicyHeader({ title }: { title: ReactNode }) {
 /** Renders the body of a legal document. Reused by the route screen and the
  *  sign-up agreement sheet so both stay in sync. */
 export function PolicyBody({ id }: { id: PolicyId }) {
+  const { t } = useTranslation();
   const doc = POLICIES[id];
   return (
     <div className="policy">
       {doc.intro && <p className="policy__intro">{doc.intro}</p>}
-      {doc.updated && <p className="policy__updated">시행일 {doc.updated}</p>}
+      {doc.updated && (
+        <p className="policy__updated">{t("policy.effectiveDate", { date: doc.updated })}</p>
+      )}
       {doc.sections.map((s) => (
         <section key={s.heading} className="policy__section">
           <h3 className="policy__heading">{s.heading}</h3>
@@ -92,40 +89,45 @@ export function Policy() {
 }
 
 /* ------------------------------- list page ------------------------------ */
-const LIST_ITEMS: { id: PolicyId; label: string }[] = [
-  { id: "terms-of-use", label: "이용약관" },
-  { id: "purchase-privacy", label: "개인정보처리 방침" },
-  { id: "refund", label: "구독 해지 및 환불 정책" },
+const LIST_ITEMS: { id: PolicyId; label: TranslationKey }[] = [
+  { id: "terms-of-use", label: "policy.termsOfUse" },
+  { id: "purchase-privacy", label: "policy.privacy" },
+  { id: "refund", label: "policy.refund" },
 ];
 
-const BUSINESS_LINES = [
-  "대표이사: 유재희",
-  "이메일: support@talkhangyul.com",
-  "사업자등록번호: 403-87-03380",
-  "주소: 서울특별시 도봉구 우이천로38길 39",
-  "Copyright © 2025 HanGyul. All Rights Reserved.",
+/** Figma TRM-001 lists seven lines; the app previously omitted the mail-order
+ *  registration number and the contact number. */
+const BUSINESS_LINES: TranslationKey[] = [
+  "policy.bizCeo",
+  "policy.bizEmail",
+  "policy.bizRegNo",
+  "policy.bizAddress",
+  "policy.bizMailOrder",
+  "policy.bizPhone",
+  "policy.bizCopyright",
 ];
 
 /** /policy — Terms & Policies landing (약관 및 정책). */
 export function PolicyList() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   return (
     <div className="screen pol">
-      <PolicyHeader title="약관 및 정책" />
+      <PolicyHeader title={t("policy.title")} />
       <div className="screen__body pol__list-body">
-        <nav className="pol__menu" aria-label="약관 및 정책">
+        <nav className="pol__menu" aria-label={t("policy.title")}>
           {LIST_ITEMS.map((item) => (
             <button key={item.id} className="pol__item" onClick={() => nav(`/policy/${item.id}`)}>
-              {item.label}
+              {t(item.label)}
             </button>
           ))}
         </nav>
 
-        <section className="pol__biz" aria-label="사업자 정보">
-          <div className="pol__biz-title">사업자 정보</div>
+        <section className="pol__biz" aria-label={t("policy.businessTitle")}>
+          <div className="pol__biz-title">{t("policy.businessTitle")}</div>
           {BUSINESS_LINES.map((line) => (
             <div className="pol__biz-line" key={line}>
-              {line}
+              {t(line)}
             </div>
           ))}
         </section>

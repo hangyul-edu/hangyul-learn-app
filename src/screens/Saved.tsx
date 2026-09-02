@@ -1,11 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation, type TranslationKey } from "../i18n";
 import { SkeletonList } from "../components/ui/states";
 import { sentenceApi, quizApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import type { Quiz, SavedSentenceItem } from "../lib/types";
+import icBookmarkFilled from "../assets/brand/ic-24-bookmark-filled.svg";
+import svPlay from "../assets/brand/sv-play.svg";
+import icTrash from "../assets/brand/ic-trash.svg";
+import chipRepeat from "../assets/brand/chip-ic-repeat.svg";
+import chipStar from "../assets/brand/chip-ic-star.svg";
 
 /* ------------------------------- config -------------------------------- */
 type Mode = "sentence" | "problem";
@@ -50,27 +56,37 @@ let savedSnapshot: SavedSnapshot | null = null;
 // picking up a stale hint.
 let savedModeHint: { locKey: string; mode: Mode } | null = null;
 
-const SORT_LABEL: Record<Sort, string> = {
-  latest: "최신순",
-  most_wrong: "오답 많은 순",
-  least_reviewed: "오래 안 본 순",
+const SORT_LABEL_KEYS: Record<Sort, TranslationKey> = {
+  latest: "saved.sortRecent",
+  most_wrong: "saved.sortMostWrong",
+  least_reviewed: "saved.sortLeastRecent",
 };
 const SENT_SORT: Record<Sort, string> = { latest: "latest", most_wrong: "most_wrong", least_reviewed: "least_recently_viewed" };
 const QUIZ_SORT: Record<Sort, string> = { latest: "recent", most_wrong: "most_incorrect", least_reviewed: "longest_not_reviewed" };
-const SKILLS: { v: Skill; l: string }[] = [
-  { v: "all", l: "전체" },
-  { v: "reading", l: "읽기" },
-  { v: "listening", l: "듣기" },
-  { v: "writing", l: "쓰기" },
+const SKILLS: { v: Skill; l: TranslationKey }[] = [
+  { v: "all", l: "saved.filterAll" },
+  { v: "reading", l: "saved.filterReading" },
+  { v: "listening", l: "saved.filterListening" },
+  { v: "writing", l: "saved.filterWriting" },
 ];
-const SKILL_LABEL: Record<string, string> = { reading: "읽기", listening: "듣기", writing: "쓰기" };
+const SKILL_LABEL_KEYS: Record<string, TranslationKey> = {
+  reading: "saved.filterReading",
+  listening: "saved.filterListening",
+  writing: "saved.filterWriting",
+};
 
-const modeTitle = (m: Mode) => (m === "sentence" ? "저장한 문장" : "저장한 문제");
+const modeTitleKey = (m: Mode): TranslationKey =>
+  m === "sentence" ? "saved.savedSentences" : "saved.savedQuestions";
 const isSentence = (it: SavedSentenceItem | Quiz): it is SavedSentenceItem => "sentence_id" in it;
 const itemId = (it: SavedSentenceItem | Quiz) => (isSentence(it) ? it.sentence_id : it.quiz_id);
-function quizTitle(q: Quiz): string {
-  const skill = q.topik_question_type || (q.topik_section ? SKILL_LABEL[q.topik_section] : null);
-  return `[TOPIK ${q.level}급${skill ? ` · ${skill}` : ""}]`;
+function quizTitle(
+  q: Quiz,
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+): string {
+  const skill =
+    q.topik_question_type ||
+    (q.topik_section && SKILL_LABEL_KEYS[q.topik_section] ? t(SKILL_LABEL_KEYS[q.topik_section]) : null);
+  return t("saved.quizTitle", { level: q.level, skill: skill ? ` · ${skill}` : "" });
 }
 function dedup(list: (SavedSentenceItem | Quiz)[]): (SavedSentenceItem | Quiz)[] {
   const seen = new Set<string>();
@@ -88,22 +104,14 @@ const Chevron = ({ dir = "down", color = "#9aa0a7", size = 18 }: { dir?: "down" 
     <path d={dir === "left" ? "M15 5l-7 7 7 7" : "M6 9l6 6 6-6"} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
-const Speaker = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M4 9v6h4l5 4V5L8 9H4z" fill="#36c4c8" />
-    <path d="M16 8.5a4 4 0 0 1 0 7" stroke="#36c4c8" strokeWidth="1.6" strokeLinecap="round" />
-  </svg>
-);
-const PlayGlyph = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 5.5v13l11-6.5-11-6.5z" fill="#fff" /></svg>
-);
+/* 537:9628's delete control (572:23443) exports as one 12x14 path here, so the
+ * drawn fallback is gone. */
 const TrashIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M5 7h14M10 7V5.5A1.5 1.5 0 0 1 11.5 4h1A1.5 1.5 0 0 1 14 5.5V7M6.5 7l.8 11a2 2 0 0 0 2 1.9h5.4a2 2 0 0 0 2-1.9L17.5 7" stroke="#aeb7be" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
+  <img className="rev__action-ic" src={icTrash} alt="" aria-hidden="true" />
 );
+/* TAL-044's saved control (674:10241) is a real ic_24_text instance. */
 const BookmarkFilled = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-3.5L6 20V5a1 1 0 0 1 1-1z" fill="#FF5B00" /></svg>
+  <img className="rev__action-bm" src={icBookmarkFilled} alt="" aria-hidden="true" />
 );
 const SearchIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -111,20 +119,10 @@ const SearchIcon = () => (
     <path d="M16 16l4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
   </svg>
 );
-const RepeatIcon = ({ color }: { color: string }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M4 8a4 4 0 0 1 4-4h9M20 16a4 4 0 0 1-4 4H7" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M14 1l3 3-3 3M10 23l-3-3 3-3" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-const StarOutline = ({ color }: { color: string }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M12 3.5l2.5 5.2 5.5.6-4 3.9 1 5.6L12 21l-5-2.7 1-5.6-4-3.9 5.5-.6L12 3.5z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
-  </svg>
-);
 
 /* ------------------------------- screen -------------------------------- */
 export function Saved() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const loc = useLocation();
   const toast = useToast();
@@ -208,13 +206,13 @@ export function Saved() {
       a.onended = () => setPlayingId(null);
       a.onerror = () => {
         setPlayingId(null);
-        toast.error("오디오를 재생할 수 없어요.");
+        toast.error(t("saved.audioError"));
       };
       await a.play();
       setPlayingId(id);
       void sentenceApi.markViewed(id).catch(() => {});
     } catch {
-      toast.error("오디오를 재생할 수 없어요.");
+      toast.error(t("saved.audioError"));
     } finally {
       setAudioLoadingId(null);
     }
@@ -364,20 +362,20 @@ export function Saved() {
   }
 
   const searching = dq.length > 0;
-  const emptyCopy =
-    mode === "sentence"
-      ? source === "wrong" ? "저장된 오답 문장이 없어요" : "찜한 문장이 없어요"
-      : source === "wrong" ? "저장된 오답 문제가 없어요" : "찜한 문제가 없어요";
+  // The empty frames use one message per mode and do NOT vary it by tab:
+  // TAL-039(empty) is the 오답 tab and TAL-039(empty2) the 찜한 tab, and both
+  // read "저장된 문장이 없어요". Same for TAL-043/044 on the question side.
+  const emptyCopy = t(mode === "sentence" ? "saved.emptySentences" : "saved.emptyQuestions");
 
   return (
     <div className="screen rev">
       <div className="rev__scroll" ref={scrollRef}>
         <header className="rev__header">
-          <button className="rev__back" onClick={() => { stopAudio(); nav(-1); }} aria-label="뒤로">
-            <Chevron dir="left" color="#272c30" size={26} />
+          <button className="rev__back" onClick={() => { stopAudio(); nav(-1); }} aria-label={t("common.back")}>
+            <Chevron dir="left" color="#262c31" size={26} />
           </button>
           <button className="rev__modebtn" onClick={() => { setSortMenu(false); setModeMenu((o) => !o); }} aria-haspopup="menu" aria-expanded={modeMenu}>
-            <span className="rev__modetitle">{modeTitle(mode)}</span>
+            <span className="rev__modetitle">{t(modeTitleKey(mode))}</span>
             <Chevron dir="down" color="#9aa0a7" size={18} />
           </button>
           {modeMenu && (
@@ -386,7 +384,7 @@ export function Saved() {
               <div className="rev__menu rev__menu--mode" role="menu">
                 {(["sentence", "problem"] as Mode[]).map((m) => (
                   <button key={m} role="menuitemradio" aria-checked={m === mode} className={`rev__menu-item ${m === mode ? "is-active" : ""}`} onClick={() => pickMode(m)}>
-                    {modeTitle(m)}
+                    {t(modeTitleKey(m))}
                   </button>
                 ))}
               </div>
@@ -396,14 +394,25 @@ export function Saved() {
 
         <div className="rev__controls">
           <div className="rev__row1">
-            <div className="rev__tabs" role="tablist" aria-label="저장 소스">
+            <div className="rev__tabs" role="tablist" aria-label={t("saved.sourceLabel")}>
               {(["wrong", "bookmark"] as Source[]).map((s) => {
                 const active = source === s;
-                const label = mode === "sentence" ? (s === "wrong" ? "오답 문장" : "찜한 문장") : s === "wrong" ? "오답 문제" : "찜한 문제";
-                const c = active ? "#FF5B00" : "#8b939b";
+                const label = t(
+                  mode === "sentence"
+                    ? s === "wrong" ? "saved.wrongSentences" : "saved.likedSentences"
+                    : s === "wrong" ? "saved.wrongQuestions" : "saved.likedQuestions",
+                );
                 return (
                   <button key={s} role="tab" aria-selected={active} className={`rev__tab ${active ? "is-active" : ""}`} onClick={() => source !== s && setSource(s)}>
-                    {s === "wrong" ? <RepeatIcon color={c} /> : <StarOutline color={c} />}
+                    {/* Both chip glyphs are Figma exports stroked #6E7385 and
+                        neither recolours on the active state (537:9710 repeat,
+                        537:9713 star), so they carry no tint prop. */}
+                    <img
+                      className={`rev__tab-ic ${s === "wrong" ? "" : "rev__tab-ic--star"}`}
+                      src={s === "wrong" ? chipRepeat : chipStar}
+                      alt=""
+                      aria-hidden="true"
+                    />
                     <span>{label}</span>
                   </button>
                 );
@@ -411,16 +420,16 @@ export function Saved() {
             </div>
             <div className="rev__sort">
               <button className="rev__sortbtn" onClick={() => { setModeMenu(false); setSortMenu((o) => !o); }} aria-haspopup="menu" aria-expanded={sortMenu}>
-                <span>{SORT_LABEL[sort]}</span>
+                <span>{t(SORT_LABEL_KEYS[sort])}</span>
                 <Chevron dir="down" color="#9aa0a7" size={16} />
               </button>
               {sortMenu && (
                 <>
                   <div className="rev__backdrop" onClick={() => setSortMenu(false)} />
                   <div className="rev__menu rev__menu--sort" role="menu">
-                    {(Object.keys(SORT_LABEL) as Sort[]).map((s) => (
+                    {(Object.keys(SORT_LABEL_KEYS) as Sort[]).map((s) => (
                       <button key={s} role="menuitemradio" aria-checked={s === sort} className={`rev__menu-item ${s === sort ? "is-active" : ""}`} onClick={() => { setSortMenu(false); if (s !== sort) setSort(s); }}>
-                        {SORT_LABEL[s]}
+                        {t(SORT_LABEL_KEYS[s])}
                       </button>
                     ))}
                   </div>
@@ -430,15 +439,15 @@ export function Saved() {
           </div>
 
           <div className={`rev__search ${query ? "is-filled" : ""}`}>
-            <input className="rev__search-input" placeholder="찾기" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="검색" />
+            <input className="rev__search-input" placeholder={t("saved.search")} value={query} onChange={(e) => setQuery(e.target.value)} aria-label={t("saved.search")} />
             <span className="rev__search-icon" aria-hidden="true"><SearchIcon /></span>
           </div>
 
           {mode === "problem" && (
-            <div className="rev__skills" role="radiogroup" aria-label="TOPIK 영역">
+            <div className="rev__skills" role="radiogroup" aria-label={t("saved.topikSection")}>
               {SKILLS.map((sk) => (
                 <button key={sk.v} role="radio" aria-checked={skill === sk.v} className={`rev__chip ${skill === sk.v ? "is-active" : ""}`} onClick={() => skill !== sk.v && setSkill(sk.v)}>
-                  {sk.l}
+                  {t(sk.l)}
                 </button>
               ))}
             </div>
@@ -450,11 +459,13 @@ export function Saved() {
             <div className="rev__list"><SkeletonList rows={5} height={62} /></div>
           ) : status === "error" ? (
             <div className="rev__state">
-              <span>불러오지 못했어요.</span>
-              <button className="rev__retry" onClick={() => setReloadTick((t) => t + 1)}>다시 시도</button>
+              <span>{t("saved.loadError")}</span>
+              <button className="rev__retry" onClick={() => setReloadTick((t) => t + 1)}>{t("common.retry")}</button>
             </div>
           ) : items.length === 0 ? (
-            <p className="rev__empty">{searching ? "검색결과가 없어요" : emptyCopy}</p>
+            <p className={`rev__empty${mode === "problem" ? " rev__empty--problem" : ""}`}>
+              {searching ? t("saved.noResults") : emptyCopy}
+            </p>
           ) : (
             <ul className="rev__list" role="list">
               {items.map((it) =>
@@ -464,36 +475,41 @@ export function Saved() {
                       <div className="rev__ko">
                         <span className="rev__ko-text">{it.korean}</span>
                         <button
-                          className="rev__speaker"
+                          className={`rev__speaker ${playingId === it.sentence_id ? "is-playing" : ""}`}
                           onClick={() => toggleAudio(it.sentence_id)}
-                          aria-label={playingId === it.sentence_id ? `${it.korean} 재생 멈추기` : `${it.korean} 듣기`}
+                          aria-label={t(playingId === it.sentence_id ? "saved.stopSentenceA11y" : "saved.playSentenceA11y", {
+                            sentence: it.korean,
+                          })}
                         >
                           {audioLoadingId === it.sentence_id ? (
                             <span className="spinner" style={{ width: 15, height: 15, borderWidth: 2 }} />
                           ) : (
-                            <Speaker />
+                            /* Masked, not an <img>: the export is stroked #5ECECE,
+                               and the glyph has to switch between the idle and
+                               playing colours. */
+                            <span className="rev__speaker-ic" aria-hidden="true" />
                           )}
                         </button>
                       </div>
                       <div className="rev__tr">{it.translation}</div>
                     </div>
-                    <button className="rev__play" onClick={() => openSentence(it)} aria-label={`${it.korean} 문장 복습하기`}>
-                      <PlayGlyph />
+                    <button className="rev__play" onClick={() => openSentence(it)} aria-label={t("saved.reviewSentenceA11y", { sentence: it.korean })}>
+                      <img src={svPlay} alt="" aria-hidden="true" />
                     </button>
-                    <button className="rev__action" onClick={() => removeItem(it)} aria-label={source === "wrong" ? "오답에서 삭제" : "찜 해제"}>
+                    <button className="rev__action" onClick={() => removeItem(it)} aria-label={t(source === "wrong" ? "saved.removeFromWrong" : "saved.unbookmark")}>
                       {source === "wrong" ? <TrashIcon /> : <BookmarkFilled />}
                     </button>
                   </li>
                 ) : (
                   <li key={it.quiz_id} className="rev__row">
                     <div className="rev__main">
-                      <div className="rev__qtitle">{quizTitle(it)}</div>
+                      <div className="rev__qtitle">{quizTitle(it, t)}</div>
                       <div className="rev__qprompt">{it.prompt}</div>
                     </div>
-                    <button className="rev__play" onClick={() => openQuiz(it)} aria-label={`${quizTitle(it)} 문제 복습하기`}>
-                      <PlayGlyph />
+                    <button className="rev__play" onClick={() => openQuiz(it)} aria-label={t("saved.reviewQuestionA11y", { title: quizTitle(it, t) })}>
+                      <img src={svPlay} alt="" aria-hidden="true" />
                     </button>
-                    <button className="rev__action" onClick={() => removeItem(it)} aria-label={source === "wrong" ? "오답에서 삭제" : "찜 해제"}>
+                    <button className="rev__action" onClick={() => removeItem(it)} aria-label={t(source === "wrong" ? "saved.removeFromWrong" : "saved.unbookmark")}>
                       {source === "wrong" ? <TrashIcon /> : <BookmarkFilled />}
                     </button>
                   </li>
@@ -503,7 +519,7 @@ export function Saved() {
                 {more === "loading" ? (
                   <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />
                 ) : more === "error" ? (
-                  <button className="rev__retry" onClick={() => { setMore("idle"); void loadMore(); }}>다시 불러오기</button>
+                  <button className="rev__retry" onClick={() => { setMore("idle"); void loadMore(); }}>{t("saved.loadMore")}</button>
                 ) : null}
               </div>
             </ul>

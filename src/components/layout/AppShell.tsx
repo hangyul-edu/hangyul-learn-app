@@ -1,18 +1,27 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { NavHome, NavLecture, NavFlag, NavMedal, NavMore } from "../brand/HomeIcons";
+import { useTranslation, type TranslationKey } from "../../i18n";
 
+/**
+ * Bottom tab bar — Figma `navi_user` (KO 1825:26629 / EN 1825:28553).
+ *
+ * Five equal 75px cells across the 375pt frame; the label sits 3px under a 24px
+ * icon. Label type is Caption 4 in Korean but a step smaller in English, where
+ * the words are longer — `.bottomnav` reads that off the document language.
+ */
 type TabId = "home" | "lecture" | "personalized" | "league" | "more";
-const TABS: { id: TabId; to: string; label: string; icon: (a: boolean) => JSX.Element }[] = [
-  { id: "home", to: "/home", label: "홈", icon: (a) => <NavHome active={a} /> },
-  { id: "lecture", to: "/courses", label: "강의", icon: (a) => <NavLecture active={a} /> },
-  { id: "personalized", to: "/recommend", label: "맞춤 학습", icon: (a) => <NavFlag active={a} /> },
-  { id: "league", to: "/league", label: "리그", icon: (a) => <NavMedal active={a} /> },
-  { id: "more", to: "/profile", label: "더보기", icon: (a) => <NavMore active={a} /> },
+const TABS: { id: TabId; to: string; label: TranslationKey; icon: (a: boolean) => JSX.Element }[] = [
+  { id: "home", to: "/home", label: "nav.home", icon: (a) => <NavHome active={a} /> },
+  { id: "lecture", to: "/courses", label: "nav.classes", icon: (a) => <NavLecture active={a} /> },
+  { id: "personalized", to: "/recommend", label: "nav.practice", icon: (a) => <NavFlag active={a} /> },
+  { id: "league", to: "/league", label: "nav.league", icon: (a) => <NavMedal active={a} /> },
+  { id: "more", to: "/profile", label: "nav.more", icon: (a) => <NavMore active={a} /> },
 ];
 
 export function AppShell() {
   const nav = useNavigate();
   const loc = useLocation();
+  const { t } = useTranslation();
 
   const active = (to: string) => loc.pathname === to || loc.pathname.startsWith(to + "/");
 
@@ -20,17 +29,17 @@ export function AppShell() {
     <>
       <Outlet />
       <nav className="bottomnav">
-        {TABS.map((t) => {
-          const on = active(t.to);
+        {TABS.map((tab) => {
+          const on = active(tab.to);
           return (
             <button
-              key={t.id}
+              key={tab.id}
               className={`bottomnav__item ${on ? "is-active" : ""}`}
-              onClick={() => nav(t.to)}
+              onClick={() => nav(tab.to)}
               aria-current={on ? "page" : undefined}
             >
-              <span className="bottomnav__icon">{t.icon(on)}</span>
-              {t.label}
+              <span className="bottomnav__icon">{tab.icon(on)}</span>
+              {t(tab.label)}
             </button>
           );
         })}

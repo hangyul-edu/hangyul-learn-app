@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "../i18n";
 
 /**
  * Account-withdrawal reconfirmation modal. Destructive-action gate shown over
@@ -22,6 +23,7 @@ export function WithdrawModal({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const { t } = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
 
@@ -76,32 +78,29 @@ export function WithdrawModal({
         aria-labelledby="wd-title"
         aria-describedby="wd-desc"
       >
-        <h2 className="wd__title" id="wd-title">회원 탈퇴</h2>
+        <h2 className="wd__title" id="wd-title">{t("withdraw.title")}</h2>
+        {/* Both frames break this over two lines at their own point, so the
+            break travels in the message (`white-space: pre-line`). */}
         <p className="wd__guide" id="wd-desc">
-          아래의 안내 사항을 확인 후
-          <br />
-          맨 아래의 탈퇴 신청 버튼을 눌러주세요
+          {t("withdraw.subtitle")}
         </p>
 
         <div className="wd__panel">
-          <h3 className="wd__panel-title">서비스 탈퇴 안내 사항</h3>
+          <h3 className="wd__panel-title">{t("withdraw.noticeTitle")}</h3>
           <ul className="wd__list">
-            <li className="wd__item">탈퇴 이후에는 해당 계정으로 다시 가입할 수 없습니다.</li>
-            <li className="wd__item">
-              탈퇴 이후 ‘학습 기록, 코스 기록 등’에 대한 복구는 불가능하며 로그인이 필요한 모든 서비스를 이용하실 수 없습니다.
-            </li>
-            <li className="wd__item wd__item--warn">
-              탈퇴하신 경우 결제하신 서비스 이용 권한과 구독권을 포기하는 것으로 간주하며 구독권이 자동 해지되며 구독료가 환불되지 않습니다.
-            </li>
+            <li className="wd__item">{t("withdraw.notice1")}</li>
+            <li className="wd__item">{t("withdraw.notice2")}</li>
+            {/* Figma colours only the last bullet Negative (1:5726). */}
+            <li className="wd__item wd__item--warn">{t("withdraw.notice3")}</li>
           </ul>
         </div>
 
         <div className="wd__actions">
           <button className="wd__btn wd__btn--cancel" onClick={onCancel} disabled={loading}>
-            취소
+            {t("withdraw.cancel")}
           </button>
-          <button className="wd__btn wd__btn--go" onClick={onConfirm} disabled={loading} aria-label="회원 탈퇴 진행">
-            {loading ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : "탈퇴"}
+          <button className="wd__btn wd__btn--go" onClick={onConfirm} disabled={loading} aria-label={t("withdraw.confirmA11y")}>
+            {loading ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("withdraw.confirm")}
           </button>
         </div>
       </div>

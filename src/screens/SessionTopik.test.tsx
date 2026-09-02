@@ -27,6 +27,7 @@ vi.mock("../api/endpoints", () => ({
 }));
 
 import { SessionTopik } from "./SessionTopik";
+import { I18nProvider } from "../i18n";
 
 const KEY = "hangyul.session.topik.v1";
 
@@ -45,10 +46,11 @@ function renderScreen() {
     initialEntries: [{ pathname: "/", state: { section: "writing" } }],
   });
   return render(
-    <QueryClientProvider client={qc}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
+    <I18nProvider language="ko">
+      <QueryClientProvider client={qc}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </I18nProvider>,);
 }
 
 beforeEach(() => {

@@ -1,7 +1,9 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation, type TranslationKey } from "../i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button } from "../components/ui/kit";
+import icMegaphone from "../assets/brand/ic-megaphone.svg";
+import imgPreparing from "../assets/brand/llc-preparing.png";
 import { gameApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
@@ -38,23 +40,16 @@ export function useLeagueLifecycle() {
 }
 
 /* -------------------------------- icons --------------------------------- */
+/* 380:6284 / 784:57725 "📣 메가폰", composed from its three exported vectors.
+ * The started and ended modals share it at different sizes. */
 function MegaphoneIcon() {
-  return (
-    <svg width="56" height="56" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-      <path d="M9 20v8a3 3 0 0 0 3 3h2l2 9h5l-2-9 17 6a2 2 0 0 0 2.7-1.9V16.9A2 2 0 0 0 38 15L21 21h-9a3 3 0 0 0-3 3z" fill="#ffb020" />
-      <path d="M9 20v8a3 3 0 0 0 3 3h9V21h-9a3 3 0 0 0-3 3z" fill="#ff8f2c" />
-      <path d="M40 22c2 .6 3 1.9 3 3.6s-1 3-3 3.6" stroke="#ff8f2c" strokeWidth="2.4" strokeLinecap="round" />
-    </svg>
-  );
+  return <img className="llc__icon" src={icMegaphone} alt="" aria-hidden="true" />;
 }
 
-function ToolsIcon() {
-  return (
-    <svg width="56" height="56" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-      <path d="M20 14a7 7 0 0 0-9.2 8.6l-4.2 4.2a3 3 0 0 0 0 4.2l2.4 2.4a3 3 0 0 0 4.2 0l4.2-4.2A7 7 0 0 0 30 20l-4.8 4.8-3-3L27 17z" fill="#b8c0c8" />
-      <path d="M30 28l8 8a3 3 0 0 1-4.2 4.2l-8-8" stroke="#9aa4ad" strokeWidth="3" strokeLinecap="round" />
-    </svg>
-  );
+/* 784:57733 "설치 아이콘" — the waiting modal has its own raster illustration,
+ * not the megaphone. */
+function PreparingIcon() {
+  return <img className="llc__icon" src={imgPreparing} alt="" aria-hidden="true" />;
 }
 
 /* ------------------------------ modal shell ----------------------------- */
@@ -67,10 +62,12 @@ function ToolsIcon() {
 function LifecycleModalShell({
   labelledBy,
   describedBy,
+  variant,
   children,
 }: {
   labelledBy: string;
   describedBy?: string;
+  variant?: "end" | "wait";
   children: ReactNode;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -119,7 +116,7 @@ function LifecycleModalShell({
   return (
     <div className="llc" role="presentation">
       <div
-        className="llc__card"
+        className={`llc__card ${variant ? `llc__card--${variant}` : ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
@@ -136,6 +133,7 @@ function LifecycleModalShell({
 
 /* ------------------------- new league started --------------------------- */
 export function NewLeagueModal() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const toast = useToast();
   const join = useMutation({
@@ -155,89 +153,100 @@ export function NewLeagueModal() {
   });
   return (
     <LifecycleModalShell labelledBy="llc-new-title" describedBy="llc-new-desc">
-      <div className="llc__icon llc__icon--brand">
-        <MegaphoneIcon />
+      <MegaphoneIcon />
+      <div className="llc__text">
+        <h2 className="llc__title" id="llc-new-title">
+          {t("leagueLifecycle.startedTitle")}
+        </h2>
+        <p className="llc__desc" id="llc-new-desc">
+          {t("leagueLifecycle.startedDesc")}
+        </p>
       </div>
-      <h2 className="llc__title" id="llc-new-title">
-        리그가 시작됐어요!
-      </h2>
-      <p className="llc__desc" id="llc-new-desc">
-        지금부터 학습하면 순위가 바로 반영돼요
-      </p>
-      <Button
-        block
-        loading={join.isPending}
+      <button
+        className="llc__cta"
+        disabled={join.isPending}
         onClick={() => join.mutate()}
-        aria-label="바로 참여하기"
+        aria-label={t("leagueLifecycle.join")}
       >
-        바로 참여하기
-      </Button>
+        {join.isPending ? (
+          <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
+        ) : (
+          t("leagueLifecycle.join")
+        )}
+      </button>
     </LifecycleModalShell>
   );
 }
 
 /* ------------------------ previous result prompt ------------------------ */
 export function PreviousResultModal() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   return (
-    <LifecycleModalShell labelledBy="llc-prev-title" describedBy="llc-prev-desc">
-      <div className="llc__icon llc__icon--brand">
-        <MegaphoneIcon />
+    <LifecycleModalShell labelledBy="llc-prev-title" describedBy="llc-prev-desc" variant="end">
+      <MegaphoneIcon />
+      <div className="llc__text">
+        <h2 className="llc__title" id="llc-prev-title">
+          {t("leagueLifecycle.finishedTitle")}
+        </h2>
+        <p className="llc__desc" id="llc-prev-desc">
+          {t("leagueLifecycle.finishedDesc")}
+        </p>
       </div>
-      <h2 className="llc__title" id="llc-prev-title">
-        지난 리그가 마무리됐어요!
-      </h2>
-      <p className="llc__desc" id="llc-prev-desc">
-        지금 바로 결과를 확인해 보세요
-      </p>
-      <Button block onClick={() => nav("/league/result")} aria-label="결과 보러가기">
-        결과 보러가기
-      </Button>
+      <button
+        className="llc__cta"
+        onClick={() => nav("/league/result")}
+        aria-label={t("leagueLifecycle.seeResult")}
+      >
+        {t("leagueLifecycle.seeResult")}
+      </button>
     </LifecycleModalShell>
   );
 }
 
 /* --------------------------- next league prep --------------------------- */
 /** Human, dynamic next-start copy. The league boundary is authoritatively US
- *  Eastern (system-wide rule); it is shown converted to KST per the reference. */
-export function formatNextStart(iso: string | null): string {
-  if (!iso) return "곧 시작됩니다";
+ *  Eastern, and 784:57731 states it that way — "Starts Monday at 00:00(ET)" —
+ *  so it is rendered in ET rather than converted to KST. LEG-004's footnote
+ *  ("리그 운영 시간은 미국 동부 시간(ET) 기준") says the same. */
+export function formatNextStart(
+  iso: string | null,
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+  locale = "ko-KR",
+): string {
+  if (!iso) return t("leagueLifecycle.startingSoon");
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "곧 시작됩니다";
-  const day = new Intl.DateTimeFormat("ko-KR", {
-    timeZone: "Asia/Seoul",
-    month: "long",
-    day: "numeric",
+  if (Number.isNaN(date.getTime())) return t("leagueLifecycle.startingSoon");
+  const day = new Intl.DateTimeFormat(locale, {
+    timeZone: "America/New_York",
     weekday: "long",
   }).format(date);
-  const time = new Intl.DateTimeFormat("ko-KR", {
-    timeZone: "Asia/Seoul",
+  const time = new Intl.DateTimeFormat(locale, {
+    timeZone: "America/New_York",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
   })
     .format(date)
     .replace(/^24/, "00");
-  return `${day} ${time}(KST)에 시작됩니다`;
+  return t("leagueLifecycle.startsAt", { day, time });
 }
 
 export function PreparingModal({ nextStartsAt }: { nextStartsAt: string | null }) {
+  const { t, language } = useTranslation();
   return (
-    <LifecycleModalShell labelledBy="llc-prep-title" describedBy="llc-prep-desc">
-      <div className="llc__icon llc__icon--muted">
-        <ToolsIcon />
+    /* Non-dismissible: no button, no close affordance — 784:57731 draws none
+       either. It disappears only when the backend reports availability. */
+    <LifecycleModalShell labelledBy="llc-prep-title" describedBy="llc-prep-desc" variant="wait">
+      <PreparingIcon />
+      <div className="llc__text">
+        <h2 className="llc__title" id="llc-prep-title">
+          {t("leagueLifecycle.preparingTitle")}
+        </h2>
+        <p className="llc__desc" id="llc-prep-desc" aria-live="polite">
+          {formatNextStart(nextStartsAt, t, language === "ko" ? "ko-KR" : "en-US")}
+        </p>
       </div>
-      <h2 className="llc__title" id="llc-prep-title">
-        다음 리그를 준비 중이에요!
-      </h2>
-      <p className="llc__desc" id="llc-prep-desc">
-        {formatNextStart(nextStartsAt)}
-      </p>
-      {/* Non-dismissible: no button, no close affordance. It disappears only
-          when the backend reports the next league is available. */}
-      <p className="llc__hint" aria-live="polite">
-        다음 리그가 열리면 자동으로 안내해 드려요
-      </p>
     </LifecycleModalShell>
   );
 }

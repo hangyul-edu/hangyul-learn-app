@@ -1,28 +1,44 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "../i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Screen } from "../components/layout/Screen";
-import { Button, ProgressBar } from "../components/ui/kit";
+import { Button } from "../components/ui/kit";
 import { Async } from "../components/ui/states";
 import { learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { useMarkStudied } from "../hooks/learningActivity";
 import { ApiError, errorMessage } from "../lib/http";
 import type { LectureDetail as Lec } from "../lib/types";
+import icClose from "../assets/brand/ic-close.svg";
+import playerPlay from "../assets/brand/player-play.svg";
+import playerBack5 from "../assets/brand/player-back5.svg";
+import playerFwd5 from "../assets/brand/player-fwd5.svg";
+import playerKnob from "../assets/brand/player-knob.svg";
+import chatbotFab from "../assets/brand/chatbot-fab.svg";
 
+/** mm:ss, zero-padded — COU-004 prints both ends of the scrubber that way. */
 function fmt(sec: number) {
-  return `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, "0")}`;
+  return `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(Math.floor(sec % 60)).padStart(2, "0")}`;
 }
 
+/** Playback speeds the 1X chip cycles through. */
+const SPEEDS = [1, 1.25, 1.5, 2] as const;
+
 export function Lecture() {
+  const { t } = useTranslation();
   const { lectureId = "" } = useParams();
   const nav = useNavigate();
   const toast = useToast();
   const qc = useQueryClient();
   const [pos, setPos] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState<number>(SPEEDS[0]);
+  const [muteSpeaking, setMuteSpeaking] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [premiumLocked, setPremiumLocked] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [, setSaving] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const markStudied = useMarkStudied();
 
@@ -44,13 +60,38 @@ export function Lecture() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q.data]);
 
+  /** Fraction of the clip already played, as a percentage of the track. */
+  function pct(l: Lec) {
+    const total = duration || l.duration_seconds || 1;
+    return Math.max(0, Math.min(100, (pos / total) * 100));
+  }
+
+  function seek(seconds: number) {
+    const next = Math.max(0, seconds);
+    setPos(next);
+    if (videoRef.current) videoRef.current.currentTime = next;
+  }
+
+  function togglePlay() {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) void v.play().catch(() => setPlaying(false));
+    else v.pause();
+  }
+
+  function cycleSpeed() {
+    const next = SPEEDS[(SPEEDS.indexOf(speed as (typeof SPEEDS)[number]) + 1) % SPEEDS.length];
+    setSpeed(next);
+    if (videoRef.current) videoRef.current.playbackRate = next;
+  }
+
   async function saveProgress(seconds: number, done: boolean) {
     setSaving(true);
     try {
       await learnApi.progress(lectureId, seconds);
       setPos(seconds);
       if (done) {
-        toast.success("학습을 완료했어요! 🎉");
+        toast.success(t("courses.completedToast"));
         qc.invalidateQueries({ queryKey: ["dashboard"] });
         qc.invalidateQueries({ queryKey: ["course"] });
       }
@@ -62,89 +103,101 @@ export function Lecture() {
   }
 
   return (
-    <Screen title="레슨" back>
+    <div className="screen lecp">
+      {/* cp_B_01_topNav on black: the close glyph at 20, and the
+          "말하기 제외" switch pinned to the right (COU-004 230:7046). */}
+      <header className="lecp__nav">
+        <button className="lecp__close" onClick={() => nav(-1)} aria-label={t("common.back")}>
+          <img src={icClose} alt="" aria-hidden="true" />
+        </button>
+        <label className="lecp__mute">
+          <span className="lecp__mute-label">{t("courses.excludeSpeaking")}</span>
+          <input type="checkbox" checked={muteSpeaking} onChange={(e) => setMuteSpeaking(e.target.checked)} />
+          <span className="lecp__switch" aria-hidden="true" />
+        </label>
+      </header>
+
       <Async loading={q.isLoading} error={q.error} data={q.data} onRetry={() => q.refetch()}>
         {(l: Lec) => (
-          <div className="stack" style={{ gap: 16 }}>
-            {/* player / poster */}
-            <div style={{ position: "relative", borderRadius: 18, overflow: "hidden", background: "#1f1712", aspectRatio: "16/9", display: "grid", placeItems: "center" }}>
+          <>
+            <div className="lecp__stage">
               {videoUrl ? (
                 <video
+                  ref={videoRef}
+                  className="lecp__video"
                   src={videoUrl}
-                  controls
                   poster={l.thumbnail_url ?? undefined}
-                  style={{ width: "100%", height: "100%" }}
-                  // Playback genuinely started (position > 0) → count today's
-                  // learning day and light the sun. Idempotent; fires once.
+                  playsInline
+                  muted={muteSpeaking}
+                  onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || l.duration_seconds)}
                   onTimeUpdate={(e) => {
+                    setPos(e.currentTarget.currentTime);
                     if (e.currentTarget.currentTime > 0) markStudied("lecture", lectureId);
                   }}
+                  onPlay={() => setPlaying(true)}
+                  onPause={() => setPlaying(false)}
+                  onEnded={() => void saveProgress(l.duration_seconds, true)}
                 />
               ) : premiumLocked ? (
-                <div className="center" style={{ color: "#fff", padding: 20 }}>
-                  <div style={{ fontSize: 34 }}>👑</div>
-                  <div style={{ fontWeight: 800, marginTop: 6 }}>프리미엄 강의</div>
-                  <Button size="sm" style={{ marginTop: 10 }} onClick={() => nav("/subscription")}>업그레이드</Button>
+                <div className="lecp__gate">
+                  <div className="lecp__gate-emoji">👑</div>
+                  <div className="lecp__gate-title">{t("courses.premiumLecture")}</div>
+                  <Button size="sm" onClick={() => nav("/subscription")}>{t("study.upgrade")}</Button>
                 </div>
               ) : (
-                <div className="center" style={{ color: "#fff" }}>
-                  <div style={{ fontSize: 40 }}>▶️</div>
-                  <div className="dim" style={{ fontSize: 12, marginTop: 4 }}>{fmt(l.duration_seconds)}</div>
-                </div>
+                <img className="lecp__poster" src={l.thumbnail_url ?? undefined} alt="" />
               )}
+
+              {/* 230:7051 / 230:7053 — the tutor prompt and its 45px FAB. */}
+              <button className="lecp__ask" onClick={() => nav("/ai")} aria-label={t("courses.chatbotA11y")}>
+                <span className="lecp__ask-bubble">{t("courses.askBubble")}</span>
+                <img className="lecp__ask-fab" src={chatbotFab} alt="" aria-hidden="true" />
+              </button>
             </div>
 
-            <div>
-              <h2 style={{ fontSize: 20 }}>{l.title}</h2>
-              <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
-                {l.kind === "video" ? "영상 강의" : l.kind === "listening" ? "듣기" : "읽기"}
-                {l.completed && <span style={{ color: "var(--success)", fontWeight: 700 }}> · ✓ 완료</span>}
+            <div className="lecp__controls">
+              <div className="lecp__times">
+                <span>{fmt(pos)}</span>
+                <span>{fmt(duration || l.duration_seconds)}</span>
               </div>
+              <div className="lecp__track">
+                <span className="lecp__track-fill" style={{ width: `${pct(l)}%` }} />
+                <img className="lecp__knob" src={playerKnob} alt="" aria-hidden="true" style={{ left: `${pct(l)}%` }} />
+                <input
+                  className="lecp__range"
+                  type="range"
+                  min={0}
+                  max={duration || l.duration_seconds}
+                  step={1}
+                  value={pos}
+                  aria-label={t("courses.progress")}
+                  onChange={(e) => seek(Number(e.target.value))}
+                  onMouseUp={() => void saveProgress(pos, false)}
+                  onTouchEnd={() => void saveProgress(pos, false)}
+                />
+              </div>
+
+              <div className="lecp__buttons">
+                <button className="lecp__skip" onClick={() => seek(pos - 5)} aria-label={t("courses.back5")}>
+                  <img src={playerBack5} alt="" aria-hidden="true" />
+                  <span>5</span>
+                </button>
+                <button className="lecp__play" onClick={togglePlay} aria-label={t(playing ? "courses.pause" : "courses.play")}>
+                  <img src={playerPlay} alt="" aria-hidden="true" />
+                </button>
+                <button className="lecp__skip lecp__skip--fwd" onClick={() => seek(pos + 5)} aria-label={t("courses.fwd5")}>
+                  <img src={playerFwd5} alt="" aria-hidden="true" />
+                  <span>5</span>
+                </button>
+              </div>
+
+              <button className="lecp__speed" onClick={cycleSpeed} aria-label={t("courses.speedA11y", { rate: String(speed) })}>
+                {speed}X
+              </button>
             </div>
-
-            {/* progress */}
-            <div className="card">
-              <div className="row row--between" style={{ marginBottom: 8 }}>
-                <span className="muted" style={{ fontSize: 13 }}>진행률</span>
-                <span style={{ fontWeight: 700, fontSize: 13 }}>{fmt(pos)} / {fmt(l.duration_seconds)}</span>
-              </div>
-              <ProgressBar value={l.duration_seconds ? pos / l.duration_seconds : 0} />
-              <input
-                type="range"
-                min={0}
-                max={l.duration_seconds}
-                value={pos}
-                onChange={(e) => setPos(Number(e.target.value))}
-                onMouseUp={() => saveProgress(pos, false)}
-                onTouchEnd={() => saveProgress(pos, false)}
-                style={{ width: "100%", marginTop: 10, accentColor: "var(--brand-500)" }}
-              />
-            </div>
-
-            {l.checkpoints.length > 0 && (
-              <div>
-                <div className="section-title">체크포인트</div>
-                <div className="chiprow">
-                  {l.checkpoints.map((c) => (
-                    <span key={c.checkpoint_id} className="chip chip--static">
-                      {fmt(c.at_second)} · {c.interaction_type === "speaking_exercise" ? "말하기" : c.interaction_type === "multiple_choice" ? "객관식" : "단답"}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <Button size="lg" block loading={saving} onClick={() => saveProgress(l.duration_seconds, true)}>
-              학습 완료로 표시
-            </Button>
-            {l.topik_question_type && (
-              <Button variant="secondary" block onClick={() => nav(`/lectures/${l.lecture_id}/practice`)}>
-                📝 복습 문제 풀기
-              </Button>
-            )}
-          </div>
+          </>
         )}
       </Async>
-    </Screen>
+    </div>
   );
 }

@@ -19,6 +19,7 @@ vi.mock("../api/endpoints", () => ({
 }));
 
 import { LectureHome } from "./LectureHome";
+import { I18nProvider } from "../i18n";
 
 const banner = (id: string) => ({
   banner_id: id,
@@ -50,12 +51,13 @@ const feed = (items: unknown[]) => ({ items });
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}>
-      <MemoryRouter>
-        <LectureHome />
-      </MemoryRouter>
-    </QueryClientProvider>,
-  );
+    <I18nProvider language="ko">
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>
+          <LectureHome />
+        </MemoryRouter>
+      </QueryClientProvider>
+    </I18nProvider>,);
 }
 
 beforeEach(() => {
@@ -86,7 +88,7 @@ describe("LectureHome unified feed", () => {
     renderPage();
     await screen.findByText("Lecture conv-1");
     lectures.mockResolvedValue(feed([lecture("topik-1", "track_topik")]));
-    await userEvent.click(screen.getByRole("tab", { name: "TOPIK" }));
+    await userEvent.click(screen.getByRole("tab", { name: "토픽" }));
     await waitFor(() =>
       expect(lectures).toHaveBeenLastCalledWith("track_topik"),
     );

@@ -1,0 +1,34 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="119" height="180" viewBox="0 0 119 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Group 1410118688">
+<circle id="Ellipse 1018" cx="113.08" cy="21.9055" r="5.9204" fill="#D9D9D9"/>
+<circle id="Ellipse 1019" cx="5.9204" cy="21.9055" r="5.9204" fill="#D9D9D9"/>
+<path id="Line 2" d="M5.9204 21.9055H113.08" stroke="#D9D9D9" stroke-width="4.73632" stroke-linecap="round"/>
+<g id="Group 1410118687">
+<path id="Line 3" d="M59.204 0L59.204 180" stroke="#D9D9D9" stroke-width="8.8806"/>
+<mask id="mask0_0_4" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="10" y="21" width="98" height="133">
+<path id="Exclude" d="M107.751 21.3134V121.96L59.204 153.93L10.6567 121.96V21.3134H107.751Z" fill="#FFE6A0"/>
+</mask>
+<g mask="url(#mask0_0_4)">
+<path id="Exclude_2" d="M107.751 21.3134V121.96L59.204 153.93L10.6567 121.96V21.3134H107.751Z" fill="#FFE6A0"/>
+<g id="Group 1410118685">
+<g id="Vector">
+<path d="M35.5224 21.3134H44.403V153.338H35.5224V21.3134Z" fill="#FFC420"/>
+<path d="M55.0597 21.3134H63.9403V153.338H55.0597V21.3134Z" fill="#FFC420"/>
+<path d="M74.597 21.3134H83.4776V153.338H74.597V21.3134Z" fill="#FFC420"/>
+<path d="M94.1343 21.3134H103.015V153.338H94.1343V21.3134Z" fill="#FFC420"/>
+<path d="M17.1691 21.3134H26.0497V153.338H17.1691V21.3134Z" fill="#FFC420"/>
+</g>
+</g>
+<g id="Group 1410118686">
+<g id="Vector_2">
+<path d="M35.5224 21.3134H44.403V153.338H35.5224V21.3134Z" fill="#FFC420"/>
+<path d="M55.0597 21.3134H63.9403V153.338H55.0597V21.3134Z" fill="#FFC420"/>
+<path d="M74.597 21.3134H83.4776V153.338H74.597V21.3134Z" fill="#FFC420"/>
+<path d="M94.1343 21.3134H103.015V153.338H94.1343V21.3134Z" fill="#FFC420"/>
+<path d="M17.1691 21.3134H26.0497V153.338H17.1691V21.3134Z" fill="#FFC420"/>
+</g>
+</g>
+</g>
+</g>
+</g>
+</svg>

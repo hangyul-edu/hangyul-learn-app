@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, Sheet } from "../components/ui/Modal";
 import { Button } from "../components/ui/kit";
@@ -11,13 +10,20 @@ import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
 import { ApiError, errorMessage } from "../lib/http";
 import {
-  NOTICE_GUIDANCE,
-  failureModalCopy,
+  NOTICE_GUIDANCE_KEY,
+  failureModalKeys,
   formatRetryAt,
-  noticeReason,
-  successPlanLine,
+  noticeReasonKey,
 } from "../lib/paymentRecovery";
+import { useTranslation, type TranslationKey } from "../i18n";
 import type { MethodProvider, PaymentMethod } from "../lib/types";
+import cardArt from "../assets/brand/pm-card-art.svg";
+import trashIcon from "../assets/brand/ic-trash.svg";
+import successIcon from "../assets/brand/ic-modal-success.svg";
+import radioOn from "../assets/brand/pm-radio-on.svg";
+import radioOff from "../assets/brand/pm-radio-off.svg";
+import addPlus from "../assets/brand/pm-add-plus.svg";
+import { DetailHeader } from "../components/DetailHeader";
 
 const QK = ["payment-methods"] as const;
 const RECOVERY_QK = ["payment-recovery"] as const;
@@ -25,49 +31,31 @@ const RETURN_URL = () => window.location.origin + "/account/payment";
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /* --------------------------------- icons -------------------------------- */
-const BackChevron = () => (
-  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M15 5l-7 7 7 7" stroke="#272c30" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-const Trash = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M5 7h14M10 7V5.5A1.5 1.5 0 0 1 11.5 4h1A1.5 1.5 0 0 1 14 5.5V7M6.5 7l.8 11a2 2 0 0 0 2 1.9h5.4a2 2 0 0 0 2-1.9L17.5 7" stroke="#aeb7be" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-const Plus = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M12 5v14M5 12h14" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" />
-  </svg>
-);
-const CardGlyph = ({ brand }: { brand?: string | null }) => {
-  const fill = brand === "visa" ? "#1a1f71" : brand === "mastercard" ? "#eb5c1e" : brand === "amex" ? "#2e77bb" : "#5b6470";
-  return (
-    <span className="pm__thumb" aria-hidden="true" style={{ background: `linear-gradient(135deg, ${fill} 0%, #2b2019 130%)` }}>
-      <svg width="24" height="18" viewBox="0 0 24 18" fill="none">
-        <rect x="1" y="1" width="22" height="16" rx="2.5" fill="rgba(255,255,255,0.14)" stroke="rgba(255,255,255,0.5)" strokeWidth="0.9" />
-        <rect x="3" y="5.5" width="5" height="3.5" rx="0.8" fill="#ffd980" />
-      </svg>
-    </span>
-  );
-};
+/* Group 1410118763 — the 10x12 bin glyph exported from SET-002. */
+const Trash = () => <img src={trashIcon} width={10} height={12} alt="" aria-hidden="true" />;
+/* Group 1410118744 (1988:24838) — the 25px brand disc with its white plus. */
+const Plus = () => <img className="pm__add-plus" src={addPlus} alt="" aria-hidden="true" />;
+/* Group 1410118747 — the 46x27.26 card illustration exported from SET-002.
+   The design uses one mark for every issuer, so `brand` is not consulted. */
+const CardGlyph = () => <img className="pm__thumb" src={cardArt} alt="" aria-hidden="true" />;
+/* Group 1410118751 / 1410118752 — the 15px selected / unselected radio. */
 const Radio = ({ checked }: { checked: boolean }) => (
-  <span className={`pm__radio ${checked ? "is-on" : ""}`} aria-hidden="true">
-    {checked && <span className="pm__radio-dot" />}
-  </span>
+  <img className="pm__radio" src={checked ? radioOn : radioOff} alt="" aria-hidden="true" />
 );
-const WarnTriangle = ({ size = 20, color = "#f97316" }: { size?: number; color?: string }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M12 3.2l9 15.6H3l9-15.6z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
-    <path d="M12 9.5v4.2" stroke={color} strokeWidth="1.9" strokeLinecap="round" />
-    <circle cx="12" cy="16.4" r="1.05" fill={color} />
+/* SET-005's title opens with a literal "⚠" inside the text run (1492:21673),
+   not a vector layer, so there is no asset to export and the character itself
+   renders as a colour emoji on Apple platforms. This reproduces the glyph as
+   Figma draws it — a solid Brand color 1 triangle measured at 17 x 14.25 in
+   the 4x export of 1488:21639, ink from (15.25, 27.75). */
+const WarnTriangle = () => (
+  <svg className="pm__notice-fail-warn" width="17" height="14.25" viewBox="0 0 17 14.25" fill="none" aria-hidden="true">
+    <path d="M7.42 0.62a1.25 1.25 0 0 1 2.16 0l6.9 11.75a1.25 1.25 0 0 1-1.08 1.88H1.6a1.25 1.25 0 0 1-1.08-1.88L7.42.62Z" fill="#ff6700" />
+    <path d="M8.5 4.35v4.3" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" />
+    <circle cx="8.5" cy="11.05" r="0.9" fill="#fff" />
   </svg>
 );
-const CheckMark = () => (
-  <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M5 12.5l4.5 4.5L19 7.5" stroke="#137a3f" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
+/* Ellipse 1111 + Polygon 18 (1542:23329/23330) — the 60px success badge. */
+const CheckMark = () => <img src={successIcon} alt="" aria-hidden="true" />;
 
 /* -------------------------------- helpers ------------------------------- */
 // Logo height (px). Both marks share the same height so their icons render at
@@ -76,12 +64,11 @@ const CheckMark = () => (
 // (the config), not in the card markup, so each provider stays tunable.
 const EASY_PAY: {
   provider: MethodProvider;
-  label: string;
-  Logo: (p: { height?: number }) => JSX.Element;
-  logoHeight: number;
+  labelKey: TranslationKey;
+  Logo: () => JSX.Element;
 }[] = [
-  { provider: "toss_pay", label: "토스페이", Logo: TossPayLogo, logoHeight: 30 },
-  { provider: "naver_pay", label: "네이버페이", Logo: NaverPayLogo, logoHeight: 30 },
+  { provider: "toss_pay", labelKey: "paymentMethods.tossPay", Logo: TossPayLogo },
+  { provider: "naver_pay", labelKey: "paymentMethods.naverPay", Logo: NaverPayLogo },
 ];
 
 function cardName(m: PaymentMethod): string {
@@ -114,6 +101,7 @@ function PaymentResultModal({
   failureClass?: string | null;
   onConfirm: () => void;
 }) {
+  const { t } = useTranslation();
   const btnRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null;
@@ -127,18 +115,24 @@ function PaymentResultModal({
   }, []);
   const success = variant === "success";
   const [l1, l2] = success
-    ? [successPlanLine(planName), "이제 모든 학습 콘텐츠를 계속 이용할 수 있어요"]
-    : failureModalCopy(failureClass);
+    ? [
+        t("paymentRecovery.successPlanLine", {
+          plan: planName?.trim() || t("paymentMethods.planFallback"),
+        }),
+        t("paymentMethods.paySuccessSub"),
+      ]
+    : (failureModalKeys(failureClass).map((k) => t(k)) as [string, string]);
   return (
-    <div className="overlay overlay--center pm-result-overlay" role="dialog" aria-modal="true" aria-label={success ? "결제 완료" : "결제 실패"}>
+    <div className="overlay overlay--center pm-result-overlay" role="dialog" aria-modal="true" aria-label={t(success ? "paymentMethods.paySuccessA11y" : "paymentMethods.payFailA11y")}>
       <div className="pm-result" onClick={(e) => e.stopPropagation()}>
         <div className={`pm-result__icon ${success ? "is-ok" : "is-fail"}`}>
-          {success ? <CheckMark /> : <WarnTriangle size={30} color="#d84343" />}
+          {/* SET-007 draws the failure mark as the ⚠ character, not a vector. */}
+          {success ? <CheckMark /> : <span aria-hidden="true">⚠</span>}
         </div>
-        <h2 className="pm-result__title">{success ? "결제가 완료됐어요" : "결제에 실패했어요"}</h2>
+        <h2 className="pm-result__title">{t(success ? "paymentMethods.paySuccessTitle" : "paymentMethods.payFailTitle")}</h2>
         <p className="pm-result__desc">{l1}<br />{l2}</p>
-        <button ref={btnRef} className="pm-result__btn" onClick={onConfirm} aria-label={success ? "결제 완료 확인" : "다른 결제수단 선택하기"}>
-          {success ? "확인" : "다른 결제수단 선택"}
+        <button ref={btnRef} className="pm-result__btn" onClick={onConfirm} aria-label={t(success ? "paymentMethods.paySuccessConfirmA11y" : "paymentMethods.payFailConfirmA11y")}>
+          {success ? t("common.confirm") : t("paymentMethods.chooseAnother")}
         </button>
       </div>
     </div>
@@ -146,7 +140,7 @@ function PaymentResultModal({
 }
 
 export function PaymentMethods() {
-  const nav = useNavigate();
+  const { t, language } = useTranslation();
   const toast = useToast();
   const qc = useQueryClient();
   const { bootstrapMe } = useAuth();
@@ -255,7 +249,7 @@ export function PaymentMethods() {
     },
     onSuccess: (result) => {
       if (result === "pending") {
-        toast.show("결제 결과를 확인하고 있어요. 잠시 후 결제 상태가 업데이트됩니다.");
+        toast.show(t("paymentMethods.checkingResult"));
         invalidateRecovery();
         return;
       }
@@ -269,7 +263,7 @@ export function PaymentMethods() {
     },
     onError: (e) => {
       const msg = e instanceof Error && e.message === "resolved"
-        ? "결제가 이미 처리되어 목록을 새로고침했어요."
+        ? t("paymentMethods.alreadyProcessed")
         : errorMessage(e);
       toast.error(msg);
     },
@@ -280,7 +274,7 @@ export function PaymentMethods() {
     // Never charge against a stale method id: wait for a pending primary change.
     if (setDefault.isPending || retry.isPending) return;
     if (!primaryMethod) {
-      toast.error("결제에 사용할 결제수단을 먼저 선택해 주세요.");
+      toast.error(t("paymentMethods.selectFirst"));
       scrollToCards();
       return;
     }
@@ -324,9 +318,9 @@ export function PaymentMethods() {
     start(`card-${region}`, async () => {
       const res = await payApi.cardIntent(RETURN_URL(), region);
       return {
-        title: region === "domestic" ? "국내 카드 등록" : "해외 카드 등록",
+        title: t(region === "domestic" ? "paymentMethods.domesticCardTitle" : "paymentMethods.internationalCardTitle"),
         authorizeUrl: res.widget.success_url,
-        placeholder: "결제창에서 발급된 인증키(authKey)",
+        placeholder: t("paymentMethods.authKeyPlaceholder"),
         confirm: (t) => payApi.cardConfirm(res.intent_id, t).then(() => undefined),
       };
     });
@@ -334,9 +328,9 @@ export function PaymentMethods() {
     start("toss_pay", async () => {
       const res = await payApi.tosspayIntent(RETURN_URL());
       return {
-        title: "토스페이 연결",
+        title: t("paymentMethods.tossTitle"),
         authorizeUrl: res.authorize_url,
-        placeholder: "연결 후 전달된 인증 코드(code)",
+        placeholder: t("paymentMethods.tossPlaceholder"),
         // The authorize URL carries state=intent_id; the real redirect returns
         // both code and state. Reuse the intent id as state for manual confirm.
         confirm: (t) => payApi.tosspayConfirm(res.intent_id, t, res.intent_id).then(() => undefined),
@@ -346,9 +340,9 @@ export function PaymentMethods() {
     start("naver_pay", async () => {
       const res = await payApi.naverpayIntent(RETURN_URL());
       return {
-        title: "네이버페이 연결",
+        title: t("paymentMethods.naverTitle"),
         authorizeUrl: res.authorize_url,
-        placeholder: "연결 후 전달된 예약 번호(reserve_id)",
+        placeholder: t("paymentMethods.naverPlaceholder"),
         confirm: (t) => payApi.naverpayConfirm(res.intent_id, t).then(() => undefined),
       };
     });
@@ -360,7 +354,7 @@ export function PaymentMethods() {
       await flow.confirm(token.trim());
       setFlow(null);
       setToken("");
-      toast.success("등록되었어요");
+      toast.success(t("paymentMethods.registered"));
       invalidate();
     } catch (e) {
       toast.error(errorMessage(e));
@@ -373,36 +367,33 @@ export function PaymentMethods() {
 
   return (
     <div className="screen pm">
-      <header className="pm__header">
-        <button className="pm__back" onClick={() => nav(-1)} aria-label="뒤로 가기">
-          <BackChevron />
-        </button>
-        <h1 className="pm__title">결제수단 관리</h1>
-      </header>
+      <DetailHeader title={t("paymentMethods.title")} />
 
       <div className="pm__scroll">
         {q.isLoading ? (
           <div className="pm__section"><SkeletonList rows={3} height={64} /></div>
         ) : q.isError ? (
           <div className="pm__state">
-            <span>결제수단을 불러오지 못했어요.</span>
-            <button className="pm__retry" onClick={() => q.refetch()}>다시 시도</button>
+            <span>{t("paymentMethods.loadError")}</span>
+            <button className="pm__retry" onClick={() => q.refetch()}>{t("common.retry")}</button>
           </div>
         ) : (
           <>
             {/* --- Failed automatic payment recovery notice --- */}
             {showNotice && recovery && (
-              <section className="pm__notice-fail" role="alert" aria-label="자동 결제 실패 안내">
+              <section className="pm__notice-fail" role="alert" aria-label={t("paymentMethods.failNoticeA11y")}>
                 <div className="pm__notice-fail-head">
-                  <WarnTriangle size={20} />
-                  <span className="pm__notice-fail-title">결제에 실패했어요</span>
+                  <WarnTriangle />
+                  <span className="pm__notice-fail-title">{t("paymentMethods.failNoticeTitle")}</span>
                 </div>
                 <p className="pm__notice-fail-desc">
-                  {noticeReason(recovery.failure_class)} {NOTICE_GUIDANCE}
+                  {t(noticeReasonKey(recovery.failure_class))} {t(NOTICE_GUIDANCE_KEY)}
                 </p>
-                {formatRetryAt(recovery.next_automatic_retry_at) && (
+                {formatRetryAt(recovery.next_automatic_retry_at, language, t) && (
                   <p className="pm__notice-fail-retry">
-                    다음 자동 결제 시도일: {formatRetryAt(recovery.next_automatic_retry_at)}
+                    {t("paymentMethods.nextRetry", {
+                      date: formatRetryAt(recovery.next_automatic_retry_at, language, t),
+                    })}
                   </p>
                 )}
                 <button
@@ -410,24 +401,24 @@ export function PaymentMethods() {
                   className="pm__pay-now"
                   onClick={doRetry}
                   disabled={retry.isPending || setDefault.isPending}
-                  aria-label="지금 바로 구독료 결제하기"
+                  aria-label={t("paymentMethods.payNowA11y")}
                   aria-busy={retry.isPending}
                 >
                   {retry.isPending ? (
                     <>
                       <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />
-                      결제 중...
+                      {t("paymentMethods.paying")}
                     </>
                   ) : (
-                    "지금 바로 결제하기"
+                    t("paymentMethods.payNow")
                   )}
                 </button>
               </section>
             )}
 
             {/* --- Credit / debit cards --- */}
-            <section className="pm__section" aria-label="신용/체크카드" ref={cardsRef}>
-              <h2 className="pm__section-title">신용/체크카드</h2>
+            <section className="pm__section" aria-label={t("paymentMethods.cardsSection")} ref={cardsRef}>
+              <h2 className="pm__section-title">{t("paymentMethods.cardsSection")}</h2>
               <ul className="pm__list" role="list">
                 {cards.map((m) => (
                   <li key={m.method_id}>
@@ -436,19 +427,24 @@ export function PaymentMethods() {
                       role="button"
                       tabIndex={0}
                       aria-pressed={m.is_default}
-                      aria-label={`${m.display_name}, 기본 결제수단 ${m.is_default ? "선택됨" : "선택 안 됨"}`}
+                      aria-label={t("paymentMethods.defaultMethodA11y", {
+                        name: m.display_name,
+                        state: t(m.is_default ? "paymentMethods.selected" : "paymentMethods.notSelected"),
+                      })}
                       onClick={() => selectPrimary(m)}
                       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectPrimary(m); } }}
                     >
                       <Radio checked={m.is_default} />
-                      <CardGlyph brand={m.brand} />
+                      <CardGlyph />
                       <div className="pm__row-main">
+                        {/* 1332:22003 sets the name and the masked digits as one
+                            run — no space before the parenthesis. */}
                         <span className="pm__row-name">{cardName(m)}</span>
                         {m.masked_card_number && <span className="pm__row-masked">({m.masked_card_number})</span>}
                       </div>
                       <button
                         className="pm__del"
-                        aria-label={`${m.display_name} 삭제`}
+                        aria-label={t("paymentMethods.deleteA11y", { name: m.display_name })}
                         onClick={(e) => { e.stopPropagation(); setRemoveTarget(m); }}
                       >
                         <Trash />
@@ -458,21 +454,21 @@ export function PaymentMethods() {
                 ))}
               </ul>
 
-              <button className="pm__add" onClick={() => startCard("domestic")} disabled={!!starting || retry.isPending} aria-label="국내 카드 추가">
-                <span className="pm__add-plus"><Plus /></span>
-                <span className="pm__add-label">카드 추가(국내 카드)</span>
+              <button className="pm__add" onClick={() => startCard("domestic")} disabled={!!starting || retry.isPending} aria-label={t("paymentMethods.addDomesticA11y")}>
+                <Plus />
+                <span className="pm__add-label">{t("paymentMethods.addDomestic")}</span>
               </button>
-              <button className="pm__add" onClick={() => startCard("international")} disabled={!!starting || retry.isPending} aria-label="해외 카드 추가">
-                <span className="pm__add-plus"><Plus /></span>
-                <span className="pm__add-label">카드 추가(해외 카드)</span>
+              <button className="pm__add" onClick={() => startCard("international")} disabled={!!starting || retry.isPending} aria-label={t("paymentMethods.addInternationalA11y")}>
+                <Plus />
+                <span className="pm__add-label">{t("paymentMethods.addInternational")}</span>
               </button>
             </section>
 
             {/* --- Easy payment --- */}
-            <section className="pm__section" aria-label="간편 결제">
-              <h2 className="pm__section-title">간편 결제</h2>
+            <section className="pm__section" aria-label={t("paymentMethods.easyPaySection")}>
+              <h2 className="pm__section-title">{t("paymentMethods.easyPaySection")}</h2>
               <ul className="pm__list pm__list--ez" role="list">
-                {EASY_PAY.map(({ provider, label, Logo, logoHeight }) => {
+                {EASY_PAY.map(({ provider, labelKey, Logo }) => {
                   const connected = methods.find((m) => m.provider === provider);
                   const connect = provider === "toss_pay" ? startTossPay : startNaverPay;
                   return (
@@ -483,15 +479,18 @@ export function PaymentMethods() {
                           role="button"
                           tabIndex={0}
                           aria-pressed={connected.is_default}
-                          aria-label={`${label}, 기본 결제수단 ${connected.is_default ? "선택됨" : "선택 안 됨"}`}
+                          aria-label={t("paymentMethods.defaultMethodA11y", {
+                            name: t(labelKey),
+                            state: t(connected.is_default ? "paymentMethods.selected" : "paymentMethods.notSelected"),
+                          })}
                           onClick={() => selectPrimary(connected)}
                           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectPrimary(connected); } }}
                         >
                           <Radio checked={connected.is_default} />
-                          <div className="pm__row-main pm__row-main--logo"><Logo height={logoHeight} /></div>
+                          <div className="pm__row-main pm__row-main--logo"><Logo /></div>
                           <button
                             className="pm__del"
-                            aria-label={`${label} 연결 해제`}
+                            aria-label={t("paymentMethods.disconnectA11y", { name: t(labelKey) })}
                             onClick={(e) => { e.stopPropagation(); setRemoveTarget(connected); }}
                           >
                             <Trash />
@@ -499,9 +498,9 @@ export function PaymentMethods() {
                         </div>
                       ) : (
                         <div className="pm__row pm__row--connect pm__ez">
-                          <div className="pm__row-main pm__row-main--logo"><Logo height={logoHeight} /></div>
-                          <button className="pm__connect" onClick={connect} disabled={!!starting || retry.isPending} aria-label={`${label} 연결하기`}>
-                            연결하기
+                          <div className="pm__row-main pm__row-main--logo"><Logo /></div>
+                          <button className="pm__connect" onClick={connect} disabled={!!starting || retry.isPending} aria-label={t("paymentMethods.connectA11y", { name: t(labelKey) })}>
+                            {t("paymentMethods.connect")}
                           </button>
                         </div>
                       )}
@@ -512,13 +511,13 @@ export function PaymentMethods() {
             </section>
 
             {/* --- Notice --- */}
-            <section className="pm__notice" aria-label="유의사항">
-              <h2 className="pm__notice-title">유의사항</h2>
+            <section className="pm__notice" aria-label={t("paymentMethods.noticeSection")}>
+              <h2 className="pm__notice-title">{t("paymentMethods.noticeSection")}</h2>
               <ul className="pm__notice-body">
-                <li>최초 1회 등록 후 서비스 이용 시 자동으로 결제됩니다.</li>
-                <li>결제 수단별로 결제 가능 여부, 취소 정책이 다를 수 있습니다. 각 결제수단의 사용안내를 확인해 주세요.</li>
-                <li>국내 카드 : 국민, 비씨, 삼성, 롯데, 우리, 하나, 신한, 현대, 농협 등</li>
-                <li>해외 카드 : VISA, Master, JCB</li>
+                <li>{t("paymentMethods.notice1")}</li>
+                <li>{t("paymentMethods.notice2")}</li>
+                <li>{t("paymentMethods.notice3")}</li>
+                <li>{t("paymentMethods.notice4")}</li>
               </ul>
             </section>
           </>
@@ -528,31 +527,31 @@ export function PaymentMethods() {
       {/* --- registration / connection sheet --- */}
       <Sheet open={!!flow} onClose={() => !confirming && setFlow(null)} title={flow?.title}>
         <p className="muted" style={{ fontSize: 13, marginBottom: 12 }}>
-          결제창에서 인증을 마친 뒤 발급되는 값을 붙여넣어 등록을 완료해요.
+          {t("paymentMethods.flowHint")}
         </p>
         {flow?.authorizeUrl && (
           <a className="btn btn--secondary btn--block" href={flow.authorizeUrl} target="_blank" rel="noreferrer" style={{ marginBottom: 12 }}>
-            결제창 열기 ↗
+            {t("paymentMethods.openPaymentWindow")}
           </a>
         )}
-        <TextField label="인증 값" placeholder={flow?.placeholder} value={token} onChange={(e) => setToken(e.target.value)} />
+        <TextField label={t("paymentMethods.authValueLabel")} placeholder={flow?.placeholder} value={token} onChange={(e) => setToken(e.target.value)} />
         <div style={{ height: 12 }} />
-        <Button block loading={confirming} disabled={!token.trim()} onClick={confirmFlow}>등록 완료</Button>
+        <Button block loading={confirming} disabled={!token.trim()} onClick={confirmFlow}>{t("paymentMethods.registerDone")}</Button>
       </Sheet>
 
       {/* --- deletion / disconnect confirmation --- */}
       <Dialog
         open={!!removeTarget}
         onClose={remove.isPending ? undefined : () => setRemoveTarget(null)}
-        title="해당 결제수단을 삭제할까요?"
-        text="삭제 후에는 복구할 수 없어요"
+        title={t("paymentMethods.deleteTitle")}
+        text={t("paymentMethods.deleteText")}
       >
         <div className="pm__modal-actions">
           <button className="pm__modal-btn pm__modal-btn--cancel" disabled={remove.isPending} onClick={() => setRemoveTarget(null)}>
-            취소
+            {t("common.cancel")}
           </button>
           <button className="pm__modal-btn pm__modal-btn--delete" disabled={remove.isPending} onClick={() => removeTarget && remove.mutate(removeTarget)}>
-            삭제
+            {t("paymentMethods.delete")}
           </button>
         </div>
       </Dialog>
@@ -565,7 +564,7 @@ export function PaymentMethods() {
       )}
 
       {(selectDisabled || retry.isPending) && (
-        <span className="pm__sr" role="status">{retry.isPending ? "결제를 진행하고 있어요" : "기본 결제수단 변경 중"}</span>
+        <span className="pm__sr" role="status">{t(retry.isPending ? "paymentMethods.retryingStatus" : "paymentMethods.changingDefaultStatus")}</span>
       )}
     </div>
   );

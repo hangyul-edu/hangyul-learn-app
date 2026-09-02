@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import doneBadge from "../assets/brand/ic-modal-done.svg";
 
 /**
  * Post-save success modal for Language Settings. Shown ONLY after the backend
@@ -68,15 +69,7 @@ export function LanguageSavedModal({
         aria-describedby="lang-saved-desc"
       >
         <div className="wdd__icon" aria-hidden="true">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <path
-              d="M13 24.5l7 7 15-15"
-              stroke="#55C7CB"
-              strokeWidth="4.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <img src={doneBadge} alt="" />
         </div>
 
         <h2 className="wdd__title" id="lang-saved-title" tabIndex={-1} ref={titleRef}>

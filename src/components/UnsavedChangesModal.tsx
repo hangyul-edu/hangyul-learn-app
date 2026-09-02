@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "../i18n";
 
 /**
  * Unsaved-changes confirmation modal. The left (gray) button keeps the user on
@@ -14,10 +15,10 @@ export function UnsavedChangesModal({
   open,
   onContinue,
   onLeave,
-  title = "변경사항을 저장하지 않고 나갈까요?",
-  subtitle = "변경사항이 적용되지 않습니다",
-  cancelLabel = "계속하기",
-  leaveLabel = "나가기",
+  title,
+  subtitle,
+  cancelLabel,
+  leaveLabel,
 }: {
   open: boolean;
   onContinue: () => void;
@@ -27,6 +28,7 @@ export function UnsavedChangesModal({
   cancelLabel?: string;
   leaveLabel?: string;
 }) {
+  const { t } = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
 
@@ -37,7 +39,7 @@ export function UnsavedChangesModal({
     document.body.style.overflow = "hidden";
     const focusables = () =>
       Array.from(dialogRef.current?.querySelectorAll<HTMLElement>("button:not([disabled])") ?? []);
-    focusables()[0]?.focus(); // 계속하기 (safe default)
+    focusables()[0]?.focus(); // "keep editing" (safe default)
 
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
@@ -71,11 +73,11 @@ export function UnsavedChangesModal({
   return (
     <div className="overlay overlay--center wd__overlay">
       <div ref={dialogRef} className="lgo" role="alertdialog" aria-modal="true" aria-labelledby="unsaved-title" aria-describedby="unsaved-desc">
-        <h2 className="lgo__title" id="unsaved-title">{title}</h2>
-        <p className="lgo__copy" id="unsaved-desc">{subtitle}</p>
+        <h2 className="lgo__title" id="unsaved-title">{title ?? t("misc.unsavedTitle")}</h2>
+        <p className="lgo__copy" id="unsaved-desc">{subtitle ?? t("misc.unsavedBody")}</p>
         <div className="lgo__actions">
-          <button className="lgo__btn lgo__btn--cancel" onClick={onContinue}>{cancelLabel}</button>
-          <button className="lgo__btn lgo__btn--go" onClick={onLeave}>{leaveLabel}</button>
+          <button className="lgo__btn lgo__btn--cancel" onClick={onContinue}>{cancelLabel ?? t("misc.unsavedContinue")}</button>
+          <button className="lgo__btn lgo__btn--go" onClick={onLeave}>{leaveLabel ?? t("misc.unsavedLeave")}</button>
         </div>
       </div>
     </div>

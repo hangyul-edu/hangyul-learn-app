@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTranslation, type TranslationKey } from "../i18n";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../components/ui/kit";
@@ -13,40 +14,53 @@ import { LIFECYCLE_KEY, useLeagueLifecycle } from "./LeagueLifecycleModals";
 
 /* --------------------------------- icon --------------------------------- */
 function ResultBadge({ tier }: { tier: string }) {
+  const { t } = useTranslation();
   return (
     <div className="lgr__badge-wrap">
       <CitrusBadge
         tier={tier}
         className="lgr__badge"
-        label={TIER_META[tier as LeagueTier]?.label ?? "리그"}
+        label={
+          TIER_META[tier as LeagueTier]
+            ? t("league.tierLabel", { tier: TIER_META[tier as LeagueTier].name })
+            : t("league.tablistA11y")
+        }
       />
     </div>
   );
 }
 
 /* ------------------------------- copy ----------------------------------- */
-function resultCopy(result: LeagueResultSummary): { title: string; desc: string } {
+/** Outcome copy. `t` is passed since this runs outside the component. */
+function resultCopy(
+  result: LeagueResultSummary,
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+): { title: string; desc: string } {
   const outcome: LeagueResultOutcome = result.outcome;
   if (outcome === "promoted") {
     return {
-      title: "축하합니다!",
-      desc: `상위 ${result.promote_cutoff_rank}위 안에 들어\n${result.resulting_tier_label}로 승급했어요! 🎉`,
+      title: t("leagueLifecycle.resultCongrats"),
+      desc: t("leagueLifecycle.resultPromoted", {
+        rank: result.promote_cutoff_rank,
+        tier: result.resulting_tier_label,
+      }),
     };
   }
   if (outcome === "demoted") {
     return {
-      title: "새로운 리그에서 다시 도전해보세요",
-      desc: `${result.resulting_tier_label}에서 다음 승급을 노려봐요`,
+      title: t("leagueLifecycle.resultTryAgain"),
+      desc: t("leagueLifecycle.resultDemoted", { tier: result.resulting_tier_label }),
     };
   }
   return {
-    title: "이번 리그도 수고했어요!",
-    desc: `${result.resulting_tier_label}를 지켜냈어요`,
+    title: t("leagueLifecycle.resultWellDone"),
+    desc: t("leagueLifecycle.resultRetained", { tier: result.resulting_tier_label }),
   };
 }
 
 /* -------------------------------- screen -------------------------------- */
 export function LeagueResult() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const qc = useQueryClient();
   const toast = useToast();
@@ -77,16 +91,18 @@ export function LeagueResult() {
     );
   }
 
-  const copy = resultCopy(result);
+  const copy = resultCopy(result, t);
   return (
     <div className="screen lgr">
       <div className="lgr__body">
         <ResultBadge tier={result.resulting_tier} />
         <h1 className="lgr__title">{copy.title}</h1>
+        {/* LEG-006/007/008 show only the headline and this two-line message;
+            the final standing is announced to screen readers instead. */}
         <p className="lgr__desc">{copy.desc}</p>
         {result.final_rank != null && (
-          <p className="lgr__rank">
-            최종 순위 {result.final_rank}위 / {result.total_participants}명
+          <p className="sr-only">
+            {t("leagueLifecycle.finalRank", { rank: result.final_rank, total: result.total_participants })}
           </p>
         )}
       </div>
@@ -95,9 +111,9 @@ export function LeagueResult() {
           block
           loading={ack.isPending}
           onClick={() => ack.mutate(result.season_id)}
-          aria-label="계속 도전하기"
+          aria-label={t("leagueLifecycle.keepGoing")}
         >
-          계속 도전하기
+          {t("leagueLifecycle.keepGoing")}
         </Button>
       </div>
     </div>

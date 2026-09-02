@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "../i18n";
 import { onboardingApi } from "../api/endpoints";
 import { OnboardingIntro } from "./OnboardingIntro";
 import { OnboardingPurpose } from "./OnboardingPurpose";
@@ -13,6 +14,7 @@ import { errorMessage } from "../lib/http";
 type Purpose = "conversation" | "topik";
 
 export function Onboarding() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const { bootstrapMe } = useAuth();
   const toast = useToast();
@@ -92,7 +94,8 @@ export function Onboarding() {
         onSubmit={submit}
         busy={busy}
         progress={(step + 1) / 3}
-        heading="하루에 몇 문장씩 연습할까요?"
+        heading={t("onboarding.sentenceHeading")}
+        notice={t("onboarding.goalNoticeSentences")}
       />
     );
 
@@ -120,7 +123,8 @@ export function Onboarding() {
         onSubmit={submit}
         busy={busy}
         progress={(step + 1) / 3}
-        heading="하루에 몇 문제씩 풀어볼까요?"
+        heading={t("onboarding.questionHeading")}
+        notice={t("onboarding.goalNoticeQuestions")}
       />
     );
 

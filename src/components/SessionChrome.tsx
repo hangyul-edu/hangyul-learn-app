@@ -1,7 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { CharacterArt } from "./brand/ProfileAssets";
+import { useTranslation } from "../i18n";
 import { AskAiSheet, type AskContext } from "./AskAiSheet";
+import icAiHandle from "../assets/brand/ic-ai-handle.svg";
+import chatbotFab from "../assets/brand/chatbot-fab.svg";
 
 /**
  * Shared chrome for the personalized-learning session screens (Conversation +
@@ -45,6 +47,7 @@ export function SessionChrome({
   minimal?: boolean;
   children: ReactNode;
 }) {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -61,7 +64,7 @@ export function SessionChrome({
       <div className="sess__scroll">
         <div className="sess__inner">
           <header className="sess__header">
-            <button className="sess__back" onClick={onBack ?? (() => nav(-1))} aria-label="뒤로">
+            <button className="sess__back" onClick={onBack ?? (() => nav(-1))} aria-label={t("session.backA11y")}>
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -78,20 +81,24 @@ export function SessionChrome({
               <button
                 className="sess__ai-handle"
                 onClick={() => setCollapsed((c) => !c)}
-                aria-label={collapsed ? "맞춤 설정 입력창 펼치기" : "맞춤 설정 입력창 접기"}
+                aria-label={t(collapsed ? "session.expandInput" : "session.collapseInput")}
                 aria-expanded={!collapsed}
               >
-                <svg width="25" height="25" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  {/* Arrow shows the NEXT action: collapsed → expand (points left);
-                      expanded → collapse (points right). */}
-                  <path
-                    d={collapsed ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6"}
-                    stroke="#fff"
-                    strokeWidth="2.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                {/* Group 1410118858 (1049:19884) — the whole 23x41 tab is one
+                    exported asset: the #FFBE33 r8 rectangle with the chevron
+                    already centred in it. It used to be a 25x25 hand-drawn
+                    chevron laid over a CSS rectangle, which overflowed the
+                    23px-wide tab. The art points right (collapse); mirror it
+                    for the expand direction. */}
+                <img
+                  className="sess__ai-handle-ic"
+                  src={icAiHandle}
+                  alt=""
+                  aria-hidden="true"
+                  width={23}
+                  height={41}
+                  style={collapsed ? { transform: "scaleX(-1)" } : undefined}
+                />
               </button>
               {!collapsed && <div className="sess__ai-panel">{panel}</div>}
             </div>
@@ -103,33 +110,37 @@ export function SessionChrome({
             {!minimal && (
               <div className="sess__goalinfo">
                 <p className="sess__goal-heading">{heading}</p>
-                <span className="sess__pill" aria-label={`현재 학습 세트 ${total}개 중 ${shownCorrect}개 정답`}>
+                <span className="sess__pill" aria-label={t("session.scoreA11y", { total, correct: shownCorrect })}>
                   {shownCorrect}/{total}
                 </span>
               </div>
             )}
             <div className="sess__mascot-wrap">
               {askContext?.bubble && (
-                <button className="sess__bubble" onClick={() => setSheetOpen(true)} aria-label="현재 문제를 한귤AI에게 물어보기">
-                  헷갈린 부분 내가 알려줄게!
+                <button className="sess__bubble" onClick={() => setSheetOpen(true)} aria-label={t("session.askAiA11y")}>
+                  {t("session.askAiHint")}
                 </button>
               )}
               <button
                 className="sess__mascot"
                 onClick={() => askContext && setSheetOpen(true)}
                 disabled={!askContext}
-                aria-label="현재 문제를 한귤AI에게 물어보기"
+                aria-label={t("session.askAiA11y")}
               >
-                <span className="sess__mascot-face">
-                  <CharacterArt variant="AVATAR_01" fill="100%" />
-                </span>
+                {/* The mascot here IS the chatbot entry point, and TAL-005
+                    places Group 1410118481 at (307,171) — the same group the
+                    Personalized FAB and the AI message avatar already render
+                    from chatbot-fab.svg. Reuse that one asset (ring, character
+                    and shadow all baked in) rather than the AVATAR_01 profile
+                    character this used to draw. */}
+                <img className="sess__mascot-art" src={chatbotFab} alt="" aria-hidden="true" />
               </button>
             </div>
           </div>
 
           {/* Session progress bar — omitted in single-item review mode. */}
           {!minimal && (
-            <div className="sess__progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="세션 진행률">
+            <div className="sess__progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={t("session.progressA11y")}>
               <div className="sess__progress-fill" style={{ width: `${pct}%` }} />
             </div>
           )}

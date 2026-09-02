@@ -1,3 +1,4 @@
+import type { TranslationKey } from "../i18n";
 /**
  * Presentation helpers for the Notifications screen.
  *
@@ -24,34 +25,40 @@ export function bucketKey(createdAt: string, now: Date = new Date()): string {
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
 
-/** Korean date heading for a group (오늘 / 어제 / M월 D일, with year when needed). */
-export function bucketLabel(createdAt: string, now: Date = new Date()): string {
+/** Formats a message from the active catalog; supplied by the caller's `t`. */
+type Translate = (key: TranslationKey, vars?: Record<string, string | number>) => string;
+
+/** Date heading for a group (today / yesterday / M-D, with the year when needed). */
+export function bucketLabel(createdAt: string, t: Translate, now: Date = new Date()): string {
   const key = bucketKey(createdAt, now);
-  if (key === "today") return "오늘";
-  if (key === "yesterday") return "어제";
+  if (key === "today") return t("notifications.today");
+  if (key === "yesterday") return t("notifications.yesterday");
   const d = new Date(createdAt);
-  const sameYear = d.getFullYear() === now.getFullYear();
-  return sameYear
-    ? `${d.getMonth() + 1}월 ${d.getDate()}일`
-    : `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+  return d.getFullYear() === now.getFullYear()
+    ? t("notifications.monthDay", { m: d.getMonth() + 1, d: d.getDate() })
+    : t("notifications.yearMonthDay", {
+        y: d.getFullYear(),
+        m: d.getMonth() + 1,
+        d: d.getDate(),
+      });
 }
 
-/** Compact relative time: 방금 / N분 전 / N시간 전 / 어제 / M월 D일. */
-export function relativeTime(createdAt: string, now: Date = new Date()): string {
+/** Compact relative time: just now / N min / N hr / yesterday / M-D. */
+export function relativeTime(createdAt: string, t: Translate, now: Date = new Date()): string {
   const d = new Date(createdAt);
   if (Number.isNaN(d.getTime())) return "";
   const secs = Math.floor((now.getTime() - d.getTime()) / 1000);
-  if (secs < 60) return "방금";
+  if (secs < 60) return t("notifications.justNow");
   const mins = Math.floor(secs / 60);
-  if (mins < 60) return `${mins}분 전`;
+  if (mins < 60) return t("notifications.minutesAgo", { n: mins });
   const delta = dayDelta(d, now);
-  if (delta <= 0) return `${Math.floor(mins / 60)}시간 전`;
-  if (delta === 1) return "어제";
-  return bucketLabel(createdAt, now);
+  if (delta <= 0) return t("notifications.hoursAgo", { n: Math.floor(mins / 60) });
+  if (delta === 1) return t("notifications.yesterday");
+  return bucketLabel(createdAt, t, now);
 }
 
-export const GROUP_LABEL: Record<NotificationGroup, string> = {
-  learning: "학습",
-  announcement: "공지",
-  social: "소셜",
+export const GROUP_LABEL_KEYS: Record<NotificationGroup, TranslationKey> = {
+  learning: "notifications.learning",
+  announcement: "notifications.notice",
+  social: "notifications.social",
 };

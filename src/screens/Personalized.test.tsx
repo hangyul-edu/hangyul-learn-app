@@ -9,6 +9,7 @@ const { summary } = vi.hoisted(() => ({ summary: vi.fn() }));
 vi.mock("../api/endpoints", () => ({ dashboardApi: { summary } }));
 
 import { Personalized } from "./Personalized";
+import { I18nProvider } from "../i18n";
 
 function Loc() {
   const l = useLocation();
@@ -29,16 +30,17 @@ const track = (category: "conversation" | "topik", name: string) => ({
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={["/recommend"]}>
-        <Routes>
-          <Route path="/recommend" element={<><Personalized /><Loc /></>} />
-          <Route path="/session/topik" element={<><div>TOPIK SESSION</div><Loc /></>} />
-          <Route path="/session/conversation" element={<><div>CONVERSATION SESSION</div><Loc /></>} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
-  );
+    <I18nProvider language="ko">
+      <QueryClientProvider client={qc}>
+        <MemoryRouter initialEntries={["/recommend"]}>
+          <Routes>
+            <Route path="/recommend" element={<><Personalized /><Loc /></>} />
+            <Route path="/session/topik" element={<><div>TOPIK SESSION</div><Loc /></>} />
+            <Route path="/session/conversation" element={<><div>CONVERSATION SESSION</div><Loc /></>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </I18nProvider>,);
 }
 
 beforeEach(() => {

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { I18nProvider } from "../i18n";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -20,7 +21,7 @@ beforeEach(() => {
 
 describe("ChatbotBottomSheet (shared page chatbot)", () => {
   it("shows the sheet chrome, greeting, and creates a conversation on open", async () => {
-    render(<ChatbotBottomSheet open source="personalized_learning" onClose={() => {}} />);
+    render(<I18nProvider language="ko"><ChatbotBottomSheet open source="personalized_learning" onClose={() => {}} /></I18nProvider>);
     expect(screen.getByRole("dialog", { name: "물어보기" })).toBeInTheDocument();
     expect(screen.getByText("무엇이든 물어보세요!")).toBeInTheDocument();
     expect(screen.getByText(/AI 답변은 완벽하지 않거나 실수할 수 있어요/)).toBeInTheDocument();
@@ -29,7 +30,7 @@ describe("ChatbotBottomSheet (shared page chatbot)", () => {
   });
 
   it("sends a message and appends the reply", async () => {
-    render(<ChatbotBottomSheet open source="personalized_learning" onClose={() => {}} />);
+    render(<I18nProvider language="ko"><ChatbotBottomSheet open source="personalized_learning" onClose={() => {}} /></I18nProvider>);
     const input = screen.getByPlaceholderText("채팅을 입력하세요.");
     await userEvent.type(input, "안녕");
     const send = screen.getByRole("button", { name: "메시지 보내기" });
@@ -42,7 +43,7 @@ describe("ChatbotBottomSheet (shared page chatbot)", () => {
   it("disables send when empty and blocks duplicate submits", async () => {
     let resolve!: () => void;
     api.sendMessage.mockReturnValue(new Promise((r) => { resolve = () => r({ user_message: msg("u1", "user", "안녕"), assistant_message: msg("a1", "assistant", "네") }); }));
-    render(<ChatbotBottomSheet open source="lecture" onClose={() => {}} />);
+    render(<I18nProvider language="ko"><ChatbotBottomSheet open source="lecture" onClose={() => {}} /></I18nProvider>);
     const send = screen.getByRole("button", { name: "메시지 보내기" });
     expect(send).toBeDisabled(); // empty input
     await userEvent.type(screen.getByPlaceholderText("채팅을 입력하세요."), "안녕");
@@ -55,7 +56,7 @@ describe("ChatbotBottomSheet (shared page chatbot)", () => {
 
   it("tags the opening surface and closes via the X", async () => {
     const onClose = vi.fn();
-    render(<ChatbotBottomSheet open source="lecture" onClose={onClose} />);
+    render(<I18nProvider language="ko"><ChatbotBottomSheet open source="lecture" onClose={onClose} /></I18nProvider>);
     expect(screen.getByRole("dialog")).toHaveAttribute("data-source", "lecture");
     await userEvent.click(screen.getByRole("button", { name: "물어보기 창 닫기" }));
     expect(onClose).toHaveBeenCalled();

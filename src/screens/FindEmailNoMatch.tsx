@@ -1,4 +1,5 @@
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "../i18n";
 
 /**
  * "No matching account" result — shown only when the email lookup returns the
@@ -9,6 +10,7 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
  * `.fenm__*` for the result-specific text.
  */
 export function FindEmailNoMatch() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const location = useLocation();
   const valid = (location.state as { noMatch?: boolean } | null)?.noMatch === true;
@@ -20,27 +22,27 @@ export function FindEmailNoMatch() {
     <div className="screen findemail fenm">
       <div className="findemail__scroll">
         <div className="findemail__inner">
-          <button className="findemail__back" onClick={() => nav(-1)} aria-label="뒤로">
+          <button className="findemail__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
 
           <h1 className="fenm__title">
-            일치하는 회원정보가
+            {t("findEmailNoMatch.titleLine1")}
             <br />
-            없어요
+            {t("findEmailNoMatch.titleLine2")}
           </h1>
           <p className="fenm__desc">
-            입력하신 회원정보와 일치하는 계정을 찾을 수 없어요
+            {t("findEmailNoMatch.descLine1")}
             <br />
-            정보를 다시 확인해주세요
+            {t("findEmailNoMatch.descLine2")}
           </p>
 
           <div className="fenm__prompt-row">
-            <span className="fenm__prompt">처음이신가요?</span>
+            <span className="fenm__prompt">{t("findEmailNoMatch.prompt")}</span>
             <button type="button" className="fenm__link" onClick={() => nav("/signup")}>
-              회원가입하기
+              {t("findEmailNoMatch.signupLink")}
             </button>
           </div>
 
@@ -50,9 +52,9 @@ export function FindEmailNoMatch() {
             type="button"
             className="findemail__submit"
             onClick={() => nav(-1)}
-            aria-label="다시 입력하기, 이메일 찾기 화면으로 돌아가기"
+            aria-label={t("findEmailNoMatch.retryA11y")}
           >
-            다시 입력하기
+            {t("findEmailNoMatch.retry")}
           </button>
         </div>
       </div>

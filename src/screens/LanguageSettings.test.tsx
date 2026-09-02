@@ -4,6 +4,8 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
 import { ToastProvider } from "../hooks/toast";
+import { I18nProvider } from "../i18n";
+import type { AppLanguage } from "../lib/language";
 
 /* -------------------------------- mocks --------------------------------- */
 let mockMe: { app_language: string } | null = { app_language: "en" };
@@ -18,7 +20,14 @@ import { LanguageSettings } from "./LanguageSettings";
 
 const api = settingsApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
-function renderScreen() {
+/**
+ * `language` is the app language the screen renders in — what <LanguageSync>
+ * would have adopted from the profile. It is deliberately separate from
+ * `mockMe.app_language`, which drives the *persisted* value the radio cards
+ * reflect; a save changes the app language while the persisted value is
+ * reconciled from the server response.
+ */
+function renderScreen(language: AppLanguage = "en") {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   // Data router — required for the unsaved-changes useBlocker guard.
   const router = createMemoryRouter(
@@ -30,11 +39,13 @@ function renderScreen() {
     { initialEntries: ["/profile", "/settings/language"], initialIndex: 1 },
   );
   return render(
-    <QueryClientProvider client={qc}>
-      <ToastProvider>
-        <RouterProvider router={router} />
-      </ToastProvider>
-    </QueryClientProvider>,
+    <I18nProvider language={language}>
+      <QueryClientProvider client={qc}>
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>
+      </QueryClientProvider>
+    </I18nProvider>,
   );
 }
 
@@ -51,7 +62,7 @@ beforeEach(() => {
 describe("LanguageSettings screen", () => {
   it("renders header, back button, and English/한국어 in order with native labels", async () => {
     renderScreen();
-    expect(await screen.findByRole("heading", { name: "Language Settings" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Language" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Go back" })).toBeInTheDocument();
     const radios = screen.getAllByRole("radio");
     expect(radios).toHaveLength(2);
@@ -62,7 +73,7 @@ describe("LanguageSettings screen", () => {
   it("selects the saved language after loading (no flash of a wrong default)", async () => {
     mockMe = { app_language: "ko" };
     api.language.mockResolvedValue({ app_language: "ko" });
-    renderScreen();
+    renderScreen("ko");
     // Seeded from the auth cache → correct card selected immediately.
     expect(card("한국어")).toHaveAttribute("aria-checked", "true");
     expect(card("English")).toHaveAttribute("aria-checked", "false");
@@ -97,7 +108,7 @@ describe("LanguageSettings screen", () => {
     mockMe = { app_language: "ko" };
     api.language.mockResolvedValue({ app_language: "ko" });
     api.setLanguage.mockResolvedValue({ app_language: "en" });
-    renderScreen();
+    renderScreen("ko");
     await userEvent.click(card("English"));
     await userEvent.click(screen.getByRole("button", { name: "언어 설정 저장" }));
     await waitFor(() => expect(api.setLanguage).toHaveBeenCalledWith("en"));
@@ -181,7 +192,7 @@ describe("LanguageSettings screen", () => {
     await userEvent.click(screen.getByRole("button", { name: "Go back" }));
     // Rendered the parent route in-place (SPA) rather than reloading this one.
     expect(await screen.findByText("PROFILE_SCREEN")).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Language Settings" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Language" })).not.toBeInTheDocument();
   });
 
   it("shows the confirmation modal with the exact copy when leaving with an unsaved change", async () => {
@@ -189,10 +200,11 @@ describe("LanguageSettings screen", () => {
     await userEvent.click(card("한국어"));
     await userEvent.click(screen.getByRole("button", { name: "Go back" }));
     expect(await screen.findByRole("alertdialog")).toBeInTheDocument();
-    expect(screen.getByText("변경사항을 저장하지 않고 나갈까요?")).toBeInTheDocument();
-    expect(screen.getByText("변경사항이 적용되지 않습니다")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "계속하기" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "나가기" })).toBeInTheDocument();
+    // The screen renders in English here, so the shared modal does too.
+    expect(screen.getByText("Leave without saving your changes?")).toBeInTheDocument();
+    expect(screen.getByText("Your changes will not be applied")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Keep editing" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Leave" })).toBeInTheDocument();
     expect(screen.queryByText("PROFILE_SCREEN")).not.toBeInTheDocument();
     expect(api.setLanguage).not.toHaveBeenCalled(); // 나가기 must not save
   });
@@ -202,7 +214,7 @@ describe("LanguageSettings screen", () => {
     await userEvent.click(card("한국어"));
     await userEvent.click(screen.getByRole("button", { name: "Go back" }));
     await screen.findByRole("alertdialog");
-    await userEvent.click(screen.getByRole("button", { name: "계속하기" }));
+    await userEvent.click(screen.getByRole("button", { name: "Keep editing" }));
     await waitFor(() => expect(modal()).not.toBeInTheDocument());
     expect(screen.queryByText("PROFILE_SCREEN")).not.toBeInTheDocument();
     expect(card("한국어")).toHaveAttribute("aria-checked", "true"); // edit preserved
@@ -214,7 +226,7 @@ describe("LanguageSettings screen", () => {
     await userEvent.click(card("한국어"));
     await userEvent.click(screen.getByRole("button", { name: "Go back" }));
     await screen.findByRole("alertdialog");
-    await userEvent.click(screen.getByRole("button", { name: "나가기" }));
+    await userEvent.click(screen.getByRole("button", { name: "Leave" }));
     expect(await screen.findByText("PROFILE_SCREEN")).toBeInTheDocument();
     expect(api.setLanguage).not.toHaveBeenCalled();
     expect(setMe).not.toHaveBeenCalled();

@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useTranslation } from "../i18n";
 import { useQuery } from "@tanstack/react-query";
 import { Screen } from "../components/layout/Screen";
 import { Button, Chip } from "../components/ui/kit";
@@ -12,6 +13,7 @@ import type { Page, Sentence, SpeechAttempt } from "../lib/types";
 const LEVELS = [1, 2, 3, 4, 5];
 
 export function Conversation() {
+  const { t } = useTranslation();
   const toast = useToast();
   const [level, setLevel] = useState(1);
   const [idx, setIdx] = useState(0);
@@ -77,7 +79,7 @@ export function Conversation() {
       mr.start();
       setRecording(true);
     } catch {
-      toast.error("마이크 권한이 필요해요. 브라우저 설정을 확인해 주세요.");
+      toast.error(t("study.micPermission"));
     }
   }
 
@@ -87,7 +89,7 @@ export function Conversation() {
   }
 
   return (
-    <Screen title="회화 학습" back>
+    <Screen title={t("study.conversationTitle")} back>
       <div className="chiprow" style={{ marginBottom: 14 }}>
         {LEVELS.map((l) => (
           <Chip
@@ -99,7 +101,7 @@ export function Conversation() {
               setResult(null);
             }}
           >
-            레벨 {l}
+            {t("session.levelLabel", { n: l })}
           </Chip>
         ))}
       </div>
@@ -110,7 +112,7 @@ export function Conversation() {
         data={q.data}
         onRetry={() => q.refetch()}
         isEmpty={(d: Page<Sentence>) => d.items.length === 0}
-        empty={<EmptyState emoji="📭" title="이 레벨엔 문장이 없어요" text="다른 레벨을 선택해 보세요." />}
+        empty={<EmptyState emoji="📭" title={t("study.noSentences")} text={t("study.tryAnotherLevel")} />}
       >
         {() =>
           cur ? (
@@ -120,8 +122,8 @@ export function Conversation() {
                   {idx + 1} / {items.length}
                 </span>
                 <div className="row" style={{ gap: 6 }}>
-                  <Chip active={showRoman} onClick={() => setShowRoman((v) => !v)}>발음</Chip>
-                  <Chip active={showTrans} onClick={() => setShowTrans((v) => !v)}>번역</Chip>
+                  <Chip active={showRoman} onClick={() => setShowRoman((v) => !v)}>{t("study.pronunciation")}</Chip>
+                  <Chip active={showTrans} onClick={() => setShowTrans((v) => !v)}>{t("study.translation")}</Chip>
                 </div>
               </div>
 
@@ -144,21 +146,21 @@ export function Conversation() {
                 </Button>
                 {recording ? (
                   <Button variant="danger" block onClick={() => mediaRef.current?.stop()}>
-                    ● 녹음 멈추기
+                    {t("study.stopRecording")}
                   </Button>
                 ) : (
                   <Button block loading={scoring} leftIcon="🎙️" onClick={() => startRec(cur)}>
-                    따라 말하기
+                    {t("study.speak")}
                   </Button>
                 )}
               </div>
 
               <div className="row" style={{ justifyContent: "space-between" }}>
                 <Button variant="ghost" size="sm" disabled={idx === 0} onClick={() => setIdx((i) => i - 1)}>
-                  ‹ 이전
+                  {t("study.prev")}
                 </Button>
                 <Button variant="ghost" size="sm" disabled={idx >= items.length - 1} onClick={next}>
-                  다음 ›
+                  {t("study.next")}
                 </Button>
               </div>
             </div>
@@ -168,18 +170,18 @@ export function Conversation() {
         }
       </Async>
 
-      <Sheet open={!!result} onClose={() => setResult(null)} title="발음 평가">
+      <Sheet open={!!result} onClose={() => setResult(null)} title={t("study.pronunciationEval")}>
         {result && (
           <div className="stack" style={{ gap: 14 }}>
             <div className="center">
               <div className="big-num" style={{ fontSize: 52, color: result.correct ? "var(--success)" : "var(--warning)" }}>
                 {result.pronunciation_score}
               </div>
-              <div className="muted">점 · {result.correct ? "훌륭해요! 👏" : "조금 더 연습해요 💪"}</div>
+              <div className="muted">{t("study.points")} · {t(result.correct ? "session.excellent" : "study.practiceMore")}</div>
             </div>
             {result.transcription && (
               <div className="card card--flat" style={{ background: "var(--surface-2)" }}>
-                <div className="dim" style={{ fontSize: 12, marginBottom: 4 }}>내가 말한 내용</div>
+                <div className="dim" style={{ fontSize: 12, marginBottom: 4 }}>{t("study.mySpeech")}</div>
                 <div style={{ fontWeight: 600 }}>{result.transcription}</div>
               </div>
             )}
@@ -190,10 +192,10 @@ export function Conversation() {
               </div>
             ))}
             {typeof result.points_earned === "number" && result.points_earned > 0 && (
-              <div className="center"><span className="badge badge--brand">⚡ +{result.points_earned} 포인트</span></div>
+              <div className="center"><span className="badge badge--brand">{t("session.pointsEarned", { points: result.points_earned })}</span></div>
             )}
             <Button block onClick={next}>
-              다음 문장 →
+              {t("study.nextSentence")}
             </Button>
           </div>
         )}

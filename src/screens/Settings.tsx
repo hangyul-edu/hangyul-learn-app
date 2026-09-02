@@ -2,9 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { notifApi } from "../api/endpoints";
-import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
-import { normalizeLanguage, type AppLanguage } from "../lib/language";
+import { useTranslation } from "../i18n";
 
 /**
  * Notification Settings (알림 설정) — two push-preference toggles.
@@ -16,33 +15,9 @@ import { normalizeLanguage, type AppLanguage } from "../lib/language";
  */
 type PushKey = "service_notifications" | "marketing";
 
-interface SetCopy {
-  title: string;
-  back: string;
-  service: string;
-  marketing: string;
-  error: string;
-}
-const COPY: Record<AppLanguage, SetCopy> = {
-  ko: {
-    title: "알림 설정",
-    back: "뒤로 가기",
-    service: "서비스 알림",
-    marketing: "광고성 알림",
-    error: "설정을 변경하지 못했어요.",
-  },
-  en: {
-    title: "Notification Settings",
-    back: "Go back",
-    service: "Service Notifications",
-    marketing: "Marketing Notifications",
-    error: "Couldn't update the setting.",
-  },
-};
-
 const BackChevron = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M15 5l-7 7 7 7" stroke="#272c30" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M15 5l-7 7 7 7" stroke="#262c31" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
@@ -76,8 +51,7 @@ export function Settings() {
   const nav = useNavigate();
   const qc = useQueryClient();
   const toast = useToast();
-  const { me } = useAuth();
-  const copy = COPY[normalizeLanguage(me?.app_language)];
+  const { t } = useTranslation();
 
   const q = useQuery({ queryKey: ["notif-settings"], queryFn: notifApi.settings });
   const settings = q.data as Record<string, boolean> | undefined;
@@ -95,7 +69,7 @@ export function Settings() {
       qc.setQueryData(["notif-settings"], saved);
     } catch {
       qc.setQueryData(["notif-settings"], previous); // roll back to the server value
-      toast.error(copy.error);
+      toast.error(t("notificationSettings.error"));
     } finally {
       setPending((p) => {
         const n = new Set(p);
@@ -108,10 +82,10 @@ export function Settings() {
   return (
     <div className="screen nset">
       <header className="nset__header">
-        <button className="nset__back" onClick={() => nav(-1)} aria-label={copy.back}>
+        <button className="nset__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
           <BackChevron />
         </button>
-        <h1 className="nset__title">{copy.title}</h1>
+        <h1 className="nset__title">{t("notificationSettings.title")}</h1>
       </header>
 
       <div className="screen__body nset__body">
@@ -119,20 +93,20 @@ export function Settings() {
         {settings && (
           <>
             <div className="nset__row">
-              <span className="nset__label">{copy.service}</span>
+              <span className="nset__label">{t("notificationSettings.service")}</span>
               <Switch
                 on={!!settings.service_notifications}
                 disabled={pending.has("service_notifications")}
-                label={copy.service}
+                label={t("notificationSettings.service")}
                 onToggle={() => toggle("service_notifications")}
               />
             </div>
             <div className="nset__row">
-              <span className="nset__label">{copy.marketing}</span>
+              <span className="nset__label">{t("notificationSettings.marketing")}</span>
               <Switch
                 on={!!settings.marketing}
                 disabled={pending.has("marketing")}
-                label={copy.marketing}
+                label={t("notificationSettings.marketing")}
                 onToggle={() => toggle("marketing")}
               />
             </div>

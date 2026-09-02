@@ -1,12 +1,13 @@
 import { useCallback, useRef, useState } from "react";
 import { useBlocker, useNavigate } from "react-router-dom";
+import { useTranslation } from "../i18n";
 import {
   ProfilePlaceholder,
   CharacterAvatar,
-  CharacterArt,
-  CameraIcon,
+  characterArtSrc,
+  characterArtStyle,
   AVATAR_KEYS,
-  avatarLabel,
+  avatarLabelKey,
   avatarBg,
   type AvatarKey,
 } from "../components/brand/ProfileAssets";
@@ -16,6 +17,11 @@ import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import type { ProfileImageType } from "../lib/types";
+/* Group 8159 (290:13289) — AME-006's own camera glyph, 20.2128 x 16 in Gray 4. */
+import icCamera from "../assets/brand/ic-camera.svg";
+import { SuccessModal } from "../components/SuccessModal";
+import { FailModal } from "../components/FailModal";
+import icModalSuccess from "../assets/brand/ic-modal-success.svg";
 
 /**
  * Profile edit ("프로필 변경") — reuses the profile-registration visual system
@@ -24,8 +30,11 @@ import type { ProfileImageType } from "../lib/types";
  * photo (CUSTOM) supersedes a selected character (AVATAR) and vice-versa.
  */
 export function EditProfile() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const toast = useToast();
+  /* Save outcome, shown as an AME-006 modal rather than a toast. */
+  const [result, setResult] = useState<null | "saved" | "failed">(null);
   const { me, setMe } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -82,11 +91,11 @@ export function EditProfile() {
   async function checkNick() {
     if (checking) return;
     if (!nickChanged) {
-      setCheckMsg({ ok: true, text: "현재 사용 중인 닉네임이에요." });
+      setCheckMsg({ ok: true, text: t("profileSetup.nicknameCurrent") });
       return;
     }
     if (trimmed.length < 2) {
-      setCheckMsg({ ok: false, text: "2자 이상 입력해 주세요." });
+      setCheckMsg({ ok: false, text: t("profileSetup.nicknameTooShort") });
       return;
     }
     setChecking(true);
@@ -95,9 +104,9 @@ export function EditProfile() {
       const res = await userApi.checkNickname(trimmed);
       if (res.available && res.check_token) {
         setCheckToken(res.check_token);
-        setCheckMsg({ ok: true, text: "사용가능한 닉네임입니다." });
+        setCheckMsg({ ok: true, text: t("profileSetup.nicknameAvailable") });
       } else {
-        setCheckMsg({ ok: false, text: "이미 사용 중인 닉네임이에요." });
+        setCheckMsg({ ok: false, text: t("profileSetup.nicknameTaken") });
       }
     } catch (e) {
       setCheckMsg({ ok: false, text: errorMessage(e) });
@@ -145,10 +154,14 @@ export function EditProfile() {
       const updated = await userApi.updateProfile(body);
       setMe(updated);
       leavingRef.current = true; // saved → deliberate exit, don't trip the guard
-      toast.success("저장했어요");
-      nav("/profile");
+      // AME-006 confirms the save with a modal (2231:24627), not a toast; the
+      // navigation happens when the user acknowledges it.
+      setResult("saved");
     } catch (e) {
-      toast.error(errorMessage(e));
+      // 2231:24634 — the failure is a modal too. errorMessage() is kept for the
+      // console/telemetry path but the user-facing copy is Figma's.
+      console.error("[profile] save failed", errorMessage(e));
+      setResult("failed");
     } finally {
       setBusy(false);
     }
@@ -158,24 +171,24 @@ export function EditProfile() {
   const showChar = !showCustom && imageType === "AVATAR";
 
   return (
-    <div className="screen setupp">
+    <div className="screen setupp setupp--edit">
       <div className="setupp__scroll">
         <div className="setupp__inner">
           <button
             className="setupp__back"
             onClick={() => { if (!busy) nav("/profile"); }}
             disabled={busy}
-            aria-label="뒤로"
+            aria-label={t("common.back")}
           >
-            <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
 
-          <h1 className="setupp__title">프로필 변경</h1>
+          <h1 className="setupp__title">{t("profileSetup.editTitle")}</h1>
 
           {/* Profile image */}
-          <div className="setupp__label">프로필 이미지</div>
+          <div className="setupp__label">{t("profileSetup.imageLabel")}</div>
           <div className="setupp__preview">
             <div
               className="setupp__preview-circle"
@@ -183,17 +196,24 @@ export function EditProfile() {
               role="img"
               aria-label={
                 showCustom
-                  ? "프로필 이미지: 업로드한 사진"
+                  ? t("profileSetup.imageUploadedA11y")
                   : showChar
-                    ? `프로필 이미지: ${avatarLabel(avatarKey)}`
-                    : "프로필 이미지: 기본 이미지"
+                    ? t("profileSetup.imageCharacterA11y", { name: t(avatarLabelKey(avatarKey)) })
+                    : t("profileSetup.imageDefaultA11y")
               }
             >
               {showCustom ? (
                 <img src={customUrl!} alt="" className="setupp__preview-img" />
               ) : showChar ? (
                 <span className="setupp__preview-char">
-                  <CharacterArt variant={avatarKey} fill="80%" />
+                  {/* Same ink-centred placement as the 80px picker, scaled to
+                      the 120 preview frame. */}
+                  <img
+                    src={characterArtSrc(avatarKey)}
+                    alt=""
+                    aria-hidden="true"
+                    style={characterArtStyle(avatarKey, 120)}
+                  />
                 </span>
               ) : (
                 <ProfilePlaceholder />
@@ -206,21 +226,21 @@ export function EditProfile() {
               className="setupp__photo"
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              aria-label="사진 선택, 사진 라이브러리 열기"
+              aria-label={t("profileSetup.choosePhotoA11y")}
             >
               {uploading ? (
                 <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
               ) : (
-                <CameraIcon />
+                <img className="setupp__photo-ic" src={icCamera} alt="" aria-hidden="true" width={20.2128} height={16} />
               )}
-              <span>사진 선택</span>
+              <span>{t("profileSetup.choosePhoto")}</span>
             </button>
             <input ref={fileRef} type="file" accept="image/*" hidden onChange={onFile} />
           </div>
 
           {/* Default characters */}
-          <div className="setupp__label">기본 캐릭터 선택</div>
-          <div className="setupp__chars" role="radiogroup" aria-label="기본 캐릭터 선택">
+          <div className="setupp__label">{t("profileSetup.characterLabel")}</div>
+          <div className="setupp__chars" role="radiogroup" aria-label={t("profileSetup.characterLabel")}>
             {AVATAR_KEYS.map((key) => {
               const selected = showChar && avatarKey === key;
               return (
@@ -230,7 +250,7 @@ export function EditProfile() {
                   className="setupp__char-btn"
                   role="radio"
                   aria-checked={selected}
-                  aria-label={avatarLabel(key)}
+                  aria-label={t(avatarLabelKey(key))}
                   onClick={() => selectCharacter(key)}
                 >
                   <CharacterAvatar variant={key} selected={selected} />
@@ -240,12 +260,12 @@ export function EditProfile() {
           </div>
 
           {/* Nickname */}
-          <div className="setupp__label">닉네임</div>
+          <div className="setupp__label">{t("profileSetup.nicknameLabel")}</div>
           <div className="setupp__nick-row">
             <input
               className="setupp__nick-input"
-              placeholder="닉네임을 입력하세요"
-              aria-label="닉네임"
+              placeholder={t("profileSetup.nicknamePlaceholderEdit")}
+              aria-label={t("profileSetup.nicknameA11y")}
               value={nickname}
               maxLength={10}
               autoCapitalize="none"
@@ -257,9 +277,9 @@ export function EditProfile() {
               className="setupp__nick-btn"
               onClick={checkNick}
               disabled={checking || trimmed.length < 1}
-              aria-label="닉네임 변경 확인"
+              aria-label={t("profileSetup.changeNicknameA11y")}
             >
-              {checking ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : "변경하기"}
+              {checking ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : t("profileSetup.changeNickname")}
             </button>
           </div>
           <p
@@ -278,18 +298,38 @@ export function EditProfile() {
             onClick={save}
             disabled={!canSave}
             aria-disabled={!canSave}
-            aria-label={canSave ? "저장하기" : "변경 사항이 없거나 닉네임 확인이 필요해 저장할 수 없어요"}
+            aria-label={t(canSave ? "profileSetup.save" : "profileSetup.saveBlockedA11y")}
           >
-            {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : "저장하기"}
+            {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("profileSetup.save")}
           </button>
         </div>
       </div>
 
+      {/* 2231:24627 — success. Uses the frame's green badge rather than
+          MOR-007's mint one. Acknowledging it leaves for the profile page. */}
+      <SuccessModal
+        open={result === "saved"}
+        icon={icModalSuccess}
+        title={t("profileSetup.savedTitle")}
+        description={t("profileSetup.savedBody")}
+        onClose={() => { setResult(null); nav("/profile"); }}
+      />
+
+      {/* 2231:24634 — failure. Stays on the screen so the user can retry. */}
+      <FailModal
+        open={result === "failed"}
+        title={t("profileSetup.saveFailTitle")}
+        description={t("profileSetup.saveFailBody").split("\n").map((line, i) => (
+          <span key={i} style={{ display: "block" }}>{line}</span>
+        ))}
+        onClose={() => setResult(null)}
+      />
+
       <UnsavedChangesModal
         open={blocker.state === "blocked"}
-        title="프로필 변경을 종료할까요?"
-        subtitle="저장하지 않고 나가면 변경사항이 사라져요"
-        cancelLabel="취소"
+        title={t("profileSetup.exitTitle")}
+        subtitle={t("profileSetup.exitSubtitle")}
+        cancelLabel={t("common.cancel")}
         onContinue={() => blocker.reset?.()}
         onLeave={() => {
           leavingRef.current = true; // discard the draft and proceed with the blocked nav

@@ -7,14 +7,13 @@ import { http } from "../lib/http";
 import { useAuth } from "../hooks/auth";
 import {
   BellIcon,
-  SpeakingIcon,
-  PencilIcon,
-  GearIcon,
-  PlayIcon,
-  BookIcon,
-  ChevronRight,
+  LectureShortcutArt,
+  ReviewShortcutArt,
+  TopNavChevron,
 } from "../components/brand/HomeIcons";
 import { DailyLearningSun } from "../components/DailyLearningSun";
+import { TrackDashboard } from "../components/TrackDashboard";
+import { T, useTranslation } from "../i18n";
 import { TopikPartSelectionModal } from "../components/TopikPartSelectionModal";
 import {
   AdditionalLearningCountModal,
@@ -22,59 +21,18 @@ import {
 } from "../components/AdditionalLearningCountModal";
 import type { DashboardSummary, DashboardTrack, TopikSection } from "../lib/types";
 
-/** Icon for a learning track's tab, chosen from its stable category. */
-function trackIcon(category: string, size = 30) {
-  if (category === "topik") return <PencilIcon size={size} />;
-  return <SpeakingIcon size={size} />;
-}
 
-/** Open horseshoe progress gauge with the percentage centered. When complete
- *  the arc turns celebratory yellow; otherwise it uses brand orange. */
-function DailyGauge({ ratio, done }: { ratio: number; done: boolean }) {
-  const pct = Math.max(0, Math.min(100, Math.round(ratio * 100)));
-  const arcColor = done ? "#FFB91F" : "#FF5B00";
-  const r = 78;
-  const cx = 100;
-  const cy = 100;
-  // Arc from ~135° to ~405° (270° sweep, gap at the bottom).
-  const start = 135;
-  const sweep = 270;
-  const circ = 2 * Math.PI * r;
-  const arcLen = (sweep / 360) * circ;
-  const filled = (pct / 100) * arcLen;
-  const pol = (deg: number) => {
-    const a = (deg * Math.PI) / 180;
-    return `${cx + r * Math.cos(a)} ${cy + r * Math.sin(a)}`;
-  };
-  const largeArc = sweep > 180 ? 1 : 0;
-  const d = `M ${pol(start)} A ${r} ${r} 0 ${largeArc} 1 ${pol(start + sweep)}`;
-  return (
-    <div className="home__gauge">
-      <svg viewBox="0 0 200 200" aria-hidden="true">
-        <path d={d} fill="none" stroke="#fff" strokeWidth="20" strokeLinecap="round" />
-        {pct > 0 && (
-          <path
-            d={d}
-            fill="none"
-            stroke={arcColor}
-            strokeWidth="20"
-            strokeLinecap="round"
-            strokeDasharray={`${filled} ${arcLen}`}
-          />
-        )}
-      </svg>
-      <div className="home__gauge-val">
-        <span className="home__gauge-num">{pct}</span>
-        <span className="home__gauge-pct">%</span>
-      </div>
-    </div>
-  );
-}
-
-function hello(name: string) {
+/**
+ * Greeting — Figma KO 1825:26666 / EN 1825:28613.
+ *
+ * The emphasis sits in a different place in each language ("00님, 반가워요!"
+ * leads with the name; "Welcome, Elsy!" trails it), so the message carries its
+ * own emphasis marker rather than the JSX wrapping a fixed position.
+ */
+function Greeting({ name }: { name: string }) {
   return (
     <h1 className="home__greet">
-      <b>{name}님</b>, 반가워요!
+      <T k="home.greeting" vars={{ name }} />
     </h1>
   );
 }
@@ -82,6 +40,7 @@ function hello(name: string) {
 export function Home() {
   const nav = useNavigate();
   const { me } = useAuth();
+  const { t } = useTranslation();
   const q = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
   const unread = useQuery({
     queryKey: ["notif-unread"],
@@ -102,7 +61,7 @@ export function Home() {
   const [countKind, setCountKind] = useState<"conversation" | "topik" | null>(null);
   const [pendingSection, setPendingSection] = useState<TopikSection | null>(null);
   const [topikAdditional, setTopikAdditional] = useState(false);
-  const nickname = me?.nickname ?? me?.name ?? "회원";
+  const nickname = me?.nickname ?? me?.name ?? t("home.defaultNickname");
 
   // Confirming the count modal: unsubscribed → subscription screen (no session
   // created / no API call); subscribed → start a new additional session of the
@@ -127,11 +86,11 @@ export function Home() {
     <div className="screen home">
       <div className="screen__body screen__body--nav home__body">
         <header className="home__header">
-          {hello(nickname)}
+          <Greeting name={nickname} />
           <button
             className="home__bell"
             onClick={() => nav("/notifications")}
-            aria-label={unread.data?.has_unread ? "알림, 새 알림 있음" : "알림"}
+            aria-label={t(unread.data?.has_unread ? "home.notificationsUnread" : "home.notifications")}
           >
             <BellIcon />
             {unread.data?.has_unread && <span className="home__bell-dot" aria-hidden="true" />}
@@ -162,96 +121,48 @@ export function Home() {
                 {/* Streak */}
                 <button className="home__streak" onClick={() => nav("/streak")}>
                   <DailyLearningSun size={50} />
-                  <span className="home__streak-text">연속 학습 {d.streak_days}일째</span>
-                  <ChevronRight size={22} />
+                  <span className="home__streak-text">
+                    {t("home.streak", { days: d.streak_days })}
+                  </span>
+                  <TopNavChevron />
                 </button>
 
                 {tracks.length > 0 && active && (
-                  <>
-                    {/* Learning-mode tabs (driven by real tracks) */}
-                    <div className="home__tabs" role="tablist" aria-label="학습 모드">
-                      {tracks.map((t, i) => (
-                        <button
-                          key={t.track_id}
-                          role="tab"
-                          aria-selected={i === tab}
-                          aria-label={t.name}
-                          className={`home__tab ${i === tab ? "is-active" : ""} home__tab--${t.category}`}
-                          onClick={() => setTab(i)}
-                        >
-                          {trackIcon(t.category)}
-                        </button>
-                      ))}
-                      <button
-                        className="home__tab home__tab--muted"
-                        onClick={() => nav("/recommend/settings")}
-                        aria-label="맞춤 학습 설정"
-                      >
-                        <GearIcon />
-                      </button>
-                    </div>
-
-                    {/* Hero learning card (in-progress / completed states) */}
-                    <section
-                      className={`home__hero ${done ? "is-done" : ""}`}
-                      aria-label={`${active.name} 학습 현황`}
-                    >
-                      {done && (
-                        <div className="home__hero-banner" role="status">
-                          오늘 목표 100% 달성! 대단해요 ✨
-                        </div>
-                      )}
-                      <div className="home__hero-top">
-                        <div className="home__hero-info">
-                          <h2 className="home__hero-title">{active.name}</h2>
-                          <div className="home__hero-level">
-                            {active.category === "topik" ? `${active.level}급` : `Lv.${active.level}`}
-                          </div>
-                          <div
-                            className="home__hero-goal"
-                            aria-label={`${active.goal.label || "하루 목표"} ${target}개 중 ${shownCurrent}개 완료, ${Math.min(100, Math.round(ratio * 100))}퍼센트`}
-                          >
-                            <span className="home__hero-goal-label">{active.goal.label || "하루 목표"}</span>
-                            <span className="home__hero-goal-frac">
-                              {shownCurrent}/{target}
-                            </span>
-                          </div>
-                        </div>
-                        <DailyGauge ratio={ratio} done={done} />
-                      </div>
-                      <button
-                        className="home__hero-cta"
-                        onClick={() => {
-                          // TOPIK always picks a part first; the part modal then
-                          // chains into the count modal when the goal is done.
-                          // Conversation: done → count modal, else start directly.
-                          if (active.category === "topik") {
-                            setTopikAdditional(done);
-                            setTopikPartOpen(true);
-                          } else if (done) {
-                            setCountKind("conversation");
-                          } else {
-                            nav("/session/conversation", { state: { from: "/home" } });
-                          }
-                        }}
-                      >
-                        {done ? "추가 학습하기" : rawCurrent > 0 ? "이어서 학습하기" : "바로 시작하기"}
-                      </button>
-                    </section>
-                  </>
+                  <TrackDashboard
+                    tracks={tracks}
+                    active={active}
+                    tab={tab}
+                    onTab={setTab}
+                    onSettings={() => nav("/recommend/settings")}
+                    ratio={ratio}
+                    current={shownCurrent}
+                    target={target}
+                    done={done}
+                    onStart={() => {
+                      // TOPIK always picks a part first; the part modal then
+                      // chains into the count modal when the goal is done.
+                      // Conversation: done -> count modal, else start directly.
+                      if (active.category === "topik") {
+                        setTopikAdditional(done);
+                        setTopikPartOpen(true);
+                      } else if (done) {
+                        setCountKind("conversation");
+                      } else {
+                        nav("/session/conversation", { state: { from: "/home" } });
+                      }
+                    }}
+                  />
                 )}
 
                 {/* Shortcuts */}
                 <div className="home__shortcuts">
                   <button className="home__shortcut" onClick={() => nav("/courses")}>
-                    <span className="home__shortcut-play">
-                      <PlayIcon />
-                    </span>
-                    <span className="home__shortcut-label">강의</span>
+                    <LectureShortcutArt />
+                    <span className="home__shortcut-label">{t("home.shortcutClasses")}</span>
                   </button>
                   <button className="home__shortcut" onClick={() => nav("/saved")}>
-                    <BookIcon size={62} />
-                    <span className="home__shortcut-label">복습하기</span>
+                    <ReviewShortcutArt />
+                    <span className="home__shortcut-label">{t("home.shortcutReview")}</span>
                   </button>
                 </div>
 
@@ -259,9 +170,10 @@ export function Home() {
                 {d.paywall_required && (
                   <button className="home__promo" onClick={() => nav("/subscription/start")}>
                     <span className="home__promo-text">
-                      아직 한귤 구독 전이라면? <b className="home__promo-hl">지금 바로 구독하세요!</b>
+                      {t("home.promoQuestion")}{" "}
+                      <b className="home__promo-hl">{t("home.promoCta")}</b>
                     </span>
-                    <ChevronRight size={20} color="#FFD227" />
+                    <TopNavChevron tone="gold" />
                   </button>
                 )}
               </>

@@ -7,11 +7,12 @@ import type { PointsHistoryResponse, PointTransaction } from "../lib/types";
 vi.mock("../api/endpoints", () => ({
   gameApi: { points: vi.fn(), pointsHistory: vi.fn() },
 }));
-let mockLang = "ko";
+let mockLang: "ko" | "en" = "ko";
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: mockLang } }) }));
 
 import { gameApi } from "../api/endpoints";
 import { MyPoints } from "./MyPoints";
+import { I18nProvider } from "../i18n";
 
 const api = gameApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -39,10 +40,12 @@ const history: PointsHistoryResponse = {
 function renderPoints() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}>
-      <MyPoints />
-    </QueryClientProvider>,
-  );
+    // Mirrors <LanguageSync>: the provider adopts the profile language.
+    <I18nProvider language={mockLang}>
+      <QueryClientProvider client={qc}>
+        <MyPoints />
+      </QueryClientProvider>
+    </I18nProvider>,);
 }
 
 beforeEach(() => {

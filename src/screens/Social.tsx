@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+import { useTranslation, type TranslationKey } from "../i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../components/ui/kit";
 import { Dialog } from "../components/ui/Modal";
@@ -7,12 +8,11 @@ import { ErrorState, SkeletonList } from "../components/ui/states";
 import { RankAvatar } from "../components/brand/RankBits";
 import { AddFriendSheet, IncomingFriendRequestSheet } from "../components/social/AddFriendSheet";
 import { friendApi } from "../api/endpoints";
-import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import { timeAgo } from "../lib/format";
-import { normalizeLanguage, type AppLanguage } from "../lib/language";
 import type { Friend, FriendRequest } from "../lib/types";
+import { DetailHeader } from "../components/DetailHeader";
 
 type Tab = "friends" | "received" | "sent";
 
@@ -23,98 +23,57 @@ const QK = {
 } as const;
 
 /* ------------------------------ localization ---------------------------- */
-interface FmCopy {
-  title: string;
-  back: string;
-  add: string;
-  tabs: { friends: string; received: string; sent: string };
-  remove: string;
-  reject: string;
-  accept: string;
-  cancel: string;
-  openRequest: string;
-  friendsEmptyTitle: string;
-  friendsEmptyDesc: string[];
-  receivedEmptyTitle: string;
-  receivedEmptyDesc: string[];
-  sentEmptyTitle: string;
-  sentEmptyDesc: string[];
-  listError: string;
-  modalTitle: (n: string) => string;
-  modalDesc: string;
-  modalCancel: string;
-  modalDelete: string;
-  toastAccepted: (name: string) => string;
-  toastRejected: string;
-  toastCancelled: string;
-  toastRemoved: string;
-  requestAge: (iso?: string) => string;
-}
-const FM_COPY: Record<AppLanguage, FmCopy> = {
-  ko: {
-    title: "친구 관리",
-    back: "뒤로 가기",
-    add: "친구 추가",
-    tabs: { friends: "친구", received: "받은 요청", sent: "보낸 요청" },
-    remove: "삭제",
-    reject: "거절",
-    accept: "수락",
-    cancel: "취소",
-    openRequest: "요청 열기",
-    friendsEmptyTitle: "아직 친구가 없어요",
-    friendsEmptyDesc: ["친구를 추가하고", "함께 공부해 보세요!"],
-    receivedEmptyTitle: "받은 친구 요청이 없어요",
-    receivedEmptyDesc: ["친구가 요청을 보내면", "이곳에 표시돼요"],
-    sentEmptyTitle: "보낸 친구 요청이 없어요",
-    sentEmptyDesc: ["함께 공부하고 싶은 친구에게", "요청을 보내보세요"],
-    listError: "목록을 불러오지 못했어요.",
-    modalTitle: (n: string) => `${n}님을 친구에서 삭제할까요?`,
-    modalDesc: "상대방에게 알림은 가지 않습니다.",
-    modalCancel: "취소",
-    modalDelete: "삭제",
-    toastAccepted: (name) => `${name}님과 친구가 되었어요!`,
-    toastRejected: "요청을 거절했어요",
-    toastCancelled: "요청을 취소했어요",
-    toastRemoved: "친구를 삭제했어요",
-    requestAge: (iso?: string) => `${timeAgo(iso)} 요청`,
-  },
-  en: {
-    title: "Manage Friends",
-    back: "Go back",
-    add: "Add Friend",
-    tabs: { friends: "Friends", received: "Received", sent: "Sent" },
-    remove: "Remove",
-    reject: "Reject",
-    accept: "Accept",
-    cancel: "Cancel",
-    openRequest: "open request",
-    friendsEmptyTitle: "You don't have any friends yet",
-    friendsEmptyDesc: ["Add friends and", "study together!"],
-    receivedEmptyTitle: "No friend requests received",
-    receivedEmptyDesc: ["When a friend sends you a request,", "it will appear here"],
-    sentEmptyTitle: "No friend requests sent",
-    sentEmptyDesc: ["Send a request to a friend", "you'd like to study with"],
-    listError: "Couldn't load the list.",
-    modalTitle: (n: string) => `Remove ${n} from your friends?`,
-    modalDesc: "They will not be notified.",
-    modalCancel: "Cancel",
-    modalDelete: "Remove",
-    toastAccepted: (name) => `You're now friends with ${name}!`,
-    toastRejected: "Request rejected",
-    toastCancelled: "Request cancelled",
-    toastRemoved: "Friend removed",
-    requestAge: (iso?: string) => (iso ? engAge(iso) : ""),
-  },
-};
+type FmCopy = ReturnType<typeof useFmCopy>;
 
-function engAge(iso: string): string {
-  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
+/** Friend-management copy, bound to the active language (`friends.*`). */
+function useFmCopy() {
+  const { t, language } = useTranslation();
+  return {
+    title: t("friends.title"),
+    back: t("common.back"),
+    add: t("friends.add"),
+    addShort: t("friends.addShort"),
+    tabs: {
+      friends: t("friends.tabFriends"),
+      received: t("friends.tabReceived"),
+      sent: t("friends.tabSent"),
+    },
+    remove: t("friends.remove"),
+    reject: t("friends.reject"),
+    accept: t("friends.accept"),
+    cancel: t("common.cancel"),
+    openRequest: t("friends.openRequest"),
+    friendsEmptyTitle: t("friends.friendsEmptyTitle"),
+    friendsEmptyDesc: [t("friends.friendsEmptyDesc1"), t("friends.friendsEmptyDesc2")],
+    receivedEmptyTitle: t("friends.receivedEmptyTitle"),
+    receivedEmptyDesc: [t("friends.receivedEmptyDesc1"), t("friends.receivedEmptyDesc2")],
+    sentEmptyTitle: t("friends.sentEmptyTitle"),
+    sentEmptyDesc: [t("friends.sentEmptyDesc1"), t("friends.sentEmptyDesc2")],
+    listError: t("friends.listError"),
+    modalTitle: (n: string) => t("friends.modalTitle", { name: n }),
+    modalDesc: t("friends.modalDesc"),
+    modalCancel: t("common.cancel"),
+    modalDelete: t("friends.remove"),
+    toastAccepted: (name: string) => t("friends.toastAccepted", { name }),
+    toastRejected: t("friends.toastRejected"),
+    toastCancelled: t("friends.toastCancelled"),
+    toastRemoved: t("friends.toastRemoved"),
+    /* Both locales wrap the relative time: "{age} 요청" / "Requested {age}"
+       (1815:25373 / 1816:24265). A server-supplied `relative_time` is already
+       formatted, so it substitutes for the locally computed one but still goes
+       through the same wrapper. */
+    requestAge: (iso?: string, preformatted?: string | null) => {
+      const age = preformatted ?? (iso ? timeAgo(iso, t, language === "ko" ? "ko-KR" : "en-US") : "");
+      return age ? t("friends.requestAge", { age }) : "";
+    },
+  };
 }
-const nameOf = (u: { nickname?: string | null }) => u.nickname ?? "회원";
+
+/** Display name with the shared fallback; `t` is passed since this is not a hook. */
+const nameOf = (
+  u: { nickname?: string | null },
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+) => u.nickname ?? t("home.defaultNickname");
 
 const PlusIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -124,12 +83,13 @@ const PlusIcon = () => (
 
 /* -------------------------------- rows ---------------------------------- */
 function FriendRow({ friend, copy, onRemove }: { friend: Friend; copy: FmCopy; onRemove: () => void }) {
+  const { t } = useTranslation();
   return (
-    <li className="fm__row" aria-label={`${nameOf(friend)}, ${copy.remove}`}>
+    <li className="fm__row" aria-label={`${nameOf(friend, t)}, ${copy.remove}`}>
       <span className="fm__row-avatar">
-        <RankAvatar entry={friend} size={46} />
+        <RankAvatar entry={friend} size={48} />
       </span>
-      <span className="fm__row-name">{nameOf(friend)}</span>
+      <span className="fm__row-name">{nameOf(friend, t)}</span>
       <button className="fm__pill" onClick={onRemove}>{copy.remove}</button>
     </li>
   );
@@ -138,35 +98,34 @@ function FriendRow({ friend, copy, onRemove }: { friend: Friend; copy: FmCopy; o
 function RequestRow({
   req,
   copy,
-  lang,
   busy,
   actions,
   onOpen,
 }: {
   req: FriendRequest;
   copy: FmCopy;
-  lang: AppLanguage;
   busy: boolean;
   actions: { label: string; primary?: boolean; onClick: () => void }[];
   /** When set, the avatar + name open the full request sheet (received tab). */
   onOpen?: () => void;
 }) {
-  const age = lang === "ko" ? copy.requestAge(req.created_at) : req.relative_time ?? copy.requestAge(req.created_at);
+  const { t } = useTranslation();
+  const age = copy.requestAge(req.created_at, req.relative_time);
   const identity = (
     <>
       <span className="fm__row-avatar">
-        <RankAvatar entry={req} size={46} />
+        <RankAvatar entry={req} size={48} />
       </span>
       <div className="fm__row-main">
-        <div className="fm__row-name">{nameOf(req)}</div>
+        <div className="fm__row-name">{nameOf(req, t)}</div>
         <div className="fm__row-age">{age}</div>
       </div>
     </>
   );
   return (
-    <li className="fm__row" aria-label={`${nameOf(req)}, ${age}, ${actions.map((a) => a.label).join(", ")}`}>
+    <li className="fm__row" aria-label={`${nameOf(req, t)}, ${age}, ${actions.map((a) => a.label).join(", ")}`}>
       {onOpen ? (
-        <button className="fm__row-open" onClick={onOpen} aria-label={`${nameOf(req)} ${copy.openRequest}`}>
+        <button className="fm__row-open" onClick={onOpen} aria-label={`${nameOf(req, t)} ${copy.openRequest}`}>
           {identity}
         </button>
       ) : (
@@ -190,12 +149,10 @@ function RequestRow({
 
 /* -------------------------------- screen -------------------------------- */
 export function Social() {
-  const nav = useNavigate();
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const toast = useToast();
-  const { me } = useAuth();
-  const copy = FM_COPY[normalizeLanguage(me?.app_language)];
-  const lang = normalizeLanguage(me?.app_language);
+  const copy = useFmCopy();
 
   const [params] = useSearchParams();
   const initialTab = params.get("tab");
@@ -256,16 +213,16 @@ export function Social() {
   return (
     <div className="screen fm">
       {/* Header */}
-      <header className="fm__header">
-        <button className="fm__back" onClick={() => nav(-1)} aria-label={copy.back}>
-          <BackChevron />
-        </button>
-        <h1 className="fm__title">{copy.title}</h1>
-        <button className="fm__add" onClick={() => setAddOpen(true)} aria-label={copy.add}>
-          <PlusIcon />
-          <span>{copy.add}</span>
-        </button>
-      </header>
+      <DetailHeader
+        title={copy.title}
+        backLabel={copy.back}
+        trailing={
+          <button className="fm__add" onClick={() => setAddOpen(true)} aria-label={copy.add}>
+            <PlusIcon />
+            <span>{copy.addShort}</span>
+          </button>
+        }
+      />
 
       {/* Tabs */}
       <div className="fm__tabs" role="tablist" aria-label={copy.title}>
@@ -294,7 +251,7 @@ export function Social() {
           <ErrorState message={copy.listError} onRetry={() => activeQuery.refetch()} />
         ) : tab === "friends" ? (
           (friends.data?.friends.length ?? 0) === 0 ? (
-            <FmEmpty title={copy.friendsEmptyTitle} desc={copy.friendsEmptyDesc} onAdd={() => setAddOpen(true)} addLabel={copy.add} />
+            <FmEmpty title={copy.friendsEmptyTitle} desc={copy.friendsEmptyDesc} onAdd={() => setAddOpen(true)} addLabel={copy.add} addText={copy.addShort} />
           ) : (
             <ul className="fm__list" role="list">
               {friends.data!.friends.map((f) => (
@@ -312,19 +269,18 @@ export function Social() {
                   key={r.request_id}
                   req={r}
                   copy={copy}
-                  lang={lang}
                   busy={busy.has(r.request_id)}
                   onOpen={() => setIncomingId(r.request_id)}
                   actions={[
                     { label: copy.reject, onClick: () => act(r.request_id, () => friendApi.reject(r.request_id), copy.toastRejected) },
-                    { label: copy.accept, primary: true, onClick: () => act(r.request_id, () => friendApi.accept(r.request_id), copy.toastAccepted(nameOf(r)), true) },
+                    { label: copy.accept, primary: true, onClick: () => act(r.request_id, () => friendApi.accept(r.request_id), copy.toastAccepted(nameOf(r, t)), true) },
                   ]}
                 />
               ))}
             </ul>
           )
         ) : (sent.data?.requests.length ?? 0) === 0 ? (
-          <FmEmpty title={copy.sentEmptyTitle} desc={copy.sentEmptyDesc} onAdd={() => setAddOpen(true)} addLabel={copy.add} />
+          <FmEmpty title={copy.sentEmptyTitle} desc={copy.sentEmptyDesc} onAdd={() => setAddOpen(true)} addLabel={copy.add} addText={copy.addShort} />
         ) : (
           <ul className="fm__list" role="list">
             {sent.data!.requests.map((r) => (
@@ -332,7 +288,6 @@ export function Social() {
                 key={r.request_id}
                 req={r}
                 copy={copy}
-                lang={lang}
                 busy={busy.has(r.request_id)}
                 actions={[{ label: copy.cancel, onClick: () => act(r.request_id, () => friendApi.cancel(r.request_id), copy.toastCancelled) }]}
               />
@@ -344,7 +299,7 @@ export function Social() {
       {/* Friend deletion confirmation — backdrop does not dismiss (no onClose). */}
       <Dialog
         open={!!deleteTarget}
-        title={deleteTarget ? copy.modalTitle(nameOf(deleteTarget)) : ""}
+        title={deleteTarget ? copy.modalTitle(nameOf(deleteTarget, t)) : ""}
         text={copy.modalDesc}
       >
         <div className="fm__modal-actions">
@@ -367,27 +322,27 @@ export function Social() {
   );
 }
 
-const BackChevron = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M15 5l-7 7 7 7" stroke="#272c30" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
 
 /**
  * Shared, centered empty state for every Friend Management tab — same heading /
  * body styles and vertical placement as the Friends tab. `onAdd` adds the
- * compact outlined "+ 친구 추가" button (Friends + Sent tabs); Received omits it.
+ * compact outlined t("friends.addFriendCta") button (Friends + Sent tabs); Received omits it.
  */
 function FmEmpty({
   title,
   desc,
   onAdd,
   addLabel,
+  addText,
 }: {
   title: string;
   desc: string[];
   onAdd?: () => void;
+  /** Accessible name — the fuller "Add Friend" / "친구 추가". */
   addLabel?: string;
+  /** Visible label. LEG-014 (1653:23119) prints just "Add" here, the same
+   *  short form the header button uses. */
+  addText?: string;
 }) {
   return (
     <div className="fm__empty">
@@ -403,7 +358,7 @@ function FmEmpty({
       {onAdd && (
         <button className="fm__empty-add" onClick={onAdd} aria-label={addLabel}>
           <PlusIcon />
-          <span>{addLabel}</span>
+          <span>{addText ?? addLabel}</span>
         </button>
       )}
     </div>

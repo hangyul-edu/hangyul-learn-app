@@ -11,6 +11,7 @@ const { management } = vi.hoisted(() => ({ management: vi.fn() }));
 vi.mock("../api/endpoints", () => ({ learnApi: { management } }));
 
 import { LearningManagement } from "./LearningManagement";
+import { I18nProvider } from "../i18n";
 
 function Loc() {
   return <div data-testid="loc">{useLocation().pathname}</div>;
@@ -19,16 +20,17 @@ function Loc() {
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={["/learning-management"]}>
-        <Routes>
-          <Route path="/learning-management" element={<><LearningManagement /><Loc /></>} />
-          <Route path="/recommend" element={<><div>PERSONALIZED</div><Loc /></>} />
-          <Route path="/home" element={<><div>HOME</div><Loc /></>} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
-  );
+    <I18nProvider language="ko">
+      <QueryClientProvider client={qc}>
+        <MemoryRouter initialEntries={["/learning-management"]}>
+          <Routes>
+            <Route path="/learning-management" element={<><LearningManagement /><Loc /></>} />
+            <Route path="/recommend" element={<><div>PERSONALIZED</div><Loc /></>} />
+            <Route path="/home" element={<><div>HOME</div><Loc /></>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </I18nProvider>,);
 }
 
 function stats(period: ManagementPeriod, over: Partial<ManagementStats> = {}): ManagementStats {
@@ -59,10 +61,11 @@ describe("LearningManagement", () => {
     const summary = document.querySelector(".lmgmt__summary") as HTMLElement;
     expect(within(summary).getByText("01:00")).toBeInTheDocument(); // 3600s → HH:MM
     expect(within(summary).getByText("5")).toBeInTheDocument(); // server learning_count
-    // Chart bars + current-bucket value (today selected by default, "1h 33m" style).
+    // Chart bars + current-bucket value (today selected by default). HMA-002
+    // labels its bar "1h33m" — unspaced.
     expect(screen.getByText("월")).toBeInTheDocument();
     expect(screen.getByText("목")).toBeInTheDocument();
-    expect(screen.getByText("1h 0m")).toBeInTheDocument(); // current bucket duration
+    expect(screen.getByText("1h0m")).toBeInTheDocument(); // current bucket duration
   });
 
   it("highlights today by default and shows its duration above it", async () => {
@@ -76,12 +79,12 @@ describe("LearningManagement", () => {
   it("moves the highlight and displayed time to a bar the user selects", async () => {
     renderPage();
     await screen.findByText("목");
-    // Default: today's bucket (목, 3600s) shows "1h 0m".
-    expect(screen.getByText("1h 0m")).toBeInTheDocument();
+    // Default: today's bucket (목, 3600s) shows "1h0m".
+    expect(screen.getByText("1h0m")).toBeInTheDocument();
     // Select the historical Monday bar (월, 1200s) → its time appears, today's is gone.
     await userEvent.click(screen.getByRole("button", { name: /월/ }));
     expect(await screen.findByText("20m")).toBeInTheDocument();
-    expect(screen.queryByText("1h 0m")).not.toBeInTheDocument();
+    expect(screen.queryByText("1h0m")).not.toBeInTheDocument();
   });
 
   it("bottom totals reflect the selected bar only, not the period aggregate", async () => {
@@ -89,15 +92,16 @@ describe("LearningManagement", () => {
     await screen.findByText("목");
     const totals = document.querySelector(".lmgmt__totals") as HTMLElement;
     // Default selection = current bucket (목): 3 sentences / 2 questions — NOT
-    // the period aggregate (7 / 3).
-    expect(within(totals).getByText("3")).toBeInTheDocument();
-    expect(within(totals).getByText("2")).toBeInTheDocument();
-    expect(within(totals).queryByText("7")).not.toBeInTheDocument();
+    // the period aggregate (7 / 3). Figma 1916:25920 renders the count with its
+    // 개 unit.
+    expect(within(totals).getByText("3개")).toBeInTheDocument();
+    expect(within(totals).getByText("2개")).toBeInTheDocument();
+    expect(within(totals).queryByText("7개")).not.toBeInTheDocument();
     // Select the Monday bar → its own counts (4 / 1).
     await userEvent.click(screen.getByRole("button", { name: /월/ }));
-    expect(within(totals).getByText("4")).toBeInTheDocument();
-    expect(within(totals).getByText("1")).toBeInTheDocument();
-    expect(within(totals).queryByText("3")).not.toBeInTheDocument();
+    expect(within(totals).getByText("4개")).toBeInTheDocument();
+    expect(within(totals).getByText("1개")).toBeInTheDocument();
+    expect(within(totals).queryByText("3개")).not.toBeInTheDocument();
   });
 
   it("shows a loading skeleton (not the empty state) before data arrives", () => {
@@ -164,7 +168,7 @@ describe("LearningManagement", () => {
   it("back button navigates to Home", async () => {
     renderPage();
     await screen.findByText("목");
-    await userEvent.click(screen.getByRole("button", { name: "뒤로" }));
+    await userEvent.click(screen.getByRole("button", { name: "뒤로 가기" }));
     await waitFor(() => expect(screen.getByTestId("loc")).toHaveTextContent("/home"));
   });
 });

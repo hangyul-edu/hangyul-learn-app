@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "../../i18n";
 import { NATIONALITIES } from "../../lib/format";
 
 /**
@@ -15,9 +16,12 @@ export function CountrySelect({
 }: {
   value: string;
   onChange: (code: string) => void;
-  /** Trigger-button class; defaults to the sign-up style. */
+  /** Per-screen trigger class (geometry only); defaults to the sign-up style.
+   * The shared `country-select__trigger` class is always applied alongside it
+   * and owns the resting/active border behaviour. */
   className?: string;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const current = NATIONALITIES.find((n) => n.code === value) ?? NATIONALITIES[0];
@@ -45,9 +49,9 @@ export function CountrySelect({
     <div className="country-select" ref={rootRef}>
       <button
         type="button"
-        className={className}
+        className={`country-select__trigger ${className}`}
         onClick={() => setOpen((o) => !o)}
-        aria-label={`국가 선택, 현재 ${current.label}`}
+        aria-label={t("ui.countrySelectA11y", { name: t(current.labelKey) })}
         aria-haspopup="listbox"
         aria-expanded={open}
       >
@@ -69,7 +73,7 @@ export function CountrySelect({
       </button>
 
       {open && (
-        <ul className="country-select__list" role="listbox" aria-label="국가 선택">
+        <ul className="country-select__list" role="listbox" aria-label={t("ui.countrySelect")}>
           {NATIONALITIES.map((n) => (
             <li key={n.code} role="option" aria-selected={n.code === value}>
               <button
@@ -83,7 +87,7 @@ export function CountrySelect({
                 <span className="country-select__flag" aria-hidden="true">
                   {n.flag}
                 </span>
-                <span className="country-select__label">{n.label}</span>
+                <span className="country-select__label">{t(n.labelKey)}</span>
                 <span className="country-select__dial">{n.dial}</span>
               </button>
             </li>

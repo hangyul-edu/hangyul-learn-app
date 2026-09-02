@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { I18nProvider } from "../i18n";
 import { ToastProvider } from "../hooks/toast";
 
 vi.mock("../api/endpoints", () => ({
@@ -18,17 +19,20 @@ const api = friendApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 function renderInvite(token = "tok-1") {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}>
-      <ToastProvider>
-        <MemoryRouter initialEntries={[`/friend/invite/${token}`]}>
-          <Routes>
-            <Route path="/friend/invite/:token" element={<InviteLanding />} />
-            <Route path="/social" element={<div>SOCIAL</div>} />
-            <Route path="/home" element={<div>HOME</div>} />
-          </Routes>
-        </MemoryRouter>
-      </ToastProvider>
-    </QueryClientProvider>,
+    // Assertions below are written against the Korean design frames.
+    <I18nProvider language="ko">
+      <QueryClientProvider client={qc}>
+        <ToastProvider>
+          <MemoryRouter initialEntries={[`/friend/invite/${token}`]}>
+            <Routes>
+              <Route path="/friend/invite/:token" element={<InviteLanding />} />
+              <Route path="/social" element={<div>SOCIAL</div>} />
+              <Route path="/home" element={<div>HOME</div>} />
+            </Routes>
+          </MemoryRouter>
+        </ToastProvider>
+      </QueryClientProvider>
+    </I18nProvider>,
   );
 }
 

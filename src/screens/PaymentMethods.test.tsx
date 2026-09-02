@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
+import { I18nProvider } from "../i18n";
 import { ToastProvider } from "../hooks/toast";
 import type { PaymentMethod } from "../lib/types";
 
@@ -78,13 +79,16 @@ function renderScreen() {
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   return render(
-    <QueryClientProvider client={qc}>
-      <MemoryRouter>
-        <ToastProvider>
-          <PaymentMethods />
-        </ToastProvider>
-      </MemoryRouter>
-    </QueryClientProvider>,
+    // Assertions below are written against the Korean copy.
+    <I18nProvider language="ko">
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>
+          <ToastProvider>
+            <PaymentMethods />
+          </ToastProvider>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </I18nProvider>,
   );
 }
 

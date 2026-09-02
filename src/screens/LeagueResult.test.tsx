@@ -12,6 +12,7 @@ vi.mock("../api/endpoints", () => ({
 
 import { gameApi } from "../api/endpoints";
 import { LeagueResult } from "./LeagueResult";
+import { I18nProvider } from "../i18n";
 
 const api = gameApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -42,17 +43,18 @@ function lifecycle(result: LeagueResultSummary | null): LeagueLifecycleResponse 
 function renderResult() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={qc}>
-      <ToastProvider>
-        <MemoryRouter initialEntries={["/league/result"]}>
-          <Routes>
-            <Route path="/league/result" element={<LeagueResult />} />
-            <Route path="/league" element={<div>LEAGUE_HOME</div>} />
-          </Routes>
-        </MemoryRouter>
-      </ToastProvider>
-    </QueryClientProvider>,
-  );
+    <I18nProvider language="ko">
+      <QueryClientProvider client={qc}>
+        <ToastProvider>
+          <MemoryRouter initialEntries={["/league/result"]}>
+            <Routes>
+              <Route path="/league/result" element={<LeagueResult />} />
+              <Route path="/league" element={<div>LEAGUE_HOME</div>} />
+            </Routes>
+          </MemoryRouter>
+        </ToastProvider>
+      </QueryClientProvider>
+    </I18nProvider>,);
 }
 
 beforeEach(() => {
@@ -97,7 +99,7 @@ describe("League result screen", () => {
       lifecycle({ ...promoted, outcome: "retained", resulting_tier: "green", resulting_tier_label: "Green 리그" }),
     );
     renderResult();
-    expect(await screen.findByRole("heading", { name: "이번 리그도 수고했어요!" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "잘 버텼어요!" })).toBeInTheDocument();
   });
 
   it("renders demotion copy for a demoted result", async () => {
@@ -105,7 +107,7 @@ describe("League result screen", () => {
       lifecycle({ ...promoted, outcome: "demoted", resulting_tier: "green", resulting_tier_label: "Green 리그" }),
     );
     renderResult();
-    expect(await screen.findByRole("heading", { name: "새로운 리그에서 다시 도전해보세요" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "아쉬워요..." })).toBeInTheDocument();
   });
 
   it("redirects to the league screen when there is no settled result", async () => {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "../../i18n";
 import { quizApi } from "../../api/endpoints";
 import { countTopikChars } from "../../lib/topikChars";
 import type { TopikSessionCopy } from "../../lib/topikSessionCopy";
@@ -117,10 +118,10 @@ export function TopikQuestion({
         />
       )}
       {kind === "writing_fill_blanks" && (
-        <FillBlanks quiz={quiz} value={value} onChange={onChange} disabled={disabled} copy={copy} />
+        <FillBlanks quiz={quiz} value={value} onChange={onChange} disabled={disabled} copy={copy} tone={tone} />
       )}
       {(kind === "writing_data_response" || kind === "writing_opinion_essay") && (
-        <Writing quiz={quiz} value={value} onChange={onChange} disabled={disabled} copy={copy} />
+        <Writing quiz={quiz} value={value} onChange={onChange} disabled={disabled} copy={copy} tone={tone} />
       )}
       {kind === "unsupported" && <UnsupportedQuestion copy={copy} />}
     </div>
@@ -153,7 +154,7 @@ function MultipleChoice({
   return (
     <>
       {listening && copy ? (
-        <AudioPlayer quiz={quiz} copy={copy} tone={tone} />
+        <AudioPlayer quiz={quiz} copy={copy} tone={tone} done={disabled && tone !== "incorrect"} />
       ) : (
         quiz.material.html && <Passage html={quiz.material.html} />
       )}
@@ -225,13 +226,16 @@ function FillBlanks({
   onChange,
   disabled,
   copy,
+  tone,
 }: {
   quiz: Quiz;
   value: AnswerValue;
   onChange: (v: AnswerValue) => void;
   disabled?: boolean;
   copy: TopikSessionCopy;
+  tone?: "neutral" | "incorrect";
 }) {
+  const { t } = useTranslation();
   const blanks = quiz.answer.blanks.length ? quiz.answer.blanks : [{ label: "" }];
   return (
     <>
@@ -239,8 +243,13 @@ function FillBlanks({
       <div className="tq-blanks">
         {blanks.map((b, i) => {
           const id = `tq-blank-${i}`;
+          // TAL-022 tints the row and turns the disc orange once it holds an answer.
+          const filled = (value.blanks?.[i] ?? "").trim().length > 0;
+          // TAL-023 turns the rows red once the attempt came back incorrect.
+          const rowState =
+            tone === "incorrect" ? "is-wrong" : disabled ? "is-correct" : filled ? "is-filled" : "";
           return (
-            <div className="tq-blank" key={i}>
+            <div className={`tq-blank ${rowState}`} key={i}>
               {b.label && (
                 <label className="tq-blank__label" htmlFor={id} aria-hidden={!b.label}>
                   {b.label}
@@ -251,7 +260,7 @@ function FillBlanks({
                 className="tq-blank__input"
                 type="text"
                 placeholder={copy.blankPlaceholder}
-                aria-label={b.label ? `${b.label} 답` : copy.blankPlaceholder}
+                aria-label={b.label ? t("session.blankAnswerA11y", { label: b.label }) : copy.blankPlaceholder}
                 disabled={disabled}
                 value={value.blanks?.[i] ?? ""}
                 onChange={(e) => {
@@ -276,12 +285,14 @@ function Writing({
   onChange,
   disabled,
   copy,
+  tone,
 }: {
   quiz: Quiz;
   value: AnswerValue;
   onChange: (v: AnswerValue) => void;
   disabled?: boolean;
   copy: TopikSessionCopy;
+  tone?: "neutral" | "incorrect";
 }) {
   const text = value.text ?? "";
   const count = countTopikChars(text);
@@ -293,6 +304,13 @@ function Writing({
     <>
       {quiz.material.html && <Passage html={quiz.material.html} />}
       <div className="tq-writing">
+        {/* TAL-028 (1718:27421) — the counter lives in a band inside the
+            field's own box, not on a separate row beneath it. */}
+        <div
+          className={`tq-writing__box ${over ? "is-over" : ""} ${
+            tone === "incorrect" ? "is-wrong" : disabled ? "is-done" : ""
+          }`}
+        >
         <textarea
           className="tq-writing__area"
           placeholder={copy.answerPlaceholder}
@@ -302,6 +320,9 @@ function Writing({
           value={text}
           onChange={(e) => onChange({ text: e.target.value })}
         />
+        {/* TAL-025/027 (data response) carry no counter; TAL-028/030 (opinion
+            essay, 600~700자) do. The band follows the question's own limit. */}
+        {max > 0 && (
         <div className="tq-writing__foot">
           <span className="tq-writing__hint">
             {over ? copy.overMaxHint(max) : under && min > 0 ? copy.minLengthHint(min) : ""}
@@ -313,6 +334,8 @@ function Writing({
           >
             {copy.charCount(count, max)}
           </span>
+        </div>
+        )}
         </div>
       </div>
     </>
@@ -349,10 +372,13 @@ function AudioPlayer({
   quiz,
   copy,
   tone = "neutral",
+  done,
 }: {
   quiz: Quiz;
   copy: TopikSessionCopy;
   tone?: "neutral" | "incorrect";
+  /** Answered correctly — TAL-021 drops the warm ground for a neutral grey. */
+  done?: boolean;
 }) {
   // Duration isn't in the list payload; it's learned from the audio endpoint or
   // the element's loadedmetadata event.
@@ -410,7 +436,7 @@ function AudioPlayer({
     state === "loading" ? copy.audioLoading : state === "playing" ? copy.audioPause : copy.audioPlay;
 
   return (
-    <div className={`tq-audio ${tone === "incorrect" ? "tq-audio--incorrect" : ""}`}>
+    <div className={`tq-audio ${tone === "incorrect" ? "tq-audio--incorrect" : ""} ${done ? "tq-audio--done" : ""}`}>
       <button
         type="button"
         className={`tq-audio__play ${state === "playing" ? "is-playing" : ""}`}

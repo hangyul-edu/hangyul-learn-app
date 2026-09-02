@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "../i18n";
 import { authApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
@@ -16,6 +17,7 @@ import { passwordProblem } from "../lib/validation";
  * `.resetpw__*` for the faithful field + button treatment.
  */
 export function ResetPassword() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const toast = useToast();
   const location = useLocation();
@@ -43,7 +45,7 @@ export function ResetPassword() {
       // Clear sensitive values, then replace the stack to login.
       setPw("");
       setPw2("");
-      toast.success("비밀번호를 변경했어요");
+      toast.success(t("resetPassword.changed"));
       nav("/login", { replace: true });
     } catch (err) {
       toast.error(errorMessage(err));
@@ -56,18 +58,18 @@ export function ResetPassword() {
     <div className="screen findemail resetpw">
       <form className="findemail__scroll" onSubmit={submit}>
         <div className="findemail__inner">
-          <button type="button" className="findemail__back" onClick={() => nav(-1)} aria-label="뒤로">
+          <button type="button" className="findemail__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
 
-          <h1 className="findemail__title">비밀번호 재설정</h1>
+          <h1 className="findemail__title">{t("resetPassword.title")}</h1>
 
           {/* New password */}
           <div className="resetpw__field resetpw__field--first">
             <label className="resetpw__label" htmlFor="rp-pw">
-              비밀번호
+              {t("resetPassword.passwordLabel")}
             </label>
             <input
               id="rp-pw"
@@ -78,17 +80,17 @@ export function ResetPassword() {
               autoCorrect="off"
               spellCheck={false}
               enterKeyHint="next"
-              placeholder="영어, 숫자, 특수문자 포함 8자리 이상을 입력하세요"
+              placeholder={t("resetPassword.passwordPlaceholder")}
               value={pw}
               onChange={(e) => setPw(e.target.value)}
             />
-            {touched && pwProblem && <p className="findemail__err">{pwProblem}</p>}
+            {touched && pwProblem && <p className="findemail__err">{t(pwProblem)}</p>}
           </div>
 
           {/* Confirm password */}
           <div className="resetpw__field resetpw__field--second">
             <label className="resetpw__label" htmlFor="rp-pw2">
-              비밀번호 재입력
+              {t("resetPassword.confirmLabel")}
             </label>
             <input
               id="rp-pw2"
@@ -99,11 +101,11 @@ export function ResetPassword() {
               autoCorrect="off"
               spellCheck={false}
               enterKeyHint="done"
-              placeholder="비밀번호를 다시 입력하세요"
+              placeholder={t("resetPassword.confirmPlaceholder")}
               value={pw2}
               onChange={(e) => setPw2(e.target.value)}
             />
-            {mismatch && <p className="findemail__err">비밀번호가 일치하지 않아요.</p>}
+            {mismatch && <p className="findemail__err">{t("validation.passwordMismatch")}</p>}
           </div>
 
           <div className="findemail__spacer" />
@@ -113,9 +115,9 @@ export function ResetPassword() {
             className="resetpw__submit"
             disabled={!canSubmit}
             aria-disabled={!canSubmit}
-            aria-label="비밀번호 재설정하기"
+            aria-label={t("resetPassword.submit")}
           >
-            {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : "비밀번호 재설정하기"}
+            {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("resetPassword.submit")}
           </button>
         </div>
       </form>

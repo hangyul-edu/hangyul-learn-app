@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "../i18n";
 
 /** The extra-batch sizes offered after the daily goal is complete. Matches the
  * backend's EXTRA_LEARNING_COUNTS (5 / 10 / 15 / 20). */
@@ -30,6 +31,7 @@ export function AdditionalLearningCountModal({
   onClose: () => void;
   onStart: (count: AdditionalCount) => void;
 }) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<AdditionalCount>(5);
   const dialogRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
@@ -74,7 +76,7 @@ export function AdditionalLearningCountModal({
 
   if (!open) return null;
 
-  const unit = kind === "conversation" ? "문장" : "문제";
+  const unit = t(kind === "conversation" ? "session.unitSentence" : "session.unitQuestion");
 
   return (
     <div className="overlay overlay--center" onClick={submitting ? undefined : onClose}>
@@ -91,16 +93,16 @@ export function AdditionalLearningCountModal({
             className="addlearn__close"
             onClick={onClose}
             disabled={submitting}
-            aria-label="닫기"
+            aria-label={t("session.additionalCloseA11y")}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18" stroke="#1c2126" strokeWidth="2.2" strokeLinecap="round" />
+              <path d="M6 6l12 12M18 6L6 18" stroke="#25282b" strokeWidth="2.2" strokeLinecap="round" />
             </svg>
           </button>
 
-          <p className="addlearn__eyebrow">학습을 조금 더 이어가 볼까요?</p>
+          <p className="addlearn__eyebrow">{t("session.additionalTitle")}</p>
           <h2 className="addlearn__title" id="addlearn-title">
-            추가할 {unit} 수를 선택해 주세요
+            {t("session.additionalPrompt", { unit })}
           </h2>
 
           <div className="addlearn__options" role="radiogroup" aria-labelledby="addlearn-title">
@@ -116,7 +118,7 @@ export function AdditionalLearningCountModal({
                   onClick={() => setSelected(c)}
                   disabled={submitting}
                 >
-                  {c}개
+                  {t("session.countUnit", { n: c })}
                 </button>
               );
             })}
@@ -128,12 +130,12 @@ export function AdditionalLearningCountModal({
             className="addlearn__cta"
             onClick={() => !submitting && onStart(selected)}
             disabled={submitting}
-            aria-label={`추가 ${unit} ${selected}개로 학습 시작할게요`}
+            aria-label={t("session.additionalA11y", { unit, count: selected })}
           >
             {submitting ? (
               <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} />
             ) : (
-              "시작할게요!"
+              t("session.additionalStart")
             )}
           </button>
         </div>

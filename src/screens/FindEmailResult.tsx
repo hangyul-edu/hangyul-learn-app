@@ -1,4 +1,5 @@
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "../i18n";
 
 /**
  * Successful "이메일 찾기" result — shows the account email (already masked by
@@ -9,6 +10,7 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
  * button, with `.feres__*` for the result-specific text.
  */
 export function FindEmailResult() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const location = useLocation();
   const email = (location.state as { email?: string } | null)?.email;
@@ -20,27 +22,27 @@ export function FindEmailResult() {
     <div className="screen findemail feres">
       <div className="findemail__scroll">
         <div className="findemail__inner">
-          <button className="findemail__back" onClick={() => nav(-1)} aria-label="뒤로">
+          <button className="findemail__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
 
-          <h1 className="feres__title">이메일을 찾았어요!</h1>
-          <p className="feres__subtitle">다음 이메일로 가입되어 있어요.</p>
+          <h1 className="feres__title">{t("findEmailResult.title")}</h1>
+          <p className="feres__subtitle">{t("findEmailResult.subtitle")}</p>
 
-          <p className="feres__email" aria-label={`가입된 이메일 ${email}`}>
+          <p className="feres__email" aria-label={t("findEmailResult.emailA11y", { email })}>
             {email}
           </p>
 
           <div className="feres__prompt-row">
-            <span className="feres__prompt">비밀번호를 잊으셨나요?</span>
+            <span className="feres__prompt">{t("findEmailResult.forgotPrompt")}</span>
             <button
               type="button"
               className="feres__link"
               onClick={() => nav("/forgot", { state: { mode: "password" } })}
             >
-              비밀번호 찾기
+              {t("findEmailResult.forgotLink")}
             </button>
           </div>
 
@@ -50,9 +52,9 @@ export function FindEmailResult() {
             type="button"
             className="findemail__submit"
             onClick={() => nav("/login", { replace: true })}
-            aria-label="로그인하러 가기"
+            aria-label={t("findEmailResult.goToLogin")}
           >
-            로그인하러 가기
+            {t("findEmailResult.goToLogin")}
           </button>
         </div>
       </div>

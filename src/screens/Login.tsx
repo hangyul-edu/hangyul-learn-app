@@ -1,21 +1,25 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { HangyulLogo, CitrusOutline } from "../components/brand/AuthBrand";
+import { useTranslation } from "../i18n";
+import { AuthDecor, HangyulLogo } from "../components/brand/AuthBrand";
 import { authApi } from "../api/endpoints";
 import { useLoginFlow } from "../hooks/loginFlow";
 import { ApiError, errorMessage } from "../lib/http";
 
 /**
- * Login screen — faithful single-screen reproduction of the reference:
- * back chevron, centered Hangyul logo + slogan, left-aligned 로그인 heading,
- * filled email/password fields, a dark 자동로그인 checkbox, an orange login
- * button, and a centered 이메일 찾기 / 비밀번호 찾기 / 회원가입 link row.
+ * Login screen — AME-003 (Figma KO 1:3436 / EN 784:50343).
+ *
+ * Back chevron, centered Hangyul logo + tagline, a left-aligned heading,
+ * Gray 1 filled email/password fields, a Gray 7 "stay logged in" checkbox, an
+ * orange submit button, and a centered find-email / forgot-password / sign-up
+ * link row. The two frames share this geometry exactly and differ only in copy.
  *
  * All authentication logic is preserved: email/password state, auto-login
  * (default on), busy/loading guard, error handling (incl. 401), and the
  * existing login API + post-login routing via useLoginFlow.
  */
 export function Login() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const completeLogin = useLoginFlow();
   const [email, setEmail] = useState("");
@@ -28,7 +32,7 @@ export function Login() {
     e.preventDefault();
     setErr(null);
     if (!email.trim() || !password) {
-      setErr("이메일과 비밀번호를 입력해 주세요.");
+      setErr(t("login.missingFields"));
       return;
     }
     setBusy(true);
@@ -36,7 +40,7 @@ export function Login() {
       const token = await authApi.login(email.trim(), password, autoLogin);
       await completeLogin(token, autoLogin);
     } catch (e2) {
-      setErr(e2 instanceof ApiError && e2.status === 401 ? "이메일 또는 비밀번호가 올바르지 않아요." : errorMessage(e2));
+      setErr(e2 instanceof ApiError && e2.status === 401 ? t("login.invalidCredentials") : errorMessage(e2));
     } finally {
       setBusy(false);
     }
@@ -44,32 +48,32 @@ export function Login() {
 
   return (
     <div className="screen login">
-      <div className="login__decor" aria-hidden="true">
-        <div className="login__glow" />
-        <CitrusOutline className="login__citrus login__citrus--tr" size={150} />
-        <CitrusOutline className="login__citrus login__citrus--ml" size={120} />
-        <CitrusOutline className="login__citrus login__citrus--br" size={180} />
-      </div>
+      {/* The SAME background component the Login/Sign-up selection screen uses,
+          so the two screens are pixel-identical behind the UI and the transition
+          is seamless. AME-003's own decor group (37:6847) sits 2 left and 4 down
+          from AME-002's, and the glow 10 further left; that difference is
+          deliberately not reproduced — one shared implementation was asked for. */}
+      <AuthDecor />
 
       <div className="login__scroll">
         <div className="login__inner">
-          <button className="login__back" onClick={() => nav(-1)} aria-label="뒤로">
-            <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <button className="login__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
 
           <div className="login__brand">
             <HangyulLogo />
-            <p className="auth__tagline">작은 귤 한 조각처럼, 매일 한 문장씩</p>
+            <p className="auth__tagline">{t("login.tagline")}</p>
           </div>
 
-          <h1 className="login__heading">로그인</h1>
+          <h1 className="login__heading">{t("login.heading")}</h1>
 
           <form className="login__form" onSubmit={submit}>
             <div className="login__field">
               <label className="login__label" htmlFor="login-email">
-                이메일
+                {t("login.emailLabel")}
               </label>
               <input
                 id="login-email"
@@ -80,7 +84,7 @@ export function Login() {
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
-                placeholder="이메일을 입력해주세요"
+                placeholder={t("login.emailPlaceholder")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -88,14 +92,14 @@ export function Login() {
 
             <div className="login__field">
               <label className="login__label" htmlFor="login-password">
-                비밀번호
+                {t("login.passwordLabel")}
               </label>
               <input
                 id="login-password"
                 className="login__input"
                 type="password"
                 autoComplete="current-password"
-                placeholder="비밀번호를 입력해주세요"
+                placeholder={t("login.passwordPlaceholder")}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -115,23 +119,23 @@ export function Login() {
                   <path d="M5 12.5l4.5 4.5L19 7.5" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </span>
-              <span className="login__check-label">자동로그인</span>
+              <span className="login__check-label">{t("login.autoLogin")}</span>
             </button>
 
-            <button className="login__submit" type="submit" disabled={busy} aria-label="로그인">
-              {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : "로그인"}
+            <button className="login__submit" type="submit" disabled={busy} aria-label={t("login.submit")}>
+              {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("login.submit")}
             </button>
           </form>
 
           <div className="login__links">
             <button className="login__link" onClick={() => nav("/forgot", { state: { mode: "email" } })}>
-              이메일 찾기
+              {t("login.findEmail")}
             </button>
             <button className="login__link" onClick={() => nav("/forgot", { state: { mode: "password" } })}>
-              비밀번호 찾기
+              {t("login.findPassword")}
             </button>
             <button className="login__link" onClick={() => nav("/signup")}>
-              회원가입
+              {t("login.signup")}
             </button>
           </div>
         </div>

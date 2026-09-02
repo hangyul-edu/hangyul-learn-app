@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "../i18n";
 import { SessionChrome } from "../components/SessionChrome";
 import { ReviewCompleteSheet } from "../components/ReviewCompleteSheet";
 import { ReviewRewardModal } from "../components/ReviewRewardModal";
@@ -12,12 +13,10 @@ import { SavePlusIcon } from "../components/brand/HomeIcons";
 import { LoadingState, ErrorState } from "../components/ui/states";
 import { quizApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
-import { useAuth } from "../hooks/auth";
 import { errorMessage } from "../lib/http";
-import { normalizeLanguage } from "../lib/language";
 import { randomUuid } from "../lib/uuid";
-import { REVIEW_SESSION_COPY } from "../lib/reviewSessionCopy";
-import { TOPIK_SESSION_COPY } from "../lib/topikSessionCopy";
+import { useReviewSessionCopy } from "../lib/reviewSessionCopy";
+import { useTopikSessionCopy } from "../lib/topikSessionCopy";
 import type { Quiz, QuizAttemptResult } from "../lib/types";
 
 /**
@@ -32,11 +31,10 @@ export function SessionReview() {
   const { quizId = "" } = useParams();
   const nav = useNavigate();
   const toast = useToast();
-  const { me } = useAuth();
   const qc = useQueryClient();
-  const lang = normalizeLanguage(me?.app_language);
-  const copy = REVIEW_SESSION_COPY[lang];
-  const topikCopy = TOPIK_SESSION_COPY[lang];
+  const { t } = useTranslation();
+  const copy = useReviewSessionCopy();
+  const topikCopy = useTopikSessionCopy();
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [error, setError] = useState(false);
@@ -284,7 +282,13 @@ export function SessionReview() {
 
       {completed && !rewardOpen && (
         <ReviewCompleteSheet
-          leftLabel={quiz && questionKind(quiz) === "listening_multiple_choice" ? copy.listenAgain : copy.restart}
+          /* TAL-046 (674:10333 / EN 784:60771): a question review offers
+             다시 풀기 / "Retry"; only a listening item offers 다시 듣기. */
+          leftLabel={
+            quiz && questionKind(quiz) === "listening_multiple_choice"
+              ? copy.listenAgain
+              : t("session.solveAgain")
+          }
           onLeft={restart}
           onComplete={() => setRewardOpen(true)}
           copy={copy}

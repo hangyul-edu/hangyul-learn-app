@@ -150,8 +150,8 @@ export function ProgressRing({
       <svg width={size} height={size} className="ring">
         <defs>
           <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#fb923c" />
-            <stop offset="100%" stopColor="#ea580c" />
+            <stop offset="0%" stopColor="#ff8700" />
+            <stop offset="100%" stopColor="#e65c00" />
           </linearGradient>
         </defs>
         <circle className="ring__track" cx={size / 2} cy={size / 2} r={r} strokeWidth={stroke} />

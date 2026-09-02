@@ -1,4 +1,5 @@
 import { OptionCard } from "./ui/kit";
+import { useTranslation } from "../i18n";
 import { TextArea, TextField } from "./ui/Field";
 import type { Quiz } from "../lib/types";
 
@@ -44,6 +45,7 @@ export function QuestionView({
   onChange: (v: AnswerValue) => void;
   disabled?: boolean;
 }) {
+  const { t } = useTranslation();
   const { material, answer } = quiz;
   return (
     <div className="stack" style={{ gap: 14 }}>
@@ -56,7 +58,7 @@ export function QuestionView({
       )}
 
       <div className="card card--pad-lg">
-        <div className="eyebrow" style={{ marginBottom: 8 }}>문제</div>
+        <div className="eyebrow" style={{ marginBottom: 8 }}>{t("session.questionLabel")}</div>
         <div style={{ fontSize: 16.5, fontWeight: 600, lineHeight: 1.55 }}>{quiz.prompt}</div>
         {quiz.prompt_translation && <div className="muted" style={{ fontSize: 13, marginTop: 6 }}>{quiz.prompt_translation}</div>}
       </div>
@@ -73,11 +75,11 @@ export function QuestionView({
         ))}
 
       {answer.format === "short_answer" &&
-        (answer.blanks.length ? answer.blanks : [{ label: "정답" }]).map((b, i) => (
+        (answer.blanks.length ? answer.blanks : [{ label: t("session.answerLabel") }]).map((b, i) => (
           <TextField
             key={i}
             label={b.label}
-            placeholder="답을 입력하세요"
+            placeholder={t("session.answerPlaceholder")}
             disabled={disabled}
             value={value.blanks?.[i] ?? ""}
             onChange={(e) => {
@@ -90,15 +92,15 @@ export function QuestionView({
 
       {answer.format === "free_response" && (
         <TextArea
-          label="답안 작성"
-          placeholder="자유롭게 작성하세요"
+          label={t("session.answerWrite")}
+          placeholder={t("session.answerFree")}
           disabled={disabled}
           style={{ minHeight: 140 }}
           value={value.text ?? ""}
           onChange={(e) => onChange({ text: e.target.value })}
         />
       )}
-      {quiz.hint && <div className="muted" style={{ fontSize: 12.5 }}>💡 힌트: {quiz.hint}</div>}
+      {quiz.hint && <div className="muted" style={{ fontSize: 12.5 }}>💡 {t("session.hint")}: {quiz.hint}</div>}
     </div>
   );
 }

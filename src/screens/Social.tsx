@@ -302,11 +302,15 @@ export function Social() {
         title={deleteTarget ? copy.modalTitle(nameOf(deleteTarget, t)) : ""}
         text={copy.modalDesc}
       >
-        <div className="fm__modal-actions">
-          <Button variant="secondary" block disabled={removing} onClick={() => setDeleteTarget(null)}>
+        {/* LEG-013 (I1815:24869;841:23566): both slots are cp_C_01_primaryBtn —
+            two 136x49 r12 tiles 8 apart, the dismissing one on bgray.400 and the
+            committing one on Brand 1, with ONE drop shadow on the row. Not an
+            outline button, and not a per-button shadow. */}
+        <div className="dialog__actions">
+          <Button variant="ghost" block disabled={removing} onClick={() => setDeleteTarget(null)}>
             {copy.modalCancel}
           </Button>
-          <Button block loading={removing} onClick={confirmRemove}>
+          <Button variant="primary" block loading={removing} onClick={confirmRemove}>
             {copy.modalDelete}
           </Button>
         </div>

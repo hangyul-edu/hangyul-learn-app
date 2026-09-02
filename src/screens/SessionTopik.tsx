@@ -11,7 +11,7 @@ import { randomUuid } from "../lib/uuid";
 import { TopikQuestion, canSubmitTopik } from "../components/topik/TopikQuestion";
 import { TopikResult } from "../components/topik/TopikResult";
 import { ResultHeader, type ResultStatus } from "../components/topik/ResultHeader";
-import { SavePlusIcon } from "../components/brand/HomeIcons";
+import { SaveBookmarkButton } from "../components/SaveBookmarkButton";
 import { LoadingState, ErrorState } from "../components/ui/states";
 import { recApi, quizApi, dashboardApi, learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
@@ -482,14 +482,11 @@ export function SessionTopik() {
       ? { correctKey: value.choiceKey ?? null, wrongKeys }
       : { correctKey: null, wrongKeys };
   const bookmarkButton = cur && (
-    <button
-      className="sess__bookmark"
-      onClick={() => toggleSave(cur)}
-      aria-label={saved[cur.quiz_id] ? copy.removeSaved : copy.saveQuestion}
-      aria-pressed={!!saved[cur.quiz_id]}
-    >
-      <SavePlusIcon active={!!saved[cur.quiz_id]} />
-    </button>
+    <SaveBookmarkButton
+      saved={!!saved[cur.quiz_id]}
+      onToggle={() => toggleSave(cur)}
+      label={saved[cur.quiz_id] ? copy.removeSaved : copy.saveQuestion}
+    />
   );
 
   const panel = (

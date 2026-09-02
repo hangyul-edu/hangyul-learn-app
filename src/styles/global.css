@@ -5679,10 +5679,12 @@ textarea.input {
 /* Result header: circular status badge + bold verdict on the left, bookmark
    pinned to the far right (kept in place across every state via margin-left). */
 .tq-head {
+  /* Frame 1410118232 (TAL-045 1718:25899) — a 289 x 26 row, the Heading 8
+     instruction against the save control. */
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 34px;
+  min-height: 26px;
 }
 .tq-head__status {
   display: flex;
@@ -5707,7 +5709,17 @@ textarea.input {
   word-break: keep-all;
 }
 .tq-head .sess__bookmark {
+  /* TAL-045 seats the whole 24x24 ic_24_text component (3287:37234) flush to the
+     content edge at head-x 265 — not the bare 18 x 21.5 glyph box the
+     conversation card pins. */
   margin-left: auto;
+  width: 24px;
+  height: 24px;
+}
+.tq-head .sess__bookmark-ic {
+  /* 267:7171 — the glyph is centred 0.75 below the component's own centre. */
+  position: relative;
+  top: 0.75px;
 }
 /* Neutral before answering — the transparent 3px reserves space so applying a
    result colour later doesn't shift the layout. The result colour is added only

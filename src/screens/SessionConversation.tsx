@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSavedReturn } from "../lib/savedReturn";
+import { SaveBookmarkButton } from "../components/SaveBookmarkButton";
 import { useTranslation } from "../i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SessionChrome } from "../components/SessionChrome";
 import { SessionCompleteModal } from "../components/SessionCompleteModal";
-import icBookmark from "../assets/brand/ic-card-bookmark.svg";
 import icMic from "../assets/brand/ic-session-mic.svg";
-import icBookmarkOn from "../assets/brand/ic-24-bookmark-filled.svg";
 import { CorrectAnswerSheet } from "../components/CorrectAnswerSheet";
 import { ReviewCompleteSheet } from "../components/ReviewCompleteSheet";
 import { ReviewRewardModal } from "../components/ReviewRewardModal";
@@ -788,18 +787,11 @@ export function SessionConversation() {
                 </span>
                 <span>{t("session.correctExclaim")}</span>
               </div>
-              <button className="sess__bookmark" onClick={() => toggleSave(cur)} aria-label={t(saved[cur.sentence_id] ? "sessionConversation.bookmarkUnsave" : "sessionConversation.bookmarkSave")} aria-pressed={!!saved[cur.sentence_id]}>
-                {/* Group 427318316 (1718:26052) — 18 x 21.5 in the card; both states are
-                    real Figma exports, so nothing here is hand-drawn. */}
-                <img
-                  className="sess__bookmark-ic"
-                  src={saved[cur.sentence_id] ? icBookmarkOn : icBookmark}
-                  alt=""
-                  aria-hidden="true"
-                  width={19.5}
-                  height={22.25}
-                />
-              </button>
+              <SaveBookmarkButton
+                saved={!!saved[cur.sentence_id]}
+                onToggle={() => toggleSave(cur)}
+                label={t(saved[cur.sentence_id] ? "sessionConversation.bookmarkUnsave" : "sessionConversation.bookmarkSave")}
+              />
             </div>
             <div className="sess__sentence sess__sentence--correct" role="status" aria-label={t("session.correctA11y", { korean: cur.korean, translation: cur.translation })}>
               {cur.korean}
@@ -829,23 +821,11 @@ export function SessionConversation() {
               ) : (
                 <p className="sess__instr">{t("session.fillBlank")}</p>
               )}
-              <button
-                className="sess__bookmark"
-                onClick={() => toggleSave(cur)}
-                aria-label={saved[cur.sentence_id] ? copy.bookmarkUnsave : copy.bookmarkSave}
-                aria-pressed={!!saved[cur.sentence_id]}
-              >
-                {/* Group 427318316 (1718:26052) — 18 x 21.5 in the card; both states are
-                    real Figma exports, so nothing here is hand-drawn. */}
-                <img
-                  className="sess__bookmark-ic"
-                  src={saved[cur.sentence_id] ? icBookmarkOn : icBookmark}
-                  alt=""
-                  aria-hidden="true"
-                  width={19.5}
-                  height={22.25}
-                />
-              </button>
+              <SaveBookmarkButton
+                saved={!!saved[cur.sentence_id]}
+                onToggle={() => toggleSave(cur)}
+                label={saved[cur.sentence_id] ? copy.bookmarkUnsave : copy.bookmarkSave}
+              />
             </div>
 
             <FillSentence

@@ -10,7 +10,7 @@ import { TopikQuestion, canSubmitTopik } from "../components/topik/TopikQuestion
 import { TopikResult } from "../components/topik/TopikResult";
 import { ResultHeader, type ResultStatus } from "../components/topik/ResultHeader";
 import { quizAttemptBody, type AnswerValue } from "../components/QuestionView";
-import { SavePlusIcon } from "../components/brand/HomeIcons";
+import { SaveBookmarkButton } from "../components/SaveBookmarkButton";
 import { LoadingState, ErrorState } from "../components/ui/states";
 import { quizApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
@@ -220,14 +220,11 @@ export function SessionReview() {
     wrongKeys: wrongKey ? [wrongKey] : [],
   };
   const bookmarkButton = quiz && (
-    <button
-      className="sess__bookmark"
-      onClick={toggleSave}
-      aria-label={saved ? topikCopy.removeSaved : topikCopy.saveQuestion}
-      aria-pressed={saved}
-    >
-      <SavePlusIcon active={saved} />
-    </button>
+    <SaveBookmarkButton
+      saved={saved}
+      onToggle={toggleSave}
+      label={saved ? topikCopy.removeSaved : topikCopy.saveQuestion}
+    />
   );
 
   return (

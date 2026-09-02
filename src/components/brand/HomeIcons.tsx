@@ -223,27 +223,3 @@ export function NavMore({ active }: { active: boolean }) {
   );
 }
 
-export function SavePlusIcon({ active = false }: { active?: boolean }) {
-  // Bookmark: ~0.9:1 width:height, bottom notch ≈ lower 22%, top corners r≈3,
-  // stroke ≈ 7% of the bookmark width (the 4px-at-~57px reference).
-  const line = active ? "#FF5B00" : "#AEB4B9";
-  return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
-      <path
-        d="M2.5 22.5 L12 18 L21.5 22.5 L21.5 4.5 Q21.5 1.5 18.5 1.5 L5.5 1.5 Q2.5 1.5 2.5 4.5 Z"
-        fill={active ? "#FF5B00" : "none"}
-        stroke={line}
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12 6.5v6M9 9.5h6"
-        stroke={active ? "#fff" : line}
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}

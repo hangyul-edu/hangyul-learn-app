@@ -4331,7 +4331,14 @@ textarea.input {
      a compact pill. Expressed as the gutter inset, it stays ~90% of the card and
      3 narrower than the CTA at every width. */
   min-height: 37px;
-  margin: 16px 1.5px 18px;
+  /* Top offset lives on the card's padding, not this margin — see
+     `.home__hero.is-done` below. A margin-top here collapses through the card's
+     zero padding-top wherever the card is NOT a flex item, which is exactly the
+     difference between Home (hero is a flex child of .screen__body) and
+     Personalized (hero sits inside the block .plearn__stack): the same
+     component rendered the banner inset 16 on one screen and flush at 0 on the
+     other. */
+  margin: 0 1.5px 18px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4353,6 +4360,11 @@ textarea.input {
   line-height: 20px;
   /* dy 4 / stdDeviation 2 / black 10%. */
   box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
+}
+/* The 16 above the completion indicator, carried as padding so it cannot
+   collapse and so it behaves the same whichever container the card sits in. */
+.home__hero.is-done {
+  padding-top: 16px;
 }
 /* The card stays 299 in the completed state — 1825:28948 keeps the same height
    as the base card and lets the indicator take the empty top rather than push

@@ -24,6 +24,7 @@ import {
   type AdditionalCount,
 } from "../components/AdditionalLearningCountModal";
 import type { DashboardSummary, DashboardTrack, TopikSection } from "../lib/types";
+import { settingsOrigin } from "../lib/settingsNav";
 
 export function Personalized() {
   const { t } = useTranslation();
@@ -114,7 +115,7 @@ export function Personalized() {
                     active={active}
                     tab={tab}
                     onTab={setTab}
-                    onSettings={() => nav("/recommend/settings")}
+                    onSettings={() => nav("/recommend/settings", { state: settingsOrigin("/recommend") })}
                     ratio={ratio}
                     current={shown}
                     target={target}

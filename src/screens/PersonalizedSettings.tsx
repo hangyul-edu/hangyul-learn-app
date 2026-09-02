@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { settingsOrigin, useSettingsBack } from "../lib/settingsNav";
 import { useTranslation, type TranslationKey } from "../i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import trackIconConv from "../assets/brand/track-icon-conv.svg";
@@ -77,6 +78,9 @@ function HandleIcon() {
 export function PersonalizedSettings() {
   const { t } = useTranslation();
   const nav = useNavigate();
+  // Back returns to the screen that opened Practice Settings — Home or
+  // Personalized Learning, whichever pushed it.
+  const goBack = useSettingsBack("/home");
   const qc = useQueryClient();
   const toast = useToast();
   const q = useQuery({ queryKey: ["learning-prefs"], queryFn: settingsApi.learning });
@@ -195,7 +199,7 @@ export function PersonalizedSettings() {
       <div className="clset__scroll">
         <div className="clset__inner">
           <header className="acct__header">
-            <button className="acct__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
+            <button className="acct__back" onClick={goBack} aria-label={t("common.back")}>
               <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -273,7 +277,7 @@ export function PersonalizedSettings() {
 
                     <button
                       className="clset__body"
-                      onClick={() => nav(detailRoute(c.category))}
+                      onClick={() => nav(detailRoute(c.category), { state: settingsOrigin("/recommend/settings") })}
                       aria-label={t("personalizedSettings.openDetailA11y", { summary: srSummary(c, i + 1, items.length, t) })}
                     >
                       <span className="clset__icon">{catIcon(c.category)}</span>

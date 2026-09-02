@@ -20,6 +20,7 @@ import {
   type AdditionalCount,
 } from "../components/AdditionalLearningCountModal";
 import type { DashboardSummary, DashboardTrack, TopikSection } from "../lib/types";
+import { settingsOrigin } from "../lib/settingsNav";
 
 
 /**
@@ -133,7 +134,7 @@ export function Home() {
                     active={active}
                     tab={tab}
                     onTab={setTab}
-                    onSettings={() => nav("/recommend/settings")}
+                    onSettings={() => nav("/recommend/settings", { state: settingsOrigin("/home") })}
                     ratio={ratio}
                     current={shownCurrent}
                     target={target}

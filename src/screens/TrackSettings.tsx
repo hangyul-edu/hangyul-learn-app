@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useBlocker, useNavigate, useParams } from "react-router-dom";
+import { useBlocker, useParams } from "react-router-dom";
+import { useSettingsBack } from "../lib/settingsNav";
 import { useTranslation, type TranslationKey } from "../i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SkeletonList } from "../components/ui/states";
@@ -47,7 +48,6 @@ export function TrackSettings() {
   const { category: raw } = useParams<{ category: string }>();
   const category = (raw === "topik" ? "topik" : "conversation") as keyof typeof CFG;
   const cfg = CFG[category];
-  const nav = useNavigate();
   const qc = useQueryClient();
   const toast = useToast();
 
@@ -91,14 +91,10 @@ export function TrackSettings() {
     ),
   );
 
-  // Leave by popping history (return to the page we came from — the settings
-  // list) rather than pushing a fresh /recommend/settings entry, which would
-  // duplicate it and make the list's own Back button loop back here. Fall back
-  // to the parent route only when opened directly (no in-app entry to pop to).
-  const goBack = () => {
-    if ((window.history.state?.idx ?? 0) > 0) nav(-1);
-    else nav("/recommend/settings");
-  };
+  // Return to the settings list. Never a push: pushing it on top of this page
+  // made the list's own Back pop straight back in here, and the two looped with
+  // the real origin stranded below. See useSettingsBack.
+  const goBack = useSettingsBack("/recommend/settings");
 
   async function save() {
     if (!dirty || saving || !q.data || !orig || draftLevel == null || draftGoal == null) return;

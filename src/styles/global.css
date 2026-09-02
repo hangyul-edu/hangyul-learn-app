@@ -12833,11 +12833,14 @@ textarea.input {
 /* btn_profileimg (960:23267) carries drop-shadow 0 4px 2px rgba(0,0,0,.25); the
    row avatars had none. box-shadow rather than a filter because the disc is
    already clipped to a circle, so the two silhouettes are identical and this
-   one does not rasterise the character art. Scoped to the ranking rows — the
-   same avatar classes are reused on Social and Friend League, which are
-   different frames. */
+   one does not rasterise the character art. LEG-010's friend rows carry the
+   same drop-shadow on their 50px avatar (437:8020), so the friend league gets
+   it too — the two ranking lists sit in the same League section and had been
+   inconsistent, one shadowed and one flat. */
 .lg__rank .rank-avatar-char,
-.lg__rank .avatar {
+.lg__rank .avatar,
+.fl__row .rank-avatar-char,
+.fl__row .avatar {
   /* sigma 2 => a 4px CSS blur; the .25 alpha is correct. */
   box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
 }

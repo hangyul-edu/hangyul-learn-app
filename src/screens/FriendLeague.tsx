@@ -161,7 +161,10 @@ function FriendRow({ entry, meId }: { entry: RankingEntry; meId?: string }) {
         </span>
         <span className="fl__row-text">
           <span className="fl__row-name">{name}</span>
-          {league && <span className="fl__row-league">{league}</span>}
+          {/* LEG-010 keeps the tier line in every row and writes "-" when the
+              friend is in no league (437:8280) — dropping the line re-centres
+              the name and makes those rows sit differently from the rest. */}
+          <span className="fl__row-league">{league || "-"}</span>
         </span>
       </span>
       <span className="fl__row-right">

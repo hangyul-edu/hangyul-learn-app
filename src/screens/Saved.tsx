@@ -8,6 +8,7 @@ import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import type { DashboardSummary, Quiz, SavedSentenceItem } from "../lib/types";
+import { rememberSavedTab, readSavedTab, type SavedOrigin, type SavedSource, type SavedTab } from "../lib/savedReturn";
 import icBookmarkFilled from "../assets/brand/ic-24-bookmark-filled.svg";
 import svPlay from "../assets/brand/sv-play.svg";
 import icTrash from "../assets/brand/ic-trash.svg";
@@ -15,8 +16,10 @@ import chipRepeat from "../assets/brand/chip-ic-repeat.svg";
 import chipStar from "../assets/brand/chip-ic-star.svg";
 
 /* ------------------------------- config -------------------------------- */
-type Mode = "sentence" | "problem";
-type Source = "wrong" | "bookmark";
+// Shared with the review sessions so the tab a session must return to cannot
+// drift from the tab this screen renders.
+type Mode = SavedTab;
+type Source = SavedSource;
 type Sort = "latest" | "most_wrong" | "least_reviewed";
 type Skill = "all" | "reading" | "listening" | "writing";
 type MoreState = "idle" | "loading" | "error" | "done";
@@ -47,15 +50,6 @@ type SavedSnapshot = {
   scrollTop: number;
 };
 let savedSnapshot: SavedSnapshot | null = null;
-
-// The tab (mode) Saved was left on to open a single-item review, keyed by the
-// /saved history entry it belongs to. Restores the tab on return even when the
-// full snapshot can't. Read IDEMPOTENTLY (never consumed) and scoped by loc.key —
-// a consume-once flag is clobbered by React StrictMode's dev mount→unmount→mount
-// double-invoke (the throwaway first mount ate it, so the real mount fell back to
-// the Sentences default); the loc.key guard is what keeps a fresh visit from
-// picking up a stale hint.
-let savedModeHint: { locKey: string; mode: Mode } | null = null;
 
 const SORT_LABEL_KEYS: Record<Sort, TranslationKey> = {
   latest: "saved.sortRecent",
@@ -145,8 +139,7 @@ export function Saved() {
   }
   const snap = snapRef.current;
   // Idempotent, key-scoped read (never consumed — StrictMode-safe).
-  const modeHint: Mode | null =
-    savedModeHint && savedModeHint.locKey === loc.key ? savedModeHint.mode : null;
+  const modeHint: Mode | null = readSavedTab(loc.key);
 
   // Which track opens first is the user's Practice Settings priority, not a
   // fixed default. The dashboard's tracks are already in that order —
@@ -348,15 +341,21 @@ export function Saved() {
   const live = useRef<Omit<SavedSnapshot, "scrollTop">>(null!);
   live.current = { userId, locKey: loc.key, mode, source, sort, skill, query, dq, items, cursor, more, status };
 
+  // Handed to a review session so 완료 / back come back to THIS category and
+  // feed. `rememberSavedTab` covers the same-session return (and lets Saved
+  // restore the tab even when the feed snapshot can't); the route state is what
+  // survives a refresh mid-session, when the module hint is gone.
+  const reviewOrigin = (): SavedOrigin => ({ savedKey: loc.key, tab: mode, source });
+
   function openQuiz(q: Quiz) {
     stopAudio();
     // Record the open as a review touch so it drops down "오래 안 본 순" even if
     // the user never submits an answer (best-effort; ignore failures).
     void quizApi.markViewed(q.quiz_id).catch(() => {});
     savedSnapshot = { ...live.current, scrollTop: scrollRef.current?.scrollTop ?? 0 };
-    savedModeHint = { locKey: loc.key, mode }; // restore this tab on return even without the snapshot
+    rememberSavedTab(loc.key, mode);
     // Start a single-item review session for this saved question.
-    nav(`/review/question/${q.quiz_id}`);
+    nav(`/review/question/${q.quiz_id}`, { state: reviewOrigin() });
   }
 
   // The orange button on a saved sentence starts a single-item review session —
@@ -365,8 +364,8 @@ export function Saved() {
     stopAudio();
     void sentenceApi.markViewed(s.sentence_id).catch(() => {});
     savedSnapshot = { ...live.current, scrollTop: scrollRef.current?.scrollTop ?? 0 };
-    savedModeHint = { locKey: loc.key, mode };
-    nav(`/review/sentence/${s.sentence_id}`);
+    rememberSavedTab(loc.key, mode);
+    nav(`/review/sentence/${s.sentence_id}`, { state: reviewOrigin() });
   }
 
   function pickMode(m: Mode) {

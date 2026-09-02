@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useSavedReturn } from "../lib/savedReturn";
 import { useTranslation } from "../i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SessionChrome } from "../components/SessionChrome";
@@ -261,6 +262,9 @@ export function SessionConversation() {
   // and a review completion sheet + reward modal instead of the session summary.
   const { sentenceId: reviewSentenceId } = useParams();
   const isReview = !!reviewSentenceId;
+  // Used only in review mode: back / 확인 return to the saved-learning category
+  // this session was opened from (see SessionReview for the mirror case).
+  const backToSaved = useSavedReturn("sentence");
   const [rewardOpen, setRewardOpen] = useState(false);
   const attemptSource = isReview ? "review" : "custom";
   // Where the session was launched from (Home / Personalized), forwarded to the
@@ -759,7 +763,7 @@ export function SessionConversation() {
       progress={progress}
       panel={panel}
       minimal={isReview}
-      onBack={isReview ? () => nav(-1) : finishOrExit}
+      onBack={isReview ? backToSaved : finishOrExit}
       askContext={
         !cur
           ? null
@@ -969,7 +973,7 @@ export function SessionConversation() {
         // restart earns 0, but the session's real total must still be shown.
         points={points}
         copy={reviewCopy}
-        onConfirm={() => nav(-1)}
+        onConfirm={backToSaved}
       />
     )}
     {completed && !isReview && (

@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { readSavedTab, type SavedOrigin } from "../lib/savedReturn";
 
 vi.mock("../components/SessionChrome", () => ({
   SessionChrome: ({ children, onBack }: { children: React.ReactNode; onBack?: () => void }) => (
@@ -60,6 +61,8 @@ const QUIZ = {
   is_favorited: true,
 };
 
+const SAVED_ORIGIN: SavedOrigin = { savedKey: "k-saved", tab: "problem", source: "wrong" };
+
 function renderReview() {
   const router = createMemoryRouter(
     [
@@ -69,7 +72,9 @@ function renderReview() {
     {
       initialEntries: [
         { pathname: "/saved", state: { marker: "origin" } },
-        "/review/question/q1",
+        // Saved hands the review the category and feed it was opened from, so
+        // 완료 / back return to THAT view rather than a fixed one.
+        { pathname: "/review/question/q1", state: SAVED_ORIGIN },
       ],
       initialIndex: 1,
     },
@@ -142,6 +147,10 @@ describe("SessionReview — saved TOPIK question", () => {
     expect(screen.getByText("+5P")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "확인" }));
     expect(await screen.findByText("SAVED[origin]")).toBeInTheDocument();
+    // ...and Saved is told to come back up on Questions, so a TOPIK review never
+    // lands the user on Saved Sentences (survives a refresh mid-session, which
+    // wipes the module hint but not this route's state).
+    expect(readSavedTab(SAVED_ORIGIN.savedKey)).toBe("problem");
   });
 
   it("focuses the confirm button and dismisses the reward modal on Escape", async () => {

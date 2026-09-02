@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { StrictMode } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { RouterProvider, createMemoryRouter, useNavigate } from "react-router-dom";
+import { RouterProvider, createMemoryRouter, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Quiz } from "../lib/types";
 
@@ -31,6 +31,7 @@ vi.mock("../api/endpoints", () => ({
 
 import { Saved } from "./Saved";
 import { I18nProvider } from "../i18n";
+import { useSavedReturn } from "../lib/savedReturn";
 
 const QUIZ = {
   quiz_id: "q1",
@@ -46,10 +47,17 @@ beforeEach(() => {
   quizMarkViewed.mockResolvedValue(undefined);
 });
 
-// The single-item review screen: its back chevron pops history (nav(-1)).
+// Stands in for the single-item review screen, using the REAL return path its
+// back chevron and reward modal both call.
 function ReviewStub() {
-  const nav = useNavigate();
-  return <button onClick={() => nav(-1)}>back-to-saved</button>;
+  const back = useSavedReturn("problem");
+  const state = useLocation().state;
+  return (
+    <>
+      <div data-testid="review-state">{JSON.stringify(state)}</div>
+      <button onClick={back}>back-to-saved</button>
+    </>
+  );
 }
 
 // Renders a realistic history [origin, /saved] and mounts under StrictMode so the
@@ -120,6 +128,14 @@ describe("Saved — Questions tab restored when returning from a review", () => 
     await switchToQuestionsAndOpenReview();
     await userEvent.click(screen.getByRole("button", { name: "back-to-saved" }));
     await expectQuestionsTab();
+  });
+
+  it("hands the review the category and feed it was opened from", async () => {
+    renderRoundTrip("/saved");
+    await switchToQuestionsAndOpenReview();
+    const state = JSON.parse(screen.getByTestId("review-state").textContent || "null");
+    expect(state).toMatchObject({ tab: "problem", source: "wrong" });
+    expect(typeof state.savedKey).toBe("string");
   });
 });
 

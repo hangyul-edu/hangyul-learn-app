@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useSavedReturn } from "../lib/savedReturn";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "../i18n";
 import { SessionChrome } from "../components/SessionChrome";
@@ -35,6 +36,11 @@ export function SessionReview() {
   const { t } = useTranslation();
   const copy = useReviewSessionCopy();
   const topikCopy = useTopikSessionCopy();
+  // Leaving the review (back chevron or the reward modal's 확인) returns to the
+  // saved-learning category it was opened from, carried in this route's state.
+  // A cold deep link with no origin falls back to Questions — the category this
+  // route serves — never to Sentences.
+  const backToSaved = useSavedReturn("problem");
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [error, setError] = useState(false);
@@ -177,15 +183,6 @@ export function SessionReview() {
       setResult(null);
       setWrongKey(null);
     }
-  }
-
-  // Leaving the review (back chevron or the reward modal's confirm) pops back to
-  // the Saved list it was opened from — a plain history-back, so no extra /saved
-  // entry is pushed and Saved's own back still reaches the origin screen (Home /
-  // Personalized). Saved restores the Questions tab it was left on via its own
-  // return-state (see Saved's `savedModeHint`).
-  function backToSaved() {
-    nav(-1);
   }
 
   async function toggleSave() {

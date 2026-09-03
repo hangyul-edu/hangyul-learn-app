@@ -31,6 +31,7 @@ function useAddCopy() {
     close: t("addFriend.close"),
     infoAcceptance: t("addFriend.infoAcceptance"),
     infoVisibility: t("addFriend.infoVisibility"),
+    searchLabel: t("addFriend.searchLabel"),
     searchPlaceholder: t("addFriend.searchPlaceholder"),
     searchAria: t("addFriend.searchAria"),
     search: t("addFriend.search"),
@@ -239,9 +240,12 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
         <SheetHeader title={copy.title} closeLabel={copy.close} onClose={onClose} />
         <InfoBox lines={[copy.infoAcceptance, copy.infoVisibility]} />
 
-        {/* Phone search */}
-        <div className={`afs__search ${phone ? "is-filled" : ""}`}>
+        {/* Phone search — cp_D_01_inputFields (2382:25193): a Caption 2 label
+            4px above the row, then the country selector and the input. */}
+        <p className="afs__field-label">{copy.searchLabel}</p>
+        <div className="afs__search">
           <CountrySelect value={country} onChange={setCountry} className="afs__dial" />
+          <div className={`afs__phone-field ${phone ? "is-filled" : ""}`}>
           <input
             className="afs__phone"
             inputMode="tel"
@@ -260,6 +264,7 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
           >
             <SearchIcon />
           </button>
+          </div>
         </div>
 
         {/* Phone search result / not-found */}
@@ -290,8 +295,10 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
 
         {/* Contact recommendations */}
         <div className="afs__section">
-          <h3 className="afs__section-title">{copy.suggested}</h3>
-          <p className="afs__section-sub">{copy.suggestedSub}</p>
+          <div className="afs__section-head">
+            <h3 className="afs__section-title">{copy.suggested}</h3>
+            <p className="afs__section-sub">{copy.suggestedSub}</p>
+          </div>
           {recs.isLoading && !recs.data ? (
             <div className="afs__recs">
               <SkeletonList rows={2} height={60} />

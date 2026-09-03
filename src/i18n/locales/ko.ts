@@ -821,11 +821,14 @@ export const ko = {
     close: "친구 추가 닫기",
     infoAcceptance: "친구가 신청을 수락하면 서로 친구가 됩니다.",
     infoVisibility: "친구는 내 리그 현황과 프로필을 볼 수 있습니다.",
-    searchPlaceholder: "전화번호로 찾기",
+    /* 2382:25195 is the field LABEL; 2382:25225 is the placeholder. The app had
+       been using the label text as the placeholder and drawing no label. */
+    searchLabel: "전화번호로 찾기",
+    searchPlaceholder: "'-'를 제외하고 입력하세요",
     searchAria: "전화번호로 친구 찾기",
     search: "검색",
     suggested: "추천 친구",
-    suggestedSub: "연락처 기반으로 친구를 추천했어요!",
+    suggestedSub: "*연락처 기반으로 친구를 추천했어요",
     noRecommendations: "추천할 친구가 없어요",
     invite: "친구 신청 링크 보내기",
     inviteAria: "친구 신청 링크 공유하기",

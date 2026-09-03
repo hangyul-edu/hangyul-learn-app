@@ -63,7 +63,10 @@ describe("AddFriendSheet", () => {
     expect(screen.getByText("친구가 신청을 수락하면 서로 친구가 됩니다.")).toBeInTheDocument();
     expect(screen.getByText("친구는 내 리그 현황과 프로필을 볼 수 있습니다.")).toBeInTheDocument();
     expect(screen.getByLabelText("전화번호로 친구 찾기")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("전화번호로 찾기")).toBeInTheDocument();
+    // 2382:25195 is the field LABEL and 2382:25225 the placeholder — the app
+    // had been using the label text as the placeholder and drawing no label.
+    expect(screen.getByText("전화번호로 찾기")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("'-'를 제외하고 입력하세요")).toBeInTheDocument();
   });
 
   it("closes via the X button", async () => {
@@ -183,9 +186,9 @@ describe("AddFriendSheet", () => {
     mockLang = "en";
     wrap(<AddFriendSheet open onClose={() => {}} />);
     expect(await screen.findByRole("dialog", { name: "Add Friend" })).toBeInTheDocument();
-    expect(await screen.findByText("No friends to suggest")).toBeInTheDocument();
+    expect(await screen.findByText("No suggestions available")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Share friend invitation link" })).toBeInTheDocument();
-    expect(screen.getByText("Send Friend Invitation Link")).toBeInTheDocument();
+    expect(screen.getByText("Send friend request link")).toBeInTheDocument();
   });
 });
 

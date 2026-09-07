@@ -146,6 +146,30 @@ export function SessionTopik() {
   });
 
   const [openPanel, setOpenPanel] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  // Dismiss the type dropdown on an outside press / Escape — it draws no
+  // backdrop of its own, so nothing else would close it. Mirrors CountrySelect.
+  // The listener is scoped to `panelRef`, which wraps the trigger as well as the
+  // list: a press on the trigger is therefore "inside" and left to its own
+  // toggle, rather than being closed here and immediately reopened by the click
+  // that follows. Choosing a type is likewise inside, so selection is untouched.
+  useEffect(() => {
+    if (!openPanel) return;
+    function onPointerDown(e: MouseEvent) {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setOpenPanel(false);
+      }
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpenPanel(false);
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [openPanel]);
   const [typeCode, setTypeCode] = useState<string | null>(null);
   const [items, setItems] = useState<Quiz[] | null>(null);
   const [idx, setIdx] = useState(0);
@@ -517,7 +541,7 @@ export function SessionTopik() {
   );
 
   const panel = (
-    <div className="sess__dropdown">
+    <div className="sess__dropdown" ref={panelRef}>
       <button className="sess__dropdown-field" onClick={() => setOpenPanel((o) => !o)} aria-expanded={openPanel} aria-haspopup="listbox">
         <span className={typeCode ? "sess__dropdown-val" : "sess__dropdown-ph"}>
           {typeCode

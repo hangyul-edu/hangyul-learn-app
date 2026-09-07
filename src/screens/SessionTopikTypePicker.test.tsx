@@ -246,3 +246,86 @@ describe("TOPIK question-type picker follows the app language", () => {
     ).toBeInTheDocument();
   });
 });
+
+/* The list draws no backdrop, so without this nothing dismissed it but the
+   trigger or picking a type. */
+describe("TOPIK question-type dropdown dismissal", () => {
+  const list = () => document.querySelector(".sess__dropdown-list");
+
+  it("closes when the surrounding background is clicked", async () => {
+    renderScreen("en");
+    await openPicker();
+    expect(list()).toBeTruthy();
+
+    await userEvent.click(document.body);
+    expect(list()).toBeNull();
+  });
+
+  it("closes on a click anywhere else in the session, not just the body", async () => {
+    renderScreen("en");
+    await openPicker();
+    // The question itself is a sibling of the dropdown, not a descendant.
+    await userEvent.click(await screen.findByText("빈칸에 알맞은 것을 고르십시오."));
+    expect(list()).toBeNull();
+  });
+
+  it("stays open when the list itself is clicked", async () => {
+    renderScreen("en");
+    await openPicker();
+    // Padding inside the list is still "inside" — only a choice should close it.
+    await userEvent.click(list() as HTMLElement);
+    expect(list()).toBeTruthy();
+  });
+
+  it("does not reopen when the trigger is used to close it", async () => {
+    // The trap: an outside handler that also fires for the trigger closes the
+    // list, then the trigger's own onClick toggles it straight back open.
+    renderScreen("en");
+    const field = await screen.findByRole("button", { expanded: false });
+    await userEvent.click(field);
+    expect(list()).toBeTruthy();
+    await userEvent.click(field);
+    expect(list()).toBeNull();
+  });
+
+  it("closes on Escape", async () => {
+    renderScreen("en");
+    await openPicker();
+    await userEvent.keyboard("{Escape}");
+    expect(list()).toBeNull();
+  });
+
+  it("still selects a type when one is clicked, and closes", async () => {
+    renderScreen("en");
+    await openPicker();
+    await userEvent.click(await screen.findByText("[Type 03] Choose the topic"));
+    expect(list()).toBeNull();
+    expect(
+      (document.querySelector(".sess__dropdown-val") as HTMLElement).textContent,
+    ).toBe("[Type 03] Choose the topic");
+  });
+
+  it("can be reopened after an outside click", async () => {
+    renderScreen("en");
+    await openPicker();
+    await userEvent.click(document.body);
+    expect(list()).toBeNull();
+    await openPicker();
+    expect(list()).toBeTruthy();
+  });
+
+  it("leaves no document listeners behind once closed", async () => {
+    const add = vi.spyOn(document, "addEventListener");
+    const remove = vi.spyOn(document, "removeEventListener");
+    renderScreen("en");
+    await openPicker();
+    const opened = add.mock.calls.filter(([e]) => e === "mousedown").length;
+    await userEvent.keyboard("{Escape}");
+    const closed = remove.mock.calls.filter(([e]) => e === "mousedown").length;
+    expect(opened).toBeGreaterThan(0);
+    expect(closed).toBe(opened);
+    add.mockRestore();
+    remove.mockRestore();
+  });
+});
+

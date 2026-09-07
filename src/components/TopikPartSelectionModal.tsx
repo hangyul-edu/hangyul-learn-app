@@ -3,7 +3,7 @@ import { useTranslation, type TranslationKey } from "../i18n";
 
 import type { TopikSection } from "../lib/types";
 
-/** English API value → Korean label. Order matches the reference (듣기 first). */
+/** API value → catalog key. Order matches the reference (듣기 / Listening first). */
 const OPTIONS: { value: TopikSection; label: TranslationKey }[] = [
   { value: "listening", label: "session.partListening" },
   { value: "reading", label: "session.partReading" },

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useTranslation } from "../i18n";
+import { useTranslation, type TranslationKey } from "../i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SessionChrome } from "../components/SessionChrome";
 import { SessionCompleteModal } from "../components/SessionCompleteModal";
@@ -17,7 +17,34 @@ import { recApi, quizApi, dashboardApi, learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import { useTopikSessionCopy } from "../lib/topikSessionCopy";
-import type { Quiz, QuizAttemptResult, TopikSection } from "../lib/types";
+import { TOPIK_TYPE_LABEL_EN, TOPIK_TYPE_LABEL_KO } from "../lib/topikTypeLabels";
+import type { Quiz, QuizAttemptResult, TopikQuestionType, TopikSection } from "../lib/types";
+
+/**
+ * The full picker label for a TOPIK question type, in the app language.
+ *
+ * This screen used to build the label from the API's `title_ko` (always, in
+ * both languages), so the dropdown at the top of the session was Korean for
+ * English users AND carried the wrong wording for Korean ones — those fields
+ * are generator descriptions, not the design's labels. Both languages now come
+ * from the dropdown frames; see ../lib/topikTypeLabels.
+ *
+ * A code absent from the map falls back to the old template so a question type
+ * added server-side still renders rather than vanishing.
+ */
+function typeLabel(
+  item: TopikQuestionType,
+  language: string,
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+): string {
+  const ko = language === "ko";
+  const fromFigma = (ko ? TOPIK_TYPE_LABEL_KO : TOPIK_TYPE_LABEL_EN)[item.code];
+  if (fromFigma) return fromFigma;
+  return t("session.topikTypeLabel", {
+    n: item.number_label,
+    title: ko ? item.title_ko : item.title_en?.trim() || item.title_ko,
+  });
+}
 
 // In-progress TOPIK session snapshot, persisted so a refresh restores the same
 // set, position, and writing drafts instead of generating new questions. Scoped
@@ -89,7 +116,7 @@ function isRetryableWrong(result: QuizAttemptResult): boolean {
 }
 
 export function SessionTopik() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const nav = useNavigate();
   const loc = useLocation();
   const toast = useToast();
@@ -496,9 +523,7 @@ export function SessionTopik() {
           {typeCode
             ? (() => {
                 const sel = types.data?.items.find((x) => x.code === typeCode);
-                return sel
-                  ? t("session.topikTypeLabel", { n: sel.number_label, title: sel.title_ko })
-                  : t("session.selected");
+                return sel ? typeLabel(sel, language, t) : t("session.selected");
               })()
             : t("session.topikTypePrompt")}
         </span>
@@ -518,7 +543,7 @@ export function SessionTopik() {
                   void loadSet(item.code);
                 }}
               >
-                {t("session.topikTypeLabel", { n: item.number_label, title: item.title_ko })}
+                {typeLabel(item, language, t)}
               </button>
             </li>
           ))}

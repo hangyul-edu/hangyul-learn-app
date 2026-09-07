@@ -5482,6 +5482,10 @@ textarea.input {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* The open list — 읽기 1916:25798 / 듣기 1718:36162 / 쓰기 1718:36163. r8 with
+   shadow_1 (0 0 / blur 8 / #595959 at 18%) and NO border; the old r14 card with
+   its own outline and a 30px drop was not from these frames. Reported as
+   `drop-shadow-[…4px…]`, which is the stdDeviation — CSS blur is twice it. */
 .sess__dropdown-list {
   position: absolute;
   top: calc(100% + 6px);
@@ -5489,31 +5493,38 @@ textarea.input {
   right: 0;
   z-index: 40;
   margin: 0;
-  padding: 4px 0;
+  /* 18 above the first label, 20 each side; the last divider is the bottom
+     edge, so there is no padding under it. */
+  padding: 18px 20px 0;
   list-style: none;
   background: #fff;
-  border: 1px solid #ecedf0;
-  border-radius: 14px;
-  box-shadow: 0 12px 30px rgba(80, 70, 60, 0.16);
+  border: 0;
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(89, 89, 89, 0.18);
   max-height: 320px;
   overflow-y: auto;
 }
+/* Body 8 — SemiBold 14 / 21.5, tracking -0.42. Each row is a 22-tall label,
+   15 to its divider, 15 to the next label (37 per group + 15 gap = 52), which
+   is what makes the 12-row reading list 627 tall in the frame. */
 .sess__dropdown-item {
   width: 100%;
   text-align: left;
   border: none;
   background: none;
-  padding: 13px 18px;
-  font-size: 12px;
+  padding: 0 0 15px;
+  font-size: 14px;
   line-height: 21.5px;
   font-weight: 600;
-  letter-spacing: -0.36px;
+  letter-spacing: -0.42px;
   color: var(--black);
   cursor: pointer;
+  /* Gray-200. Figma draws a 0.5px vector; Chromium rounds a sub-pixel border
+     up to 1px anyway, so 1px is what actually ships either way. */
   border-bottom: 1px solid #e4e4e7;
 }
-.sess__dropdown-list li:last-child .sess__dropdown-item {
-  border-bottom: none;
+.sess__dropdown-list li + li .sess__dropdown-item {
+  padding-top: 15px;
 }
 .sess__dropdown-item.is-selected {
   color: var(--brand-500);

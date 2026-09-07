@@ -57,7 +57,7 @@ function PreparingIcon() {
  * Full-screen dimmed overlay + centered white card. Blocks background gestures
  * (backdrop swallows clicks), traps focus, and restores focus on close. None of
  * the lifecycle modals dismiss on backdrop/Escape — they only advance via their
- * action (the preparing modal has no action at all).
+ * own action button.
  */
 function LifecycleModalShell({
   labelledBy,
@@ -234,9 +234,13 @@ export function formatNextStart(
 
 export function PreparingModal({ nextStartsAt }: { nextStartsAt: string | null }) {
   const { t, language } = useTranslation();
+  const nav = useNavigate();
   return (
-    /* Non-dismissible: no button, no close affordance — 784:57731 draws none
-       either. It disappears only when the backend reports availability. */
+    /* 3329:37278 (KO) / 3329:37296 (EN). The redraw adds a primary CTA to what
+       used to be a dead end: the state itself still clears only when the
+       backend reports availability, but the user is no longer trapped on the
+       League screen while waiting — they can leave for Home. Backdrop and
+       Escape stay inert, so this button is the one way out. */
     <LifecycleModalShell labelledBy="llc-prep-title" describedBy="llc-prep-desc" variant="wait">
       <PreparingIcon />
       <div className="llc__text">
@@ -247,6 +251,13 @@ export function PreparingModal({ nextStartsAt }: { nextStartsAt: string | null }
           {formatNextStart(nextStartsAt, t, language === "ko" ? "ko-KR" : "en-US")}
         </p>
       </div>
+      <button
+        className="llc__cta"
+        onClick={() => nav("/home")}
+        aria-label={t("leagueLifecycle.backToHome")}
+      >
+        {t("leagueLifecycle.backToHome")}
+      </button>
     </LifecycleModalShell>
   );
 }

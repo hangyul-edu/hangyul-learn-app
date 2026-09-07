@@ -1501,12 +1501,12 @@ export const ko = {
     finishedTitle: "지난 리그가 마무리됐어요!",
     finishedDesc: "지금 바로 결과를 확인해 보세요",
     seeResult: "결과 보러가기",
-    /* 784:57721 / 784:57731 exist in English only, so the Korean wording here
-       stands; only the structure follows the frames — no supporting line, and
-       the start time quoted in ET. */
+    /* 3329:37278 redraws the waiting card in Korean: same title and start-time
+       line as before, now on a 217-tall card with a primary CTA. */
     preparingTitle: "다음 리그를 준비 중이에요!",
     startsAt: "{day} {time}(ET)에 시작됩니다",
     startingSoon: "곧 시작됩니다",
+    backToHome: "홈화면으로 돌아가기", // 3329:37283
     /* LEG-006 (378:7138) / LEG-007 (960:25821) / LEG-008 (960:26046). */
     resultCongrats: "축하합니다!",
     resultWellDone: "잘 버텼어요!",

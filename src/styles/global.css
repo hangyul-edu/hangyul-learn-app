@@ -14503,14 +14503,30 @@ textarea.input {
   height: 37.879px;
   margin-top: 8px;
 }
-/* 784:57731 — the 설치 아이콘 raster, and no CTA at all. */
+/* 3329:37278 (KO) / 3329:37296 (EN) — the 설치 아이콘 raster over a CTA. Both
+   locales lay out identically (only the text block's width differs), so every
+   offset below is shared. Measured from the 335x217 card's top-left:
+   icon 24, text 104, button 161, leaving 18.1 under the button — which the
+   min-height supplies, exactly as the other two variants do. */
+.llc__card--wait {
+  min-height: 217px;
+}
 .llc__card--wait .llc__icon {
   width: 87.877px;
   height: 77px;
-  margin-top: 18px;
+  margin-top: 24px;
 }
+/* Icon bottom 101 → text top 104. */
 .llc__card--wait .llc__text {
-  margin-top: 8px;
+  margin-top: 3px;
+}
+/* Text bottom 148 → button top 161. */
+.llc__card--wait .llc__cta {
+  margin-top: 13px;
+  /* This instance carries the component's own drop-shadow (dy 4, sigma 2, 10%
+     black) rather than the scaled 5.119/2.56 the other two variants inherit
+     from 960:22550. CSS blur is 2x sigma. */
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
 }
 /* 380:6292 is a 44-tall block for two lines measuring 41.5, so the 2.5px
    slack belongs below the copy — not split around it, which would push the

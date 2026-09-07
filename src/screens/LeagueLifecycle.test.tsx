@@ -76,6 +76,7 @@ function renderLeague() {
             <Routes>
               <Route path="/league" element={<League />} />
               <Route path="/league/result" element={<div>RESULT_SCREEN</div>} />
+              <Route path="/home" element={<div>HOME_SCREEN</div>} />
               <Route path="/points" element={<div>POINTS</div>} />
             </Routes>
           </MemoryRouter>
@@ -167,17 +168,26 @@ describe("League lifecycle gate", () => {
     expect(await screen.findByText("RESULT_SCREEN")).toBeInTheDocument();
   });
 
-  it("WAITING shows a preparing modal that cannot be dismissed", async () => {
+  it("WAITING shows a preparing modal that only its CTA can leave", async () => {
     api.leagueLifecycle.mockResolvedValue(waiting);
     renderLeague();
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByRole("heading", { name: "다음 리그를 준비 중이에요!" })).toBeInTheDocument();
-    // No action/close button — nothing to dismiss it.
-    expect(within(dialog).queryByRole("button")).not.toBeInTheDocument();
-    // Backdrop click and Escape do not close it.
+    // 3329:37278 draws exactly one action — no close/dismiss affordance.
+    expect(within(dialog).getAllByRole("button")).toHaveLength(1);
+    // Backdrop click and Escape still do not close it.
     await userEvent.click(document.querySelector(".llc") as HTMLElement);
     await userEvent.keyboard("{Escape}");
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("preparing modal's CTA navigates Home instead of trapping the user", async () => {
+    api.leagueLifecycle.mockResolvedValue(waiting);
+    renderLeague();
+    const dialog = await screen.findByRole("dialog");
+    // 3329:37283 (KO) — the button added by the redraw.
+    await userEvent.click(within(dialog).getByRole("button", { name: "홈화면으로 돌아가기" }));
+    expect(await screen.findByText("HOME_SCREEN")).toBeInTheDocument();
   });
 
   it("preparing modal shows the dynamic next-start time (ET), not a hardcode", async () => {

@@ -1515,11 +1515,11 @@ export const en: Catalog = {
     finishedTitle: "Last league has ended!",
     finishedDesc: "Check your results now",
     seeResult: "See Results",
-    /* 784:57731 — no CTA and no supporting line; the frame shows title + start
-       time only, quoted in ET. */
+    /* 3329:37296 — title + start time quoted in ET, now with a primary CTA. */
     preparingTitle: "Next league coming soon!",
     startsAt: "Starts {day} at {time}(ET)",
     startingSoon: "Starting soon",
+    backToHome: "Back to Home", // 3329:37301
     /* LEG-006 (784:56833) / LEG-007 (960:26189) / LEG-008 (960:26295). */
     resultCongrats: "Congrats!",
     resultWellDone: "You held on!",

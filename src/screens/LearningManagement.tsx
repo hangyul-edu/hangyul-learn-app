@@ -7,7 +7,7 @@ import { learnApi } from "../api/endpoints";
 import { LearningSectionSwitcher } from "../components/LearningSectionSwitcher";
 import { Button } from "../components/ui/kit";
 import { ErrorState } from "../components/ui/states";
-import type { ManagementPeriod, ManagementStats } from "../lib/types";
+import type { ManagementBucket, ManagementPeriod, ManagementStats } from "../lib/types";
 
 const PERIODS: { id: ManagementPeriod; label: TranslationKey }[] = [
   { id: "7d", label: "learningManagement.last7" },
@@ -27,6 +27,37 @@ function fmtShort(seconds: number): string {
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   return h > 0 ? `${h}h${m}m` : `${m}m`;
+}
+
+/**
+ * X-axis label for one bar, derived here rather than taken from the response.
+ *
+ * The API's `bucket.label` is generated Korean ("월", "1주", "9월") and does not
+ * vary with the app language, so rendering it left English users reading Korean
+ * axis labels. The bucket's own dates carry everything needed, so the label is
+ * formatted client-side instead — which also means switching language re-renders
+ * the axis immediately, with no refetch.
+ *
+ * `Intl` reproduces both Figma frames exactly: weekday `short` gives 월…일
+ * (HMA-002 KO 1:3636) and Mon…Sun (EN 784:50416); month `short` gives 9월 / Sep,
+ * the Korean matching what the server used to send. Only the weekly label has no
+ * Intl equivalent, so it goes through the catalog.
+ */
+function bucketLabel(
+  bucket: ManagementBucket,
+  period: ManagementPeriod,
+  index: number,
+  locale: string,
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+): string {
+  // Parse at local midnight: a bare "YYYY-MM-DD" is parsed as UTC and would
+  // shift to the previous day (and so the previous weekday) west of Greenwich.
+  const date = new Date(`${bucket.start_date}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return bucket.label; // malformed date → server text
+  if (period === "7d") return new Intl.DateTimeFormat(locale, { weekday: "short" }).format(date);
+  // Buckets arrive chronologically, one per calendar week of the month.
+  if (period === "1m") return t("learningManagement.weekLabel", { n: index + 1 });
+  return new Intl.DateTimeFormat(locale, { month: "short" }).format(date);
 }
 
 const BROWSER_TZ =
@@ -219,12 +250,14 @@ function Chart({
   selectedKey: string | undefined;
   onSelect: (key: string) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const locale = language === "ko" ? "ko-KR" : "en-US";
   const max = Math.max(1, ...data.buckets.map((b) => b.study_seconds));
   return (
     <div className="lmgmt__chart" role="group" aria-label={t("learningManagement.periodHeading")}>
-      {data.buckets.map((b) => {
+      {data.buckets.map((b, i) => {
         const selected = b.key === selectedKey;
+        const label = bucketLabel(b, data.period, i, locale, t);
         const pct =
           b.study_seconds > 0 ? Math.max(8, (b.study_seconds / max) * 100) : selected ? 3 : 0;
         return (
@@ -233,7 +266,7 @@ function Chart({
               type="button"
               className="lmgmt__bar-track"
               aria-pressed={selected}
-              aria-label={`${b.label} ${fmtShort(b.study_seconds)}`}
+              aria-label={`${label} ${fmtShort(b.study_seconds)}`}
               onClick={() => onSelect(b.key)}
             >
               <div
@@ -243,7 +276,7 @@ function Chart({
                 {selected && <span className="lmgmt__bar-value">{fmtShort(b.study_seconds)}</span>}
               </div>
             </button>
-            <span className="lmgmt__bar-label">{b.label}</span>
+            <span className="lmgmt__bar-label">{label}</span>
           </div>
         );
       })}

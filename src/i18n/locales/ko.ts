@@ -1148,6 +1148,9 @@ export const ko = {
     questions: "학습한 문제 수",
     countUnit: "{n}개", // 1916:25920
     periodHeading: "기간별 학습 시간",
+    /* Weekly x-axis label. The 7일/3개월/1년 axes come from Intl, which has no
+       week formatter — matches what the API used to send. */
+    weekLabel: "{n}주",
     period: "기간",
     periodAria: "기간 선택",
     thisMonth: "이번 달",

@@ -1159,6 +1159,10 @@ export const en: Catalog = {
     questions: "Questions learned",
     countUnit: "{n}",
     periodHeading: "Study time by period",
+    /* Weekly x-axis label. HMA-002 only draws the 7-day axis, so unlike the
+       weekday/month labels (which Intl derives to match the frame exactly)
+       this wording is authored — it is not sourced from a Figma text node. */
+    weekLabel: "Week {n}",
     period: "Period",
     periodAria: "Select period",
     thisMonth: "This month",

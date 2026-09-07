@@ -17,10 +17,10 @@ function Loc() {
   return <div data-testid="loc">{useLocation().pathname}</div>;
 }
 
-function renderPage() {
+function renderPage(language: "ko" | "en" = "ko") {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <I18nProvider language="ko">
+    <I18nProvider language={language}>
       <QueryClientProvider client={qc}>
         <MemoryRouter initialEntries={["/learning-management"]}>
           <Routes>
@@ -49,9 +49,28 @@ function stats(period: ManagementPeriod, over: Partial<ManagementStats> = {}): M
   };
 }
 
+/** One bucket per calendar month, as the 3m/1y periods return. */
+const monthBuckets: ManagementStats["buckets"] = [
+  { key: "2026-05-01", start_date: "2026-05-01", end_date: "2026-05-31", label: "5월", study_seconds: 600, conversation_sentence_count: 1, topik_question_count: 0, is_current: false },
+  { key: "2026-06-01", start_date: "2026-06-01", end_date: "2026-06-30", label: "6월", study_seconds: 900, conversation_sentence_count: 2, topik_question_count: 1, is_current: false },
+  { key: "2026-07-01", start_date: "2026-07-01", end_date: "2026-07-31", label: "7월", study_seconds: 3600, conversation_sentence_count: 3, topik_question_count: 2, is_current: true },
+];
+
+/** Open the period menu and pick an option by its visible label.
+ *  The chart hides itself while `data.period` still differs from the selected
+ *  period, so a period-specific axis can only be asserted after a real switch. */
+async function selectPeriod(optionLabel: string) {
+  const aria = optionLabel.match(/[a-z]/i) ? "Select period" : "기간 선택";
+  // The trigger only exists once the first fetch resolves.
+  await userEvent.click(await screen.findByRole("button", { name: aria }));
+  await userEvent.click(await screen.findByRole("menuitem", { name: optionLabel }));
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
-  management.mockResolvedValue(stats("7d"));
+  // Answer with the period that was actually requested — the screen discards a
+  // response whose period does not match its selection.
+  management.mockImplementation((period: ManagementPeriod) => Promise.resolve(stats(period)));
 });
 
 describe("LearningManagement", () => {
@@ -66,6 +85,86 @@ describe("LearningManagement", () => {
     expect(screen.getByText("월")).toBeInTheDocument();
     expect(screen.getByText("목")).toBeInTheDocument();
     expect(screen.getByText("1h0m")).toBeInTheDocument(); // current bucket duration
+  });
+
+  /* The API sends Korean bucket labels that ignore the app language, so the
+     axis is formatted client-side. These lock the wording to HMA-002: the
+     Korean frame (1:3636) reads 월…일, the English one (784:50416) Mon…Sun. */
+  describe("x-axis labels follow the app language", () => {
+    it("uses the English weekday wording from HMA-002 EN", async () => {
+      renderPage("en");
+      expect(await screen.findByText("Mon")).toBeInTheDocument();
+      expect(screen.getByText("Thu")).toBeInTheDocument();
+    });
+
+    it("ignores the server's Korean label rather than rendering it in English", async () => {
+      // Both buckets carry Korean labels; none may reach an English screen.
+      renderPage("en");
+      await screen.findByText("Mon");
+      expect(screen.queryByText("월")).not.toBeInTheDocument();
+      expect(screen.queryByText("목")).not.toBeInTheDocument();
+    });
+
+    it("still renders Korean unchanged for Korean users", async () => {
+      renderPage("ko");
+      expect(await screen.findByText("월")).toBeInTheDocument();
+      expect(screen.getByText("목")).toBeInTheDocument();
+      expect(screen.queryByText("Mon")).not.toBeInTheDocument();
+    });
+
+    it("localizes month buckets for the 3m/1y periods", async () => {
+      management.mockImplementation((p: ManagementPeriod) =>
+        Promise.resolve(p === "3m" ? stats(p, { buckets: monthBuckets }) : stats(p)),
+      );
+      renderPage("en");
+      await selectPeriod("Last 3 months");
+      expect(await screen.findByText("May")).toBeInTheDocument();
+      expect(screen.getByText("Jun")).toBeInTheDocument();
+      expect(screen.getByText("Jul")).toBeInTheDocument();
+    });
+
+    it("keeps the Korean month wording the API used to send", async () => {
+      management.mockImplementation((p: ManagementPeriod) =>
+        Promise.resolve(p === "3m" ? stats(p, { buckets: monthBuckets }) : stats(p)),
+      );
+      renderPage("ko");
+      await selectPeriod("최근 3개월");
+      // Byte-identical to the server's old f"{m}월" — Korean users see no change.
+      expect(await screen.findByText("5월")).toBeInTheDocument();
+      expect(screen.getByText("6월")).toBeInTheDocument();
+      expect(screen.getByText("7월")).toBeInTheDocument();
+    });
+
+    it("numbers the weekly buckets in Korean", async () => {
+      renderPage("ko");
+      await selectPeriod("이번 달");
+      expect(await screen.findByText("1주")).toBeInTheDocument();
+      expect(screen.getByText("2주")).toBeInTheDocument();
+    });
+
+    it("numbers the weekly buckets in English", async () => {
+      renderPage("en");
+      await selectPeriod("This month");
+      expect(await screen.findByText("Week 1")).toBeInTheDocument();
+      expect(screen.getByText("Week 2")).toBeInTheDocument();
+    });
+
+    it("falls back to the server label when a bucket date is unusable", async () => {
+      management.mockResolvedValue(
+        stats("7d", {
+          buckets: [
+            {
+              key: "d1", start_date: "not-a-date", end_date: "not-a-date", label: "월",
+              study_seconds: 1200, conversation_sentence_count: 4, topik_question_count: 1,
+              is_current: true,
+            },
+          ],
+        }),
+      );
+      renderPage("en");
+      // Better a Korean label than an "Invalid Date" on the axis.
+      expect(await screen.findByText("월")).toBeInTheDocument();
+    });
   });
 
   it("highlights today by default and shows its duration above it", async () => {

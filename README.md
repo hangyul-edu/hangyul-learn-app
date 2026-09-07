@@ -170,7 +170,24 @@ npm run preview                                        # serve the built dist lo
 The build output is static files in `frontend/dist/` — deploy them to any static
 host (Netlify, Vercel, S3+CloudFront, Nginx…). Configure the host to **serve
 `index.html` for unknown routes** (SPA fallback) so client-side routing works on
-refresh/deep-links.
+refresh/deep-links, and `admin.html` for `/admin` and `/admin/*` (two bundles,
+two entry HTML files — see `docs/admin-portal.md`).
+
+**Vercel** is covered by the checked-in `frontend/vercel.json`; set the project's
+**Root Directory** to `frontend` so it is picked up. Its rewrites map `/admin`
+and `/admin/*` to `admin.html` and everything else to `index.html`. Order
+matters — the `/admin` rules must precede the catch-all — and Vercel checks the
+filesystem before applying rewrites, so hashed `/assets/*` files still serve
+normally. Without it a deep link like `/faq` 404s on refresh; `src/main.tsx`
+also carries a runtime `/admin` → `admin.html` redirect as a last-resort
+fallback for hosts that cannot be configured, which the rewrites make redundant.
+
+Remember that `VITE_*` values are **inlined at build time**: changing one in the
+host's dashboard requires a fresh build (redeploy with the build cache cleared),
+not just a restart. Set `VITE_API_BASE_URL` explicitly for any host that is not
+also serving the API — the `/api` default only resolves through the dev proxy or
+a single-box deployment. The API must in turn list the deployed origin in
+`CORS_ALLOW_ORIGINS` (see the root `.env.example`).
 
 ---
 

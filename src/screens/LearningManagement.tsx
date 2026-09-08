@@ -32,11 +32,11 @@ function fmtShort(seconds: number): string {
 /**
  * X-axis label for one bar, derived here rather than taken from the response.
  *
- * The API's `bucket.label` is generated Korean ("월", "1주", "9월") and does not
+ * The API used to send a generated Korean label ("월", "1주", "9월") that did not
  * vary with the app language, so rendering it left English users reading Korean
- * axis labels. The bucket's own dates carry everything needed, so the label is
- * formatted client-side instead — which also means switching language re-renders
- * the axis immediately, with no refetch.
+ * axis labels. That field is gone: the bucket's dates carry everything needed,
+ * so every client formats its own — which also means switching language
+ * re-renders the axis immediately, with no refetch.
  *
  * `Intl` reproduces both Figma frames exactly: weekday `short` gives 월…일
  * (HMA-002 KO 1:3636) and Mon…Sun (EN 784:50416); month `short` gives 9월 / Sep,
@@ -53,7 +53,9 @@ function bucketLabel(
   // Parse at local midnight: a bare "YYYY-MM-DD" is parsed as UTC and would
   // shift to the previous day (and so the previous weekday) west of Greenwich.
   const date = new Date(`${bucket.start_date}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return bucket.label; // malformed date → server text
+  // A malformed date has no formattable label; show the raw value rather than
+  // an empty tick, so the axis still lines up with the bars.
+  if (Number.isNaN(date.getTime())) return bucket.start_date;
   if (period === "7d") return new Intl.DateTimeFormat(locale, { weekday: "short" }).format(date);
   // Buckets arrive chronologically, one per calendar week of the month.
   if (period === "1m") return t("learningManagement.weekLabel", { n: index + 1 });

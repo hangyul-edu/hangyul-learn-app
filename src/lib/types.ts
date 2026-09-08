@@ -124,7 +124,6 @@ export interface Sentence {
   status?: string;
   attempt_count?: number;
   bookmarked?: boolean;
-  is_saved?: boolean;
 }
 /** Result of a fill-in-the-blank answer submission (answer revealed post-attempt). */
 export interface BlankAttempt {
@@ -663,7 +662,6 @@ export interface MySubscription {
   plan_id?: string | null;
   plan_name?: string | null;
   current_period_end?: string | null;
-  trial_end?: string | null;
   cancel_at_period_end?: boolean;
   is_premium?: boolean;
   /** Server-authoritative one-time-trial flag: true once the account has ever
@@ -742,7 +740,6 @@ export interface ManagementBucket {
   key: string;
   start_date: string;
   end_date: string;
-  label: string;
   study_seconds: number;
   conversation_sentence_count: number;
   topik_question_count: number;

@@ -41,8 +41,8 @@ function stats(period: ManagementPeriod, over: Partial<ManagementStats> = {}): M
     has_any_eligible_learning_record: true,
     today: { study_seconds: 3600, conversation_sentence_count: 3, topik_question_count: 2, learning_count: 5 },
     buckets: [
-      { key: "d1", start_date: "2026-07-20", end_date: "2026-07-20", label: "월", study_seconds: 1200, conversation_sentence_count: 4, topik_question_count: 1, is_current: false },
-      { key: "d2", start_date: "2026-07-23", end_date: "2026-07-23", label: "목", study_seconds: 3600, conversation_sentence_count: 3, topik_question_count: 2, is_current: true },
+      { key: "d1", start_date: "2026-07-20", end_date: "2026-07-20", study_seconds: 1200, conversation_sentence_count: 4, topik_question_count: 1, is_current: false },
+      { key: "d2", start_date: "2026-07-23", end_date: "2026-07-23", study_seconds: 3600, conversation_sentence_count: 3, topik_question_count: 2, is_current: true },
     ],
     period_totals: { conversation_sentence_count: 7, topik_question_count: 3, learning_count: 10 },
     ...over,
@@ -51,9 +51,9 @@ function stats(period: ManagementPeriod, over: Partial<ManagementStats> = {}): M
 
 /** One bucket per calendar month, as the 3m/1y periods return. */
 const monthBuckets: ManagementStats["buckets"] = [
-  { key: "2026-05-01", start_date: "2026-05-01", end_date: "2026-05-31", label: "5월", study_seconds: 600, conversation_sentence_count: 1, topik_question_count: 0, is_current: false },
-  { key: "2026-06-01", start_date: "2026-06-01", end_date: "2026-06-30", label: "6월", study_seconds: 900, conversation_sentence_count: 2, topik_question_count: 1, is_current: false },
-  { key: "2026-07-01", start_date: "2026-07-01", end_date: "2026-07-31", label: "7월", study_seconds: 3600, conversation_sentence_count: 3, topik_question_count: 2, is_current: true },
+  { key: "2026-05-01", start_date: "2026-05-01", end_date: "2026-05-31", study_seconds: 600, conversation_sentence_count: 1, topik_question_count: 0, is_current: false },
+  { key: "2026-06-01", start_date: "2026-06-01", end_date: "2026-06-30", study_seconds: 900, conversation_sentence_count: 2, topik_question_count: 1, is_current: false },
+  { key: "2026-07-01", start_date: "2026-07-01", end_date: "2026-07-31", study_seconds: 3600, conversation_sentence_count: 3, topik_question_count: 2, is_current: true },
 ];
 
 /** Open the period menu and pick an option by its visible label.
@@ -87,7 +87,8 @@ describe("LearningManagement", () => {
     expect(screen.getByText("1h0m")).toBeInTheDocument(); // current bucket duration
   });
 
-  /* The API sends Korean bucket labels that ignore the app language, so the
+  /* The API used to send Korean bucket labels that ignored the app language;
+     that field is gone and each client formats its own, so the
      axis is formatted client-side. These lock the wording to HMA-002: the
      Korean frame (1:3636) reads 월…일, the English one (784:50416) Mon…Sun. */
   describe("x-axis labels follow the app language", () => {
@@ -97,8 +98,9 @@ describe("LearningManagement", () => {
       expect(screen.getByText("Thu")).toBeInTheDocument();
     });
 
-    it("ignores the server's Korean label rather than rendering it in English", async () => {
-      // Both buckets carry Korean labels; none may reach an English screen.
+    it("renders no Korean on an English screen", async () => {
+      // The axis is formatted entirely client-side now, so nothing can leak a
+      // Korean weekday into the English app.
       renderPage("en");
       await screen.findByText("Mon");
       expect(screen.queryByText("월")).not.toBeInTheDocument();
@@ -149,12 +151,12 @@ describe("LearningManagement", () => {
       expect(screen.getByText("Week 2")).toBeInTheDocument();
     });
 
-    it("falls back to the server label when a bucket date is unusable", async () => {
+    it("shows the raw date when a bucket date is unusable", async () => {
       management.mockResolvedValue(
         stats("7d", {
           buckets: [
             {
-              key: "d1", start_date: "not-a-date", end_date: "not-a-date", label: "월",
+              key: "d1", start_date: "not-a-date", end_date: "not-a-date",
               study_seconds: 1200, conversation_sentence_count: 4, topik_question_count: 1,
               is_current: true,
             },
@@ -162,8 +164,9 @@ describe("LearningManagement", () => {
         }),
       );
       renderPage("en");
-      // Better a Korean label than an "Invalid Date" on the axis.
-      expect(await screen.findByText("월")).toBeInTheDocument();
+      // The API no longer sends a label to fall back to, so the axis shows the
+      // raw value rather than an empty tick or "Invalid Date".
+      expect(await screen.findByText("not-a-date")).toBeInTheDocument();
     });
   });
 
@@ -227,7 +230,7 @@ describe("LearningManagement", () => {
       stats("7d", {
         has_any_eligible_learning_record: true,
         today: { study_seconds: 0, conversation_sentence_count: 0, topik_question_count: 0, learning_count: 0 },
-        buckets: [{ key: "d", start_date: "2026-07-23", end_date: "2026-07-23", label: "목", study_seconds: 0, conversation_sentence_count: 0, topik_question_count: 0, is_current: true }],
+        buckets: [{ key: "d", start_date: "2026-07-23", end_date: "2026-07-23", study_seconds: 0, conversation_sentence_count: 0, topik_question_count: 0, is_current: true }],
         period_totals: { conversation_sentence_count: 0, topik_question_count: 0, learning_count: 0 },
       }),
     );
@@ -244,7 +247,7 @@ describe("LearningManagement", () => {
     for (const label of ["최근 7일", "이번 달", "최근 3개월", "최근 1년"]) {
       expect(screen.getByRole("menuitem", { name: label })).toBeInTheDocument();
     }
-    management.mockResolvedValue(stats("1m", { buckets: [{ key: "w1", start_date: "2026-07-01", end_date: "2026-07-05", label: "1주", study_seconds: 600, conversation_sentence_count: 1, topik_question_count: 0, is_current: true }] }));
+    management.mockResolvedValue(stats("1m", { buckets: [{ key: "w1", start_date: "2026-07-01", end_date: "2026-07-05", study_seconds: 600, conversation_sentence_count: 1, topik_question_count: 0, is_current: true }] }));
     await userEvent.click(screen.getByRole("menuitem", { name: "이번 달" }));
     await waitFor(() => expect(management).toHaveBeenCalledWith("1m", expect.anything()));
     expect(await screen.findByText("1주")).toBeInTheDocument();

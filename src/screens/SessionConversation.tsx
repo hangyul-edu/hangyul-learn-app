@@ -345,7 +345,7 @@ export function SessionConversation() {
       reqIdRef.current = null;
       // Seed bookmark state from the server's saved flag on each item.
       setSaved(
-        Object.fromEntries(res.items.map((s) => [s.sentence_id, !!(s.bookmarked ?? s.is_saved)])),
+        Object.fromEntries(res.items.map((s) => [s.sentence_id, !!s.bookmarked])),
       );
     } catch (e) {
       if (items === null) setError(true);
@@ -364,7 +364,7 @@ export function SessionConversation() {
       const s = await sentenceApi.get(id);
       setItems([s]);
       setIdx(0);
-      setSaved({ [s.sentence_id]: !!(s.bookmarked ?? s.is_saved) });
+      setSaved({ [s.sentence_id]: !!s.bookmarked });
     } catch {
       setError(true);
     } finally {

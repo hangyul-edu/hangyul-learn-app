@@ -206,7 +206,7 @@ export function Profile() {
   const s = sub.data;
   const subState: "trial" | "paid" | "none" = s?.status === "trial" ? "trial" : s?.is_premium ? "paid" : "none";
   // MOR-001 prints the date in the app language, not always in Korean.
-  const nextBilling = formatLongDate(s?.current_period_end ?? s?.trial_end, language);
+  const nextBilling = formatLongDate(s?.current_period_end, language);
   // While loading or on error the state is unknown — render a neutral (paid-style)
   // card, never the orange no-subscription CTA.
   const cardVariant = sub.isLoading || sub.isError ? "paid" : subState;

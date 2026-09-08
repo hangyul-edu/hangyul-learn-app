@@ -227,9 +227,8 @@ export function Subscription() {
   const status = m?.status ?? "";
   const hasSub = !!m && (m.is_premium || ["trial", "active", "cancelled", "grace_period"].includes(status));
   const scheduledCancel = !!m?.cancel_at_period_end;
-  const isTrial = status === "trial";
   const planName = m?.plan_name ?? t("subscription.planFallback");
-  const endIso = isTrial ? m?.trial_end ?? m?.current_period_end : m?.current_period_end;
+  const endIso = m?.current_period_end;
   const endDate = longDate(endIso);
 
   return (

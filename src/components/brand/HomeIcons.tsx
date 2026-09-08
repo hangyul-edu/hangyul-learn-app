@@ -1,4 +1,3 @@
-import tabConvArt from "../../assets/brand/tab-icon-conv.svg";
 import sunArt from "../../assets/brand/home-sun.svg";
 import lectureArt from "../../assets/brand/home-lecture.svg";
 import reviewArt from "../../assets/brand/home-review.svg";
@@ -75,23 +74,6 @@ export function SunIcon({ size = 82, lit = true }: { size?: number; lit?: boolea
       width={size}
       height={size}
       style={{ display: "block", filter: lit ? undefined : "grayscale(1) opacity(0.55)" }}
-    />
-  );
-}
-
-/**
- * Conversation-track tab icon — exported from Figma MAI-001 (node 1870:24474,
- * 25.11x22.30). The TOPIK and settings tabs are flattened single artworks in
- * Figma (bg + glyph in one group), so their glyphs cannot be exported
- * separately without giving up the dynamic active/inactive tab rendering.
- */
-export function SpeakingIcon({ size = 30 }: { size?: number }) {
-  return (
-    <img
-      src={tabConvArt}
-      alt=""
-      aria-hidden="true"
-      style={{ width: size, height: (size * 22.2969) / 25.1109, display: "block" }}
     />
   );
 }

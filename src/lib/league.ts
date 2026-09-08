@@ -27,19 +27,6 @@ export function tierName(tier: LeagueTier): string {
   return TIER_META[tier].name;
 }
 
-/**
- * Citrus-badge palette per tier for the guide's fruit icons: `rind` (thick
- * outline) / `fill` (body) / `flesh` (segmented interior). Colours follow the
- * reference identity (green→turquoise, lime→bright lime, … golden→amber).
- */
-export const TIER_CITRUS: Record<LeagueTier, { rind: string; fill: string; flesh: string }> = {
-  green: { rind: "#2fa383", fill: "#4fc4a1", flesh: "#d7f6ec" },
-  lime: { rind: "#8cbb22", fill: "#c2e236", flesh: "#f0fbca" },
-  yellow: { rind: "#e7a70c", fill: "#ffd04a", flesh: "#ffeab1" },
-  orange: { rind: "#e2660f", fill: "#ff8f2c", flesh: "#ffdcc2" },
-  golden: { rind: "#c88d0e", fill: "#f2b527", flesh: "#ffeab1" },
-};
-
 /** Boundary notes shown under the first / last tier in the ladder. */
 export const LEAGUE_TIER_NOTE_KEYS: Partial<Record<LeagueTier, TranslationKey>> = {
   green: "league.noDemotion",

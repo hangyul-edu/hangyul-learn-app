@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useTranslation, type TranslationKey } from "../i18n";
+import { useTranslation } from "../i18n";
 
 /**
  * Shared chrome for the onboarding question screens — Figma AUR-002 (67:6111),
@@ -96,6 +96,3 @@ export function OnboardingOption({
     </button>
   );
 }
-
-/** Convenience wrapper so screens can name their option keys inline. */
-export type OptionKey = TranslationKey;

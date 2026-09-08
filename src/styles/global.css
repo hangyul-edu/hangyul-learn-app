@@ -444,33 +444,6 @@
   object-fit: cover;
 }
 
-/* ============================ Progress ============================ */
-.progress {
-  /* Figma Progress (node I935:20459;8595:58062) — 4px track, Gray 2, r24 */
-  height: 4px;
-  border-radius: 24px;
-  background: var(--border);
-  overflow: hidden;
-}
-.progress__bar {
-  height: 100%;
-  border-radius: 24px;
-  background: var(--brand-500);
-  transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.ring {
-  transform: rotate(-90deg);
-}
-.ring__track {
-  fill: none;
-  stroke: var(--surface-3);
-}
-.ring__val {
-  fill: none;
-  stroke: url(#ringGrad);
-  stroke-linecap: round;
-  transition: stroke-dashoffset 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
 
 /* ============================ Forms ============================ */
 .field {
@@ -509,14 +482,6 @@
   gap: 5px;
   align-items: center;
 }
-.field__ok {
-  /* Figma success message ("인증되었습니다.") — Medium 13 / 1.4, blue */
-  font: var(--t-caption-3);
-  font-weight: 500;
-  line-height: 1.4;
-  color: var(--positive);
-  margin-top: 2px;
-}
 .input {
   /* Figma inputField (node 209:6875): Gray 1 fill, no border until focus,
      r12, 14/16 padding, Body 6 text. */
@@ -551,37 +516,7 @@ textarea.input {
 .input-affix {
   position: relative;
 }
-.input-affix__btn {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  border: none;
-  background: none;
-  color: var(--ink-3);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 700;
-  padding: 6px 8px;
-}
 
-/* pin input */
-.pin {
-  display: flex;
-  gap: 9px;
-  justify-content: center;
-}
-.pin__box {
-  width: 46px;
-  height: 56px;
-  border-radius: var(--r-md);
-  border: 1.5px solid var(--border-strong);
-  background: var(--surface);
-  text-align: center;
-  font-size: 22px;
-  font-weight: 800;
-  font-family: var(--font-display);
-}
 .pin__box:focus {
   outline: none;
   border-color: var(--brand-400);
@@ -631,38 +566,10 @@ textarea.input {
   opacity: 1;
 }
 
-.checkline {
-  display: flex;
-  align-items: flex-start;
-  gap: 11px;
-  padding: 12px 4px;
-  cursor: pointer;
-  user-select: none;
-}
-.checkbox {
-  /* Figma cp_D_05_checkbox (node 841:22505) — 18px, r4, Gray 2 border.
-     Note the checked state is Gray 7, NOT brand orange. */
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  border: 1px solid var(--border);
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  color: transparent;
-  transition: all 0.14s;
-  font-size: 12px;
-  /* cp_D_05_checkbox's `_base` (I1:3446;3021:65718) — drop-shadow 0 4 /
-     sigma 2 / black 0.1, so a 4px CSS blur at .1, not 2px at .25. */
-  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.1));
-}
 .checkbox.is-on {
   background: var(--ink);
   border-color: var(--ink);
   color: var(--ink-inverse);
-}
-.checkbox--round {
-  border-radius: var(--r-full);
 }
 
 /* ============================ Toast ============================ */
@@ -1497,16 +1404,6 @@ textarea.input {
 }
 .tap {
   cursor: pointer;
-}
-.hstack-scroll {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding-bottom: 6px;
-  scrollbar-width: none;
-  margin: 0 -18px;
-  padding-left: 18px;
-  padding-right: 18px;
 }
 .hstack-scroll::-webkit-scrollbar {
   display: none;
@@ -4572,12 +4469,6 @@ textarea.input {
 .home__shortcut:active {
   transform: scale(0.98);
 }
-/* The Figma lecture tile already includes its yellow card (node 1825:26639),
-   so no wrapper colour/box here — kept only for legacy markup. */
-.home__shortcut-play {
-  display: grid;
-  place-items: center;
-}
 .home__shortcut-label {
   align-self: stretch;
   text-align: center;
@@ -5224,10 +5115,6 @@ textarea.input {
 }
 .plearn__fab:active {
   transform: scale(0.96);
-}
-.plearn__fab-face {
-  width: 104%;
-  display: block;
 }
 
 /* ============================ Learning session ============================ */
@@ -5916,16 +5803,6 @@ textarea.input {
   font-size: 15px;
   line-height: 22.3px;
 }
-.sess__answer {
-  width: 100%;
-  height: 52px;
-  margin-top: 16px;
-  border: 1.5px solid #cdefef;
-  border-radius: 14px;
-  background: #eafaFA;
-  padding: 0 16px;
-  font-size: 15px;
-}
 .sess__hint {
   margin: 14px 0 0;
   text-align: center;
@@ -6031,30 +5908,6 @@ textarea.input {
   font-size: 22px;
 }
 
-/* Result + submit + next */
-.sess__result {
-  margin-top: 20px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-.sess__result-ok {
-  color: #16a34a;
-  font-weight: 800;
-}
-.sess__result-no {
-  color: #ff6700;
-  font-weight: 800;
-}
-.sess__explain {
-  margin: 0;
-  color: #667078;
-  font-size: 14px;
-  line-height: 1.6;
-  text-align: left;
-}
 .sess__submit,
 .sess__next {
   width: 100%;
@@ -8343,20 +8196,6 @@ textarea.input {
      each modal is its button row. */
   animation: pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.1);
   text-align: center;
-}
-.wdd__close {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 44px;
-  height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
 .wdd__close:active {
   opacity: 0.6;
@@ -10822,32 +10661,6 @@ textarea.input {
   padding: 3px 4px;
   border-radius: 6px;
 }
-/* horizontal footer (loader / retry) inside a row */
-.lechome__row-foot {
-  flex: 0 0 auto;
-  align-self: center;
-  display: grid;
-  place-items: center;
-  width: 40px;
-}
-.lechome__row-retry {
-  flex: 0 0 auto;
-  align-self: center;
-  background: none;
-  border: none;
-  color: #ff6700;
-  font-weight: 700;
-  font-size: 13px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-/* vertical footer + states */
-.lechome__foot {
-  display: grid;
-  place-items: center;
-  min-height: 48px;
-  padding: 16px 0;
-}
 .lechome__err {
   display: flex;
   align-items: center;
@@ -10864,12 +10677,6 @@ textarea.input {
   font-size: 14px;
   cursor: pointer;
   text-decoration: underline;
-}
-.lechome__empty {
-  margin: clamp(40px, 12vw, 70px) 20px;
-  text-align: center;
-  color: #adb4ba;
-  font-size: 15px;
 }
 .lechome__skel-title {
   height: 22px;
@@ -11396,8 +11203,6 @@ textarea.input {
   flex-direction: column;
   min-height: 100%;
 }
-.pm__back:active { opacity: 0.55; }
-
 /* Scroll body — ~32px horizontal padding, safe bottom inset. */
 /* SET-002 (1332:21988): the 326-wide column sits at x=24.5 and starts at
    y=130, i.e. 36px under the 50px nav bar. */
@@ -12724,10 +12529,6 @@ textarea.input {
      itself is left at 22 — resizing it is a separate call. */
   height: 20px;
   line-height: 20px;
-}
-.lg__title-row--friend {
-  margin-top: 4px;
-  margin-bottom: 8px;
 }
 .lg__title {
   /* Figma node 960:22849 — Pretendard ExtraBold 25 / 20, black */
@@ -15854,8 +15655,6 @@ textarea.input {
   min-height: 0;
   background: #ffffff;
 }
-
-.faq__back:active { opacity: 0.55; }
 
 .faq__scroll {
   flex: 1;

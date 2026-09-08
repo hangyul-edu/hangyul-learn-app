@@ -1,4 +1,3 @@
-import type { TranslationKey } from "../i18n";
 /**
  * Resolve the API base URL.
  * - Production: set VITE_API_BASE_URL to the backend origin.
@@ -7,6 +6,3 @@ import type { TranslationKey } from "../i18n";
  */
 const raw = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
 export const API_BASE_URL = raw ? raw.replace(/\/+$/, "") : "/api";
-
-/** Brand name key; resolve with `t()` (endonym differs per language). */
-export const APP_NAME_KEY: TranslationKey = "misc.brandName";

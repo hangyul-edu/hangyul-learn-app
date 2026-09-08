@@ -18,11 +18,9 @@ export const ko = {
   common: {
     confirm: "확인", // Figma 1332:22046 cp_C_01_primaryBtn
     cancel: "취소",
-    save: "저장", // Figma 1332:21963
     back: "뒤로 가기", // app-authored (a11y)
     close: "닫기", // app-authored (a11y)
     retry: "다시 시도",
-    loading: "불러오는 중…",
     networkError: "네트워크 연결을 확인한 후 다시 시도해 주세요.", // app-authored
   },
 
@@ -48,12 +46,7 @@ export const ko = {
     /** 1825:26654 — "연속 학습 100일째". */
     streak: "연속 학습 {days}일째",
     /** 1870:24464 — fallback when the API sends no goal label. */
-    dailyTarget: "하루 목표",
     /** 1870:24462 — the primary CTA's three states. */
-    startNow: "바로 시작하기",
-    continueLearning: "이어서 학습하기",
-    additionalLearning: "추가 학습하기",
-    goalAchieved: "오늘 목표 100% 달성! 대단해요 ✨",
     /** 1825:26638 / 1825:26644 — the two shortcut tiles. */
     shortcutClasses: "강의",
     shortcutReview: "복습하기",
@@ -63,8 +56,6 @@ export const ko = {
     /* app-authored accessibility labels (no Figma node). */
     notifications: "알림",
     notificationsUnread: "알림, 새 알림 있음",
-    learningModes: "학습 모드",
-    recommendSettings: "맞춤 학습 설정",
     trackStatus: "{name} 학습 현황",
     goalProgress: "{label} {target}개 중 {current}개 완료, {percent}퍼센트",
     defaultNickname: "회원",
@@ -186,7 +177,6 @@ export const ko = {
     changeNickname: "변경하기",
     start: "시작하기",
     save: "저장하기",
-    saved: "저장했어요",
     /* nickname-check feedback (helper text under the field) */
     nicknameAvailable: "사용가능한 닉네임입니다.",
     nicknameTaken: "이미 사용 중인 닉네임이에요.",
@@ -228,7 +218,6 @@ export const ko = {
     myPlanHeading: "내 구독정보", // 784:62116 "My Plan"
     planLabel: "이용 구독 플랜", // 784:62119 "Plan"
     nextBilling: "다음 결제일", // 784:62122 "Next billing date"
-    endDate: "이용 종료일",
     statusLabel: "구독 상태", // MOR-014 624:9942 (EN 784:62274 "Status")
     statusCanceling: "해지 예정", // MOR-014 784:62275 "Canceling"
     cancel: "해지하기", // 784:62125 "Cancel Plan"
@@ -584,7 +573,6 @@ export const ko = {
         that English does not have. */
     discountedPrice: "<s>최대 {pct}%할인</s> 된 가격", // 2532:26708
     discountPct: "{pct}% 할인",
-    perMonthPrice: "{price}/월",
     perMonthPriceWithTotal: "{price}/월 ({total})",
   },
 
@@ -610,7 +598,6 @@ export const ko = {
     likedSentences: "찜한 문장",
     wrongQuestions: "오답 문제",
     likedQuestions: "찜한 문제",
-    find: "찾기",
     search: "검색",
     topikSection: "TOPIK 영역",
     noResults: "검색결과가 없어요",
@@ -635,8 +622,6 @@ export const ko = {
     social: "소셜",
     emptyFiltered: "해당 알림이 없어요",
     emptyAll: "아직 새로운 알림이 없어요", // 1678:25777
-    emptyFilteredDesc: "선택한 카테고리에 새로운 알림이 생기면 여기에 표시됩니다.",
-    emptyAllDesc: "학습과 소셜 활동에 대한 새로운 소식이 생기면 알려드릴게요.",
     categoriesA11y: "알림 카테고리",
     filterA11y: "{name} 알림 보기",
     newPrefix: "새 알림. ",
@@ -732,7 +717,6 @@ export const ko = {
     pronunciationFallback: "조금 더 또렷하게 말해보세요.",
     scoreA11y: "발음 정확도 {percent} 퍼센트",
     evaluationError: "채점하지 못했어요. 잠시 후 다시 시도해 주세요.",
-    retryMessage: "네트워크 연결을 확인한 후 다시 시도해 주세요.",
     micPermission: "마이크 권한이 필요해요. 브라우저 설정을 확인해 주세요.",
     bookmarkSave: "저장",
     bookmarkUnsave: "저장 해제",
@@ -974,8 +958,6 @@ export const ko = {
     emptyTitle: "아직 항목이 없어요",
     errorTitle: "문제가 생겼어요",
     errorBody: "오류가 발생했어요.",
-    show: "보기",
-    hide: "숨기기",
     countrySelect: "국가 선택",
     countrySelectA11y: "국가 선택, 현재 {name}",
     /* Country names for the phone-prefix selector. Every entry goes through
@@ -1032,7 +1014,6 @@ export const ko = {
 
   /** Small shared components. */
   misc: {
-    brandName: "한귤",
     brandLogoA11y: "한귤 Hangyul",
     aiName: "한귤AI",
     askAnything: "무엇이든 물어보세요!",
@@ -1088,7 +1069,6 @@ export const ko = {
     keepGoing: "할 수 있어! 화이팅!",
     startNow: "바로 시작하기",
     continueLearning: "이어서 학습하기",
-    additional: "추가 학습하기",
     retryWrong: "오답 다시 풀기",
     reviewFavorites: "즐겨찾기 복습",
     dailyGoal: "하루 목표",
@@ -1144,7 +1124,6 @@ export const ko = {
     todayHeading: "오늘의 학습",
     todayTime: "오늘 공부한 시간",
     sentences: "학습한 문장 수",
-    studiedUnit: "학습한 {unit}",
     questions: "학습한 문제 수",
     countUnit: "{n}개", // 1916:25920
     periodHeading: "기간별 학습 시간",
@@ -1235,8 +1214,6 @@ export const ko = {
     unitSentence: "문장",
     unitQuestion: "문제",
     /* 744:46901 labels the stat directly. */
-    studiedSentences: "학습한 문장",
-    studiedQuestions: "학습한 문제",
     additionalTitle: "학습을 조금 더 이어가 볼까요?",
     additionalStart: "시작할게요!",
     additionalPrompt: "추가할 {unit} 수를 선택해 주세요",
@@ -1307,7 +1284,6 @@ export const ko = {
   /** Conversation / TOPIK / practice / exam screens. */
   study: {
     conversationTitle: "회화 학습",
-    conversationLevel: "회화 Lv.{level}",
     noSentences: "이 레벨엔 문장이 없어요",
     tryAnotherLevel: "다른 레벨을 선택해 보세요.",
     prev: "‹ 이전",
@@ -1333,9 +1309,7 @@ export const ko = {
     tryAnotherGrade: "다른 급수를 선택해 보세요.",
     typeMultiple: "객관식",
     typeShort: "단답형",
-    typeShortAlt: "단답",
     typeEssay: "서술형",
-    typeSpeaking: "말하기",
     skillReading: "읽기",
     skillListening: "듣기",
     skillWriting: "쓰기",
@@ -1348,7 +1322,6 @@ export const ko = {
     backToList: "목록으로",
     reviewTitle: "복습 문제",
     reviewDesc: "복습 문제로 실력을 더 다져보세요.",
-    reviewCount: "복습 {current}/{total}",
     /** COU-011 (442:9757) / COU-013 (442:9812) — the practice question card. */
     solvePrompt: "문제를 풀어보세요", // 1718:24772
     tryAgain: "다시 풀어보세요", // 1718:24826
@@ -1364,12 +1337,9 @@ export const ko = {
     questionCount: "{n}문제",
     preparing: "문제를 준비하고 있어요…",
     seeResults: "결과 보기",
-    nextArrow: "다음 문제 →",
     reviewComplete: "복습 완료!",
     reviewCompleteShort: "복습 완료",
     goBack: "돌아가기",
-    correct: "정답! 🎉",
-    wrong: "아쉬워요 😢",
     answer: "정답",
     submitShort: "제출",
     premiumOnly: "프리미엄 전용 기능이에요",
@@ -1409,21 +1379,9 @@ export const ko = {
     chatbotA11y: "AI 챗봇과 자유롭게 대화하기",
     resume: "이어보기",
     done: "완료",
-    lesson: "레슨",
-    videoLesson: "영상 강의",
-    checkpoint: "체크포인트",
     progress: "진행률",
     premiumLecture: "프리미엄 강의",
-    markComplete: "학습 완료로 표시",
     completedToast: "학습을 완료했어요! 🎉",
-    doneMark: "· ✓ 완료",
-    reviewQuiz: "📝 복습 문제 풀기",
-    typeMultiple: "객관식",
-    typeShort: "단답",
-    listening: "🎧 듣기",
-    video: "🎬 영상",
-    reading: "📖 읽기",
-    lessonCount: "레슨 {n}개",
     /** COU-002 (2414:27684) — the lesson row's completion chip and CTA. */
     /** COU-004 (230:7011) — the video player's chrome. */
     excludeSpeaking: "말하기 제외", // 230:7048
@@ -1655,7 +1613,6 @@ export const ko = {
   /** Friend invitation deep link (app-authored: no Figma frame for this route). */
   invite: {
     title: "친구 초대",
-    loadError: "초대를 불러오지 못했어요.",
     invalid: "유효하지 않은 초대 링크예요",
     invalidSub: "링크가 만료되었거나 취소되었을 수 있어요.",
     isSelf: "본인의 초대 링크예요.",

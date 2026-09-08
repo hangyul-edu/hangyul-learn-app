@@ -14,11 +14,9 @@ export const en: Catalog = {
   common: {
     confirm: "Confirm",
     cancel: "Cancel",
-    save: "Save",
     back: "Go back", // app-authored (a11y)
     close: "Close", // app-authored (a11y)
     retry: "Try again",
-    loading: "Loading…",
     networkError: "Check your network connection and try again.", // app-authored
   },
 
@@ -45,12 +43,7 @@ export const en: Catalog = {
     /** 1825:28601 — "100-Day Streak": the count leads, unlike the Korean. */
     streak: "{days}-Day Streak",
     /** 1848:24665 */
-    dailyTarget: "Daily Target",
     /** 1848:24663 */
-    startNow: "Start Now",
-    continueLearning: "Continue learning",
-    additionalLearning: "Extra Practice",
-    goalAchieved: "Today's goal 100% complete! Amazing! ✨", // I1825:28968;8597:58503
     /** 1825:28585 / 1825:28591 */
     shortcutClasses: "Classes",
     shortcutReview: "Review",
@@ -60,8 +53,6 @@ export const en: Catalog = {
     /* app-authored accessibility labels (no Figma node). */
     notifications: "Notifications",
     notificationsUnread: "Notifications, unread items",
-    learningModes: "Learning modes",
-    recommendSettings: "Personalized learning settings",
     trackStatus: "{name} learning progress",
     goalProgress: "{current} of {target} {label} complete, {percent} percent",
     defaultNickname: "Member",
@@ -180,7 +171,6 @@ export const en: Catalog = {
     changeNickname: "Change", // I893:32903 renders it lowercase; capitalised on request
     start: "Start",
     save: "Save",
-    saved: "Saved",
     /* 1612:22755 renders this helper in Positive blue. */
     nicknameAvailable: "Nickname available.",
     nicknameTaken: "That nickname is already taken.",
@@ -221,7 +211,6 @@ export const en: Catalog = {
     myPlanHeading: "My Plan", // 784:62116
     planLabel: "Plan", // 784:62119
     nextBilling: "Next billing date", // 784:62122
-    endDate: "Access ends",
     statusLabel: "Status", // 784:62274
     statusCanceling: "Canceling", // 784:62275
     cancel: "Cancel Plan", // 784:62125
@@ -576,7 +565,6 @@ export const en: Catalog = {
     registerMethod: "Add Method", // 2525:26578
     discountedPrice: "<s>up to {pct}% off</s>", // 898:19697
     discountPct: "{pct}% off",
-    perMonthPrice: "{price}/mo",
     perMonthPriceWithTotal: "{price}/mo ({total})",
   },
 
@@ -600,7 +588,6 @@ export const en: Catalog = {
     likedSentences: "Favorites", // 798:76840
     wrongQuestions: "Mistakes",
     likedQuestions: "Favorites",
-    find: "Find",
     search: "Search",
     topikSection: "TOPIK section",
     noResults: "No results",
@@ -627,8 +614,6 @@ export const en: Catalog = {
     social: "Social",
     emptyFiltered: "No notifications here",
     emptyAll: "No new notifications yet", // 1678:25881
-    emptyFilteredDesc: "New notifications in this category will show up here.",
-    emptyAllDesc: "We'll let you know when there's news about your learning and friends.",
     categoriesA11y: "Notification categories",
     filterA11y: "View {name} notifications",
     newPrefix: "New notification. ",
@@ -724,7 +709,6 @@ export const en: Catalog = {
     pronunciationFallback: "Try saying it a little more clearly.",
     scoreA11y: "Pronunciation accuracy: {percent} percent",
     evaluationError: "We couldn't score that. Please try again shortly.",
-    retryMessage: "Check your network connection and try again.",
     micPermission: "Microphone access is needed. Please check your browser settings.",
     bookmarkSave: "Save",
     bookmarkUnsave: "Remove from saved",
@@ -981,8 +965,6 @@ export const en: Catalog = {
     emptyTitle: "Nothing here yet",
     errorTitle: "Something went wrong",
     errorBody: "An error occurred.",
-    show: "Show",
-    hide: "Hide",
     countrySelect: "Select country",
     countrySelectA11y: "Select country, currently {name}",
     /* Country names for the phone-prefix selector. Every entry goes through
@@ -1039,7 +1021,6 @@ export const en: Catalog = {
 
   /** Small shared components. */
   misc: {
-    brandName: "Hangyul",
     brandLogoA11y: "Hangyul",
     aiName: "Hangyul AI",
     askAnything: "Ask me anything!",
@@ -1094,7 +1075,6 @@ export const en: Catalog = {
     keepGoing: "You got this!",
     startNow: "Start Now",
     continueLearning: "Continue learning",
-    additional: "Extra Practice",
     retryWrong: "Retry missed items",
     reviewFavorites: "Review bookmarks",
     dailyGoal: "Daily Target",
@@ -1155,7 +1135,6 @@ export const en: Catalog = {
     todayHeading: "Today's Learning",
     todayTime: "Today's study time",
     sentences: "Sentences learned",
-    studiedUnit: "{unit} studied",
     questions: "Questions learned",
     countUnit: "{n}",
     periodHeading: "Study time by period",
@@ -1252,8 +1231,6 @@ export const en: Catalog = {
     unitQuestion: "questions",
     /* The level-up card labels its own stat rather than reusing the generic
        "{unit} studied" phrasing (Figma 798:88969). */
-    studiedSentences: "Sentences learned",
-    studiedQuestions: "Questions solved",
     additionalTitle: "Want to keep going a little longer?",
     additionalStart: "Let's go!",
     additionalPrompt: "How many more {unit}?",
@@ -1324,7 +1301,6 @@ export const en: Catalog = {
   /** Conversation / TOPIK / practice / exam screens. */
   study: {
     conversationTitle: "Conversation",
-    conversationLevel: "Conversation Lv.{level}",
     noSentences: "No sentences at this level",
     tryAnotherLevel: "Try choosing another level.",
     prev: "‹ Prev",
@@ -1350,9 +1326,7 @@ export const en: Catalog = {
     tryAnotherGrade: "Try choosing another level.",
     typeMultiple: "Multiple choice",
     typeShort: "Short answer",
-    typeShortAlt: "Short",
     typeEssay: "Essay",
-    typeSpeaking: "Speaking",
     skillReading: "Reading",
     skillListening: "Listening",
     skillWriting: "Writing",
@@ -1365,7 +1339,6 @@ export const en: Catalog = {
     backToList: "Back to list",
     reviewTitle: "Review questions",
     reviewDesc: "Sharpen your skills with review questions.",
-    reviewCount: "Review {current}/{total}",
     /** COU-003 (EN 1464:22035) — the review-count modal. */
     solvePrompt: "Solve the question",
     tryAgain: "Try again",
@@ -1380,12 +1353,9 @@ export const en: Catalog = {
     questionCount: "{n} questions",
     preparing: "Preparing your questions…",
     seeResults: "See results",
-    nextArrow: "Next question →",
     reviewComplete: "Review complete!",
     reviewCompleteShort: "Review complete",
     goBack: "Go back",
-    correct: "Correct! 🎉",
-    wrong: "Not quite 😢",
     answer: "Answer",
     submitShort: "Submit",
     premiumOnly: "This is a premium-only feature",
@@ -1424,21 +1394,9 @@ export const en: Catalog = {
     chatbotA11y: "Chat freely with the AI chatbot",
     resume: "Resume",
     done: "Done",
-    lesson: "Lesson",
-    videoLesson: "Video lesson",
-    checkpoint: "Checkpoint",
     progress: "Progress",
     premiumLecture: "Premium class",
-    markComplete: "Mark as complete",
     completedToast: "You finished the lesson! 🎉",
-    doneMark: "· ✓ Done",
-    reviewQuiz: "📝 Try review questions",
-    typeMultiple: "Multiple choice",
-    typeShort: "Short answer",
-    listening: "🎧 Listening",
-    video: "🎬 Video",
-    reading: "📖 Reading",
-    lessonCount: "{n} lessons",
     /** COU-002 (EN 2397:26680) — the lesson row's completion chip and CTA. */
     /** COU-004 (EN 784:55155) — the video player's chrome. */
     excludeSpeaking: "Mute speaking",
@@ -1661,7 +1619,6 @@ export const en: Catalog = {
 
   invite: {
     title: "Friend Invitation",
-    loadError: "Couldn't load the invitation.",
     invalid: "This invitation link isn't valid",
     invalidSub: "The link may have expired or been cancelled.",
     isSelf: "This is your own invitation link.",

@@ -4,7 +4,6 @@ import reviewArt from "../../assets/brand/home-review.svg";
 import bellArt from "../../assets/brand/ic-24-bell.svg";
 import topNavChevronArt from "../../assets/brand/ic-12-chevron.svg";
 import topNavChevronGoldArt from "../../assets/brand/ic-12-chevron-gold.svg";
-import tabSettings from "../../assets/brand/tab-icon-settings.svg";
 /**
  * Icons for the Home screen + bottom navigation, all sourced from Figma.
  *
@@ -78,29 +77,6 @@ export function SunIcon({ size = 82, lit = true }: { size?: number; lit?: boolea
   );
 }
 
-export function PencilIcon({ size = 30 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 56" aria-hidden="true" focusable="false">
-      <g transform="rotate(20 24 28)">
-        <rect x="18" y="9" width="12" height="29" rx="2" fill="#5AA9F4" />
-        <rect x="18" y="9" width="12" height="6" rx="2" fill="#F58BB0" />
-        <path d="M18 38h12l-6 9z" fill="#F4C542" />
-        <path d="M21.2 42.5h5.6l-2.8 4.5z" fill="#2C333B" />
-      </g>
-    </svg>
-  );
-}
-
-/** Muted gear (third learning mode, shown inactive in the reference). */
-/**
- * Settings tab glyph — the real artwork from the Home tab strip's third tab
- * (Group 1410118985, MAI-002 1870:24534): a solid Gray 4 cog drawn 25x25, not
- * the thin outline this used to draw by hand.
- */
-export function GearIcon({ size = 25 }: { size?: number }) {
-  return <img src={tabSettings} alt="" aria-hidden="true" width={size} height={size} style={{ display: "block" }} />;
-}
-
 /**
  * Home shortcut artwork, exported from Figma MAI-001. The lecture tile
  * (node 1825:26639) already contains its yellow card, so it must NOT be wrapped
@@ -112,14 +88,6 @@ export function LectureShortcutArt() {
 
 export function ReviewShortcutArt({ size = 74 }: { size?: number }) {
   return <img src={reviewArt} alt="" aria-hidden="true" style={{ width: size, height: size, display: "block" }} />;
-}
-
-export function ChevronRight({ size = 20, color = "#C4CBD1" }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
-      <path d="M9 6l6 6-6 6" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
 }
 
 /* --------------------------- Bottom-nav icons --------------------------- */

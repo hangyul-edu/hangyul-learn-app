@@ -1,5 +1,6 @@
 import { useTranslation } from "../i18n";
-import tabIcSpeaking from "../assets/brand/tab-ic-speaking.svg";
+import tabIcSpeakingSelected from "../assets/brand/tab-ic-speaking-selected.svg";
+import tabIcSpeakingUnselected from "../assets/brand/tab-ic-speaking-unselected.svg";
 import tabIcPencil from "../assets/brand/tab-ic-pencil.svg";
 import tabIcGear from "../assets/brand/tab-ic-gear.svg";
 import type { DashboardTrack } from "../lib/types";
@@ -55,16 +56,26 @@ function Gauge({ ratio, done }: { ratio: number; done: boolean }) {
 }
 
 /** TAL-001/002 bake each tab's glyph into the 96x50 tab space, so the exported
- *  art carries its own placement — the pencil is Figma's `Group 1410118322`. */
-function trackIcon(category: string) {
-  return (
-    <img
-      className="home__tab-ic"
-      src={category === "topik" ? tabIcPencil : tabIcSpeaking}
-      alt=""
-      aria-hidden="true"
-    />
-  );
+ *  art carries its own placement — the pencil is Figma's `Group 1410118322`.
+ *
+ *  Conversation (Figma's `Group 1410118340`) is the one glyph that changes with
+ *  selection, and in two ways at once. Selected it sits on a white tab with
+ *  #FF5A00 strokes (TAL-001 1870:24617 / 1870:25401); unselected it sits on the
+ *  #FFA662 tab with WHITE strokes, and shifts 5px left — x=30 rather than 35 —
+ *  because the next tab laps over its right edge, so its visible centre moves
+ *  (TAL-002 1827:24613 / 1870:25579). Both variants are the identical export
+ *  with only those two changes; the KO and EN frames agree exactly.
+ *
+ *  The pencil and gear are deliberately state-independent: their TAL-001 and
+ *  TAL-002 exports are identical, so one asset each is correct. */
+function trackIcon(category: string, selected: boolean) {
+  const src =
+    category === "topik"
+      ? tabIcPencil
+      : selected
+        ? tabIcSpeakingSelected
+        : tabIcSpeakingUnselected;
+  return <img className="home__tab-ic" src={src} alt="" aria-hidden="true" />;
 }
 
 /** The card's heading. The server sends a single untranslated `name` ("회화"),
@@ -128,7 +139,7 @@ export function TrackDashboard({
             className={`home__tab ${i === tab ? "is-active" : ""} home__tab--${tr.category}`}
             onClick={() => onTab(i)}
           >
-            {trackIcon(tr.category)}
+            {trackIcon(tr.category, i === tab)}
           </button>
         ))}
         <button

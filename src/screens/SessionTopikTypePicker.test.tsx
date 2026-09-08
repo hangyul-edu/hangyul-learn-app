@@ -240,9 +240,17 @@ describe("TOPIK question-type picker follows the app language", () => {
 
   it("shows the localized placeholder before any type is chosen", async () => {
     renderScreen("en");
-    // 1924:26394 in TAL-015 — the frame's own placeholder wording.
+    // Deliberately not TAL-015's wording (1924:26394 says "Type a topic…",
+    // where "Type" misreads as the verb). See the catalog entry.
     expect(
-      await screen.findByText("✨ Type a topic you want to focus on"),
+      await screen.findByText("✨ Choose a question type to focus on"),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the Korean placeholder, which already said the same thing", async () => {
+    renderScreen("ko");
+    expect(
+      await screen.findByText("✨ 더 집중해서 풀어보고 싶은 문제 유형을 선택해보세요"),
     ).toBeInTheDocument();
   });
 });

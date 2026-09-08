@@ -1296,7 +1296,12 @@ export const en: Catalog = {
     customSubmitA11y: "Get custom sentence suggestions",
     topikTypeAria: "TOPIK question types",
     topikTypeLabel: "[Type {n}] {title}",
-    topikTypePrompt: "✨ Type a topic you want to focus on", // 1718:32055
+    /* Deliberately NOT the frame's wording. TAL-015 (1718:32055) draws
+       "✨ Type a topic you want to focus on" in a text node literally named
+       "↪ ✏️ Placeholder", and there "Type" reads as the verb — but the control
+       selects a question *type*, it takes no input. This matches the Korean,
+       which already says 문제 유형을 선택해보세요 ("choose a question type"). */
+    topikTypePrompt: "✨ Choose a question type to focus on",
     topikGrade: "TOPIK Lv.{n}", // 1718:32055
     selected: "Selected",
     excellent: "Excellent! 👏",

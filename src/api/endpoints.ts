@@ -352,9 +352,8 @@ export const gameApi = {
     http.get<PointsHistoryResponse>("/points/history", { cursor, limit: 30 }),
   myLeague: () => http.get<LeaguePosition>("/leagues/me"),
   currentSeason: () => http.get<LeagueSeason>("/leagues/current"),
-  // The user's live regular-league leaderboard for the CURRENT season. This is
-  // the always-safe endpoint (dormant → 200 with an empty board); the old
-  // `/leagues/rankings?season_id=` path did not exist and 404'd.
+  // The user's live regular-league leaderboard for the CURRENT season. Safe to
+  // call unconditionally: a dormant league answers 200 with an empty board.
   currentRankings: () => http.get<RankingResponse>("/leagues/current/rankings", { limit: 30 }),
   friendRankings: () => http.get<RankingResponse>("/leagues/friends/rankings", { limit: 30 }),
   // League History screen: calendar-quarter dropdown + paginated weekly records.

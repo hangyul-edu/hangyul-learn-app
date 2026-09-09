@@ -156,7 +156,7 @@ the page — you stay signed in).
   `/auth/token/refresh` transparently and retries; if the refresh token is dead
   it signs you out and returns to the welcome screen.
 - Every screen calls real endpoints — Home → `/dashboard/summary`, 리그 →
-  `/leagues/me` + `/leagues/rankings`, etc.
+  `/leagues/me` + `/leagues/current/rankings`, etc.
 
 ---
 

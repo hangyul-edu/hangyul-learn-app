@@ -129,8 +129,8 @@ export function SessionConversation() {
   const reqIdRef = useRef<string | null>(null); // idempotency key for the current item's attempt
   // Review mode only: identifies THIS review session to the server so review
   // points are awarded once per session. Fresh per mount (a new session), but
-  // preserved across `reviewRestart` — so re-answering the same item after a
-  // restart collides on the key server-side and is not re-awarded.
+  // preserved across `retryItem` — so re-answering the same item after a
+  // 다시 시작 collides on the key server-side and is not re-awarded.
   const reviewSessionIdRef = useRef<string>(randomUuid());
   const [scoring, setScoring] = useState(false);
   const [result, setResult] = useState<SpeechAttempt | null>(null);

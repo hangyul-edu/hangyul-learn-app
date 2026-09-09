@@ -443,9 +443,12 @@ export const bannerApi = {
 
 /* ------------------------------ Support ----------------------------- */
 export const supportApi = {
-  faqs: (params: { category?: string; q?: string; cursor?: string }) =>
+  // `lang` selects which authored translation is served — and which language's
+  // text the `q` search runs against. Callers pass the app language.
+  faqs: (params: { category?: string; q?: string; cursor?: string; lang?: string }) =>
     http.get<{ items: Faq[]; next_cursor: string | null }>("/support/faqs", { limit: 50, ...params }, { auth: false }),
-  faq: (faqId: string) => http.get<Faq>(`/support/faqs/${encodeURIComponent(faqId)}`, undefined, { auth: false }),
+  faq: (faqId: string, lang?: string) =>
+    http.get<Faq>(`/support/faqs/${encodeURIComponent(faqId)}`, { lang }, { auth: false }),
   // Notices are read while authenticated so the server can personalize the
   // per-user `is_new` flag (and record reads).
   notices: (params?: { cursor?: string; lang?: string }) =>

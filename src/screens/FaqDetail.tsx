@@ -9,14 +9,16 @@ import { SupportChatButton } from "../components/faq/SupportChatButton";
 import { AnswerBody } from "../components/faq/AnswerBody";
 
 export function FaqDetail() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { faqId = "" } = useParams();
 
   // Load the full FAQ by its stable id — the detail page is self-sufficient
   // (direct link / refresh / deep link work), it never relies on route state.
   const faq = useQuery({
-    queryKey: ["faq", faqId],
-    queryFn: () => supportApi.faq(faqId),
+    // Language is part of the key so switching it re-fetches this FAQ in the
+    // newly selected language instead of showing the cached one.
+    queryKey: ["faq", faqId, language],
+    queryFn: () => supportApi.faq(faqId, language),
     enabled: !!faqId,
     retry: (count, err) => !(err instanceof ApiError && err.status === 404) && count < 2,
   });

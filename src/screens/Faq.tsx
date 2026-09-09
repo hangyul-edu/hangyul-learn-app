@@ -41,7 +41,7 @@ function dedupe(pages: { items: FaqItem[] }[] | undefined): FaqItem[] {
 }
 
 export function Faq() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const nav = useNavigate();
   const [params, setParams] = useSearchParams();
   const categorySlug = params.get("category") ?? undefined;
@@ -69,17 +69,22 @@ export function Faq() {
 
   const mode: "landing" | "category" | "search" = urlQuery ? "search" : category ? "category" : "landing";
 
+  // `language` is part of every key: the server returns different text — and
+  // searches different text — per language, so switching must refetch rather
+  // than reuse the previous language's cached pages.
   const categoryList = useInfiniteQuery({
-    queryKey: ["faqs", "category", categorySlug],
-    queryFn: ({ pageParam }) => supportApi.faqs({ category: categorySlug, cursor: pageParam }),
+    queryKey: ["faqs", "category", categorySlug, language],
+    queryFn: ({ pageParam }) =>
+      supportApi.faqs({ category: categorySlug, cursor: pageParam, lang: language }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.next_cursor ?? undefined,
     enabled: mode === "category" && !!categorySlug,
   });
 
   const searchList = useInfiniteQuery({
-    queryKey: ["faqs", "search", urlQuery],
-    queryFn: ({ pageParam }) => supportApi.faqs({ q: urlQuery, cursor: pageParam }),
+    queryKey: ["faqs", "search", urlQuery, language],
+    queryFn: ({ pageParam }) =>
+      supportApi.faqs({ q: urlQuery, cursor: pageParam, lang: language }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.next_cursor ?? undefined,
     enabled: mode === "search",

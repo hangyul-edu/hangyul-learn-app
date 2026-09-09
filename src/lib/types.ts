@@ -780,8 +780,12 @@ export interface AttendanceCheckIn {
 export interface Faq {
   faq_id: string;
   category: string;
+  /** Already localized to `locale` by the server. */
   question: string;
   answer: string;
+  /** The locale actually served. Differs from the requested one when the FAQ
+   *  has no translation in it and the server fell back. */
+  locale: string;
 }
 /** Identity the client feeds to the ChannelTalk SDK. `member_hash` is present
  * only when the backend has a verification secret configured; otherwise the

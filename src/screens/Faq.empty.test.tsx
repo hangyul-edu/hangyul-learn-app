@@ -1,18 +1,20 @@
 /**
- * FAQ-(empty) — Figma 3393:27173 (ko) / 3393:27288 (en).
+ * The FAQ flow is More → FAQ-001 → FAQ-002 or FAQ-(empty).
  *
- * The frame is the FAQ landing with nothing registered: the top nav and search
- * band stay, the category cards are gone, and a single Gray 5 line sits centred
- * on the screen. No illustration, no title/description pair, no button.
+ * FAQ-001 (the search field + the fixed category list) is a client-side screen.
+ * It is always the first stop and never skipped, whatever the API says — the
+ * category list is hardcoded, so it does not even ask. Whether there is content
+ * is a question for the level below: tapping a category gives FAQ-002 when that
+ * category has questions and FAQ-(empty) when it does not.
  *
- * Also pins the trigger: "no FAQs", "still loading" and "the request failed"
- * are three different situations and only the first is an empty state, and the
- * screen never invents placeholder questions to avoid it.
+ * FAQ-(empty) is Figma 3393:27173 (ko) / 3393:27288 (en): one Gray 5 line,
+ * centred, with the search band kept and no heading, illustration or button.
  */
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 // @ts-expect-error - @types/node is not a dependency; the runner is Node.
 import { readFileSync } from "node:fs";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { I18nProvider } from "../i18n";
@@ -29,7 +31,7 @@ vi.mock("../components/faq/SupportChatButton", () => ({
   SupportChatButton: () => null,
 }));
 
-const { Faq, faqLandingState } = await import("./Faq");
+const { Faq } = await import("./Faq");
 
 const ITEM: FaqItem = {
   faq_id: "faq_1",
@@ -69,55 +71,112 @@ beforeAll(() => {
 
 beforeEach(() => faqs.mockReset());
 
-describe("FAQ-(empty) — content", () => {
-  it("shows the frame's line, in the app's language", async () => {
-    faqs.mockResolvedValue(empty());
-    mount(LANDING, "ko");
-    expect(await screen.findByText(KO_EMPTY)).toBeInTheDocument();
-  });
-
-  it("shows the English frame's line in English mode", async () => {
-    faqs.mockResolvedValue(empty());
-    mount(LANDING, "en");
-    expect(await screen.findByText(EN_EMPTY)).toBeInTheDocument();
-  });
-
-  it("hides the category cards, as the frame does", async () => {
+describe("More → FAQ-001", () => {
+  it("lands on the category list, not on a deeper screen", async () => {
     faqs.mockResolvedValue(empty());
     const { container } = mount(LANDING);
-    await screen.findByText(KO_EMPTY);
-    // The frame shows no category list at all when nothing is registered.
-    expect(container.querySelectorAll(".faq__cat-card")).toHaveLength(0);
+    await waitFor(() =>
+      expect(container.querySelectorAll(".faq__cat-card").length).toBe(5),
+    );
+    // FAQ-001 is where the flow starts: no question list, no empty line.
+    expect(screen.queryByText(KO_EMPTY)).not.toBeInTheDocument();
+    expect(container.querySelectorAll(".faq__q-card")).toHaveLength(0);
   });
 
-  it("keeps the header and the search band", async () => {
+  it("is never skipped because the catalogue happens to be empty", async () => {
+    // The regression this guards: FAQ-001 was replaced by FAQ-(empty) when the
+    // API reported nothing, so More jumped straight to the empty screen.
     faqs.mockResolvedValue(empty());
     const { container } = mount(LANDING);
-    await screen.findByText(KO_EMPTY);
-    expect(screen.getByText("FAQ")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("무엇이든 물어보세요")).toBeInTheDocument();
-    expect(container.querySelector(".faq__searchbar")).not.toBeNull();
+    await waitFor(() =>
+      expect(container.querySelectorAll(".faq__cat-card").length).toBe(5),
+    );
+    expect(screen.queryByText(KO_EMPTY)).not.toBeInTheDocument();
   });
 
-  it("carries no illustration, emoji, heading or button", async () => {
+  it("renders client-side, without asking the API anything", async () => {
+    // The category list is fixed, so FAQ-001 needs no request — which is what
+    // makes it impossible for API state to bypass it.
     faqs.mockResolvedValue(empty());
-    const { container } = mount(LANDING);
-    await screen.findByText(KO_EMPTY);
-    // The previous implementation drew a 💭 in a `.state` block with a title.
-    // The frame has none of that — just the sentence.
-    expect(container.querySelector(".state")).toBeNull();
-    expect(container.querySelector(".state__emoji")).toBeNull();
-    expect(container.querySelector(".faq__empty img")).toBeNull();
-    expect(container.querySelector(".faq__empty svg")).toBeNull();
-    expect(container.querySelectorAll(".faq__empty button")).toHaveLength(0);
-    expect(container.querySelector(".faq__empty")!.textContent).toBe(KO_EMPTY);
+    mount(LANDING);
+    await screen.findByText("🚀");
+    expect(faqs).not.toHaveBeenCalled();
+  });
+
+  it("keeps the search band", async () => {
+    faqs.mockResolvedValue(empty());
+    mount(LANDING);
+    expect(await screen.findByPlaceholderText("무엇이든 물어보세요")).toBeInTheDocument();
+  });
+
+  it("goes one level deeper when a category is tapped", async () => {
+    faqs.mockResolvedValue({ items: [ITEM], next_cursor: null });
+    mount(LANDING);
+    await userEvent.click(await screen.findByText("🚀"));
+    // FAQ-002: the category's questions.
+    expect(await screen.findByText("가입은 어떻게 하나요?")).toBeInTheDocument();
+    expect(faqs).toHaveBeenCalledWith(
+      expect.objectContaining({ category: "getting_started" }),
+    );
   });
 });
 
-describe("FAQ-(empty) — typography and placement", () => {
-  it("matches the frame's type and colour", async () => {
+describe("FAQ-002 — the category has questions", () => {
+  it("heads the list with the category and lists them", async () => {
+    faqs.mockResolvedValue({ items: [ITEM], next_cursor: null });
+    const { container } = mount(CATEGORY);
+    expect(await screen.findByText("가입은 어떻게 하나요?")).toBeInTheDocument();
+    expect(container.querySelector(".faq__heading")).not.toBeNull();
+    expect(screen.queryByText(KO_EMPTY)).not.toBeInTheDocument();
+    // Exactly what the API returned — no filler rows.
+    expect(container.querySelectorAll(".faq__q-card")).toHaveLength(1);
+  });
+});
+
+describe("FAQ-(empty) — the category has none", () => {
+  it("shows the frame's line in Korean", async () => {
     faqs.mockResolvedValue(empty());
-    const { container } = mount(LANDING);
+    mount(CATEGORY);
+    expect(await screen.findByText(KO_EMPTY)).toBeInTheDocument();
+  });
+
+  it("shows the frame's line in English", async () => {
+    faqs.mockResolvedValue(empty());
+    mount(CATEGORY, "en");
+    expect(await screen.findByText(EN_EMPTY)).toBeInTheDocument();
+  });
+
+  it("drops the category heading, as the frame does", async () => {
+    faqs.mockResolvedValue(empty());
+    const { container } = mount(CATEGORY);
+    await screen.findByText(KO_EMPTY);
+    expect(container.querySelector(".faq__heading")).toBeNull();
+    expect(container.querySelectorAll(".faq__q-card")).toHaveLength(0);
+  });
+
+  it("keeps the header and search band", async () => {
+    faqs.mockResolvedValue(empty());
+    const { container } = mount(CATEGORY);
+    await screen.findByText(KO_EMPTY);
+    expect(screen.getByText("FAQ")).toBeInTheDocument();
+    expect(container.querySelector(".faq__searchbar")).not.toBeNull();
+  });
+
+  it("carries no illustration, emoji, title block or button", async () => {
+    faqs.mockResolvedValue(empty());
+    const { container } = mount(CATEGORY);
+    await screen.findByText(KO_EMPTY);
+    // The old implementation drew a 💭 over a bold title in `.state`.
+    expect(container.querySelector(".state")).toBeNull();
+    expect(container.querySelector(".state__emoji")).toBeNull();
+    expect(container.querySelector(".faq__empty img")).toBeNull();
+    expect(container.querySelectorAll(".faq__empty button")).toHaveLength(0);
+    expect(container.querySelector(".faq__empty")!.textContent).toBe(KO_EMPTY);
+  });
+
+  it("matches the frame's type, colour and centring", async () => {
+    faqs.mockResolvedValue(empty());
+    const { container } = mount(CATEGORY);
     await screen.findByText(KO_EMPTY);
     const style = getComputedStyle(container.querySelector(".faq__empty")!);
     expect(style.color).toBe("rgb(119, 128, 136)"); // Gray 5 #778088
@@ -125,109 +184,18 @@ describe("FAQ-(empty) — typography and placement", () => {
     expect(style.fontWeight).toBe("500"); // Pretendard Medium
     expect(style.lineHeight).toBe("22.3px");
     expect(style.textAlign).toBe("center");
-  });
-
-  it("centres on the screen the way the frame does", async () => {
-    faqs.mockResolvedValue(empty());
-    const { container } = mount(LANDING);
-    await screen.findByText(KO_EMPTY);
-    const style = getComputedStyle(container.querySelector(".faq__empty")!);
-    // The frame puts it at the frame's own 50%, not in the middle of the space
-    // under the search band, so it is positioned rather than laid out in flow.
     expect(style.position).toBe("absolute");
     expect(style.left).toBe("50%");
     expect(style.top).toBe("50%");
     expect(style.transform).toBe("translate(-50%, -50%)");
-    // …against .faq, which establishes the containing block.
-    expect(getComputedStyle(container.querySelector(".faq")!).position).toBe("relative");
-  });
-
-  it("stays inside a narrow screen instead of touching the edges", async () => {
-    faqs.mockResolvedValue(empty());
-    const { container } = mount(LANDING);
-    await screen.findByText(KO_EMPTY);
-    const style = getComputedStyle(container.querySelector(".faq__empty")!);
+    // Never edge-to-edge on a narrow screen.
     expect(style.width).toBe("calc(100% - 40px)");
     expect(style.maxWidth).toBe("335px");
   });
-});
 
-describe("shown only when the catalogue is genuinely empty", () => {
-  it("does NOT appear once at least one FAQ exists", async () => {
-    faqs.mockResolvedValue({ items: [ITEM], next_cursor: null });
-    const { container } = mount(LANDING);
-    // The catalogue is non-empty, so the landing shows its category cards.
-    await waitFor(() =>
-      expect(container.querySelectorAll(".faq__cat-card").length).toBeGreaterThan(0),
-    );
-    expect(screen.queryByText(KO_EMPTY)).not.toBeInTheDocument();
-  });
-
-  it("applies the same treatment to an empty category", async () => {
+  it("invents no placeholder questions to avoid the empty screen", async () => {
     faqs.mockResolvedValue(empty());
     const { container } = mount(CATEGORY);
-    expect(await screen.findByText(KO_EMPTY)).toBeInTheDocument();
-    expect(container.querySelectorAll(".faq__q-card")).toHaveLength(0);
-    expect(container.querySelector(".state__emoji")).toBeNull();
-  });
-});
-
-describe("which landing state to show", () => {
-  // The ordering is the point: only a settled, successful, empty response is an
-  // empty catalogue. Asserted on the pure decision rather than by driving a
-  // query into each state — the failure path in particular is not reproducible
-  // through the query layer here without the rejection being reported as
-  // unhandled, which wedges the run.
-  it("treats a request in flight as loading, not empty", () => {
-    expect(faqLandingState({ isLoading: true, error: null })).toBe("loading");
-    // Even if a previous, now-stale empty page is still in the cache.
-    expect(
-      faqLandingState({ isLoading: true, error: null, data: { items: [] } }),
-    ).toBe("loading");
-  });
-
-  it("treats a failure as an error, not empty", () => {
-    expect(faqLandingState({ isLoading: false, error: new Error("boom") })).toBe(
-      "error",
-    );
-    // A failure that left an empty cached page behind is still an error:
-    // claiming "no questions" would be a lie and would hide the retry.
-    expect(
-      faqLandingState({
-        isLoading: false,
-        error: new Error("boom"),
-        data: { items: [] },
-      }),
-    ).toBe("error");
-  });
-
-  it("is empty only for a settled, successful, empty response", () => {
-    expect(
-      faqLandingState({ isLoading: false, error: null, data: { items: [] } }),
-    ).toBe("empty");
-  });
-
-  it("shows the categories as soon as anything is registered", () => {
-    expect(
-      faqLandingState({ isLoading: false, error: null, data: { items: [1] } }),
-    ).toBe("categories");
-    // No data yet and not loading (a disabled query) is not an empty catalogue.
-    expect(faqLandingState({ isLoading: false, error: null })).toBe("categories");
-  });
-});
-
-describe("no placeholder content", () => {
-  it("renders exactly the FAQs the API returned, and nothing else", async () => {
-    faqs.mockResolvedValue({ items: [ITEM], next_cursor: null });
-    const { container } = mount(CATEGORY);
-    await screen.findByText("가입은 어떻게 하나요?");
-    // One card for one FAQ — no sample or filler rows padding the list out.
-    expect(container.querySelectorAll(".faq__q-card")).toHaveLength(1);
-  });
-
-  it("shows an empty catalogue honestly rather than inventing questions", async () => {
-    faqs.mockResolvedValue(empty());
-    const { container } = mount(LANDING);
     await screen.findByText(KO_EMPTY);
     expect(container.textContent).not.toMatch(/샘플|예시|sample|example/i);
   });
@@ -235,8 +203,8 @@ describe("no placeholder content", () => {
 
 describe("search keeps its own 'no match' state", () => {
   it("does not claim the catalogue is empty when a search misses", async () => {
-    // Searching is a different question from browsing: the catalogue may be
-    // full and simply contain no match.
+    // A search miss is not an empty catalogue: the catalogue may be full and
+    // simply contain no match.
     faqs.mockResolvedValue(empty());
     mount("/faq?q=zzzz");
     expect(await screen.findByText("검색 결과가 없어요")).toBeInTheDocument();

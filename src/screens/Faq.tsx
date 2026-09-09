@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "../i18n";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { supportApi } from "../api/endpoints";
 import { FAQ_CATEGORIES, findFaqCategory } from "../lib/faqCategories";
 import { errorMessage } from "../lib/http";
@@ -90,17 +90,6 @@ export function Faq() {
     enabled: mode === "search",
   });
 
-  // FAQ-(empty) (3393:27173) shows the landing with no category cards at all
-  // when nothing is registered, so the landing has to know whether the
-  // catalogue is empty. One row is enough to answer that.
-  const catalogue = useQuery({
-    queryKey: ["faqs", "catalogue", language],
-    queryFn: () => supportApi.faqs({ limit: 1, lang: language }),
-    enabled: mode === "landing",
-  });
-
-  const landing = faqLandingState(catalogue);
-
   const active = mode === "search" ? searchList : categoryList;
   const items = useMemo(() => dedupe(active.data?.pages), [active.data]);
 
@@ -121,6 +110,11 @@ export function Faq() {
     if (saved != null) el.scrollTop = saved;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scrollKey, contentReady]);
+
+  // Only a settled, successful, empty result is FAQ-(empty); loading and
+  // failure are their own states and keep the heading.
+  const categoryEmpty =
+    !categoryList.isLoading && !categoryList.error && items.length === 0;
 
   const hasText = input.trim().length > 0;
   const searchActive = focused || hasText;
@@ -158,46 +152,39 @@ export function Faq() {
         </div>
 
         <div className="faq__content">
+          {/* FAQ-001. A client-side screen: the category list is fixed, so it
+              renders without asking the server anything and is never skipped —
+              whether the catalogue turns out to be empty is a question for the
+              next level down (FAQ-002 / FAQ-(empty)), not this one. */}
           {mode === "landing" && (
-            <>
-              {/* Loading and failure are not an empty catalogue: showing the
-                  empty line for either would claim there is nothing to read. */}
-              {landing === "loading" ? (
-                <SkeletonList rows={5} height={62} />
-              ) : landing === "error" ? (
-                <ErrorState
-                  message={errorMessage(catalogue.error)}
-                  onRetry={() => catalogue.refetch()}
-                />
-              ) : landing === "empty" ? (
-                <FaqEmpty text={t("faq.noQuestions")} />
-              ) : (
-                <div className="faq__cats">
-                  {FAQ_CATEGORIES.map((c) => (
-                    <button
-                      key={c.slug}
-                      type="button"
-                      className="faq__cat-card"
-                      onClick={() => setParams({ category: c.slug })}
-                    >
-                      <span className="faq__cat-emoji" aria-hidden="true">{c.emoji}</span>
-                      <span className="faq__cat-label">{t(c.label)}</span>
-                      {/* Comp (568:19568) — the Gray 4 chevron, 16px box. */}
-                      <span className="faq__cat-chevron" aria-hidden="true">
-                        <img src={icChevron} alt="" width={6.5} height={11.5} />
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
+            <div className="faq__cats">
+              {FAQ_CATEGORIES.map((c) => (
+                <button
+                  key={c.slug}
+                  type="button"
+                  className="faq__cat-card"
+                  onClick={() => setParams({ category: c.slug })}
+                >
+                  <span className="faq__cat-emoji" aria-hidden="true">{c.emoji}</span>
+                  <span className="faq__cat-label">{t(c.label)}</span>
+                  {/* Comp (568:19568) — the Gray 4 chevron, 16px box. */}
+                  <span className="faq__cat-chevron" aria-hidden="true">
+                    <img src={icChevron} alt="" width={6.5} height={11.5} />
+                  </span>
+                </button>
+              ))}
+            </div>
           )}
 
           {mode === "category" && category && (
             <>
-              <h2 className="faq__heading">
-                <span aria-hidden="true">{category.emoji}</span> {t(category.label)}
-              </h2>
+              {/* FAQ-002 heads the list with the category; FAQ-(empty) has no
+                  heading at all, just the line, so it is dropped when empty. */}
+              {!categoryEmpty && (
+                <h2 className="faq__heading">
+                  <span aria-hidden="true">{category.emoji}</span> {t(category.label)}
+                </h2>
+              )}
               <ListBody
                 loading={categoryList.isLoading}
                 error={categoryList.error}
@@ -242,28 +229,6 @@ export function Faq() {
       <SupportChatButton />
     </div>
   );
-}
-
-/**
- * Which of the landing's four states to render.
- *
- * Split out because the ordering is the whole point: "still loading" and "the
- * request failed" are not an empty catalogue, and showing the empty line for
- * either tells the member there is nothing to read when something is on its way
- * or has gone wrong. Pure, so the ordering is testable without driving a query
- * into each state.
- */
-export type FaqLandingState = "loading" | "error" | "empty" | "categories";
-
-export function faqLandingState(query: {
-  isLoading: boolean;
-  error: unknown;
-  data?: { items: unknown[] } | undefined;
-}): FaqLandingState {
-  if (query.isLoading) return "loading";
-  if (query.error) return "error";
-  if (query.data && query.data.items.length === 0) return "empty";
-  return "categories";
 }
 
 /**

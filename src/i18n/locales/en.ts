@@ -1011,7 +1011,8 @@ export const en: Catalog = {
     searchAria: "Search FAQ",
     noResults: "No results",
     noResultsDesc: "Try a different search term",
-    noQuestions: "No questions yet",
+    /** FAQ-(empty) 3393:27297. */
+    noQuestions: "There are no questions here yet",
     askAnything: "Ask us anything",
     searchResults: "Results", // 847:22288 — "🔎 Results {n}", not "Search results"
     notFoundTitle: "We couldn't find that question",

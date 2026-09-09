@@ -445,7 +445,7 @@ export const bannerApi = {
 export const supportApi = {
   // `lang` selects which authored translation is served — and which language's
   // text the `q` search runs against. Callers pass the app language.
-  faqs: (params: { category?: string; q?: string; cursor?: string; lang?: string }) =>
+  faqs: (params: { category?: string; q?: string; cursor?: string; lang?: string; limit?: number }) =>
     http.get<{ items: Faq[]; next_cursor: string | null }>("/support/faqs", { limit: 50, ...params }, { auth: false }),
   faq: (faqId: string, lang?: string) =>
     http.get<Faq>(`/support/faqs/${encodeURIComponent(faqId)}`, { lang }, { auth: false }),

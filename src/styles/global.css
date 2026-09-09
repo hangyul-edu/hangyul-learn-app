@@ -15850,6 +15850,30 @@ textarea.input {
 }
 .faq__sentinel { padding-top: 10px; }
 
+/* FAQ-(empty) 3393:27173 / 3393:27288 — one Gray 5 line, centred on the screen.
+   The frame centres it on the whole frame (top: 50%), not in the space under
+   the search band, so it is positioned against .faq rather than laid out in the
+   scroll flow. No illustration, no title/description pair, no button: the frame
+   has only this sentence. */
+.faq__empty {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  /* Narrower than the screen so a longer sentence wraps instead of touching the
+     edges; the frame's own 420 box never wraps at this copy length. */
+  width: calc(100% - 40px);
+  max-width: 335px;
+  margin: 0;
+  text-align: center;
+  color: #778088;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 22.3px;
+  word-break: keep-all;
+}
+
 /* Detail — question heading + gray answer container. */
 /* FAQ-004 (570:19949): the question sits at (20, 121) and the answer card
    spans 350 from x=13, starting at y=158. */

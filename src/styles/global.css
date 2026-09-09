@@ -2403,6 +2403,12 @@ textarea.input {
   left: 7px;
   color: var(--ink);
 }
+/* TRM-003 underlines its support addresses, in the body's own colour. */
+.policy__link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 /* TRM-002 signs off with a SemiBold line after the last article. */
 .policy__closing {
   color: var(--ink);

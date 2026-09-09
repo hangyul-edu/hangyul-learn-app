@@ -91,7 +91,21 @@ describe("Privacy Policy detail (TRM-003)", () => {
     expect(screen.getByRole("heading", { name: "1. 수집하는 개인정보 항목" })).toBeInTheDocument();
     expect(screen.getByText(/회원가입 시: 이름\(닉네임\)/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "8. EU 이용자 개인정보 보호 (GDPR)" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "9. 개인정보 보호책임자" })).toBeInTheDocument();
+    // Verbatim from the frame, trailing "개인정보" and all.
+    expect(screen.getByRole("heading", { name: "9. 개인정보 보호책임자 개인정보" })).toBeInTheDocument();
+  });
+
+  it("links the support address as mailto in both languages", () => {
+    for (const language of ["ko", "en"] as const) {
+      const view = render(tree(language, "/policy/purchase-privacy"));
+      const links = screen.getAllByRole("link", { name: "support@talkhangyul.com" });
+      expect(links.length, language).toBeGreaterThanOrEqual(3);
+      // The address ends several sentences; the period must stay outside it.
+      links.forEach((a) =>
+        expect(a.getAttribute("href")).toBe("mailto:support@talkhangyul.com"),
+      );
+      view.unmount();
+    }
   });
 
   it("renders the English frame's copy with no Korean left behind", () => {

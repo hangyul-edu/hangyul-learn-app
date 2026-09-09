@@ -387,14 +387,11 @@ const KO: Record<PolicyId, PolicyDoc> = {
         ],
       },
       {
-        // The frame's heading reads "9. 개인정보 보호책임자 개인정보" — the trailing
-        // "개인정보" is a duplicated fragment (the English frame is just
-        // "Privacy Officer"), so it is dropped here.
-        heading: "9. 개인정보 보호책임자",
-        body: [
-          "보호책임자: 유재희",
-          "문의: support@talkhangyul.com 또는 앱 내 채널톡 채팅 상담",
-        ],
+        // Verbatim from the frame. The trailing "개인정보" duplicates the start of
+        // the heading and looks like an authoring slip — the English frame is
+        // just "Privacy Officer" — but the frame is the source of truth.
+        heading: "9. 개인정보 보호책임자 개인정보",
+        body: ["보호책임자: 유재희 문의: support@talkhangyul.com 또는 앱 내 채널톡 채팅 상담"],
       },
     ],
   },
@@ -820,8 +817,7 @@ const EN: Record<PolicyId, PolicyDoc> = {
       {
         heading: "9. Privacy Officer",
         body: [
-          "Privacy Officer: Yoo Jaehee",
-          "Contact: support@talkhangyul.com or in-app chat support via Channel Talk",
+          "Privacy Officer: Yoo Jaehee Contact: support@talkhangyul.com or in-app chat support via Channel Talk",
         ],
       },
     ],
@@ -880,8 +876,9 @@ const EN: Record<PolicyId, PolicyDoc> = {
         body: [
           "No in-app refund button is provided. To request a refund, please contact us through in-app Channel Talk chat support.",
           "Channel Talk Support Hours AI support: Available 24 hours Live agent support: Weekdays 09:00 – 18:00 (KST)",
-          // The frame runs these two sentences together ("…of receipt.Refunds…").
-          "Requests are processed within 3–5 business days of receipt. Refunds are returned to the original payment method within 3–10 business days.",
+          // Verbatim from the frame, missing space and all — the sentence break
+          // after "receipt." has no space in the design.
+          "Requests are processed within 3–5 business days of receipt.Refunds are returned to the original payment method within 3–10 business days.",
           "Credit/debit card: Refunded via card issuer. Simple payment methods (Toss Pay, etc.): Refunded via the respective payment provider.",
         ],
       },

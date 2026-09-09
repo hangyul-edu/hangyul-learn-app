@@ -14,6 +14,32 @@ export function PolicyHeader({ title }: { title: ReactNode }) {
 }
 
 /* ------------------------------- detail --------------------------------- */
+/** Email addresses, without swallowing the sentence-ending period after the
+ *  final label ("…@talkhangyul.com." must not link the trailing dot). */
+const EMAIL = /([\w.+-]+@[\w-]+(?:\.[\w-]+)+)/g;
+
+/** TRM-003 sets its support addresses as underlined mailto links. The frames
+ *  are inconsistent about which occurrences are linked — the Korean leaves §2
+ *  and §6 as plain text — so every address is linked here instead. */
+function Linkified({ text }: { text: string }) {
+  const pieces = text.split(EMAIL);
+  if (pieces.length === 1) return <>{text}</>;
+  return (
+    <>
+      {pieces.map((piece, i) =>
+        // `split` with one capture group puts the matches at the odd indices.
+        i % 2 === 1 ? (
+          <a key={i} className="policy__link" href={`mailto:${piece}`}>
+            {piece}
+          </a>
+        ) : (
+          piece
+        ),
+      )}
+    </>
+  );
+}
+
 /** Renders the body of a legal document. Reused by the route screen and the
  *  sign-up agreement sheet so both stay in sync. */
 export function PolicyBody({ id }: { id: PolicyId }) {
@@ -32,7 +58,7 @@ export function PolicyBody({ id }: { id: PolicyId }) {
             if (typeof block === "string") {
               return (
                 <p key={i} className="policy__para">
-                  {block}
+                  <Linkified text={block} />
                 </p>
               );
             }
@@ -40,7 +66,7 @@ export function PolicyBody({ id }: { id: PolicyId }) {
               <ul key={i} className="policy__list">
                 {block.bullets.map((b) => (
                   <li key={b} className="policy__bullet">
-                    {b}
+                    <Linkified text={b} />
                   </li>
                 ))}
               </ul>

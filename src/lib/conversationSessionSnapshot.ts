@@ -1,13 +1,13 @@
+import { createSessionSnapshotStore } from "./sessionSnapshot";
 import type { Sentence } from "./types";
 
 /**
  * The in-progress conversation session, persisted so a refresh resumes instead
  * of requesting brand-new content.
  *
- * Scoped to the browser tab via sessionStorage and cleared when the session is
- * finished or exited. Only durable progress is stored — transient attempt state
- * (typed text, recording, the last result) is deliberately left out, so a
- * refresh resumes at the current item with a clean slate.
+ * Only durable progress is stored — transient attempt state (typed text,
+ * recording, the last result) is deliberately left out, so a refresh resumes at
+ * the current item with a clean slate.
  */
 export type ConversationSessionSnapshot = {
   items: Sentence[];
@@ -25,32 +25,11 @@ export type ConversationSessionSnapshot = {
   additionalCount: number | null;
 };
 
-const STORAGE_KEY = "hangyul.session.conversation.v1";
+const store = createSessionSnapshotStore<ConversationSessionSnapshot>(
+  "hangyul.session.conversation.v1",
+  (snapshot) => Array.isArray(snapshot.items) && snapshot.items.length > 0,
+);
 
-/** The saved session, or null when there is nothing usable to resume. */
-export function readConversationSession(): ConversationSessionSnapshot | null {
-  try {
-    const stored = sessionStorage.getItem(STORAGE_KEY);
-    if (!stored) return null;
-    const snapshot = JSON.parse(stored) as ConversationSessionSnapshot;
-    return Array.isArray(snapshot.items) && snapshot.items.length > 0 ? snapshot : null;
-  } catch {
-    return null;
-  }
-}
-
-export function saveConversationSession(snapshot: ConversationSessionSnapshot): void {
-  try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
-  } catch {
-    /* ignore quota / serialization errors — persistence is best-effort */
-  }
-}
-
-export function clearConversationSession(): void {
-  try {
-    sessionStorage.removeItem(STORAGE_KEY);
-  } catch {
-    /* ignore */
-  }
-}
+export const readConversationSession = store.read;
+export const saveConversationSession = store.save;
+export const clearConversationSession = store.clear;

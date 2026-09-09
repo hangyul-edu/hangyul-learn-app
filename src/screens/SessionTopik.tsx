@@ -19,6 +19,12 @@ import { errorMessage } from "../lib/http";
 import { useTopikSessionCopy } from "../lib/topikSessionCopy";
 import { TOPIK_TYPE_LABEL_EN, TOPIK_TYPE_LABEL_KO } from "../lib/topikTypeLabels";
 import type { Quiz, QuizAttemptResult, TopikQuestionType, TopikSection } from "../lib/types";
+import {
+  clearTopikSession,
+  readTopikSession,
+  saveTopikSession,
+  type TopikSessionSnapshot,
+} from "../lib/topikSessionSnapshot";
 
 /**
  * The full picker label for a TOPIK question type, in the app language.
@@ -46,11 +52,6 @@ function typeLabel(
   });
 }
 
-// In-progress TOPIK session snapshot, persisted so a refresh restores the same
-// set, position, and writing drafts instead of generating new questions. Scoped
-// to the tab via sessionStorage; cleared when the session is finished or exited.
-const TOPIK_SESSION_KEY = "hangyul.session.topik.v1";
-
 /**
  * Explicit per-question answer phase. The whole result/retry/next flow is
  * driven by this — never inferred from unrelated values (progress, whether a
@@ -62,49 +63,6 @@ const TOPIK_SESSION_KEY = "hangyul.session.topik.v1";
  *   correct    → (Next → new question, phase resets to answering)
  */
 type Phase = "answering" | "submitting" | "incorrect" | "correct";
-
-type TopikSnapshot = {
-  section: TopikSection;
-  items: Quiz[];
-  idx: number;
-  // Per-item working answers keyed by quiz_id (writing drafts, selected option,
-  // typed blanks) so nothing is lost across navigation or refresh.
-  drafts: Record<string, AnswerValue>;
-  correct: string[];
-  attempted: string[];
-  points: number;
-  typeCode: string | null;
-  startedAt: number;
-  // Server-authoritative daily-goal snapshot (correctly-completed / goal).
-  goalCurrent: number;
-  goalTarget: number;
-  // Additional-learning batch size (5/10/15/20), or null for a normal session.
-  additionalCount: number | null;
-  // Session id for per-question credit dedup (see learningSessionIdRef) —
-  // preserved across a refresh so a retry after refreshing still dedups.
-  learningSessionId?: string;
-  // Whether the learner is re-solving the set after 다시 시작.
-  retrying?: boolean;
-};
-
-function readTopikSnapshot(): TopikSnapshot | null {
-  try {
-    const raw = sessionStorage.getItem(TOPIK_SESSION_KEY);
-    if (!raw) return null;
-    const s = JSON.parse(raw) as TopikSnapshot;
-    return Array.isArray(s.items) && s.items.length > 0 ? s : null;
-  } catch {
-    return null;
-  }
-}
-
-function clearTopikSnapshot() {
-  try {
-    sessionStorage.removeItem(TOPIK_SESSION_KEY);
-  } catch {
-    /* ignore */
-  }
-}
 
 /** A submitted answer is a retryable wrong answer only for graded selection
  * questions (MC / fill-blanks). Writing is scored, never right/wrong, so it is
@@ -264,7 +222,7 @@ export function SessionTopik() {
   useEffect(() => {
     if (booted.current || !dash.data) return;
     booted.current = true;
-    const snap = readTopikSnapshot();
+    const snap = readTopikSession();
     if (snap && snap.section === section) {
       setItems(snap.items);
       setIdx(snap.idx);
@@ -339,7 +297,7 @@ export function SessionTopik() {
   // drafts, and authoritative progress. Debounced so keystrokes don't thrash.
   useEffect(() => {
     if (!items) return;
-    const snap: TopikSnapshot = {
+    const snapshot: TopikSessionSnapshot = {
       section,
       items,
       idx,
@@ -355,13 +313,7 @@ export function SessionTopik() {
       learningSessionId: learningSessionIdRef.current,
       retrying,
     };
-    const timer = setTimeout(() => {
-      try {
-        sessionStorage.setItem(TOPIK_SESSION_KEY, JSON.stringify(snap));
-      } catch {
-        /* ignore quota/serialization errors */
-      }
-    }, 300);
+    const timer = setTimeout(() => saveTopikSession(snapshot), 300);
     return () => clearTimeout(timer);
   }, [items, idx, drafts, correctSet, attempted, points, typeCode, section, goalCurrent, goalTarget, additionalCount, retrying]);
 
@@ -470,7 +422,7 @@ export function SessionTopik() {
   async function exitSession() {
     if (finalizingRef.current) return;
     // Leaving ends the session: drop its snapshot so re-entry starts fresh.
-    clearTopikSnapshot();
+    clearTopikSession();
     if (attempted.size === 0) {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       nav(-1);

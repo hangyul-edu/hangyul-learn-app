@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSavedReturn } from "../lib/savedReturn";
-import { SaveBookmarkButton } from "../components/SaveBookmarkButton";
 import { useTranslation } from "../i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SessionChrome } from "../components/SessionChrome";
 import { SessionCompleteModal } from "../components/SessionCompleteModal";
-import icMic from "../assets/brand/ic-session-mic.svg";
 import { CorrectAnswerSheet } from "../components/CorrectAnswerSheet";
 import { ReviewCompleteSheet } from "../components/ReviewCompleteSheet";
 import { ReviewRewardModal } from "../components/ReviewRewardModal";
@@ -27,12 +25,13 @@ import {
   saveConversationSession,
   type ConversationSessionSnapshot,
 } from "../lib/conversationSessionSnapshot";
-import { FillSentence, hasBlank } from "../components/session/FillSentence";
-import { PronunciationPanel } from "../components/session/PronunciationPanel";
+import { hasBlank } from "../components/session/FillSentence";
+import {
+  AnswerSentenceCard,
+  SolvedSentenceCard,
+} from "../components/session/ConversationCards";
 import type { BlankAttempt, Sentence, SpeechAttempt } from "../lib/types";
 import icSend from "../assets/brand/ic-send.svg";
-import icQuestion from "../assets/brand/ic-question.svg";
-import icAlert from "../assets/brand/ic-24-alert.svg";
 
 /** Which input produced the last evaluated attempt — decides whether the
  * pronunciation panel (voice only) is shown. */
@@ -568,154 +567,56 @@ export function SessionConversation() {
       ) : result?.correct ? (
         /* Correct-answer feedback state: interactive controls replaced by the
            completed blue card. Counter/progress already updated in record(). */
-        <>
-          <div className="sess__card sess__card--conv sess__card--correct">
-            <div className="sess__card-top">
-              <div className="sess__correct-head">
-                <span className="sess__check">
-                  <span className="badge-check" aria-hidden="true" />
-                </span>
-                <span>{t("session.correctExclaim")}</span>
-              </div>
-              <SaveBookmarkButton
-                saved={!!saved[cur.sentence_id]}
-                onToggle={() => toggleSave(cur)}
-                label={t(saved[cur.sentence_id] ? "sessionConversation.bookmarkUnsave" : "sessionConversation.bookmarkSave")}
-              />
-            </div>
-            <div className="sess__sentence sess__sentence--correct" role="status" aria-label={t("session.correctA11y", { korean: cur.korean, translation: cur.translation })}>
-              {cur.korean}
-            </div>
-            <div className="sess__trans">{cur.translation}</div>
-          </div>
-
-          <div className="sess__mic-wrap">
-            {/* Item is locked once answered — no second evaluation. Stays visible
-                (sharp in intermediate, blurred in complete) behind the sheet. */}
-            <button className="sess__mic" disabled aria-label={t("session.alreadyDone")}>
-              <img className="sess__mic-ic" src={icMic} alt="" aria-hidden="true" />
-            </button>
-          </div>
-        </>
+        <SolvedSentenceCard
+          sentence={cur}
+          bookmark={{ saved: !!saved[cur.sentence_id], onToggle: () => toggleSave(cur) }}
+        />
       ) : (
-        <>
-          <div className={`sess__card sess__card--conv ${incorrect ? "sess__card--incorrect" : ""}`}>
-            <div className="sess__card-top">
-              {incorrect ? (
-                <div className="sess__incorrect-head" role="status">
-                  <span className="sess__warn" aria-hidden="true">
-                    <img className="badge-warn" src={icAlert} alt="" aria-hidden="true" />
-                  </span>
-                  <span>{copy.incorrectStatus}</span>
-                </div>
-              ) : (
-                <p className="sess__instr">{t("session.fillBlank")}</p>
-              )}
-              <SaveBookmarkButton
-                saved={!!saved[cur.sentence_id]}
-                onToggle={() => toggleSave(cur)}
-                label={saved[cur.sentence_id] ? copy.bookmarkUnsave : copy.bookmarkSave}
-              />
-            </div>
-
-            <FillSentence
-              sentence={cur}
-              keyboard={keyboard && hasBlank(cur)}
-              typed={typed}
-              onTyped={setTyped}
-              revealed={hintShown ? (revealed[cur.sentence_id] ?? "") : ""}
-              onSubmit={() => submitTyped(cur)}
-              submitting={submitting}
-              composingRef={composingRef}
-            />
-            {cur.translation && <div className="sess__trans">{cur.translation}</div>}
-
-            {/* Non-blank sentences keep the romanization hint line; blanks reveal
-                the hint inside the blank itself. */}
-            {hintShown && !hasBlank(cur) && cur.romanization && (
-              <p className="sess__hint">💡 {cur.romanization}</p>
-            )}
-
-            {/* Incorrect state: subtle divider below the sentence, then (voice
-                only) the pronunciation feedback panel. */}
-            {incorrect && <hr className="sess__divider" />}
-            {showPron && result && (
-              <PronunciationPanel
-                score={result.pronunciation_score}
-                message={pronunciationMessage(result, copy)}
-                copy={copy}
-              />
-            )}
-
-            <div className="sess__card-actions">
-              {/* Two-step reveal: 힌트보기 → 정답보기 → hidden once the full answer is shown. */}
-              {curStage !== "answer" && (
-                <button
-                  className={"sess__chip" + (curStage === "hint" ? " sess__chip--answer" : "")}
-                  onClick={() => onHint(cur)}
-                  disabled={hintBusy || answered.has(cur.sentence_id)}
-                  aria-busy={hintBusy}
-                >
-                  <span className="sess__chip-q" aria-hidden="true">
-                    <img src={icQuestion} alt="" />
-                  </span>
-                  {curStage === "hint" ? copy.answer : copy.hint}
-                </button>
-              )}
-              <button
-                className="sess__chip"
-                onClick={() => {
-                  // Switching input mode must not discard the in-flight attempt's
-                  // result: bump the attempt token so a late reply is ignored,
-                  // then flip the mode (same session, same item).
-                  attemptSeq.current++;
-                  setKeyboard((k) => !k);
-                }}
-                aria-pressed={keyboard}
-                disabled={!hasBlank(cur)}
-              >
-                {/* 2689:26087 — the mode chip is label-only in Figma. */}
-                {keyboard ? copy.voiceMode : copy.keyboardMode}
-              </button>
-            </div>
-          </div>
-
-          {/* A wrong answer never advances the session: no 다음/완료 control is
-              shown. The incorrect header + (voice) pronunciation panel convey the
-              result, and the same input/mic below stays available for an
-              immediate retry on the current sentence. */}
-          {keyboard && hasBlank(cur) ? (
-            /* Keyboard mode has no separate confirm button: the answer is
-               submitted by the keyboard's action key (Enter on a physical
-               keyboard, Go/이동 on a mobile keyboard) — see the input's
-               onKeyDown + enterKeyHint in FillSentence. */
-            null
-          ) : (
-            <div className="sess__mic-wrap">
-              {recorder.recording ? (
-                <button className="sess__mic is-rec" onClick={recorder.stop} aria-label={copy.stopRecordA11y}>
-                  ■
-                </button>
-              ) : (
-                <button
-                  className="sess__mic"
-                  onClick={() => {
-                    recordingForRef.current = cur;
-                    void recorder.start();
-                  }}
-                  disabled={scoring}
-                  aria-label={incorrect ? copy.micRetryA11y : copy.recordA11y}
-                >
-                  {scoring ? <span className="spinner" style={{ width: 26, height: 26 }} /> : (
-                    /* Group 33277 (673:10472) — disc, glyph and both shadows are
-                       all inside this one export; nothing is redrawn here. */
-                    <img className="sess__mic-ic" src={icMic} alt="" aria-hidden="true" />
-                  )}
-                </button>
-              )}
-            </div>
-          )}
-        </>
+        <AnswerSentenceCard
+          sentence={cur}
+          copy={copy}
+          incorrect={incorrect}
+          bookmark={{ saved: !!saved[cur.sentence_id], onToggle: () => toggleSave(cur) }}
+          revealedText={hintShown ? (revealed[cur.sentence_id] ?? "") : ""}
+          pronunciation={
+            showPron && result
+              ? {
+                  score: result.pronunciation_score,
+                  message: pronunciationMessage(result, copy),
+                }
+              : null
+          }
+          hint={{
+            stage: curStage,
+            busy: hintBusy,
+            disabled: answered.has(cur.sentence_id),
+            onReveal: () => onHint(cur),
+          }}
+          answer={{
+            keyboard,
+            onToggleKeyboard: () => {
+              // Switching input mode must not discard the in-flight attempt's
+              // result: bump the attempt token so a late reply is ignored,
+              // then flip the mode (same session, same item).
+              attemptSeq.current++;
+              setKeyboard((on) => !on);
+            },
+            typed,
+            onTyped: setTyped,
+            onSubmit: () => submitTyped(cur),
+            submitting,
+            composingRef,
+          }}
+          voice={{
+            recording: recorder.recording,
+            scoring,
+            onStart: () => {
+              recordingForRef.current = cur;
+              void recorder.start();
+            },
+            onStop: recorder.stop,
+          }}
+        />
       )}
     </SessionChrome>
     {/* Correct-answer bottom sheet. Intermediate (다시 시작 / 다음, no blur) vs

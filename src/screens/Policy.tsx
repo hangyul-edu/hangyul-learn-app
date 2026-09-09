@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation, type TranslationKey } from "../i18n";
-import { POLICIES, type PolicyId } from "../lib/policies";
+import { isPolicyId, policyDoc, type PolicyId } from "../lib/policies";
 import { DetailHeader } from "../components/DetailHeader";
 
 /* ------------------------------- header --------------------------------- */
@@ -17,8 +17,8 @@ export function PolicyHeader({ title }: { title: ReactNode }) {
 /** Renders the body of a legal document. Reused by the route screen and the
  *  sign-up agreement sheet so both stay in sync. */
 export function PolicyBody({ id }: { id: PolicyId }) {
-  const { t } = useTranslation();
-  const doc = POLICIES[id];
+  const { t, language } = useTranslation();
+  const doc = policyDoc(language, id);
   return (
     <div className="policy">
       {doc.intro && <p className="policy__intro">{doc.intro}</p>}
@@ -36,51 +36,31 @@ export function PolicyBody({ id }: { id: PolicyId }) {
                 </p>
               );
             }
-            if ("bullets" in block) {
-              return (
-                <ul key={i} className="policy__list">
-                  {block.bullets.map((b) => (
-                    <li key={b} className="policy__bullet">
-                      {b}
-                    </li>
-                  ))}
-                </ul>
-              );
-            }
             return (
-              <table key={i} className="policy__table">
-                <thead>
-                  <tr>
-                    {block.table.headers.map((h) => (
-                      <th key={h}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {block.table.rows.map((row, r) => (
-                    <tr key={r}>
-                      {row.map((cell, c) => (
-                        <td key={c}>{cell}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <ul key={i} className="policy__list">
+                {block.bullets.map((b) => (
+                  <li key={b} className="policy__bullet">
+                    {b}
+                  </li>
+                ))}
+              </ul>
             );
           })}
         </section>
       ))}
+      {doc.closing && <p className="policy__closing">{doc.closing}</p>}
     </div>
   );
 }
 
 /** Standalone /policy/:doc detail screen. */
 export function Policy() {
+  const { language } = useTranslation();
   const { doc } = useParams<{ doc: string }>();
-  const id = (doc && doc in POLICIES ? doc : "terms") as PolicyId;
+  const id: PolicyId = isPolicyId(doc) ? doc : "terms";
   return (
     <div className="screen pol">
-      <PolicyHeader title={POLICIES[id].title} />
+      <PolicyHeader title={policyDoc(language, id).title} />
       <div className="screen__body pol__body">
         <PolicyBody id={id} />
       </div>

@@ -2403,25 +2403,13 @@ textarea.input {
   left: 7px;
   color: var(--ink);
 }
-.policy__table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 6px 0 8px;
-  font-size: 12.5px;
-}
-.policy__table th,
-.policy__table td {
-  border: 1px solid var(--border);
-  padding: 7px 8px;
-  text-align: left;
-  line-height: 1.5;
-  vertical-align: top;
-  color: var(--ink-2);
-}
-.policy__table th {
-  background: #f2f4f5;
-  font-weight: 700;
+/* TRM-002 signs off with a SemiBold line after the last article. */
+.policy__closing {
   color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 22.3px;
+  margin: 0;
 }
 
 /* ===================== Terms & Policies (약관 및 정책) ==================== */

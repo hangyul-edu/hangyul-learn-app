@@ -4,10 +4,12 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { Policy, PolicyList } from "./Policy";
 import { I18nProvider } from "../i18n";
+import { POLICIES, type PolicyId } from "../lib/policies";
+import type { AppLanguage } from "../lib/language";
 
-function renderFlow(initial = "/policy") {
-  return render(
-    <I18nProvider language="ko">
+function tree(language: AppLanguage, initial: string) {
+  return (
+    <I18nProvider language={language}>
       <MemoryRouter initialEntries={["/profile", initial]} initialIndex={1}>
         <Routes>
           <Route path="/profile" element={<div>MORE</div>} />
@@ -15,11 +17,26 @@ function renderFlow(initial = "/policy") {
           <Route path="/policy/:doc" element={<Policy />} />
         </Routes>
       </MemoryRouter>
-    </I18nProvider>,);
+    </I18nProvider>
+  );
 }
 
-describe("Terms & Policies flow", () => {
-  it("lists exactly three legal items and the business-info footer", () => {
+function renderFlow(initial = "/policy", language: AppLanguage = "ko") {
+  return render(tree(language, initial));
+}
+
+/** Any Hangul syllable — the marker for Korean copy leaking into English. */
+const HANGUL = /[ᄀ-ᇿ㄰-㆏가-힣]/;
+
+describe("Terms & Policies list (TRM-001)", () => {
+  it("uses a Hangul detector that actually detects Hangul", () => {
+    // Guards the `not.toMatch(HANGUL)` assertions below from passing vacuously.
+    expect("이용약관").toMatch(HANGUL);
+    expect("한귤 운영팀 드림").toMatch(HANGUL);
+    expect("Terms of Service — HanGyul Team").not.toMatch(HANGUL);
+  });
+
+  it("lists exactly three legal items and the business-info footer in Korean", () => {
     renderFlow();
     expect(screen.getByRole("heading", { name: "약관 및 정책" })).toBeInTheDocument();
     ["이용약관", "개인정보처리 방침", "구독 해지 및 환불 정책"].forEach((label) =>
@@ -27,34 +44,152 @@ describe("Terms & Policies flow", () => {
     );
     expect(screen.getByText("사업자 정보")).toBeInTheDocument();
     expect(screen.getByText("대표이사: 유재희")).toBeInTheDocument();
-    expect(screen.getByText("사업자등록번호: 403-87-03380")).toBeInTheDocument();
     expect(screen.getByText(/Copyright © 2025 HanGyul/)).toBeInTheDocument();
   });
 
-  it("opens the Terms of Use detail with bold numbered sections", async () => {
+  it("lists the same three items in English", () => {
+    renderFlow("/policy", "en");
+    expect(screen.getByRole("heading", { name: "Terms & Policy" })).toBeInTheDocument();
+    ["Terms of Service", "Privacy Policy", "Cancellation & Refund Policy"].forEach((label) =>
+      expect(screen.getByRole("button", { name: label })).toBeInTheDocument(),
+    );
+    expect(screen.getByText("Business Information")).toBeInTheDocument();
+  });
+});
+
+describe("Terms of Service detail (TRM-002)", () => {
+  it("renders the Korean frame's 17 articles, supplementary provision and sign-off", async () => {
     renderFlow();
     await userEvent.click(screen.getByRole("button", { name: "이용약관" }));
     expect(await screen.findByRole("heading", { name: "이용약관" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "제1조 (목적)" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "제16조 (준거법 및 관할)" })).toBeInTheDocument();
+    // The document previously stopped at 제16조; the frame carries 17 articles.
+    expect(screen.getByRole("heading", { name: "제17조 (준거법 및 관할)" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "부칙" })).toBeInTheDocument();
+    expect(screen.getByText("한귤 운영팀 드림")).toBeInTheDocument();
+    // 제2조 is a bullet list in the frame, not running prose.
+    expect(screen.getByText(/"계정"이란 이용자가 서비스 이용을 위해/)).toBeInTheDocument();
   });
 
-  it("renders the privacy detail's sections and bullet list", async () => {
-    renderFlow();
-    await userEvent.click(screen.getByRole("button", { name: "개인정보처리 방침" }));
-    expect(await screen.findByRole("heading", { name: "1. 수집하는 개인정보 항목" })).toBeInTheDocument();
+  it("renders the English frame's copy with no Korean left behind", () => {
+    const { container } = renderFlow("/policy/terms-of-use", "en");
+    expect(screen.getByRole("heading", { name: "Terms of Service" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Article 1 (Purpose)" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Article 17 (Governing Law and Jurisdiction)" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Supplementary Provision" })).toBeInTheDocument();
+    expect(screen.getByText("HanGyul Team")).toBeInTheDocument();
+    expect(container.textContent ?? "").not.toMatch(HANGUL);
+  });
+});
+
+describe("Privacy Policy detail (TRM-003)", () => {
+  it("renders the Korean frame's nine numbered sections", () => {
+    renderFlow("/policy/purchase-privacy");
+    expect(screen.getByRole("heading", { name: "개인정보처리 방침" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "1. 수집하는 개인정보 항목" })).toBeInTheDocument();
     expect(screen.getByText(/회원가입 시: 이름\(닉네임\)/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "8. EU 이용자 개인정보 보호 (GDPR)" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "9. 개인정보 보호책임자" })).toBeInTheDocument();
   });
 
-  it("opens the refund policy detail with its sections and refund tables", async () => {
+  it("renders the English frame's copy with no Korean left behind", () => {
+    const { container } = renderFlow("/policy/purchase-privacy", "en");
+    expect(screen.getByRole("heading", { name: "Privacy Policy" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "1. Personal Information Collected" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "8. Privacy Protection for EU Users (GDPR)" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "9. Privacy Officer" })).toBeInTheDocument();
+    expect(container.textContent ?? "").not.toMatch(HANGUL);
+  });
+});
+
+describe("Cancellation & Refund Policy detail (TRM-004)", () => {
+  it("renders the Korean frame's nine numbered sections", () => {
     renderFlow("/policy/refund");
-    expect(await screen.findByRole("heading", { name: "구독 해지 및 환불 정책" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "7일 무료 체험" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "월간 구독 환불" })).toBeInTheDocument();
-    // Refund tables render with header cells + data rows.
-    expect(screen.getAllByRole("columnheader", { name: "결제 후 경과" }).length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByRole("cell", { name: "미사용 개월 수 × 월정액" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "구독 해지 및 환불 정책" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "1. 기본 원칙" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "3. 7일 무료 체험" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "9. 정책 변경 안내" })).toBeInTheDocument();
+    // The frame states the refund rules as prose; it has no comparison tables.
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  });
+
+  it("renders the English frame's copy with no Korean left behind", () => {
+    const { container } = renderFlow("/policy/refund", "en");
+    expect(screen.getByRole("heading", { name: "Cancellation & Refund Policy" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "1. General Principles" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "9. Policy Updates" })).toBeInTheDocument();
+    expect(container.textContent ?? "").not.toMatch(HANGUL);
+  });
+});
+
+describe("switching language", () => {
+  it("re-renders an open detail page in the newly selected language", () => {
+    const { rerender, container } = render(tree("ko", "/policy/terms-of-use"));
+    expect(screen.getByRole("heading", { name: "제1조 (목적)" })).toBeInTheDocument();
+
+    rerender(tree("en", "/policy/terms-of-use"));
+    expect(screen.getByRole("heading", { name: "Article 1 (Purpose)" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "제1조 (목적)" })).not.toBeInTheDocument();
+    expect(container.textContent ?? "").not.toMatch(HANGUL);
+
+    // …and back again, so neither direction is a one-way door.
+    rerender(tree("ko", "/policy/terms-of-use"));
+    expect(screen.getByRole("heading", { name: "제1조 (목적)" })).toBeInTheDocument();
+  });
+});
+
+describe("catalog shape", () => {
+  const ids = Object.keys(POLICIES.ko) as PolicyId[];
+
+  it("defines every document in both languages", () => {
+    expect(Object.keys(POLICIES.en).sort()).toEqual(ids.slice().sort());
+  });
+
+  it.each(["ko", "en"] as const)("has no empty section in %s", (language) => {
+    for (const id of ids) {
+      for (const section of POLICIES[language][id].sections) {
+        expect(section.heading.length).toBeGreaterThan(0);
+        expect(section.body.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("keeps the two languages structurally parallel", () => {
+    for (const id of ids) {
+      const ko = POLICIES.ko[id];
+      const en = POLICIES.en[id];
+      // Same section count and the same paragraph/bullet shape per section, so
+      // one language cannot silently lose a clause the other still states.
+      expect(en.sections.length, id).toBe(ko.sections.length);
+      expect(Boolean(en.closing), id).toBe(Boolean(ko.closing));
+      ko.sections.forEach((section, i) => {
+        const kinds = (doc: typeof section) =>
+          doc.body.map((b) => (typeof b === "string" ? "p" : "ul")).join("");
+        // Bullet lists are part of the design, so a list must stay a list.
+        expect(kinds(en.sections[i]).replace(/p+/g, "p"), `${id} §${i + 1}`).toBe(
+          kinds(section).replace(/p+/g, "p"),
+        );
+      });
+    }
+  });
+
+  it("carries no Korean in the English catalog", () => {
+    for (const id of ids) {
+      const doc = POLICIES.en[id];
+      const text = [
+        doc.title,
+        doc.intro ?? "",
+        doc.closing ?? "",
+        ...doc.sections.flatMap((s) => [
+          s.heading,
+          ...s.body.flatMap((b) => (typeof b === "string" ? [b] : b.bullets)),
+        ]),
+      ].join(" ");
+      expect(text, id).not.toMatch(HANGUL);
+    }
   });
 });

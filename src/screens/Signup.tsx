@@ -11,7 +11,7 @@ import { useVerification, mmss } from "../hooks/verification";
 import { errorMessage } from "../lib/http";
 import { passwordProblem } from "../lib/validation";
 import { NATIONALITIES } from "../lib/format";
-import { POLICIES, type PolicyId } from "../lib/policies";
+import { policyDoc, type PolicyId } from "../lib/policies";
 
 function emailValid(e: string) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
@@ -32,7 +32,7 @@ const AGREEMENTS: { key: AgreeKey; label: TranslationKey; underline?: boolean; d
 ];
 
 export function Signup() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const nav = useNavigate();
   const toast = useToast();
   const completeLogin = useLoginFlow();
@@ -410,7 +410,7 @@ export function Signup() {
       <Sheet
         open={policyOpen !== null}
         onClose={() => setPolicyOpen(null)}
-        title={policyOpen ? POLICIES[policyOpen].title : ""}
+        title={policyOpen ? policyDoc(language, policyOpen).title : ""}
       >
         {policyOpen && <PolicyBody id={policyOpen} />}
       </Sheet>

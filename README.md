@@ -47,9 +47,13 @@ cp .env.example .env
   at your backend (default `http://127.0.0.1:8000`). The dev proxy strips the
   `/api` prefix, so `/api/users/me` → `http://127.0.0.1:8000/users/me`.
 - **Production / hosted backend:** set `VITE_API_BASE_URL=https://your-backend`
-  before building. The app then calls that origin directly. The backend already
-  allows all origins (CORS `*`) and the app uses bearer tokens (no cookies), so
-  cross-origin works out of the box.
+  before building. The app then calls that origin directly — which makes it a
+  cross-origin caller, so the backend must name this app's origin in
+  `CORS_ALLOW_ORIGINS`. The backend does **not** allow all origins: with
+  `CORS_ALLOW_ORIGINS` unset it trusts only `SOCIAL_WEB_APP_URL` (plus any
+  loopback port in `local`/`test`), and logs a warning at startup when a
+  deployed environment ends up trusting nothing remote. The app uses bearer
+  tokens, not cookies, so once the origin is allowed nothing else is needed.
 
 ---
 
@@ -89,9 +93,11 @@ DB_URL="sqlite+aiosqlite:////tmp/hangyul_dev.db" APP_ENV=local \
   .venv/bin/python -m uvicorn apps.api.main:app --port 8000 --reload
 ```
 
-On startup the API seeds demo content (subscription plans, sentences, quizzes,
-FAQs, notices). In a **second terminal**, run the frontend (`npm run dev`).
-That's it — the two talk over the dev proxy.
+On startup the API seeds the fixed catalogs — subscription plans, sentences,
+quizzes and exam sets. Admin-managed content (FAQs, notices, banners, courses
+and lectures) is **never** seeded and starts empty; create it in the admin
+portal if you need it. In a **second terminal**, run the frontend
+(`npm run dev`). That's it — the two talk over the dev proxy.
 
 > The offline backend uses mock providers: verification codes are **printed to the
 > API log** instead of sent by SMS/email, learning uses a deterministic mock
@@ -123,7 +129,9 @@ Go to **http://localhost:5173**. You land on the welcome screen.
    pronunciation score, save ⭐ sentences.
 6. **TOPIK 학습** → daily set + browse → solve a question → see grading.
 7. **학습 → 강의** → browse courses → open a lesson → watch (progress saved) →
-   for TOPIK lessons, tap *복습 문제 풀기* to run an AI practice set.
+   for TOPIK lessons, tap *복습 문제 풀기* to run an AI practice set. Courses and
+   lectures are admin-managed and start empty, so create one in the admin portal
+   first or this list is legitimately empty.
 8. **학습 → TOPIK 기출 모의고사** → pick an exam → answer → get scored.
 9. **학습 → AI 추천 문장** → optionally type a situation → get tailored sentences.
 10. **리그** → your rank, weekly leaderboard, daily 출석 (attendance).
@@ -202,12 +210,19 @@ frontend/
    ├─ main.tsx             # providers: QueryClient, Toast, Router, Auth
    ├─ App.tsx              # routes + auth gating (RequireAuth / RequireGuest)
    ├─ styles/              # design system (orange theme tokens + components)
+   ├─ i18n/                # typed ko/en catalogs, t() and <T>, language context
    ├─ lib/                 # config, http client (+refresh), storage, types, format
    ├─ api/endpoints.ts     # typed API layer — one place, grouped by domain
-   ├─ hooks/               # auth context, toast, login flow
-   ├─ components/ui/        # Button, Field, Card, Modal, states, kit…
-   ├─ components/layout/    # Screen, TopBar, AppShell (bottom nav)
-   └─ screens/             # one folder-free file per journey screen
+   ├─ hooks/               # auth context, toast, login + social-login flow,
+   │                       #   verification timers, voice recorder
+   ├─ components/ui/       # kit.tsx (Button, Card, Chip, Badge, Avatar…),
+   │                       #   Field, Modal, CountrySelect, states
+   ├─ components/layout/   # Screen, TopBar, AppShell (bottom nav)
+   ├─ components/          # session, topik, faq, social, brand — per-domain pieces
+   ├─ screens/             # one flat file per journey screen
+   └─ admin/               # NOT part of the member app — the admin portal is a
+                           #   second Vite entry (admin.html), see
+                           #   docs/admin-portal.md
 ```
 
 Design principles: a single typed API layer (`api/endpoints.ts`), a reusable UI
@@ -221,10 +236,14 @@ loading/error/retry/caching, and central token/refresh handling in `lib/http.ts`
 **CORS errors in the browser**
 - In dev, always use `npm run dev` and leave `VITE_API_BASE_URL` empty — requests
   go through the same-origin `/api` proxy, so CORS never applies.
-- In production the backend sends `Access-Control-Allow-Origin: *` and the app
-  uses bearer tokens (no cookies). If you still see CORS errors, confirm
-  `VITE_API_BASE_URL` points at the correct backend origin (scheme + host + port)
-  and that the backend is actually reachable from the browser.
+- In production the backend answers only origins it was told about. Confirm this
+  app's exact origin (scheme + host + port, no trailing path) is listed in the
+  backend's `CORS_ALLOW_ORIGINS`, that `VITE_API_BASE_URL` points at the correct
+  backend origin, and that the backend is reachable from the browser. A
+  preflight from an unlisted origin comes back without an
+  `Access-Control-Allow-Origin` header; the API also logs a
+  "CORS_ALLOW_ORIGINS is unset" warning at startup when nothing remote is
+  trusted.
 
 **“401 / logged out unexpectedly” or token expiration**
 - Access tokens are short-lived (~30 min). The app refreshes them automatically.

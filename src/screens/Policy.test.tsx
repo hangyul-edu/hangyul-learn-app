@@ -191,6 +191,16 @@ describe("catalog shape", () => {
     }
   });
 
+  it("romanises the privacy officer the same way the business card does", () => {
+    // 유재희 appears as the CEO on TRM-001 and as the privacy officer in
+    // TRM-003; the frames spell the two differently. One spelling wins.
+    const text = POLICIES.en["purchase-privacy"].sections
+      .flatMap((s) => s.body.flatMap((b) => (typeof b === "string" ? [b] : b.bullets)))
+      .join(" ");
+    expect(text).toContain("JaeHee Lew");
+    expect(text).not.toContain("Yoo Jaehee");
+  });
+
   it("carries no Korean in the English catalog", () => {
     for (const id of ids) {
       const doc = POLICIES.en[id];

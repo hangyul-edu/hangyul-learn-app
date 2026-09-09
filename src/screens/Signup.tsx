@@ -11,7 +11,7 @@ import { useVerification, mmss } from "../hooks/verification";
 import { errorMessage } from "../lib/http";
 import { passwordProblem } from "../lib/validation";
 import { NATIONALITIES } from "../lib/format";
-import { policyDoc, type PolicyId } from "../lib/policies";
+import { policyDoc, TERMS_OF_SERVICE, type PolicyId } from "../lib/policies";
 
 function emailValid(e: string) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
@@ -23,7 +23,8 @@ type AgreeKey = "age" | "terms" | "privacy" | "third" | "marketing" | "serviceNo
 const REQUIRED_AGREEMENTS: AgreeKey[] = ["age", "terms", "privacy", "third"];
 const AGREEMENTS: { key: AgreeKey; label: TranslationKey; underline?: boolean; doc?: PolicyId }[] = [
   { key: "age", label: "signup.agreeAge" },
-  { key: "terms", label: "signup.agreeTerms", underline: true, doc: "terms" },
+  // The same document the Terms & Policies page shows — not a signup-only copy.
+  { key: "terms", label: "signup.agreeTerms", underline: true, doc: TERMS_OF_SERVICE },
   { key: "privacy", label: "signup.agreePrivacy", doc: "privacy" },
   { key: "third", label: "signup.agreeThird", doc: "third-party" },
   { key: "marketing", label: "signup.agreeMarketing" },

@@ -18,12 +18,19 @@
 import type { AppLanguage } from "./language";
 
 export type PolicyId =
-  | "terms"
   | "privacy"
   | "third-party"
   | "terms-of-use"
   | "purchase-privacy"
   | "refund";
+
+/**
+ * The Terms of Service, referenced by id rather than spelled out at each call
+ * site: the sign-up agreement sheet and the Terms & Policies detail page must
+ * show the same document. The sign-up flow used to carry its own five-article
+ * summary (`terms`), which drifted from TRM-002; there is now one copy.
+ */
+export const TERMS_OF_SERVICE = "terms-of-use" satisfies PolicyId;
 
 /** A content block within a section: a plain paragraph or a bullet list. */
 export type PolicyBlock = string | { bullets: string[] };
@@ -40,48 +47,6 @@ export interface PolicyDoc {
 /* ------------------------------- Korean --------------------------------- */
 
 const KO: Record<PolicyId, PolicyDoc> = {
-  terms: {
-    title: "회원이용약관",
-    updated: "2026-07-01",
-    intro: "본 약관은 한귤(Hangyul) 서비스의 이용과 관련하여 회사와 회원 간의 권리·의무 및 책임사항을 규정합니다.",
-    sections: [
-      {
-        heading: "제1조 (목적)",
-        body: [
-          "본 약관은 회사가 제공하는 한국어 학습 서비스(이하 “서비스”)의 이용조건과 절차, 회사와 회원의 권리·의무를 정함을 목적으로 합니다.",
-        ],
-      },
-      {
-        heading: "제2조 (회원가입)",
-        body: [
-          "회원가입은 이용자가 약관에 동의하고 회사가 정한 절차에 따라 가입을 신청하면 회사가 이를 승낙함으로써 성립합니다.",
-          "회원은 가입 시 정확한 정보를 제공해야 하며, 타인의 정보를 도용해서는 안 됩니다.",
-        ],
-      },
-      {
-        heading: "제3조 (서비스의 제공 및 변경)",
-        body: [
-          "회사는 회원에게 학습 콘텐츠, 진도 관리, 인증 및 부가 기능 등을 제공합니다.",
-          "회사는 운영상·기술상 필요에 따라 제공하는 서비스의 내용을 변경할 수 있으며, 중요한 변경은 사전에 공지합니다.",
-        ],
-      },
-      {
-        heading: "제4조 (회원의 의무)",
-        body: [
-          "회원은 관계 법령과 본 약관을 준수해야 하며, 서비스의 정상적인 운영을 방해하는 행위를 해서는 안 됩니다.",
-          "회원은 자신의 계정 및 비밀번호를 안전하게 관리할 책임이 있습니다.",
-        ],
-      },
-      {
-        heading: "제5조 (계약 해지)",
-        body: [
-          "회원은 언제든지 서비스 내 설정을 통해 이용계약을 해지(회원 탈퇴)할 수 있습니다.",
-          "회원이 약관을 위반한 경우 회사는 사전 통지 후 이용을 제한하거나 계약을 해지할 수 있습니다.",
-        ],
-      },
-    ],
-  },
-
   privacy: {
     title: "개인정보 수집 및 이용동의",
     updated: "2026-07-01",
@@ -466,49 +431,6 @@ const KO: Record<PolicyId, PolicyDoc> = {
 /* ------------------------------- English -------------------------------- */
 
 const EN: Record<PolicyId, PolicyDoc> = {
-  terms: {
-    title: "Membership Terms of Use",
-    updated: "2026-07-01",
-    intro:
-      "These terms set out the rights, obligations, and responsibilities between the Company and its members in connection with use of the Hangyul service.",
-    sections: [
-      {
-        heading: "Article 1 (Purpose)",
-        body: [
-          "These terms set out the conditions and procedures for use of the Korean language learning service (the “Service”) provided by the Company, together with the rights and obligations of the Company and its members.",
-        ],
-      },
-      {
-        heading: "Article 2 (Registration)",
-        body: [
-          "Membership is established when a user agrees to these terms, applies in accordance with the procedures set by the Company, and the Company accepts the application.",
-          "Members must provide accurate information when registering and may not misappropriate another person's information.",
-        ],
-      },
-      {
-        heading: "Article 3 (Provision and Modification of the Service)",
-        body: [
-          "The Company provides members with learning content, progress tracking, certification, and supplementary features.",
-          "The Company may change what the Service offers for operational or technical reasons, and will give notice of significant changes in advance.",
-        ],
-      },
-      {
-        heading: "Article 4 (Member Obligations)",
-        body: [
-          "Members must comply with applicable law and these terms, and must not interfere with the normal operation of the Service.",
-          "Members are responsible for keeping their account and password secure.",
-        ],
-      },
-      {
-        heading: "Article 5 (Termination)",
-        body: [
-          "Members may terminate the agreement (withdraw their membership) at any time from the settings within the Service.",
-          "Where a member breaches these terms, the Company may restrict access or terminate the agreement after prior notice.",
-        ],
-      },
-    ],
-  },
-
   privacy: {
     title: "Consent to Collection and Use of Personal Information",
     updated: "2026-07-01",

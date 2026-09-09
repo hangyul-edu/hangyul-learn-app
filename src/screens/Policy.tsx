@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation, type TranslationKey } from "../i18n";
-import { isPolicyId, policyDoc, type PolicyId } from "../lib/policies";
+import { isPolicyId, policyDoc, TERMS_OF_SERVICE, type PolicyId } from "../lib/policies";
 import { DetailHeader } from "../components/DetailHeader";
 
 /* ------------------------------- header --------------------------------- */
@@ -83,7 +83,7 @@ export function PolicyBody({ id }: { id: PolicyId }) {
 export function Policy() {
   const { language } = useTranslation();
   const { doc } = useParams<{ doc: string }>();
-  const id: PolicyId = isPolicyId(doc) ? doc : "terms";
+  const id: PolicyId = isPolicyId(doc) ? doc : TERMS_OF_SERVICE;
   return (
     <div className="screen pol">
       <PolicyHeader title={policyDoc(language, id).title} />

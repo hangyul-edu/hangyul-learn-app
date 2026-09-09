@@ -449,7 +449,8 @@ export const en: Catalog = {
     termsTitle: "Terms & conditions", // 784:55065
     agreeAll: "Agree to all",
     agreeAge: "[Required] 14+ (or guardian consent)",
-    agreeTerms: "Terms of service (required)",
+    /** Named after the document it opens (TRM-002), not the frame's wording. */
+    agreeTerms: "Terms of Service (required)",
     agreePrivacy: "Privacy policy (required)",
     agreeThird: "3rd-party data sharing (required)",
     /* Optional consents — the English frame lists all three. */

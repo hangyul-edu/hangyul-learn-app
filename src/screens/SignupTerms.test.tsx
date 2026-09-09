@@ -79,8 +79,8 @@ async function signupSheetText(language: AppLanguage, label: string): Promise<st
 
 describe("sign-up Terms of Service", () => {
   it.each([
-    ["ko" as const, "회원이용약관 (필수)", "이용약관", "제1조 (목적)"],
-    ["en" as const, "Terms of service (required)", "Terms of Service", "Article 1 (Purpose)"],
+    ["ko" as const, "이용약관 (필수)", "이용약관", "제1조 (목적)"],
+    ["en" as const, "Terms of Service (required)", "Terms of Service", "Article 1 (Purpose)"],
   ])("matches the Terms & Policies document in %s", async (language, label, title, first) => {
     const sheet = await signupSheetText(language, label);
     cleanup();
@@ -109,9 +109,9 @@ describe("sign-up Terms of Service", () => {
   });
 
   it("shows Korean and English versions that actually differ", async () => {
-    const ko = await signupSheetText("ko", "회원이용약관 (필수)");
+    const ko = await signupSheetText("ko", "이용약관 (필수)");
     cleanup();
-    const en = await signupSheetText("en", "Terms of service (required)");
+    const en = await signupSheetText("en", "Terms of Service (required)");
     expect(ko).not.toBe(en);
     expect(ko).toContain("제17조 (준거법 및 관할)");
     expect(en).toContain("Article 17 (Governing Law and Jurisdiction)");

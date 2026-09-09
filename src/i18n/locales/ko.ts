@@ -459,7 +459,8 @@ export const ko = {
     termsTitle: "약관동의",
     agreeAll: "전체 동의",
     agreeAge: "[필수] 만 14세 이상 (미만 시 법정대리인 동의)",
-    agreeTerms: "회원이용약관 (필수)",
+    /** Named after the document it opens (TRM-002), not the AME-004 wording. */
+    agreeTerms: "이용약관 (필수)",
     agreePrivacy: "개인정보수집 및 이용동의 (필수)",
     agreeThird: "개인정보 제 3자 제공 동의 (필수)",
     /* Optional consents — Figma AME-004 (215:6769) lists all three. */

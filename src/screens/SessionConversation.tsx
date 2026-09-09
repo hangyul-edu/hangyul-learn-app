@@ -14,12 +14,21 @@ import { useReviewSessionCopy } from "../lib/reviewSessionCopy";
 import { LoadingState, ErrorState } from "../components/ui/states";
 import { recApi, sentenceApi, dashboardApi, learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
+import { useVoiceRecorder } from "../hooks/useVoiceRecorder";
 import { errorMessage } from "../lib/http";
 import { randomUuid } from "../lib/uuid";
 import {
   useSessionConversationCopy,
   type SessionConversationCopy,
 } from "../lib/sessionConversationCopy";
+import {
+  clearConversationSession,
+  readConversationSession,
+  saveConversationSession,
+  type ConversationSessionSnapshot,
+} from "../lib/conversationSessionSnapshot";
+import { FillSentence, hasBlank } from "../components/session/FillSentence";
+import { PronunciationPanel } from "../components/session/PronunciationPanel";
 import type { BlankAttempt, Sentence, SpeechAttempt } from "../lib/types";
 import icSend from "../assets/brand/ic-send.svg";
 import icQuestion from "../assets/brand/ic-question.svg";
@@ -29,24 +38,18 @@ import icAlert from "../assets/brand/ic-24-alert.svg";
  * pronunciation panel (voice only) is shown. */
 type AttemptMode = "keyboard" | "voice";
 
-/** A conversation item is a fill-in-the-blank when it ships a `display_text`
- * with a blank and structured blank metadata. */
-function hasBlank(s: Sentence): boolean {
-  return !!s.display_text && s.display_text.includes("___") && (s.blanks?.length ?? 0) > 0;
-}
-
 /** Map the fill-in-the-blank result onto the existing SpeechAttempt feedback
  * shape so the correct/incorrect/progress UI is reused unchanged. */
-function blankToSpeech(b: BlankAttempt): SpeechAttempt {
+function blankToSpeech(blank: BlankAttempt): SpeechAttempt {
   return {
-    attempt_id: b.attempt_id,
-    correct: b.is_correct,
-    transcription: b.transcription ?? b.normalized_answer,
-    target_text: b.completed_sentence,
-    pronunciation_score: b.is_correct ? 100 : 0,
-    feedback_code: b.is_correct ? "correct" : "missed_words",
-    points_earned: b.points_earned,
-    daily_progress: b.daily_progress ?? null,
+    attempt_id: blank.attempt_id,
+    correct: blank.is_correct,
+    transcription: blank.transcription ?? blank.normalized_answer,
+    target_text: blank.completed_sentence,
+    pronunciation_score: blank.is_correct ? 100 : 0,
+    feedback_code: blank.is_correct ? "correct" : "missed_words",
+    points_earned: blank.points_earned,
+    daily_progress: blank.daily_progress ?? null,
   };
 }
 
@@ -54,189 +57,15 @@ function newRequestId(): string {
   return randomUuid();
 }
 
-/** Clamp any returned score to a safe 0–100 integer for display + a11y. */
-function clampScore(score: number): number {
-  if (!Number.isFinite(score)) return 0;
-  return Math.max(0, Math.min(100, Math.round(score)));
-}
-
 /** Actionable pronunciation feedback from the evaluation result. Prefers the
  * server's already-localized tips; falls back to a safe localized message so a
  * raw provider/API error is never surfaced to the learner. */
-function pronunciationMessage(res: SpeechAttempt, copy: SessionConversationCopy): string {
-  const tip = res.tips?.find((t) => t.trim().length > 0);
+function pronunciationMessage(
+  attempt: SpeechAttempt,
+  copy: SessionConversationCopy,
+): string {
+  const tip = attempt.tips?.find((line) => line.trim().length > 0);
   return tip?.trim() || copy.pronunciationFallback;
-}
-
-/** Key for the in-progress conversation session snapshot. It is persisted so a
- * page refresh restores the exact same set and progress instead of requesting
- * brand-new content. Scoped to the browser tab via sessionStorage and cleared
- * when the session is finished or exited. */
-const SESSION_KEY = "hangyul.session.conversation.v1";
-
-type SessionSnapshot = {
-  items: Sentence[];
-  idx: number;
-  points: number;
-  correct: string[];
-  answered: string[];
-  saved: Record<string, boolean>;
-  revealed: Record<string, string>;
-  hintStage: Record<string, "hint" | "answer">;
-  prompt: string;
-  startedAt: number;
-  keyboard: boolean;
-  // Additional-learning batch size (5/10/15/20), or null for a normal session.
-  additionalCount: number | null;
-};
-
-function readSessionSnapshot(): SessionSnapshot | null {
-  try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
-    if (!raw) return null;
-    const s = JSON.parse(raw) as SessionSnapshot;
-    return Array.isArray(s.items) && s.items.length > 0 ? s : null;
-  } catch {
-    return null;
-  }
-}
-
-function clearSessionSnapshot() {
-  try {
-    sessionStorage.removeItem(SESSION_KEY);
-  } catch {
-    /* ignore */
-  }
-}
-
-/** Renders `display_text` as one inline sentence: prefix text, the mint blank
- * (a revealed-hint chip in voice mode, or an inline text input in keyboard
- * mode), then suffix text. Falls back to the full sentence when there is no
- * blank. Never renders the answer. */
-function FillSentence({
-  sentence,
-  keyboard,
-  typed,
-  onTyped,
-  revealed,
-  onSubmit,
-  submitting,
-  composingRef,
-}: {
-  sentence: Sentence;
-  keyboard: boolean;
-  typed: string;
-  onTyped: (v: string) => void;
-  revealed: string;
-  onSubmit: () => void;
-  submitting: boolean;
-  composingRef: React.MutableRefObject<boolean>;
-}) {
-  const { t } = useTranslation();
-  if (!hasBlank(sentence)) {
-    return <div className="sess__sentence">{sentence.korean}</div>;
-  }
-  const parts = (sentence.display_text ?? "").split("___");
-  const widthEm = sentence.blanks?.[0]?.display_width_em ?? 6;
-  return (
-    <div className="sess__sentence sess__sentence--fill">
-      {parts.map((part, i) => (
-        <span key={i}>
-          {part}
-          {i < parts.length - 1 &&
-            (keyboard ? (
-              <span className="sess__blank sess__blank--edit">
-                {/* The revealed hint is the input's placeholder — it shows the
-                    partial answer while empty and is replaced the moment the
-                    user types (not a separate element beside the input). */}
-                <input
-                  className="sess__blank-input"
-                  style={{ width: `${widthEm}em` }}
-                  value={typed}
-                  placeholder={revealed}
-                  onChange={(e) => onTyped(e.target.value)}
-                  onCompositionStart={() => (composingRef.current = true)}
-                  onCompositionEnd={() => (composingRef.current = false)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !composingRef.current) {
-                      e.preventDefault();
-                      onSubmit();
-                    }
-                  }}
-                  disabled={submitting}
-                  autoFocus
-                  lang="ko"
-                  enterKeyHint="go"
-                  aria-label={t("session.blankWord")}
-                />
-              </span>
-            ) : (
-              <span
-                className="sess__blank"
-                style={{ minWidth: `${widthEm}em` }}
-                aria-label={revealed ? t("session.blankHint", { hint: revealed }) : t("session.blank")}
-              >
-                {revealed || " "}
-              </span>
-            ))}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-
-
-
-/** Circular pronunciation-accuracy ring: gray inactive track + orange active arc
- * with the clamped percentage centered. Decorative — the accessible value is
- * announced by the panel's group label. */
-function ScoreRing({ percent }: { percent: number }) {
-  const r = 26;
-  const circ = 2 * Math.PI * r;
-  const offset = circ * (1 - percent / 100);
-  return (
-    <svg className="sess__pron-ring" width="63" height="63" viewBox="0 0 66 66" aria-hidden="true" focusable="false">
-      <circle cx="33" cy="33" r={r} fill="none" stroke="#ecedf0" strokeWidth="7" />
-      <circle
-        cx="33"
-        cy="33"
-        r={r}
-        fill="none"
-        stroke="#ff8a3d"
-        strokeWidth="7"
-        strokeLinecap="round"
-        strokeDasharray={circ}
-        strokeDashoffset={offset}
-        transform="rotate(-90 33 33)"
-      />
-      <text x="33" y="34" textAnchor="middle" dominantBaseline="central" fontSize="15" fontWeight="800" fill="#262c31">
-        {percent}%
-      </text>
-    </svg>
-  );
-}
-
-/** Voice-only pronunciation feedback: score ring + one actionable message. */
-function PronunciationPanel({
-  score,
-  message,
-  copy,
-}: {
-  score: number;
-  message: string;
-  copy: SessionConversationCopy;
-}) {
-  const percent = clampScore(score);
-  return (
-    <div className="sess__pron" role="group" aria-label={copy.scoreA11y(percent)}>
-      <ScoreRing percent={percent} />
-      <div className="sess__pron-text">
-        <div className="sess__pron-title">{copy.pronunciationTitle}</div>
-        <p className="sess__pron-msg">{message}</p>
-      </div>
-    </div>
-  );
 }
 
 /** Remaining items to satisfy today's conversation goal (server-derived). */
@@ -304,7 +133,6 @@ export function SessionConversation() {
   // preserved across `reviewRestart` — so re-answering the same item after a
   // restart collides on the key server-side and is not re-awarded.
   const reviewSessionIdRef = useRef<string>(randomUuid());
-  const [recording, setRecording] = useState(false);
   const [scoring, setScoring] = useState(false);
   const [result, setResult] = useState<SpeechAttempt | null>(null);
   // Which input produced `result` — the pronunciation panel is voice-only.
@@ -315,12 +143,21 @@ export function SessionConversation() {
   const attemptSeq = useRef(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
-  const media = useRef<MediaRecorder | null>(null);
-  const chunks = useRef<Blob[]>([]);
   const startedAt = useRef(Date.now());
   // True once the user has made any attempt (correct or not) — decides whether
   // the session is worth recording on exit, independent of correctness.
   const attemptedRef = useRef(false);
+
+  // The sentence the take was started for — bound at start, so a take is
+  // always graded against the item the learner was actually reading.
+  const recordingForRef = useRef<Sentence | null>(null);
+  const recorder = useVoiceRecorder({
+    onRecorded: (audio) => {
+      const sentence = recordingForRef.current;
+      if (sentence) void gradeRecording(sentence, audio);
+    },
+    onPermissionDenied: () => toast.error(copy.micPermission),
+  });
 
   // Build (or regenerate) the set for the remaining daily goal. Regeneration
   // replaces the whole active set atomically only on success.
@@ -383,7 +220,7 @@ export function SessionConversation() {
       void loadReviewItem(reviewSentenceId!);
       return;
     }
-    const snap = readSessionSnapshot();
+    const snap = readConversationSession();
     if (snap) {
       setItems(snap.items);
       setIdx(snap.idx);
@@ -408,7 +245,7 @@ export function SessionConversation() {
   // intentionally left out — a refresh resumes at the current item, clean.
   useEffect(() => {
     if (!items || isReview) return; // review restores from the URL id, not a snapshot
-    const snap: SessionSnapshot = {
+    const snapshot: ConversationSessionSnapshot = {
       items,
       idx,
       points,
@@ -422,11 +259,7 @@ export function SessionConversation() {
       keyboard,
       additionalCount,
     };
-    try {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(snap));
-    } catch {
-      /* ignore quota/serialization errors */
-    }
+    saveConversationSession(snapshot);
   }, [items, idx, points, correctSet, answered, saved, revealed, hintStage, prompt, keyboard, additionalCount]);
 
   const total = items?.length ?? 0;
@@ -549,57 +382,38 @@ export function SessionConversation() {
     else void revealHint(s);
   }
 
-  async function startRec(s: Sentence) {
+  // Grade one recorded take of the current sentence. Voice fill-in-the-blank
+  // accepts the missing phrase OR the full completed sentence; a sentence with
+  // no blank is scored as a plain speech attempt.
+  async function gradeRecording(sentence: Sentence, audio: Blob) {
+    setScoring(true);
+    const seq = ++attemptSeq.current;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream);
-      chunks.current = [];
-      mr.ondataavailable = (e) => e.data.size && chunks.current.push(e.data);
-      mr.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
-        setRecording(false);
-        setScoring(true);
-        const seq = ++attemptSeq.current;
-        try {
-          const blob = new Blob(chunks.current, { type: "audio/webm" });
-          let res: SpeechAttempt;
-          if (hasBlank(s)) {
-            // Voice fill-in-the-blank: accepts the missing phrase OR the full
-            // completed sentence — graded server-side.
-            reqIdRef.current ??= newRequestId();
-            res = blankToSpeech(
-              await sentenceApi.blankAttempt(s.sentence_id, {
-                inputMode: "voice",
-                audio: blob,
-                clientRequestId: reqIdRef.current,
-                source: attemptSource,
-                reviewSessionId: isReview ? reviewSessionIdRef.current : undefined,
-              }),
-            );
-          } else {
-            res = await sentenceApi.speechAttempt(
-              s.sentence_id,
-              blob,
-              "attempt.webm",
-              attemptSource,
-              isReview ? reviewSessionIdRef.current : undefined,
-            );
-          }
-          // Ignore a late reply superseded by a mode switch / newer attempt.
-          if (seq === attemptSeq.current) record(res, s, "voice");
-        } catch {
-          // A technical failure is not a wrong answer: keep the item and show a
-          // localized retryable message, never the raw provider error.
-          if (seq === attemptSeq.current) toast.error(copy.retryMessage);
-        } finally {
-          setScoring(false);
-        }
-      };
-      media.current = mr;
-      mr.start();
-      setRecording(true);
+      const attempt = hasBlank(sentence)
+        ? blankToSpeech(
+            await sentenceApi.blankAttempt(sentence.sentence_id, {
+              inputMode: "voice",
+              audio,
+              clientRequestId: (reqIdRef.current ??= newRequestId()),
+              source: attemptSource,
+              reviewSessionId: isReview ? reviewSessionIdRef.current : undefined,
+            }),
+          )
+        : await sentenceApi.speechAttempt(
+            sentence.sentence_id,
+            audio,
+            "attempt.webm",
+            attemptSource,
+            isReview ? reviewSessionIdRef.current : undefined,
+          );
+      // Ignore a late reply superseded by a mode switch / newer attempt.
+      if (seq === attemptSeq.current) record(attempt, sentence, "voice");
     } catch {
-      toast.error(copy.micPermission);
+      // A technical failure is not a wrong answer: keep the item and show a
+      // localized retryable message, never the raw provider error.
+      if (seq === attemptSeq.current) toast.error(copy.retryMessage);
+    } finally {
+      setScoring(false);
     }
   }
 
@@ -667,7 +481,7 @@ export function SessionConversation() {
   async function exitSession() {
     if (finalizingRef.current) return;
     // Leaving ends the session: drop its snapshot so re-entry starts fresh.
-    clearSessionSnapshot();
+    clearConversationSession();
     if (!attemptedRef.current) {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       nav(-1);
@@ -878,14 +692,17 @@ export function SessionConversation() {
             null
           ) : (
             <div className="sess__mic-wrap">
-              {recording ? (
-                <button className="sess__mic is-rec" onClick={() => media.current?.stop()} aria-label={copy.stopRecordA11y}>
+              {recorder.recording ? (
+                <button className="sess__mic is-rec" onClick={recorder.stop} aria-label={copy.stopRecordA11y}>
                   ■
                 </button>
               ) : (
                 <button
                   className="sess__mic"
-                  onClick={() => startRec(cur)}
+                  onClick={() => {
+                    recordingForRef.current = cur;
+                    void recorder.start();
+                  }}
                   disabled={scoring}
                   aria-label={incorrect ? copy.micRetryA11y : copy.recordA11y}
                 >

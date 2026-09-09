@@ -7,6 +7,7 @@ import { Sheet } from "../components/ui/Modal";
 import { Async, EmptyState, LoadingState } from "../components/ui/states";
 import { sentenceApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
+import { useVoiceRecorder } from "../hooks/useVoiceRecorder";
 import { errorMessage } from "../lib/http";
 import type { Page, Sentence, SpeechAttempt } from "../lib/types";
 
@@ -20,11 +21,18 @@ export function Conversation() {
   const [showRoman, setShowRoman] = useState(false);
   const [showTrans, setShowTrans] = useState(true);
   const [saved, setSaved] = useState<Record<string, boolean>>({});
-  const [recording, setRecording] = useState(false);
   const [scoring, setScoring] = useState(false);
   const [result, setResult] = useState<SpeechAttempt | null>(null);
-  const mediaRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  // The sentence the take was started for — bound at start, so a take is
+  // always graded against the item the learner was actually reading.
+  const recordingForRef = useRef<Sentence | null>(null);
+  const recorder = useVoiceRecorder({
+    onRecorded: (audio) => {
+      const sentence = recordingForRef.current;
+      if (sentence) void gradeRecording(sentence, audio);
+    },
+    onPermissionDenied: () => toast.error(t("study.micPermission")),
+  });
 
   const q = useQuery({
     queryKey: ["sentences", level],
@@ -55,31 +63,16 @@ export function Conversation() {
     }
   }
 
-  async function startRec(s: Sentence) {
+  async function gradeRecording(sentence: Sentence, audio: Blob) {
+    setScoring(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream);
-      chunksRef.current = [];
-      mr.ondataavailable = (e) => e.data.size && chunksRef.current.push(e.data);
-      mr.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
-        setRecording(false);
-        setScoring(true);
-        try {
-          const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-          const res = await sentenceApi.speechAttempt(s.sentence_id, blob, "attempt.webm");
-          setResult(res);
-        } catch (e) {
-          toast.error(errorMessage(e));
-        } finally {
-          setScoring(false);
-        }
-      };
-      mediaRef.current = mr;
-      mr.start();
-      setRecording(true);
-    } catch {
-      toast.error(t("study.micPermission"));
+      setResult(
+        await sentenceApi.speechAttempt(sentence.sentence_id, audio, "attempt.webm"),
+      );
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setScoring(false);
     }
   }
 
@@ -144,12 +137,20 @@ export function Conversation() {
                 <Button variant="ghost" onClick={() => toggleSave(cur)} style={{ flex: "0 0 56px" }}>
                   {saved[cur.sentence_id] ? "🔖" : "📑"}
                 </Button>
-                {recording ? (
-                  <Button variant="danger" block onClick={() => mediaRef.current?.stop()}>
+                {recorder.recording ? (
+                  <Button variant="danger" block onClick={recorder.stop}>
                     {t("study.stopRecording")}
                   </Button>
                 ) : (
-                  <Button block loading={scoring} leftIcon="🎙️" onClick={() => startRec(cur)}>
+                  <Button
+                    block
+                    loading={scoring}
+                    leftIcon="🎙️"
+                    onClick={() => {
+                      recordingForRef.current = cur;
+                      void recorder.start();
+                    }}
+                  >
                     {t("study.speak")}
                   </Button>
                 )}

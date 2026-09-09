@@ -387,10 +387,10 @@ const KO: Record<PolicyId, PolicyDoc> = {
         ],
       },
       {
-        // Verbatim from the frame. The trailing "개인정보" duplicates the start of
-        // the heading and looks like an authoring slip — the English frame is
-        // just "Privacy Officer" — but the frame is the source of truth.
-        heading: "9. 개인정보 보호책임자 개인정보",
+        // The frame reads "9. 개인정보 보호책임자 개인정보"; the trailing "개인정보"
+        // duplicates the start of the heading and is an authoring slip — the
+        // English frame is just "Privacy Officer" — so it is dropped here.
+        heading: "9. 개인정보 보호책임자",
         body: ["보호책임자: 유재희 문의: support@talkhangyul.com 또는 앱 내 채널톡 채팅 상담"],
       },
     ],

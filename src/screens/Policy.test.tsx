@@ -91,8 +91,8 @@ describe("Privacy Policy detail (TRM-003)", () => {
     expect(screen.getByRole("heading", { name: "1. 수집하는 개인정보 항목" })).toBeInTheDocument();
     expect(screen.getByText(/회원가입 시: 이름\(닉네임\)/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "8. EU 이용자 개인정보 보호 (GDPR)" })).toBeInTheDocument();
-    // Verbatim from the frame, trailing "개인정보" and all.
-    expect(screen.getByRole("heading", { name: "9. 개인정보 보호책임자 개인정보" })).toBeInTheDocument();
+    // The frame's trailing "개인정보" is a duplicated fragment and is dropped.
+    expect(screen.getByRole("heading", { name: "9. 개인정보 보호책임자" })).toBeInTheDocument();
   });
 
   it("links the support address as mailto in both languages", () => {

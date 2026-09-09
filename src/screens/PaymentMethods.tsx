@@ -7,7 +7,7 @@ import { SkeletonList } from "../components/ui/states";
 import { NaverPayLogo, TossPayLogo } from "../components/brand/PayBrand";
 import { billingApi, payApi, type CardRegion } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
-import { useToast } from "../hooks/toast";
+import { useToast, useToastError } from "../hooks/toast";
 import { ApiError, errorMessage } from "../lib/http";
 import {
   NOTICE_GUIDANCE_KEY,
@@ -142,6 +142,7 @@ function PaymentResultModal({
 export function PaymentMethods() {
   const { t, language } = useTranslation();
   const toast = useToast();
+  const toastError = useToastError();
   const qc = useQueryClient();
   const { bootstrapMe } = useAuth();
   const q = useQuery({ queryKey: QK, queryFn: payApi.methods });
@@ -204,7 +205,7 @@ export function PaymentMethods() {
       setRemoveTarget(null);
       invalidate();
     },
-    onError: (e) => toast.error(errorMessage(e)), // keep the modal open
+    onError: toastError, // keep the modal open
   });
 
   /* --- failed-automatic-payment recovery --- */

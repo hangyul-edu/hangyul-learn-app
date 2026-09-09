@@ -44,7 +44,7 @@ export function FaqDetail() {
           ) : faq.data ? (
             <>
               <h2 className="faq__detail-q">
-                <span className="faq__q-prefix" aria-hidden="true">Q.</span>
+                <span className="faq__detail-q-prefix" aria-hidden="true">Q.</span>
                 <span>{faq.data.question}</span>
               </h2>
               <div className="faq__answer">

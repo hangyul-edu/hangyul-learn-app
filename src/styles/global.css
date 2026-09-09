@@ -15867,6 +15867,14 @@ textarea.input {
   letter-spacing: -0.15px;
   color: #262c31;
 }
+/* The detail's own "Q." run. It deliberately does NOT reuse .faq__q-prefix:
+   that rule belongs to the list row and pins 13px, which silently shrank this
+   one below the 15px the frame gives the whole question line. Everything but
+   the colour is inherited from .faq__detail-q. */
+.faq__detail-q-prefix {
+  color: #547cf1;
+  flex-shrink: 0;
+}
 .faq__answer {
   display: flex;
   flex-direction: column;

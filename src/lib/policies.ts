@@ -876,9 +876,9 @@ const EN: Record<PolicyId, PolicyDoc> = {
         body: [
           "No in-app refund button is provided. To request a refund, please contact us through in-app Channel Talk chat support.",
           "Channel Talk Support Hours AI support: Available 24 hours Live agent support: Weekdays 09:00 – 18:00 (KST)",
-          // Verbatim from the frame, missing space and all — the sentence break
-          // after "receipt." has no space in the design.
-          "Requests are processed within 3–5 business days of receipt.Refunds are returned to the original payment method within 3–10 business days.",
+          // The frame runs these together as "…of receipt.Refunds are…"; the
+          // missing space after the sentence break is a slip and is restored.
+          "Requests are processed within 3–5 business days of receipt. Refunds are returned to the original payment method within 3–10 business days.",
           "Credit/debit card: Refunded via card issuer. Simple payment methods (Toss Pay, etc.): Refunded via the respective payment provider.",
         ],
       },

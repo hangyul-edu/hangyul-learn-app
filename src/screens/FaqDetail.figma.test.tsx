@@ -165,7 +165,10 @@ describe("FAQ-004 — answer card", () => {
     expect(card.backgroundColor).toBe("rgb(244, 244, 245)"); // #F4F4F5
     expect(card.borderRadius).toBe("5px");
     expect(card.paddingTop).toBe("20px");
-    expect(card.paddingLeft).toBe("5px");
+    // 13 (.faq__detail) + 15 = the frame's 28 from the screen edge. The frame
+    // shows 5 padding + a centred 320 block; the 15 of slack is really padding.
+    expect(card.paddingLeft).toBe("15px");
+    expect(card.paddingRight).toBe("15px");
     // No border in the frame — the panel is a fill, not an outline.
     expect(card.borderTopWidth === "" || card.borderTopWidth === "0px").toBe(true);
   });
@@ -180,12 +183,34 @@ describe("FAQ-004 — answer card", () => {
     expect(card.color).toBe("rgb(0, 0, 0)");
   });
 
-  it("holds the inner text block to the frame's 320 width, responsively", async () => {
+  it("left-aligns the body instead of centring it", async () => {
     await mount();
+    const card = styleOf(q(".faq__answer"));
+    // The regression: a fixed-width child centred in the card. That put the
+    // text's left edge at the mercy of the card's width, so it only lined up at
+    // exactly 375 and drifted inward on every wider phone.
+    expect(card.alignItems).not.toBe("center");
+    expect(card.justifyContent).not.toBe("center");
+    expect(card.textAlign).not.toBe("center");
+
     const block = styleOf(q(".faq__answer-p"));
-    expect(block.width).toBe("320px");
-    // …but never wider than the card on a narrow screen.
-    expect(block.maxWidth).toBe("100%");
+    expect(block.width).not.toBe("320px");
+    // No `margin: 0 auto` centring either.
+    expect(block.marginLeft === "" || block.marginLeft === "0px").toBe(true);
+    expect(block.marginRight === "" || block.marginRight === "0px").toBe(true);
+  });
+
+  it("starts every block at the same left edge, at any width", async () => {
+    await mount();
+    // Paragraphs and lists must share one left edge — the card's padding — so
+    // multi-line text wraps back to it rather than to a centred block's edge.
+    for (const sel of [".faq__answer-p", ".faq__answer-list"]) {
+      const el = styleOf(q(sel));
+      expect(el.marginLeft === "" || el.marginLeft === "0px").toBe(true);
+      expect(el.width).not.toBe("320px");
+    }
+    // Nothing pins a fixed width on the card's children any more.
+    expect(GLOBAL).not.toContain(".faq__answer > * {");
   });
 
   it("renders paragraphs and bullets as the frame shows them", async () => {

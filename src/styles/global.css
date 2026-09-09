@@ -15878,21 +15878,27 @@ textarea.input {
 .faq__answer {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  /* Children stretch to the card's content box, so the text starts at its left
+     padding edge. NOT `align-items: center` with a fixed-width child: the frame
+     draws a 350 card with 5 padding around a 320 text block, i.e. 15 of slack
+     each side, and transcribing that literally made the left edge a product of
+     centring rather than of padding. It matched only at exactly 375 — on any
+     wider phone the card grew, the block stayed 320 and stayed centred, so the
+     answer floated in the middle of the panel. That slack IS the padding. */
+  align-items: stretch;
   background: #f4f4f5;
   border-radius: 5px;
-  padding: 20px 5px;
+  /* 5 frame padding + 15 slack, so the body starts 28 from the screen edge
+     (13 on .faq__detail + 15 here) and is 320 wide at 375 — as in FAQ-004. */
+  padding: 20px 15px;
   /* Medium 12 / 20, tracking -0.5 */
   color: #000;
   font-weight: 500;
   font-size: 12px;
   line-height: 20px;
   letter-spacing: -0.5px;
+  text-align: left;
   overflow-wrap: anywhere;
-}
-.faq__answer > * {
-  width: 320px;
-  max-width: 100%;
 }
 .faq__answer-p { margin: 0 0 20px; }
 .faq__answer-p:last-child { margin-bottom: 0; }

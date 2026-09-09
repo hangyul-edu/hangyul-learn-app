@@ -131,11 +131,27 @@ describe("Cancellation & Refund Policy detail (TRM-004)", () => {
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
 
+  it("states the annual deduction against the undiscounted regular price", () => {
+    // §5 deducts at the *regular* monthly price for a short usage period, and
+    // only falls back to the discounted annual rate from two months on — the
+    // two figures differing is the rule, not a typo.
+    renderFlow("/policy/refund");
+    expect(screen.getByText("이용 기간이 1개월 이내인 경우: 월 정상가($12.99) 공제")).toBeInTheDocument();
+    expect(
+      screen.getByText("이용 기간이 2개월 이상인 경우: 이용한 개월 수 × 연간 약정가($7.99) 공제"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/50일째 환불 요청 시.*\$7\.99 × 2 = \$15\.98/)).toBeInTheDocument();
+  });
+
   it("renders the English frame's copy with no Korean left behind", () => {
     const { container } = renderFlow("/policy/refund", "en");
     expect(screen.getByRole("heading", { name: "Cancellation & Refund Policy" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "1. General Principles" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "9. Policy Updates" })).toBeInTheDocument();
+    expect(
+      screen.getByText("If the usage period is within 1 month: the monthly standard price ($12.99) is deducted."),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/day 50 .*\$7\.99 × 2 = \$15\.98/)).toBeInTheDocument();
     expect(container.textContent ?? "").not.toMatch(HANGUL);
   });
 });

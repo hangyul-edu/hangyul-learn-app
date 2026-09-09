@@ -361,9 +361,7 @@ const KO: Record<PolicyId, PolicyDoc> = {
     ],
   },
 
-  /** TRM-004 (924:19180). The frame runs each section number, its name and its
-   *  body together in one paragraph; they are split here so both languages use
-   *  the heading/body structure the English frame already marks up. */
+  /** TRM-004 (924:19180). */
   refund: {
     title: "구독 해지 및 환불 정책",
     sections: [
@@ -394,9 +392,17 @@ const KO: Record<PolicyId, PolicyDoc> = {
       {
         heading: "5. 연간 구독 환불",
         body: [
-          "결제일로부터 7일 이내 미사용 시 전액 환불됩니다. 결제일로부터 30일 이내에는 미사용 개월 수에 월정액을 곱한 금액이 환불됩니다. 이용한 기간은 연간 정상가($7.99) 기준으로 일할 계산하여 공제됩니다. 결제일로부터 30일 초과 시 환불이 불가합니다.",
+          "결제일로부터 7일 이내 미사용 시 전액 환불됩니다.",
+          "7일이 지난 시점부터는 이용한 기간만큼 공제 후 잔액이 환불됩니다.",
+          {
+            // 1개월 이내는 할인 전 월 정상가로, 2개월 이상은 연간 약정가로 공제.
+            bullets: [
+              "이용 기간이 1개월 이내인 경우: 월 정상가($12.99) 공제",
+              "이용 기간이 2개월 이상인 경우: 이용한 개월 수 × 연간 약정가($7.99) 공제",
+            ],
+          },
           "예시: 연간 구독 결제 후 20일째 환불 요청 시, 1개월 이용으로 간주하여 $12.99 공제 후 잔액이 환불됩니다.",
-          "환불 금액은 결제 시 적용된 환율 기준으로 산정되며, 환불 시점의 환율 변동에 따라 원화 수령액이 달라질 수 있습니다.",
+          "예시: 연간 구독 결제 후 50일째 환불 요청 시, 2개월 이용으로 간주하여 $7.99 × 2 = $15.98 공제 후 잔액이 환불됩니다.",
         ],
       },
       {
@@ -779,9 +785,17 @@ const EN: Record<PolicyId, PolicyDoc> = {
       {
         heading: "5. Annual Subscription Refunds",
         body: [
-          "A full refund is available if requested within 7 days of the billing date with no usage. Within 30 days of the billing date, a partial refund is issued based on the number of unused months multiplied by the monthly rate. The used period is calculated on a daily pro-rata basis at the annual standard price ($7.99/month) and deducted accordingly. No refund is available after 30 days from the billing date.",
-          "Example: If a refund is requested 20 days after the annual subscription billing date, one month of usage will be assumed, $12.99 will be deducted, and the remaining balance will be refunded.",
-          "Refund amounts are calculated based on the exchange rate at the time of payment. The amount received in Korean Won may vary depending on exchange rate fluctuations at the time of refund.",
+          "If unused, a full refund is provided within 7 days of the payment date. After 7 days, the amount used is deducted and the remaining balance is refunded.",
+          {
+            // Under a month deducts the undiscounted monthly price; two months
+            // or more deducts at the annual plan rate.
+            bullets: [
+              "If the usage period is within 1 month: the monthly standard price ($12.99) is deducted.",
+              "If the usage period is 2 months or more: the number of months used × the annual plan price ($7.99) is deducted.",
+            ],
+          },
+          "Example: If a refund is requested on day 20 after paying for an annual subscription, 1 month of usage is assumed, and $12.99 is deducted before refunding the remaining balance.",
+          "Example: If a refund is requested on day 50 after paying for an annual subscription, 2 months of usage is assumed, and $7.99 × 2 = $15.98 is deducted before refunding the remaining balance.",
         ],
       },
       {

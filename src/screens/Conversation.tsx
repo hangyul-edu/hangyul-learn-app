@@ -31,7 +31,7 @@ export function Conversation() {
       const sentence = recordingForRef.current;
       if (sentence) void gradeRecording(sentence, audio);
     },
-    onPermissionDenied: () => toast.error(t("study.micPermission")),
+    onUnavailable: () => toast.error(t("study.micPermission")),
   });
 
   const q = useQuery({

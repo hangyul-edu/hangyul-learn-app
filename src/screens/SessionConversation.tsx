@@ -155,7 +155,7 @@ export function SessionConversation() {
       const sentence = recordingForRef.current;
       if (sentence) void gradeRecording(sentence, audio);
     },
-    onPermissionDenied: () => toast.error(copy.micPermission),
+    onUnavailable: () => toast.error(copy.micPermission),
   });
 
   // Build (or regenerate) the set for the remaining daily goal. Regeneration

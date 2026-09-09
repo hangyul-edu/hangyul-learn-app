@@ -201,13 +201,14 @@ describe("FAQ-(empty) — the category has none", () => {
   });
 });
 
-describe("search keeps its own 'no match' state", () => {
-  it("does not claim the catalogue is empty when a search misses", async () => {
-    // A search miss is not an empty catalogue: the catalogue may be full and
-    // simply contain no match.
+describe("a search with no matches", () => {
+  it("shows the same FAQ-(empty) view, not a search-specific one", async () => {
     faqs.mockResolvedValue(empty());
-    mount("/faq?q=zzzz");
-    expect(await screen.findByText("검색 결과가 없어요")).toBeInTheDocument();
-    expect(screen.queryByText(KO_EMPTY)).not.toBeInTheDocument();
+    const { container } = mount("/faq?q=zzzz");
+    expect(await screen.findByText(KO_EMPTY)).toBeInTheDocument();
+    // The shared element and treatment — no separate emoji/title block.
+    expect(container.querySelector(".faq__empty")).not.toBeNull();
+    expect(container.querySelector(".state")).toBeNull();
+    expect(container.querySelector(".state__emoji")).toBeNull();
   });
 });

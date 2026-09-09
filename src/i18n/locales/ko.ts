@@ -1002,8 +1002,6 @@ export const ko = {
     catHowTo: "이용방법",
     catPartnership: "제휴 · 제안",
     searchAria: "FAQ 검색",
-    noResults: "검색 결과가 없어요",
-    noResultsDesc: "다른 검색어로 다시 찾아보세요",
     /** FAQ-(empty) 3393:27284. */
     noQuestions: "아직 등록된 질문이 없어요",
     askAnything: "무엇이든 물어보세요",

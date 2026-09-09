@@ -1009,8 +1009,6 @@ export const en: Catalog = {
     catHowTo: "Getting Started", // 847:22155
     catPartnership: "Partnership · Suggestions",
     searchAria: "Search FAQ",
-    noResults: "No results",
-    noResultsDesc: "Try a different search term",
     /** FAQ-(empty) 3393:27297. */
     noQuestions: "There are no questions here yet",
     askAnything: "Ask us anything",

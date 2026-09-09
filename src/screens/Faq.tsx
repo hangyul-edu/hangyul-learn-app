@@ -5,7 +5,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { supportApi } from "../api/endpoints";
 import { FAQ_CATEGORIES, findFaqCategory } from "../lib/faqCategories";
 import { errorMessage } from "../lib/http";
-import { EmptyState, ErrorState, SkeletonList } from "../components/ui/states";
+import { ErrorState, SkeletonList } from "../components/ui/states";
 import { FaqHeader, LoadMoreSentinel, QuestionCard } from "../components/faq/FaqPieces";
 import { SupportChatButton } from "../components/faq/SupportChatButton";
 import type { Faq as FaqItem } from "../lib/types";
@@ -53,17 +53,23 @@ export function Faq() {
   const debounced = useDebouncedValue(input.trim(), 300);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Reflect the debounced search box into the URL. Entering search mode pushes
-  // a history entry (so Back leaves search); edits within search — and clearing
-  // it — replace, to avoid history spam and navigation loops.
+  // Reflect the debounced search box into the URL — always replacing, never
+  // pushing. The query is a filter on this screen, not a screen of its own, so
+  // it must not add a history entry.
+  //
+  // Entering search used to push while clearing replaced, which left a second
+  // /faq entry stacked behind the current one: backing out of a cleared search
+  // landed on FAQ-001 again, so it took an extra press to leave the FAQ flow.
+  // Replacing throughout means typing, editing and clearing all stay on one
+  // entry, and backing out is the same count however the screen was reached —
+  // from More, by searching from FAQ-001, or by opening /faq?q=… directly.
   useEffect(() => {
     const current = (params.get("q") ?? "").trim();
     if (debounced === current) return;
     const next = new URLSearchParams(params);
     if (debounced) next.set("q", debounced);
     else next.delete("q");
-    const enteringSearch = !!debounced && !current;
-    setParams(next, { replace: !enteringSearch });
+    setParams(next, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debounced]);
 
@@ -210,13 +216,8 @@ export function Faq() {
                 items={items}
                 onRetry={() => searchList.refetch()}
                 onOpen={openDetail}
-                empty={
-                  <EmptyState
-                    emoji="🔍"
-                    title={t("faq.noResults")}
-                    text={t("faq.noResultsDesc")}
-                  />
-                }
+                // The same FAQ-(empty) view, not a search-specific one.
+                empty={<FaqEmpty text={t("faq.noQuestions")} />}
                 hasNext={!!searchList.hasNextPage}
                 isFetchingNext={searchList.isFetchingNextPage}
                 loadMore={searchList.fetchNextPage}

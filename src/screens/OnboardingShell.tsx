@@ -7,7 +7,8 @@ import { useTranslation } from "../i18n";
  * same 375x812 canvas:
  *
  *   back      cp_B_01_topNav — 50px bar at y=44, 20px gutters, 24px glyph
- *   progress  335x4 track (#ECEDF0, r24) at (20, 111), orange fill inset 2px
+ *   progress  335x4 track (#ECEDF0, r24) at (20, 111); the fill is Vector 1242,
+ *             a 331-wide line inset 2px at both ends
  *   question  285 wide at x=45, top 179 — Heading 8 (SemiBold 18 / 25.2)
  *   options   285 wide at x=45, top 232
  *   art       per-screen mascot, absolutely placed
@@ -39,14 +40,17 @@ export function OnboardingShell({
       </button>
 
       <div
-        className="onbq__progress"
+        className={`onbq__progress${pct === 100 ? " is-complete" : ""}`}
         role="progressbar"
         aria-valuenow={pct}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-label={t("onboarding.progressA11y")}
       >
-        <div className="onbq__progress-fill" style={{ width: `${pct}%` }} />
+        <div
+          className="onbq__progress-fill"
+          style={{ width: `calc((100% - 4px) * ${pct / 100})` }}
+        />
       </div>
 
       {children}

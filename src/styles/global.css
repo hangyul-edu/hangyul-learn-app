@@ -3809,6 +3809,15 @@ textarea.input {
   border-radius: 5.414px;
   background: #ffffff;
   border: 0.5px solid var(--gray-2);
+  /* Both cards carry cp_C_01_primaryBtn's drop shadow — Figma 0 / 4 / blur 2 /
+     black 10%. The code generator drops this effect, so it was measured off the
+     rendered frames: fitting the falloff below each card gives offset-y 4.1-4.3
+     and sigma 1.9 at 10% black, matching AUR-001's CTA (whose Figma values the
+     generator *does* report) to two decimals. Figma renders blur 2 at sigma
+     1.9, and CSS blur radius is 2*sigma, hence 4px here — the same
+     `0 4px 4px rgba(0,0,0,0.1)` the rest of the app already uses. Identical in
+     KO (67:6153 / 67:6159) and EN (784:54445 / 784:54454), selected or not. */
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
   cursor: pointer;
 }
 .onbq__card--conv {

@@ -385,7 +385,7 @@ export const en: Catalog = {
     timeLeft: "Time left: {time}",
     endingSoon: "Ending soon",
     loadError: "Couldn't load the league.",
-    noLeague: "You're not in a league yet",
+    noLeague: "No active league yet", // LEG-000 1681:27531
     noRanking: "No rankings yet",
     openGuide: "Open league guide",
     rankRowA11y: "Rank {rank}, {name}{me}, {points} points",
@@ -418,8 +418,8 @@ export const en: Catalog = {
     promotionHeadline: "Only the top 20% move up a league",
     promotionAria:
       "Only the top 20% move up a league; Green League has no demotion, Golden League has no promotion",
-    emptyLine1: "Start learning and",
-    emptyLine2: "take on the league!",
+    emptyLine1: "Start learning", // LEG-000 1681:27530
+    emptyLine2: "and join the league!",
     guideA11y: "Regular League guide",
     guideCloseA11y: "Close Regular League guide",
     pointsTitle: "The more you learn, the more league points (P) you earn",

@@ -12730,23 +12730,9 @@ textarea.input {
   color: var(--black);
 }
 
-/* Dormant / empty state */
-.lg__empty {
-  margin-top: 56px;
-  text-align: center;
-}
-.lg__empty-badge .lg__badge {
-  width: 88px;
-  height: 100px;
-  opacity: 0.9;
-}
-.lg__empty-title {
-  margin: 18px 0 8px;
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--ink);
-}
+/* The dormant state moved to `.lg-empty`, which shares LEG-011's composition;
+   this rule is all that is left, and it belongs to a different state — the
+   league is running but its board has no entries yet. */
 .lg__empty-desc {
   margin: 0;
   text-align: center;
@@ -14716,7 +14702,12 @@ textarea.input {
 /* Friend League empty state (minimal, illustration-free, centered). */
 /* LEG-011 (1658:23877) — a white body under the tab strip, with the title at
    y=345, the two-line note at 377 and the 104x36 add button at 434. */
-.fl-empty {
+/* League empty states — LEG-011 (friends) and LEG-000 (Pro) are the same
+   composition: a black Heading 8 over Gray 5 Body 6, centred on a white page,
+   with no illustration. Only the drop from the tab row and the friend tab's
+   extra button differ, so the shared values live here once. */
+.fl-empty,
+.lg-empty {
   flex: 1;
   min-height: 54vh; /* fallback if the parent is not a flex column */
   display: flex;
@@ -14732,7 +14723,8 @@ textarea.input {
   padding: 253px 20px calc(var(--nav-total) + 24px);
   background: #fff;
 }
-.fl-empty__title {
+.fl-empty__title,
+.lg-empty__title {
   /* 1658:23888 — Heading 8 in BLACK, not Gray 7. */
   margin: 0;
   text-align: center;
@@ -14741,7 +14733,8 @@ textarea.input {
   line-height: 25.2px;
   color: #000;
 }
-.fl-empty__desc {
+.fl-empty__desc,
+.lg-empty__desc {
   /* 1658:23887 — Body 6 (Medium 15 / 22.3) in Gray 5, not Regular at 22.5. */
   /* 6.6 under the title, 12.2 above the button — LEG-011 draws the title box
      ending at 370.6, the copy at 377.2..421.8 and the button top at 434. */
@@ -14751,6 +14744,13 @@ textarea.input {
   font-weight: 500;
   line-height: 22.3px;
   color: var(--ink-3);
+}
+
+/* LEG-000 (1681:26767) carries no button, so its text block sits 22px lower
+   than LEG-011's: the title box starts at y=367.4, i.e. 275px below the 48px
+   tab row that ends at y=92. Everything else is inherited above. */
+.lg-empty {
+  padding-top: 275px;
 }
 /* 1658:23889 — 104x36, the 16px plus glyph 16 in, label 20 tall. */
 .fl-empty__add {

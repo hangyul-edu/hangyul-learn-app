@@ -255,12 +255,11 @@ export function League() {
           >
             {(m) =>
               dormant ? (
-                <div className="lg__empty">
-                  <div className="lg__empty-badge" aria-hidden="true">
-                    <LeagueBadge tier="green" reached={false} current={false} />
-                  </div>
-                  <p className="lg__empty-title">{t("league.noLeague")}</p>
-                  <p className="lg__empty-desc">
+                /* LEG-000 (1681:26767) — no illustration and no badge, just the
+                   headline over its two-line invitation on a white page. */
+                <div className="lg-empty">
+                  <h2 className="lg-empty__title">{t("league.noLeague")}</h2>
+                  <p className="lg-empty__desc">
                     {t("league.emptyLine1")}
                     <br />
                     {t("league.emptyLine2")}

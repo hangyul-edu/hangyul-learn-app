@@ -18,6 +18,25 @@ function emailValid(e: string) {
 }
 
 type AgreeKey = "age" | "terms" | "privacy" | "third" | "marketing" | "serviceNotice" | "adNotice";
+
+/**
+ * The three optional consents, in the field names the signup API accepts.
+ *
+ * Extracted so the mapping can be tested on its own, because getting it wrong
+ * is silent: the API ignores fields it does not declare, so a misnamed consent
+ * is dropped without an error and the account is created as if the box were
+ * never ticked. That is what happened — these went out as `*_consent`, which
+ * the schema has no fields for, while the accepted `*_opt_in` names were
+ * hardcoded false. `service_notification_opt_in` is the flag the push fan-out
+ * gates on, so every account was created unable to receive a push.
+ */
+export function consentPayload(agree: Record<AgreeKey, boolean>) {
+  return {
+    marketing_opt_in: agree.marketing,
+    service_notification_opt_in: agree.serviceNotice,
+    ad_notification_opt_in: agree.adNotice,
+  };
+}
 /** The four required consents gate signup; the three optional ones do not.
  *  All seven are listed in Figma AME-004 (215:6769 / 784:55065). */
 const REQUIRED_AGREEMENTS: AgreeKey[] = ["age", "terms", "privacy", "third"];
@@ -120,12 +139,7 @@ export function Signup() {
         terms_accepted: agree.terms,
         privacy_accepted: agree.privacy,
         third_party_accepted: agree.third,
-        marketing_consent: agree.marketing,
-        service_notification_consent: agree.serviceNotice,
-        promotional_notification_consent: agree.adNotice,
-        marketing_opt_in: false,
-        service_notification_opt_in: false,
-        ad_notification_opt_in: false,
+        ...consentPayload(agree),
       });
       if (res.requires_login) {
         const token = await authApi.login(email.trim(), password, true);

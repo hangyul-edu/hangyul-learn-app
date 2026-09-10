@@ -7,7 +7,7 @@ import { PolicyBody } from "./Policy";
 import { authApi } from "../api/endpoints";
 import { useLoginFlow } from "../hooks/loginFlow";
 import { useToast } from "../hooks/toast";
-import { useVerification, mmss } from "../hooks/verification";
+import { useVerification } from "../hooks/verification";
 import { errorMessage } from "../lib/http";
 import { passwordProblem } from "../lib/validation";
 import { NATIONALITIES } from "../lib/format";
@@ -225,9 +225,11 @@ export function Signup() {
                   onChange={(e) => phoneV.setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   disabled={!phoneV.requested || phoneV.verified}
                 />
-                <span className="signup__timer" aria-hidden="true">
-                  {mmss(phoneV.requested && !phoneV.verified ? phoneV.secondsLeft : 0)}
-                </span>
+                {phoneV.countdown && (
+                  <span className="signup__timer" aria-hidden="true">
+                    {phoneV.countdown}
+                  </span>
+                )}
               </div>
               <button
                 type="button"
@@ -299,9 +301,11 @@ export function Signup() {
                   onChange={(e) => emailV.setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   disabled={!emailV.requested || emailV.verified}
                 />
-                <span className="signup__timer" aria-hidden="true">
-                  {mmss(emailV.requested && !emailV.verified ? emailV.secondsLeft : 0)}
-                </span>
+                {emailV.countdown && (
+                  <span className="signup__timer" aria-hidden="true">
+                    {emailV.countdown}
+                  </span>
+                )}
               </div>
               <button
                 type="button"

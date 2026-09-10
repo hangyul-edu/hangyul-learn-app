@@ -149,7 +149,6 @@ export const en: Catalog = {
     requestCodeA11y: "Request verification code",
     emailVerifiedA11y: "Email verified",
     verifiedDoneA11y: "Verified",
-    codeNotRequestedA11y: "No code requested",
     remainingA11y: "{m} minutes {s} seconds remaining",
   },
 

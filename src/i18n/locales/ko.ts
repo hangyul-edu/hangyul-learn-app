@@ -155,7 +155,6 @@ export const ko = {
     requestCodeA11y: "인증번호 받기",
     emailVerifiedA11y: "이메일 인증 완료",
     verifiedDoneA11y: "인증 완료됨",
-    codeNotRequestedA11y: "인증번호 미요청",
     remainingA11y: "남은 시간 {m}분 {s}초",
   },
 

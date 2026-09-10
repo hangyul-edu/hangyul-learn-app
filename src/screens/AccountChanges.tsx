@@ -4,6 +4,7 @@ import { useTranslation } from "../i18n";
 import { authApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
+import { countdownLabel } from "../hooks/verification";
 import { errorMessage } from "../lib/http";
 import { NATIONALITIES } from "../lib/format";
 import { CountrySelect } from "../components/ui/CountrySelect";
@@ -167,18 +168,21 @@ export function ChangePhone() {
   const phoneValid = country === "KR" ? /^01\d{8,9}$/.test(digits) : digits.length >= 7;
   const sameAsCurrent = !!me?.phone && e164 === me.phone;
 
-  // Timestamp-based countdown; recomputed from `expires_at`, never decremented blindly.
+  const verified = !!token && verifiedFor === e164;
+
+  // Timestamp-based countdown; recomputed from `expires_at`, never decremented
+  // blindly. Stops on `token` so a confirmed code's timer is not left ticking.
   useEffect(() => {
-    if (!vid || !expiresAt) return;
+    if (!vid || !expiresAt || token) return;
     setNow(Date.now());
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
-  }, [vid, expiresAt]);
+  }, [vid, expiresAt, token]);
 
   const remaining = expiresAt ? Math.max(0, Math.floor((new Date(expiresAt).getTime() - now) / 1000)) : 0;
   const resendIn = resendAt ? Math.max(0, Math.floor((new Date(resendAt).getTime() - now) / 1000)) : 0;
   const expired = !!vid && remaining <= 0 && !token;
-  const mmss = `${String(Math.floor(remaining / 60)).padStart(2, "0")}:${String(remaining % 60).padStart(2, "0")}`;
+  const countdown = countdownLabel(remaining, { requested: !!vid, verified });
 
   function resetVerification() {
     setVid(null);
@@ -230,7 +234,7 @@ export function ChangePhone() {
     }
   }
 
-  const canSave = !!me && !!token && verifiedFor === e164 && phoneValid && !sameAsCurrent && !saving;
+  const canSave = !!me && verified && phoneValid && !sameAsCurrent && !saving;
 
   async function save() {
     if (!canSave) return;
@@ -337,17 +341,18 @@ export function ChangePhone() {
                 disabled={!vid || !!token}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
               />
-              <span
-                className="pchg__timer"
-                role="timer"
-                aria-label={
-                  vid
-                    ? t("accountChanges.remainingA11y", { m: Math.floor(remaining / 60), s: remaining % 60 })
-                    : t("accountChanges.codeNotRequestedA11y")
-                }
-              >
-                {vid ? mmss : "00:00"}
-              </span>
+              {countdown && (
+                <span
+                  className="pchg__timer"
+                  role="timer"
+                  aria-label={t("accountChanges.remainingA11y", {
+                    m: Math.floor(remaining / 60),
+                    s: remaining % 60,
+                  })}
+                >
+                  {countdown}
+                </span>
+              )}
             </div>
             <button
               type="button"
@@ -422,8 +427,8 @@ export function ChangeEmail() {
   const remaining = expiresAt ? Math.max(0, Math.floor((new Date(expiresAt).getTime() - now) / 1000)) : 0;
   const resendIn = resendAt ? Math.max(0, Math.floor((new Date(resendAt).getTime() - now) / 1000)) : 0;
   const expired = !!vid && remaining <= 0 && !token;
-  const mmss = `${String(Math.floor(remaining / 60)).padStart(2, "0")}:${String(remaining % 60).padStart(2, "0")}`;
   const verified = !!token && verifiedFor === emailNorm;
+  const countdown = countdownLabel(remaining, { requested: !!vid, verified });
 
   function resetVerification() {
     setVid(null);
@@ -572,7 +577,7 @@ export function ChangeEmail() {
                 disabled={!vid || verified}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
               />
-              {vid && !verified && (
+              {countdown && (
                 <span
                   className="pchg__timer"
                   role="timer"
@@ -581,7 +586,7 @@ export function ChangeEmail() {
                     s: remaining % 60,
                   })}
                 >
-                  {mmss}
+                  {countdown}
                 </span>
               )}
             </div>

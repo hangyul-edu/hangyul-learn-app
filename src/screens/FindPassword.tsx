@@ -4,7 +4,7 @@ import { useTranslation } from "../i18n";
 import { CountrySelect } from "../components/ui/CountrySelect";
 import { authApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
-import { useVerification, mmss } from "../hooks/verification";
+import { useVerification } from "../hooks/verification";
 import { errorMessage } from "../lib/http";
 import { NATIONALITIES } from "../lib/format";
 
@@ -197,9 +197,11 @@ export function FindPassword() {
                   onChange={(e) => phoneV.setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   disabled={!phoneV.requested || phoneV.verified}
                 />
-                <span className="findemail__timer" aria-hidden="true">
-                  {mmss(phoneV.requested && !phoneV.verified ? phoneV.secondsLeft : 0)}
-                </span>
+                {phoneV.countdown && (
+                  <span className="findemail__timer" aria-hidden="true">
+                    {phoneV.countdown}
+                  </span>
+                )}
               </div>
               <button
                 type="button"

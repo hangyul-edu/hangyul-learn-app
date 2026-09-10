@@ -102,7 +102,12 @@ export function useVerification(opts: {
       const res = await confirmRef.current(vid, code);
       setToken(res.verification_token);
       setVerified(true);
+      // Clearing `expiresAt` tears down the ticking effect; zeroing the seconds
+      // leaves no stale remainder behind it. Neither is what hides the timer —
+      // `countdown` below does that — but a confirmed code genuinely has no
+      // time left, so the state should not claim otherwise.
       setExpiresAt(null);
+      setSecondsLeft(0);
     } catch (e) {
       setError(errorMessage(e));
       setCode("");
@@ -119,6 +124,8 @@ export function useVerification(opts: {
     /** true once a code has been requested (timer active / expired) */
     requested: !!vid,
     secondsLeft,
+    /** MM:SS while the code is still pending, or null when nothing should show. */
+    countdown: countdownLabel(secondsLeft, { requested: !!vid, verified }),
     cooldown,
     verified,
     token,
@@ -135,4 +142,24 @@ export function mmss(total: number): string {
   const m = Math.floor(s / 60);
   const r = s % 60;
   return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
+}
+
+/**
+ * The countdown label to render, or `null` when there is no countdown.
+ *
+ * A code that has been confirmed has no time left to run, so there is nothing
+ * to show — not even `00:00`. Returning `null` rather than a zero string is
+ * what keeps that out of the DOM: callers render the timer element only when
+ * this is non-null, so a stale `secondsLeft` surviving one render past success
+ * cannot appear either.
+ *
+ * Every verification flow shares this rule, including the ones that keep their
+ * own timer state instead of using `useVerification`.
+ */
+export function countdownLabel(
+  secondsLeft: number,
+  { requested, verified }: { requested: boolean; verified: boolean },
+): string | null {
+  if (!requested || verified) return null;
+  return mmss(secondsLeft);
 }

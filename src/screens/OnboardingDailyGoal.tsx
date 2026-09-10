@@ -7,9 +7,12 @@ import mascotSteps from "../assets/brand/onb-mascot-steps.svg";
  * `daily_sentence_goal: Literal[5,10,20,30,40]`); `mode` is the visible pill
  * label. The integer is submitted — labels are never sent to the API.
  */
-const GOALS: { n: number; mode: TranslationKey; rec?: boolean }[] = [
+const GOALS: { n: number; mode: TranslationKey; badge?: TranslationKey; rec?: boolean }[] = [
   { n: 5, mode: "onboarding.goalBasic" },
-  { n: 10, mode: "onboarding.goalRoutine", rec: true },
+  // The recommended pill prints a tinted "Best"/"추천" of its own, so its badge
+  // carries only the mode name. `mode` stays the whole label ("Best Routine")
+  // because that is what the screen reader should announce.
+  { n: 10, mode: "onboarding.goalRoutine", badge: "onboarding.goalRoutineBase", rec: true },
   { n: 20, mode: "onboarding.goalFocus" },
   { n: 30, mode: "onboarding.goalImmersion" },
   { n: 40, mode: "onboarding.goalConquer" },
@@ -68,7 +71,7 @@ export function OnboardingDailyGoal({
             <OnboardingOption
               key={g.n}
               label={t("onboarding.sentenceCount", { n: g.n })}
-              badge={t(g.mode)}
+              badge={t(g.badge ?? g.mode)}
               recommended={g.rec}
               selected={value === g.n}
               onSelect={() => onSelect(g.n)}

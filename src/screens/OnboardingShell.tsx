@@ -93,7 +93,11 @@ export function OnboardingOption({
       <span className="onbq__answer-label">{label}</span>
       {badge !== undefined && (
         <span className={`onbq__badge${recommended ? " onbq__badge--rec" : ""}`}>
-          {recommended && <span className="onbq__badge-hl">{t("onboarding.recommendedPill")} </span>}
+          {recommended && (
+            <>
+              <span className="onbq__badge-hl">{t("onboarding.recommendedPill")}</span>{" "}
+            </>
+          )}
           {badge}
         </span>
       )}

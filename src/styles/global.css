@@ -3772,9 +3772,13 @@ textarea.input {
 }
 /* The trailing pill (I…;1:5488) — r24, 8/4 padding, Caption 4. */
 .onbq__badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  /* Not a flex container. Figma draws this pill as ONE text node whose first
+     run happens to be tinted, so the space between the runs is an ordinary
+     space character. Flex would wrap each run in its own anonymous item and
+     drop the whitespace between them, printing "BestRoutine". Inline-block
+     keeps it a normal inline formatting context — the same thing
+     `.plan__badge` and `.trkset__pill` already do. */
+  display: inline-block;
   padding: 4px 8px;
   border-radius: 24px;
   background: var(--gray-1);

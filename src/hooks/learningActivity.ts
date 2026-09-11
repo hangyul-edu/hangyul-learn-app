@@ -8,14 +8,20 @@ type Activity = "conversation" | "topik" | "lecture";
 
 /**
  * Returns a stable `mark(activityType, contentId?)` to call the moment a
- * qualifying learning item actually becomes the active on-screen thing
- * (a conversation sentence / TOPIK question shown, lecture playback started).
+ * qualifying learning item actually becomes the active on-screen thing.
+ *
+ * **Only `Lecture.tsx` calls this, on playback start.** Conversation and TOPIK
+ * light the sun through their own answer endpoints instead — a sentence merely
+ * appearing on screen does not count. This comment used to list them as
+ * callers, describing an intent that was never wired up; it is the wiring, not
+ * this text, that decides, so check the call sites before trusting it again.
  *
  * It optimistically lights the sun everywhere by patching the shared
- * ["dashboard"] cache, then records the view on the server. The record is
+ * ["dashboard"] cache, then records the activity on the server, which counts
+ * the day for both the streak and Total Learning Days. The record is
  * idempotent per local day, and this fires the network call at most once per
- * mount — one real view is enough to count the day. On failure it reconciles
- * with the server (invalidate) so the sun never lies about persisted state.
+ * mount. On failure it reconciles with the server (invalidate) so the sun
+ * never lies about persisted state.
  */
 export function useMarkStudied() {
   const qc = useQueryClient();

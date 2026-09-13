@@ -12508,19 +12508,13 @@ textarea.input {
      Figma draws it, without distorting the aspect the way a stretch would. */
   transform: scale(1.069);
 }
-.citrus--locked .citrus__art {
-  /* Figma keeps locked tiers as a separate hidden layer set, so the reached
-     artwork is desaturated rather than swapped for a second export. */
-  filter: grayscale(1) opacity(0.55);
-}
-.citrus__lock {
-  position: absolute;
-  left: 50%;
-  top: 54%;
-  width: 32%;
-  height: 32%;
-  transform: translate(-50%, -50%);
-}
+/* No filter on the locked badge: LEG-003 draws it as its own grey artwork with
+   a keyhole at the centre, so `CitrusBadge` swaps the export rather than
+   treating the coloured one. A grayscale/opacity filter here used to stand in
+   for that — it greyed the wrong fruit, kept the coloured badge's plain pith
+   instead of the keyhole, and needed a hand-drawn padlock on top that the
+   design does not have. Filtering the real export would grey an already grey
+   drawing and wash out the pale segment tints it keeps on purpose. */
 
 .lg__badge {
   /* Figma node 960:22853 — 103.57 x 125 tier badge. No drop-shadow: the frame

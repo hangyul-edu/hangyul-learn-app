@@ -136,6 +136,32 @@ describe("League screen", () => {
     expect(labels[0]).not.toMatch(/잠김/); // green, reached
   });
 
+  it("draws a locked tier with the locked artwork, not a treated tier badge", async () => {
+    /* LEG-003 "리그 잠금" (959:20731) draws the locked badge as its own grey
+       fruit with a keyhole at the centre. This used to desaturate the reached
+       artwork in CSS and paint a hand-drawn padlock over it — a padlock that
+       appears nowhere in the frame. Asserting on the source pins the swap;
+       asserting on the absence of an overlay pins the padlock staying gone. */
+    renderScreen();
+    await screen.findByText("Yellow 리그");
+    const badges = screen.getAllByRole("img", { name: /리그/ });
+    const artOf = (badge: HTMLElement) =>
+      badge.querySelector("img.citrus__art")?.getAttribute("src") ?? "";
+
+    // Reached tiers keep their own colour, and differ from one another.
+    expect(artOf(badges[0])).toMatch(/green/);
+    expect(artOf(badges[2])).toMatch(/yellow/);
+    // Every locked tier uses the one locked drawing.
+    expect(artOf(badges[3])).toMatch(/locked/);
+    expect(artOf(badges[4])).toMatch(/locked/);
+    expect(artOf(badges[3])).toBe(artOf(badges[4]));
+    expect(artOf(badges[3])).not.toBe(artOf(badges[2]));
+
+    // The badge is one image and nothing else — no padlock drawn on top.
+    expect(badges[3].querySelectorAll("svg")).toHaveLength(0);
+    expect(badges[3].querySelectorAll("img")).toHaveLength(1);
+  });
+
   it("keeps the fixed title unchanged when the carousel is scrolled (it is not a selector)", async () => {
     renderScreen();
     await screen.findByText("Yellow 리그");

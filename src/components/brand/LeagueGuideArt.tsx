@@ -9,6 +9,7 @@ import tierLimeArt from "../../assets/brand/league-tier-lime.svg";
 import tierYellowArt from "../../assets/brand/league-tier-yellow.svg";
 import tierOrangeArt from "../../assets/brand/league-tier-orange.svg";
 import tierGoldenArt from "../../assets/brand/league-tier-golden.svg";
+import tierLockedArt from "../../assets/brand/league-tier-locked.svg";
 import guideBannerArt from "../../assets/brand/league-guide-banner.svg";
 import rewardAttendanceArt from "../../assets/brand/league-reward-attendance.svg";
 import rewardLearningArt from "../../assets/brand/league-reward-learning.svg";
@@ -31,7 +32,7 @@ export function GuideBanner() {
  * (green → golden). Used everywhere a league tier is shown — the guide, the
  * League carousel, league results, and league history.
  *
- * - `locked` renders a greyed-out fruit with a padlock (future/unreached tiers).
+ * - `locked` swaps in the grey artwork for tiers not yet reached.
  * - `label` makes it an accessible `img`; otherwise it is decorative.
  * - `className` lets callers size it (the square 0–64 viewBox scales to fit).
  */
@@ -50,6 +51,20 @@ const TIER_ART: Record<LeagueTier, string> = {
   golden: tierGoldenArt,
 };
 
+/**
+ * The locked badge — Figma LEG-003 "리그 잠금" (959:20731), group 959:20888.
+ *
+ * A real export, not a treatment of the coloured art. The locked fruit is its
+ * own drawing: grey rind and segments, and — this is the whole lock motif — a
+ * **keyhole** where a reached tier has its plain round pith. There is no
+ * padlock anywhere in the frame.
+ *
+ * One drawing for every locked tier. The design does not tint it per tier, and
+ * it does not need to: the carousel shows the five tiers in a fixed order, so
+ * position says which tier this is and the grey says you have not reached it.
+ */
+const LOCKED_ART = tierLockedArt;
+
 export function CitrusBadge({
   tier,
   locked = false,
@@ -61,23 +76,13 @@ export function CitrusBadge({
   label?: string;
   className?: string;
 }) {
-  const art = TIER_ART[tier as LeagueTier] ?? TIER_ART.green;
+  const art = locked ? LOCKED_ART : (TIER_ART[tier as LeagueTier] ?? TIER_ART.green);
   const a11y = label
     ? { role: "img" as const, "aria-label": label }
     : { "aria-hidden": true as const };
   return (
     <span className={`citrus${locked ? " citrus--locked" : ""}${className ? ` ${className}` : ""}`} {...a11y}>
       <img className="citrus__art" src={art} alt="" aria-hidden="true" />
-      {locked && (
-        /* Padlock for tiers the player has not reached. Figma keeps the locked
-           state as a separate hidden layer set rather than a flat asset, so the
-           fruit is desaturated in CSS and the lock drawn over it. */
-        <svg className="citrus__lock" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <rect x="5.5" y="10" width="13" height="10" rx="2.2" fill="#8f8b83" />
-          <path d="M8 10V7.6a4 4 0 018 0V10" stroke="#8f8b83" strokeWidth="2" fill="none" />
-          <circle cx="12" cy="15" r="1.7" fill="#fff" />
-        </svg>
-      )}
     </span>
   );
 }

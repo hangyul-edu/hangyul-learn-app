@@ -525,6 +525,7 @@ export type LeagueLifecycleState =
   | "RESULT_VIEWED_WAITING_NEXT_LEAGUE"
   | "NEW_LEAGUE_AVAILABLE_NOT_JOINED"
   | "ACTIVE_LEAGUE"
+  | "WAITING_FOR_ALLOCATION"
   | "NO_ELIGIBLE_LEAGUE";
 export type LeagueResultOutcome = "promoted" | "retained" | "demoted";
 export interface LeagueResultSummary {

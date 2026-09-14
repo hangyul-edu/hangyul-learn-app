@@ -886,11 +886,14 @@ export const ko = {
     daysAgo: "{n}일 전",
   },
 
-  /** My Points (league point ledger). */
+  /** My Points (league point ledger) — LEG-022, Figma 1526:22979. */
   points: {
-    currentLeague: "이번 리그 포인트",
+    currentLeague: "리그 포인트", // 1526:23023
     emptyTitle: "아직 이번 리그에서 적립된 포인트가 없어요",
-    emptyDesc: "학습을 시작하면 이번 리그 포인트가 적립됩니다.",
+    /* Quotes the label above, so it follows it. The empty state itself is not
+       in LEG-022 — that frame shows a populated ledger — so the sentence
+       around the label stays as authored. */
+    emptyDesc: "학습을 시작하면 리그 포인트가 적립됩니다.",
     error: "포인트를 불러오지 못했어요.",
     loadMore: "더 보기",
     listAria: "포인트 적립 내역",

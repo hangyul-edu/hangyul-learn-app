@@ -58,7 +58,10 @@ beforeEach(() => {
 describe("My Points screen", () => {
   it("shows the current-league label (not a season label) and the API total with separators + p", async () => {
     renderPoints();
-    expect(await screen.findByText("이번 리그 포인트")).toBeInTheDocument();
+    // LEG-022 (1526:23023) — "리그 포인트", not the "이번 리그 포인트" the app
+    // had, and not a season label either.
+    expect(await screen.findByText("리그 포인트")).toBeInTheDocument();
+    expect(screen.queryByText("이번 리그 포인트")).not.toBeInTheDocument();
     expect(screen.queryByText("이번 시즌 포인트")).not.toBeInTheDocument();
     // Thousands-separated total from the API + soft 'p' suffix.
     expect(screen.getByText("1,000")).toBeInTheDocument();
@@ -74,7 +77,7 @@ describe("My Points screen", () => {
 
   it("groups transactions by local month, newest month first", async () => {
     renderPoints();
-    await screen.findByText("이번 리그 포인트");
+    await screen.findByText("리그 포인트");
     const headings = screen.getAllByRole("heading").map((h) => h.textContent);
     expect(headings).toEqual(["2026년 7월", "2026년 6월"]);
     // Within July, newest first (streak bonus before daily).
@@ -86,7 +89,7 @@ describe("My Points screen", () => {
 
   it("maps each reason to a title + description from the persisted detail", async () => {
     renderPoints();
-    await screen.findByText("이번 리그 포인트");
+    await screen.findByText("리그 포인트");
     // Attendance streak
     expect(screen.getAllByText("출석 체크").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("연속 7일 출석 보너스")).toBeInTheDocument();
@@ -103,7 +106,7 @@ describe("My Points screen", () => {
 
   it("renders each transaction's persisted amount + date, and an a11y label", async () => {
     renderPoints();
-    await screen.findByText("이번 리그 포인트");
+    await screen.findByText("리그 포인트");
     expect(screen.getByText("+100 P")).toBeInTheDocument();
     expect(screen.getAllByText("+5 P")).toHaveLength(2); // daily attendance + review
     const streakRow = screen.getByText("연속 7일 출석 보너스").closest("li")!;
@@ -125,7 +128,7 @@ describe("My Points screen", () => {
     let resolve!: (v: { user_id: string; season_points: number }) => void;
     api.points.mockReturnValue(new Promise((r) => { resolve = r; }));
     renderPoints();
-    expect(screen.queryByText("이번 리그 포인트")).not.toBeInTheDocument();
+    expect(screen.queryByText("리그 포인트")).not.toBeInTheDocument();
     expect(screen.queryByText("0")).not.toBeInTheDocument();
     resolve({ user_id: "u", season_points: 1000 });
     expect(await screen.findByText("1,000")).toBeInTheDocument();
@@ -149,7 +152,7 @@ describe("My Points screen", () => {
   it("renders English chrome + copy for an English user", async () => {
     mockLang = "en";
     renderPoints();
-    expect(await screen.findByText("Points in This League")).toBeInTheDocument();
+    expect(await screen.findByText("League Points")).toBeInTheDocument();
     expect(screen.getByText("July 2026")).toBeInTheDocument();
     expect(screen.getByText("Course completed")).toBeInTheDocument();
     expect(screen.getByText("7-day attendance streak bonus")).toBeInTheDocument();

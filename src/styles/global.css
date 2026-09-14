@@ -14780,7 +14780,7 @@ textarea.input {
   background: var(--surface-2);
 }
 
-/* ============================ My Points (이번 리그 포인트) ================ */
+/* ============================== My Points (리그 포인트) ================== */
 .mp {
   display: flex;
   flex-direction: column;

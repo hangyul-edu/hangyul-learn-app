@@ -892,9 +892,13 @@ export const en: Catalog = {
     daysAgo: "{n}d ago",
   },
 
-  /** My Points (league point ledger). */
+  /** My Points (league point ledger) — LEG-022, Figma 1526:22979.
+      That frame is Korean-only; there is no English LEG-022, so the English
+      here is app-authored to match its wording rather than copied from a node
+      — the same arrangement the League block above describes. */
   points: {
-    currentLeague: "Points in This League",
+    // 1526:23023 reads 리그 포인트, dropping the "이번 / this" the app had.
+    currentLeague: "League Points",
     emptyTitle: "No points earned in this league yet",
     emptyDesc: "Start learning to earn points in this league.",
     error: "Couldn't load your points.",

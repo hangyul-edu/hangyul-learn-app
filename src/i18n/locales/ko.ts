@@ -1470,6 +1470,12 @@ export const ko = {
     startsAt: "{day} {time}(ET)에 시작됩니다",
     startingSoon: "곧 시작됩니다",
     backToHome: "홈화면으로 돌아가기", // 3329:37283
+    /* 3451:27236 — waiting for a league to be *allocated*, which is not the
+       same as waiting for next week to start (preparingTitle above). The copy
+       names what it is waiting for, because unlike the week boundary there is
+       no time it can promise. It is not an error and must not read as one. */
+    waitingTitle: "리그 배정을 기다리고 있어요!",
+    waitingDesc: "함께할 학습자가 모이면 리그가 시작돼요",
     /* LEG-006 (378:7138) / LEG-007 (960:25821) / LEG-008 (960:26046). */
     resultCongrats: "축하합니다!",
     resultWellDone: "잘 버텼어요!",

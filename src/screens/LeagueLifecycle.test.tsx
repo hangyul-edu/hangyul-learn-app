@@ -61,6 +61,11 @@ const waiting: LeagueLifecycleResponse = {
   state: "RESULT_VIEWED_WAITING_NEXT_LEAGUE",
   next_season_starts_at: "2026-07-20T04:00:00Z",
 };
+/** Studied, earned a league, and every league in their tier is full. */
+const unallocated: LeagueLifecycleResponse = {
+  ...active,
+  state: "WAITING_FOR_ALLOCATION",
+};
 
 const position = { season_id: "2026-W28", tier: "lime", tier_label: "Lime 리그", dormant: false, group_id: "g", group_size: 30, rank: 3, season_points: 100 };
 const seasonInfo = { season_id: "2026-W28", starts_at: "2026-07-13T04:00:00Z", ends_at: "2026-07-19T21:00:00Z", is_current: true };
@@ -207,6 +212,66 @@ describe("League lifecycle gate", () => {
     document.dispatchEvent(new Event("visibilitychange"));
     expect(await screen.findByRole("heading", { name: "리그가 시작됐어요!" })).toBeInTheDocument();
     expect(screen.queryByText("다음 리그를 준비 중이에요!")).not.toBeInTheDocument();
+  });
+
+  it("WAITING_FOR_ALLOCATION says a league is coming, not that one is late", async () => {
+    // The member has studied — they are owed a league and every league in
+    // their tier is full. Falling through to the screen's dormant invitation
+    // would tell somebody who just finished a lesson to go and study.
+    api.leagueLifecycle.mockResolvedValue(unallocated);
+    renderLeague();
+    const dialog = await screen.findByRole("dialog");
+    // 3451:27236 (KO), verbatim.
+    expect(
+      within(dialog).getByRole("heading", { name: "리그 배정을 기다리고 있어요!" }),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText("함께할 학습자가 모이면 리그가 시작돼요"),
+    ).toBeInTheDocument();
+  });
+
+  it("does not present the allocation wait as an error", async () => {
+    api.leagueLifecycle.mockResolvedValue(unallocated);
+    renderLeague();
+    const dialog = await screen.findByRole("dialog");
+    // Announced as status, never alert: a screen reader must not hear this as
+    // something going wrong.
+    const desc = within(dialog).getByText("함께할 학습자가 모이면 리그가 시작돼요");
+    expect(desc).toHaveAttribute("role", "status");
+    expect(within(dialog).queryByRole("alert")).toBeNull();
+    // One action, and it is the way out — not a retry, which would imply a
+    // failed request the member could re-run. Nothing they do resolves this.
+    const buttons = within(dialog).getAllByRole("button");
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0]).toHaveAccessibleName("홈화면으로 돌아가기");
+  });
+
+  it("tells the allocation wait apart from the between-weeks wait", async () => {
+    // Both are "waiting", and only one of them knows when it ends. Sharing a
+    // modal would mean either inventing a start time or dropping it.
+    api.leagueLifecycle.mockResolvedValue(unallocated);
+    const { unmount } = renderLeague();
+    let dialog = await screen.findByRole("dialog");
+    expect(within(dialog).queryByText(/\(ET\)에 시작됩니다/)).toBeNull();
+    unmount();
+
+    api.leagueLifecycle.mockResolvedValue(waiting);
+    renderLeague();
+    dialog = await screen.findByRole("dialog");
+    expect(
+      within(dialog).queryByRole("heading", { name: "리그 배정을 기다리고 있어요!" }),
+    ).toBeNull();
+    expect(within(dialog).getByText(/\(ET\)에 시작됩니다/)).toBeInTheDocument();
+  });
+
+  it("the allocation wait's CTA goes Home rather than trapping the member", async () => {
+    api.leagueLifecycle.mockResolvedValue(unallocated);
+    renderLeague();
+    const dialog = await screen.findByRole("dialog");
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "홈화면으로 돌아가기" }),
+    );
+    expect(await screen.findByText("HOME_SCREEN")).toBeInTheDocument();
   });
 
   it("restores the correct lifecycle state on remount (server-driven)", async () => {

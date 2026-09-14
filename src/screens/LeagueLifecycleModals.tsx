@@ -4,6 +4,7 @@ import { useTranslation, type TranslationKey } from "../i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import icMegaphone from "../assets/brand/ic-megaphone.svg";
 import imgPreparing from "../assets/brand/llc-preparing.png";
+import imgWaiting from "../assets/brand/llc-waiting.svg";
 import { gameApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
@@ -52,6 +53,13 @@ function PreparingIcon() {
   return <img className="llc__icon" src={imgPreparing} alt="" aria-hidden="true" />;
 }
 
+/* 3453:27285 — an hourglass, drawn for the allocation wait. Deliberately not
+ * the preparing illustration: the two states look alike and are not, so they
+ * do not get to share a picture. */
+function HourglassIcon() {
+  return <img className="llc__icon" src={imgWaiting} alt="" aria-hidden="true" />;
+}
+
 /* ------------------------------ modal shell ----------------------------- */
 /**
  * Full-screen dimmed overlay + centered white card. Blocks background gestures
@@ -67,7 +75,7 @@ function LifecycleModalShell({
 }: {
   labelledBy: string;
   describedBy?: string;
-  variant?: "end" | "wait";
+  variant?: "end" | "wait" | "waiting";
   children: ReactNode;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -262,6 +270,57 @@ export function PreparingModal({ nextStartsAt }: { nextStartsAt: string | null }
   );
 }
 
+/* ------------------------- waiting for allocation ----------------------- */
+/**
+ * LEG — 3451:27233 (KO) / 3453:27320 (EN).
+ *
+ * The member has studied, so they have earned a league; there is simply
+ * nowhere to seat them yet, because every league in their tier is full and
+ * fewer than five are waiting to open another. Nothing is broken and nothing
+ * is required of them, which is the whole point of giving this state its own
+ * modal: without one it fell through to the League screen's dormant
+ * invitation, telling somebody who had just finished a lesson to go and study.
+ *
+ * **Not an error.** No error styling, no retry, no apology, and the copy
+ * promises the outcome rather than reporting a failure — "함께할 학습자가
+ * 모이면 리그가 시작돼요". The one thing that resolves it is other learners
+ * arriving, so the only action offered is the way out.
+ *
+ * Distinct from `PreparingModal` too, which is the *gap between weeks*: that
+ * one knows when it ends and says so. This one cannot, so it says what it is
+ * waiting for instead of inventing a time.
+ */
+export function WaitingForAllocationModal() {
+  const { t } = useTranslation();
+  const nav = useNavigate();
+  return (
+    <LifecycleModalShell
+      labelledBy="llc-wait-title"
+      describedBy="llc-wait-desc"
+      variant="waiting"
+    >
+      <HourglassIcon />
+      <div className="llc__text">
+        <h2 className="llc__title" id="llc-wait-title">
+          {t("leagueLifecycle.waitingTitle")}
+        </h2>
+        {/* Announced politely, and as status rather than alert: a screen
+            reader must not hear this as something going wrong either. */}
+        <p className="llc__desc" id="llc-wait-desc" role="status" aria-live="polite">
+          {t("leagueLifecycle.waitingDesc")}
+        </p>
+      </div>
+      <button
+        className="llc__cta"
+        onClick={() => nav("/home")}
+        aria-label={t("leagueLifecycle.backToHome")}
+      >
+        {t("leagueLifecycle.backToHome")}
+      </button>
+    </LifecycleModalShell>
+  );
+}
+
 /* ------------------------------ dispatcher ------------------------------ */
 /** Renders exactly one lifecycle modal (or none) for the given server state. */
 export function LeagueLifecycleModal({ lifecycle }: { lifecycle: LeagueLifecycleResponse }) {
@@ -272,7 +331,13 @@ export function LeagueLifecycleModal({ lifecycle }: { lifecycle: LeagueLifecycle
       return <PreparingModal nextStartsAt={lifecycle.next_season_starts_at} />;
     case "NEW_LEAGUE_AVAILABLE_NOT_JOINED":
       return <NewLeagueModal />;
+    case "WAITING_FOR_ALLOCATION":
+      return <WaitingForAllocationModal />;
     default:
-      return null; // ACTIVE_LEAGUE / NO_ELIGIBLE_LEAGUE → normal screen
+      // ACTIVE_LEAGUE / NO_ELIGIBLE_LEAGUE → normal screen. NO_ELIGIBLE_LEAGUE
+      // is the member who has not studied; the screen's own invitation is the
+      // right thing to show them. WAITING_FOR_ALLOCATION is not that, which
+      // is why it is a case above and not part of this default.
+      return null;
   }
 }

@@ -1490,6 +1490,9 @@ export const en: Catalog = {
     startsAt: "Starts {day} at {time}(ET)",
     startingSoon: "Starting soon",
     backToHome: "Back to Home", // 3329:37301
+    // 3453:27323 — see the note on the Korean pair.
+    waitingTitle: "Waiting for your league!",
+    waitingDesc: "Your league starts once enough learners join",
     /* LEG-006 (784:56833) / LEG-007 (960:26189) / LEG-008 (960:26295). */
     resultCongrats: "Congrats!",
     resultWellDone: "You held on!",

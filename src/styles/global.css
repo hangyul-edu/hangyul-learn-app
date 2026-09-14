@@ -14360,6 +14360,33 @@ textarea.input {
      from 960:22550. CSS blur is 2x sigma. */
   box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
 }
+/* 3451:27233 (KO) / 3453:27320 (EN) — waiting to be allocated a league. A
+   335x184 card: shorter than the between-weeks card above because its art is
+   a 35x45 hourglass rather than a 88x77 illustration. Offsets measured off
+   the Figma render, card-relative: icon top 20, icon bottom 65.1, title ink
+   77, desc ink 102, button top 127, button bottom 164.9, leaving 19.1 under
+   it — supplied by the min-height, as in every other variant. */
+.llc__card--waiting {
+  min-height: 184px;
+}
+.llc__card--waiting .llc__icon {
+  width: 35.008px;
+  height: 45.113px;
+  margin-top: 20px;
+}
+/* Icon bottom 65.1 → text block top 74.1. */
+.llc__card--waiting .llc__text {
+  margin-top: 9px;
+}
+/* Text block bottom 118.1 → button top 127. */
+.llc__card--waiting .llc__cta {
+  width: 291.796px;
+  height: 37.879px;
+  margin-top: 9px;
+  /* The primary button's own drop-shadow: dy 4, sigma 2, 10% black. CSS blur
+     is 2x sigma. Same instance the between-weeks card uses. */
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
+}
 /* 380:6292 is a 44-tall block for two lines measuring 41.5, so the 2.5px
    slack belongs below the copy — not split around it, which would push the
    title off its measured 370 ink line. */

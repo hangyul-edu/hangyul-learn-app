@@ -420,8 +420,10 @@ export const en: Catalog = {
       "Only the top 20% move up a league; Green League has no demotion, Golden League has no promotion",
     emptyLine1: "Start learning", // LEG-000 1681:27530
     emptyLine2: "and join the league!",
-    guideA11y: "Regular League guide",
-    guideCloseA11y: "Close Regular League guide",
+    // Matches guideTitle above — the sheet's accessible name has to be the
+    // name on the sheet, and the EN catalogue calls it "Pro League".
+    guideA11y: "Pro League guide",
+    guideCloseA11y: "Close Pro League guide",
     pointsTitle: "The more you learn, the more league points (P) you earn",
     defaultNickname: "Member",
     countdown: "{d}d {h}h {m}m",

@@ -188,7 +188,9 @@ export function League() {
   const [info, setInfo] = useState(false);
   const [nowTick, setNowTick] = useState(Date.now());
 
-  // Server-authoritative entry lifecycle gates the whole screen (§1, §17, §23).
+  // Server-authoritative entry lifecycle gates the whole screen: a modal for
+  // every state that is not simply "you are in a league". See
+  // LeagueLifecycleModals.tsx.
   const lifecycle = useLeagueLifecycle();
   const mine = useQuery({ queryKey: ["league-me"], queryFn: gameApi.myLeague });
   const season = useQuery({ queryKey: ["league-season"], queryFn: gameApi.currentSeason });

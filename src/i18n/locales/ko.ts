@@ -1464,8 +1464,9 @@ export const ko = {
     finishedTitle: "지난 리그가 마무리됐어요!",
     finishedDesc: "지금 바로 결과를 확인해 보세요",
     seeResult: "결과 보러가기",
-    /* 3329:37278 redraws the waiting card in Korean: same title and start-time
-       line as before, now on a 217-tall card with a primary CTA. */
+    /* 3329:37278 — the *between-weeks* card: the season has ended and the next
+       one has a start time, which `startsAt` quotes. Not to be confused with
+       `waitingTitle` below, which is waiting to be allocated a league. */
     preparingTitle: "다음 리그를 준비 중이에요!",
     startsAt: "{day} {time}(ET)에 시작됩니다",
     startingSoon: "곧 시작됩니다",

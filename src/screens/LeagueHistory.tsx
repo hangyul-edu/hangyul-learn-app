@@ -105,19 +105,14 @@ function LeagueTierIcon({ tier }: { tier: string }) {
   );
 }
 
-/**
- * Rank ribbon — Group 1410118683 (LEG-009 390:15855): a 27x27 bookmark in the
- * rank's colour with a gold stripe masked inside it and the rank in Gray 5.
- * The geometry is Figma's own `Vector 1345` / `Vector 1346` / `Rectangle 25847`;
- * only the outer fill changes with the rank, exactly as the frame varies it.
- */
+/** Outer fill per rank — LEG-009 390:15855 varies only this. */
 const RANK_FILL: Record<number, string> = { 1: "#b91d00", 2: "#004ab9", 3: "#007d00" };
 
 /**
- * Rank ribbon — Group 1410118683 (LEG-009). The bookmark is Figma's exported
- * `Vector 1345`, used as a mask so one asset serves every rank colour; the
- * 14.294-wide band inside it is #FFDD6E on the podium and #DBDDDF otherwise,
- * and the rank sits on top in Bold 10 / Gray 5.
+ * Rank ribbon — Group 1410118683 (LEG-009 390:15855). A 27x27 bookmark, which
+ * is Figma's exported `Vector 1345` used as a mask so one asset serves every
+ * rank colour; the 14.294-wide band inside it is #FFDD6E on the podium and
+ * #DBDDDF otherwise, and the rank sits on top in Bold 10 / Gray 5.
  */
 function RankPennant({ rank }: { rank: number | null }) {
   const podium = rank != null && rank <= 3;

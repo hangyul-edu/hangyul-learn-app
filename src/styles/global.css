@@ -14313,8 +14313,8 @@ textarea.input {
   outline: none;
 }
 /* The megaphone is a bare illustration — Figma draws no tinted disc behind it,
-   which is what the old 84px badge was inventing. Each of the three states
-   sizes and offsets its own art, so the metrics live on the variants. */
+   which is what the old 84px badge was inventing. Each state sizes and offsets
+   its own art, so the metrics live on the variants below. */
 .llc__icon {
   display: block;
   width: 40px;
@@ -14339,7 +14339,7 @@ textarea.input {
    locales lay out identically (only the text block's width differs), so every
    offset below is shared. Measured from the 335x217 card's top-left:
    icon 24, text 104, button 161, leaving 18.1 under the button — which the
-   min-height supplies, exactly as the other two variants do. */
+   min-height supplies, as in every other variant. */
 .llc__card--wait {
   min-height: 217px;
 }
@@ -14720,13 +14720,12 @@ textarea.input {
   color: #000;
 }
 
-/* Friend League empty state (minimal, illustration-free, centered). */
-/* LEG-011 (1658:23877) — a white body under the tab strip, with the title at
-   y=345, the two-line note at 377 and the 104x36 add button at 434. */
-/* League empty states — LEG-011 (friends) and LEG-000 (Pro) are the same
-   composition: a black Heading 8 over Gray 5 Body 6, centred on a white page,
-   with no illustration. Only the drop from the tab row and the friend tab's
-   extra button differ, so the shared values live here once. */
+/* League empty states — LEG-011 (friends, 1658:23877) and LEG-000 (Pro) are
+   the same composition: a black Heading 8 over Gray 5 Body 6, centred on a
+   white page, with no illustration. In LEG-011 the title sits at y=345, the
+   two-line note at 377 and the 104x36 add button at 434. Only the drop from
+   the tab row and the friend tab's extra button differ, so the shared values
+   live here once. */
 .fl-empty,
 .lg-empty {
   flex: 1;

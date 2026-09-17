@@ -21,7 +21,6 @@ const useTierLabel = () => {
 const displayName = (e: RankingEntry, fallback: string) => e.nickname ?? fallback;
 
 /* ------------------------------ empty state ----------------------------- */
-// Localized per the app's copy-object convention (keyed by app_language).
 /** Friend-League empty-state copy (`friendLeague.*`). */
 function useEmptyCopy() {
   const { t } = useTranslation();

@@ -13,9 +13,17 @@ import type { LeagueLifecycleResponse } from "../lib/types";
 /* --------------------------- lifecycle hook ----------------------------- */
 export const LIFECYCLE_KEY = ["league-lifecycle"] as const;
 
-/** Server-authoritative League entry state. Polls only while WAITING and
- *  refetches when the app returns to the foreground so the preparing modal
- *  swaps to the new-league modal the moment the backend reports availability. */
+/** Server-authoritative League entry state.
+ *
+ *  Polls only in `RESULT_VIEWED_WAITING_NEXT_LEAGUE` — the gap between weeks,
+ *  which ends at a time the server already knows — and refetches on foreground
+ *  so the preparing modal swaps to the new-league modal the moment the backend
+ *  reports availability.
+ *
+ *  `WAITING_FOR_ALLOCATION` is deliberately *not* polled: it ends when other
+ *  learners turn up, which no interval can predict, and a member watching that
+ *  modal is not waiting on a tick. They are sent Home, and the push that
+ *  announces their new league brings them back. */
 export function useLeagueLifecycle() {
   const query = useQuery({
     queryKey: LIFECYCLE_KEY,
@@ -47,8 +55,8 @@ function MegaphoneIcon() {
   return <img className="llc__icon" src={icMegaphone} alt="" aria-hidden="true" />;
 }
 
-/* 784:57733 "설치 아이콘" — the waiting modal has its own raster illustration,
- * not the megaphone. */
+/* 784:57733 "설치 아이콘" — the between-weeks modal has its own raster
+ * illustration, not the megaphone. */
 function PreparingIcon() {
   return <img className="llc__icon" src={imgPreparing} alt="" aria-hidden="true" />;
 }
@@ -64,8 +72,9 @@ function HourglassIcon() {
 /**
  * Full-screen dimmed overlay + centered white card. Blocks background gestures
  * (backdrop swallows clicks), traps focus, and restores focus on close. None of
- * the lifecycle modals dismiss on backdrop/Escape — they only advance via their
- * own action button.
+ * the lifecycle modals dismiss on backdrop/Escape — the only way out is their
+ * own button, which either advances the state (join, see result) or leaves for
+ * Home when there is nothing the member can do about the wait.
  */
 function LifecycleModalShell({
   labelledBy,
@@ -75,6 +84,9 @@ function LifecycleModalShell({
 }: {
   labelledBy: string;
   describedBy?: string;
+  // `wait` is the gap between weeks (217-tall card); `waiting` is waiting to
+  // be allocated one (184). One letter apart and not the same thing — check
+  // which modal you are in before reusing either.
   variant?: "end" | "wait" | "waiting";
   children: ReactNode;
 }) {

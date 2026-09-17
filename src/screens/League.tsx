@@ -202,6 +202,11 @@ export function League() {
     return () => clearInterval(id);
   }, []);
 
+  // `dormant` from /leagues/me means "no seat", which is also true of a member
+  // waiting for allocation. They never see the invitation below — the
+  // lifecycle modal covers the screen for them — so this stays the simple
+  // read; the modal is what keeps it from telling a learner who has just
+  // studied to go and study.
   const dormant = !!mine.data?.dormant;
   const currentTier = (mine.data?.tier ?? "green") as LeagueTier;
 

@@ -12724,9 +12724,10 @@ textarea.input {
   color: var(--black);
 }
 
-/* The dormant state moved to `.lg-empty`, which shares LEG-011's composition;
-   this rule is all that is left, and it belongs to a different state — the
-   league is running but its board has no entries yet. */
+/* Not the no-league state — that is `.lg-empty`, filed with `.fl-empty` in
+   the Friend League section below because the two share LEG-011's composition.
+   This is a different state: the league is running but its board has no
+   entries yet. */
 .lg__empty-desc {
   margin: 0;
   text-align: center;
@@ -14794,16 +14795,18 @@ textarea.input {
   line-height: 20px;
   cursor: pointer;
 }
+.fl-empty__add:active {
+  background: var(--surface-2);
+}
+
+/* Shared plus glyph (`components/PlusIcon.tsx`), used well beyond this screen.
+   ic_24_plus is a 16x16 frame around the 14x14 vector (inset 12.5%). */
 .ic-plus {
-  /* ic_24_plus is a 16x16 frame around the 14x14 vector (inset 12.5%). */
   display: block;
   flex: 0 0 16px;
   width: 16px;
   height: 14px;
   object-fit: contain;
-}
-.fl-empty__add:active {
-  background: var(--surface-2);
 }
 
 /* ============================== My Points (리그 포인트) ================== */

@@ -152,7 +152,7 @@ function LifecycleModalShell({
 }
 
 /* ------------------------- new league started --------------------------- */
-export function NewLeagueModal() {
+function NewLeagueModal() {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const toast = useToast();
@@ -199,7 +199,7 @@ export function NewLeagueModal() {
 }
 
 /* ------------------------ previous result prompt ------------------------ */
-export function PreviousResultModal() {
+function PreviousResultModal() {
   const { t } = useTranslation();
   const nav = useNavigate();
   return (
@@ -229,7 +229,7 @@ export function PreviousResultModal() {
  *  Eastern, and 784:57731 states it that way — "Starts Monday at 00:00(ET)" —
  *  so it is rendered in ET rather than converted to KST. LEG-004's footnote
  *  ("리그 운영 시간은 미국 동부 시간(ET) 기준") says the same. */
-export function formatNextStart(
+function formatNextStart(
   iso: string | null,
   t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
   locale = "ko-KR",
@@ -252,7 +252,7 @@ export function formatNextStart(
   return t("leagueLifecycle.startsAt", { day, time });
 }
 
-export function PreparingModal({ nextStartsAt }: { nextStartsAt: string | null }) {
+function PreparingModal({ nextStartsAt }: { nextStartsAt: string | null }) {
   const { t, language } = useTranslation();
   const nav = useNavigate();
   return (
@@ -302,7 +302,7 @@ export function PreparingModal({ nextStartsAt }: { nextStartsAt: string | null }
  * one knows when it ends and says so. This one cannot, so it says what it is
  * waiting for instead of inventing a time.
  */
-export function WaitingForAllocationModal() {
+function WaitingForAllocationModal() {
   const { t } = useTranslation();
   const nav = useNavigate();
   return (
@@ -334,7 +334,13 @@ export function WaitingForAllocationModal() {
 }
 
 /* ------------------------------ dispatcher ------------------------------ */
-/** Renders exactly one lifecycle modal (or none) for the given server state. */
+/**
+ * Renders exactly one lifecycle modal (or none) for the given server state.
+ *
+ * The four modals above are deliberately not exported: which one a member sees
+ * is the server's decision, so the only supported way to show any of them is
+ * to hand this the state and let it choose.
+ */
 export function LeagueLifecycleModal({ lifecycle }: { lifecycle: LeagueLifecycleResponse }) {
   switch (lifecycle.state) {
     case "RESULT_UNVIEWED":

@@ -28,6 +28,9 @@ export type TopikSessionSnapshot = {
   learningSessionId?: string;
   // Whether the learner is re-solving the set after 다시 시작.
   retrying?: boolean;
+  // The adaptive session the set belongs to (its items and progress are
+  // resumed from the server); absent/null for a legacy recommendation set.
+  studySessionId?: string | null;
 };
 
 const store = createSessionSnapshotStore<TopikSessionSnapshot>(

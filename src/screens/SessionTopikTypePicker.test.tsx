@@ -17,23 +17,27 @@ vi.mock("../components/SessionChrome", () => ({
   ),
 }));
 vi.mock("../components/SessionCompleteModal", () => ({ SessionCompleteModal: () => null }));
-vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn() }) }));
+vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn(), show: vi.fn() }) }));
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: "ko" } }) }));
 
-const { questions, topikTypes, summary } = vi.hoisted(() => ({
+const { questions, topikTypes, summary, studyStart } = vi.hoisted(() => ({
   questions: vi.fn(),
   topikTypes: vi.fn(),
   summary: vi.fn(),
+  studyStart: vi.fn(),
 }));
 vi.mock("../api/endpoints", () => ({
   recApi: { questions, topikQuestionTypes: topikTypes },
   quizApi: { attempt: vi.fn(), audio: vi.fn(), bookmark: vi.fn(), unbookmark: vi.fn() },
   dashboardApi: { summary },
   learnApi: { recordSession: vi.fn() },
+  // No reviewed content fits: these tests exercise the recommender fallback.
+  studyApi: { start: studyStart, present: vi.fn(), complete: vi.fn(), abandon: vi.fn() },
 }));
 
 import { SessionTopik } from "./SessionTopik";
 import { I18nProvider } from "../i18n";
+import { ApiError } from "../lib/http";
 
 /** Two real entries from TOPIK_QUESTION_TYPES — the API sends both titles. */
 const TYPES = [
@@ -88,6 +92,7 @@ async function openPicker() {
 beforeEach(() => {
   vi.clearAllMocks();
   sessionStorage.clear();
+  studyStart.mockRejectedValue(new ApiError(409, "session.no_eligible_content", ""));
   summary.mockResolvedValue({
     tracks: [{ category: "topik", level: 3, goal: { target: 3, current: 0, achieved: false } }],
   });

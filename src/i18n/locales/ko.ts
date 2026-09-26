@@ -1270,6 +1270,14 @@ export const ko = {
     pointsEarned: "⚡ +{points} 포인트",
     levelLabel: "레벨 {n}",
     hint: "힌트",
+    answerShownAfterTries: "두 번 모두 틀려서 정답을 보여드려요. 정답을 따라 입력해 보세요.",
+    topikAnswerShown: "두 번 모두 틀려서 정답을 표시했어요.",
+    topikAnswerRevealedTitle: "정답을 확인해 보세요",
+    customApplied: "요청에 맞게 남은 문장을 바꿨어요.",
+    customConflict: "학습 세트가 그새 바뀌었어요. 최신 상태로 다시 요청해 주세요.",
+    tutorAutoQuestion: "제 답이 왜 틀렸는지 힌트를 주세요.",
+    tutorLimit: "이 문제에 대한 질문을 모두 사용했어요.",
+    tutorWithdrawn: "이 문제는 오류로 회수되어 설명할 수 없어요.",
   },
 
   /** Chat sheet (Ask AI). */

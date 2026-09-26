@@ -11,22 +11,28 @@ vi.mock("../components/SessionChrome", () => ({
     children,
     correct,
     total,
+    panel,
+    askContext,
   }: {
     children: React.ReactNode;
     correct: number;
     total: number;
+    panel?: React.ReactNode;
+    askContext?: unknown;
   }) => (
     <div>
       <div data-testid="counter">
         {correct}/{total}
       </div>
+      <div data-testid="ask-context">{JSON.stringify(askContext ?? null)}</div>
+      {panel}
       {children}
     </div>
   ),
 }));
 vi.mock("../components/SessionCompleteModal", () => ({ SessionCompleteModal: () => null }));
 
-const { recSentences, blankAttempt, blankHint, speechAttempt, summary, toastError } = vi.hoisted(
+const { recSentences, blankAttempt, blankHint, speechAttempt, summary, toastError, toastShow, toastSuccess, study } = vi.hoisted(
   () => ({
     recSentences: vi.fn(),
     blankAttempt: vi.fn(),
@@ -34,9 +40,22 @@ const { recSentences, blankAttempt, blankHint, speechAttempt, summary, toastErro
     speechAttempt: vi.fn(),
     summary: vi.fn(),
     toastError: vi.fn(),
+    toastShow: vi.fn(),
+    toastSuccess: vi.fn(),
+    study: {
+      start: vi.fn(),
+      present: vi.fn(),
+      attempt: vi.fn(),
+      voiceAttempt: vi.fn(),
+      hint: vi.fn(),
+      reveal: vi.fn(),
+      customize: vi.fn(),
+      complete: vi.fn(),
+      abandon: vi.fn(),
+    },
   }),
 );
-vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: toastError, success: vi.fn() }) }));
+vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: toastError, success: toastSuccess, show: toastShow }) }));
 
 let mockMe: { app_language: string } = { app_language: "ko" };
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: mockMe }) }));
@@ -53,6 +72,7 @@ vi.mock("../api/endpoints", () => ({
   },
   dashboardApi: { summary },
   learnApi: { recordSession: vi.fn() },
+  studyApi: study,
 }));
 
 /* ---- minimal MediaRecorder / getUserMedia so voice attempts can be driven ---- */
@@ -72,6 +92,7 @@ class MockMediaRecorder {
 
 import { SessionConversation } from "./SessionConversation";
 import { I18nProvider } from "../i18n";
+import { ApiError } from "../lib/http";
 
 const SENTENCE = {
   sentence_id: "sen_thanks_01",
@@ -105,6 +126,13 @@ beforeEach(() => {
     tracks: [{ category: "conversation", level: 3, goal: { target: 3, current: 0, achieved: false } }],
   });
   recSentences.mockResolvedValue({ items: [SENTENCE] });
+  // By default no reviewed content fits, so the screen falls back to the
+  // recommender — the legacy path most of these tests exercise. The adaptive
+  // session tests below override this.
+  study.start.mockRejectedValue(new ApiError(409, "session.no_eligible_content", ""));
+  study.present.mockResolvedValue(undefined);
+  study.complete.mockResolvedValue({});
+  study.abandon.mockResolvedValue({});
   (globalThis as unknown as { MediaRecorder: unknown }).MediaRecorder = MockMediaRecorder;
   Object.defineProperty(navigator, "mediaDevices", {
     configurable: true,
@@ -599,6 +627,220 @@ describe("SessionConversation — a refresh restores the session", () => {
 
     // The second item is restored from the snapshot; NO recommendation is made.
     expect(await screen.findByText(/내일/)).toBeInTheDocument();
+    expect(recSentences).not.toHaveBeenCalled();
+  });
+});
+
+/* ---- adaptive study sessions (/study-sessions) through the same screen ---- */
+
+const REVEAL = {
+  answer_key: { korean: "덕분에 잘 지내고 있어요.", blanks: [{ index: 0, answer: "지내고" }] },
+  explanations: [],
+};
+
+function activity(id: string, over: Record<string, unknown> = {}) {
+  return {
+    activity_id: id,
+    position: Number(id.slice(-1)),
+    phase: "practice",
+    activity_kind: "sentence_blank",
+    review_kind: "none",
+    status: "pending",
+    content_version_id: `cv_${id}`,
+    quiz_id: null,
+    sentence_id: `sen_${id}`,
+    is_custom_practice: false,
+    hints_used: 0,
+    answer_revealed: false,
+    attempts: [],
+    attempts_left: 2,
+    content: {
+      display_text: "덕분에 잘 ___ 있어요.",
+      translation: "Good things are on the way.",
+      translation_language: "en",
+      romanization: null,
+      has_audio: false,
+      blanks: [{ index: 0, start: 6, length: 3 }],
+    },
+    reveal: null,
+    ...over,
+  };
+}
+
+function sessionWith(activities: unknown[], revision = 1) {
+  return {
+    session_id: "ss_1",
+    track: "conversation",
+    status: "active",
+    current_revision: revision,
+    learner_band: 3,
+    requested_activity_count: 3,
+    topik_section: null,
+    topik_question_type: null,
+    shortfall_reason: null,
+    shortfall_message: null,
+    started_at: "2026-09-26T00:00:00Z",
+    activities,
+  };
+}
+
+function studyResult(over: Record<string, unknown>) {
+  return {
+    attempt_no: 1,
+    correct: false,
+    replayed: false,
+    activity_status: "attempted",
+    attempts_left: 1,
+    evidence_policy: "independent",
+    reveal: null,
+    daily_progress: null,
+    completed_now: false,
+    points_earned: 0,
+    ...over,
+  };
+}
+
+async function typeAnswer(text: string) {
+  const input = screen.queryByLabelText("빈칸에 들어갈 말") ?? null;
+  if (!input) await userEvent.click(screen.getByRole("button", { name: /키보드 모드/ }));
+  await userEvent.type(screen.getByLabelText("빈칸에 들어갈 말"), `${text}{Enter}`);
+}
+
+describe("SessionConversation — adaptive session", () => {
+  beforeEach(() => {
+    study.start.mockResolvedValue(sessionWith([activity("act_1"), activity("act_2")]));
+  });
+
+  it("takes its items from the session and grades answers on the session, not the recommender", async () => {
+    study.attempt.mockResolvedValue(
+      studyResult({ correct: true, activity_status: "completed", attempts_left: 0, reveal: REVEAL, points_earned: 10 }),
+    );
+    renderScreen();
+    await screen.findByText(/덕분에 잘/);
+    expect(recSentences).not.toHaveBeenCalled();
+    expect(study.start).toHaveBeenCalledWith(expect.objectContaining({ track: "conversation", activity_count: 3 }));
+    await waitFor(() => expect(study.present).toHaveBeenCalledWith("ss_1", "act_1"));
+
+    await typeAnswer("지내고");
+    await waitFor(() =>
+      expect(study.attempt).toHaveBeenCalledWith("ss_1", "act_1", expect.objectContaining({ answer: "지내고" })),
+    );
+    expect(blankAttempt).not.toHaveBeenCalled();
+    expect(await screen.findByText("정답이에요!")).toBeInTheDocument();
+    // The solved card shows the full sentence, known only from the reveal.
+    expect(screen.getByText("덕분에 잘 지내고 있어요.")).toBeInTheDocument();
+    expect(screen.getByTestId("counter")).toHaveTextContent("1/2");
+  });
+
+  it("after the second wrong answer shows the answer, and a typed practice answer moves on without credit", async () => {
+    study.attempt
+      .mockResolvedValueOnce(studyResult({}))
+      .mockResolvedValueOnce(
+        studyResult({ attempt_no: 2, activity_status: "completed", attempts_left: 0, reveal: REVEAL, evidence_policy: "retry" }),
+      );
+    renderScreen();
+    await screen.findByText(/덕분에 잘/);
+    await typeAnswer("몰라");
+    await screen.findByText("다시 생각해보세요");
+    await typeAnswer("모르겠어");
+    await waitFor(() => expect(toastShow).toHaveBeenCalledWith(expect.stringContaining("정답")));
+    // The answer is shown in the blank.
+    await waitFor(() => expect(screen.getByLabelText("빈칸에 들어갈 말")).toHaveAttribute("placeholder", "지내고"));
+
+    // Typing it is practice: checked locally, not sent, not counted correct.
+    await typeAnswer("지내고");
+    expect(await screen.findByText("정답이에요!")).toBeInTheDocument();
+    expect(study.attempt).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId("counter")).toHaveTextContent("0/2");
+  });
+
+  it("the hint chip takes the session hint, and 정답보기 reveals through the session", async () => {
+    study.hint.mockResolvedValue({ hint: null, revealed_text: "지" });
+    study.reveal.mockResolvedValue(REVEAL);
+    renderScreen();
+    await screen.findByText(/덕분에 잘/);
+    await userEvent.click(screen.getByRole("button", { name: /키보드 모드/ }));
+    const input = screen.getByLabelText("빈칸에 들어갈 말");
+    await userEvent.click(screen.getByRole("button", { name: /힌트보기/ }));
+    await waitFor(() => expect(input).toHaveAttribute("placeholder", "지"));
+    expect(study.hint).toHaveBeenCalledWith("ss_1", "act_1");
+    await userEvent.click(screen.getByRole("button", { name: /정답보기/ }));
+    await waitFor(() => expect(input).toHaveAttribute("placeholder", "지내고"));
+    expect(study.reveal).toHaveBeenCalledWith("ss_1", "act_1");
+    expect(blankHint).not.toHaveBeenCalled();
+  });
+
+  it("the prompt panel customizes the rest of the session instead of regenerating it", async () => {
+    const replaced = activity("act_3", { content: { ...activity("act_3").content, display_text: "커피 ___ 주세요.", translation: "Coffee, please." } });
+    study.customize.mockResolvedValue({
+      customization_id: "cz_1",
+      status: "applied",
+      operation: "replace_remaining",
+      interpreter_route: "rule_based",
+      fallback_step: "exact",
+      unmet_constraints: [],
+      message: { ko: "카페 상황으로 바꿨어요.", en: "Switched to café situations." },
+      new_revision: 2,
+      added_activity_ids: ["act_3"],
+      removed_activity_ids: ["act_2"],
+      session: sessionWith([activity("act_1"), replaced], 2),
+    });
+    renderScreen();
+    await screen.findByText(/덕분에 잘/);
+    await userEvent.type(screen.getByLabelText("맞춤 문장 상황 입력"), "카페에서 쓰는 표현");
+    await userEvent.click(screen.getByRole("button", { name: "맞춤 문장 추천 받기" }));
+    await waitFor(() =>
+      expect(study.customize).toHaveBeenCalledWith(
+        "ss_1",
+        expect.objectContaining({ prompt: "카페에서 쓰는 표현", expected_revision: 1 }),
+      ),
+    );
+    expect(toastSuccess).toHaveBeenCalledWith("카페 상황으로 바꿨어요.");
+    expect(recSentences).not.toHaveBeenCalled();
+    // The current item stays; the replaced one is gone from the set.
+    expect(screen.getByText(/덕분에 잘/)).toBeInTheDocument();
+    expect(screen.getByTestId("counter")).toHaveTextContent("0/2");
+  });
+
+  it("an unmet customization request says so and leaves the session as it is", async () => {
+    study.customize.mockResolvedValue({
+      customization_id: "cz_2",
+      status: "needs_clarification",
+      operation: null,
+      interpreter_route: "rule_based",
+      fallback_step: "clarify",
+      unmet_constraints: ["topic"],
+      message: { ko: "어떤 상황을 원하는지 조금 더 알려 주세요.", en: "Tell me a bit more." },
+      new_revision: null,
+      added_activity_ids: [],
+      removed_activity_ids: [],
+      session: sessionWith([activity("act_1"), activity("act_2")]),
+    });
+    renderScreen();
+    await screen.findByText(/덕분에 잘/);
+    await userEvent.type(screen.getByLabelText("맞춤 문장 상황 입력"), "음");
+    await userEvent.click(screen.getByRole("button", { name: "맞춤 문장 추천 받기" }));
+    await waitFor(() => expect(toastShow).toHaveBeenCalledWith("어떤 상황을 원하는지 조금 더 알려 주세요."));
+  });
+
+  it("anchors the AI help to the tutor for the current activity", async () => {
+    renderScreen();
+    await screen.findByText(/덕분에 잘/);
+    const ctx = JSON.parse(screen.getByTestId("ask-context").textContent!);
+    expect(ctx).toMatchObject({ contextKind: "study_activity", sessionId: "ss_1", contextId: "act_1", autoExplain: false });
+  });
+
+  it("a refresh resumes the same server session and keeps progress from the server", async () => {
+    study.start.mockResolvedValue(
+      sessionWith([
+        activity("act_1", { status: "completed", attempts: [{ attempt_no: 1, correct: true, graded_at: "" }], reveal: REVEAL }),
+        activity("act_2", { content: { ...activity("act_2").content, display_text: "내일 ___ 만나요." } }),
+      ]),
+    );
+    renderScreen();
+    // Resumes at the first open activity with the server's progress.
+    expect(await screen.findByText(/내일/)).toBeInTheDocument();
+    expect(screen.getByTestId("counter")).toHaveTextContent("1/2");
     expect(recSentences).not.toHaveBeenCalled();
   });
 });

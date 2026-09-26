@@ -13,12 +13,24 @@ import { TopikResult } from "../components/topik/TopikResult";
 import { ResultHeader, type ResultStatus } from "../components/topik/ResultHeader";
 import { SaveBookmarkButton } from "../components/SaveBookmarkButton";
 import { LoadingState, ErrorState } from "../components/ui/states";
-import { recApi, quizApi, dashboardApi, learnApi } from "../api/endpoints";
+import { recApi, quizApi, dashboardApi, learnApi, studyApi } from "../api/endpoints";
+import {
+  activityToQuiz,
+  answeredCorrectly,
+  isApiCode,
+  isOpenActivity,
+  isStudyItem,
+  quizKey,
+  revealedChoiceKey,
+  studyToQuizResult,
+  visibleActivities,
+  type StudyQuiz,
+} from "../lib/studySession";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import { useTopikSessionCopy } from "../lib/topikSessionCopy";
 import { TOPIK_TYPE_LABEL_EN, TOPIK_TYPE_LABEL_KO } from "../lib/topikTypeLabels";
-import type { Quiz, QuizAttemptResult, TopikQuestionType, TopikSection } from "../lib/types";
+import type { Quiz, QuizAttemptResult, StudySession, TopikQuestionType, TopikSection } from "../lib/types";
 import {
   clearTopikSession,
   readTopikSession,
@@ -61,8 +73,14 @@ function typeLabel(
  *   incorrect  → answering             (learner selects a different option)
  *   incorrect  → submitting            (Submit pressed again, same question)
  *   correct    → (Next → new question, phase resets to answering)
+ *   submitting → revealed              (adaptive session: the second wrong
+ *                                        answer closes the item; the correct
+ *                                        option is shown and Next is offered)
  */
-type Phase = "answering" | "submitting" | "incorrect" | "correct";
+type Phase = "answering" | "submitting" | "incorrect" | "correct" | "revealed";
+
+/** The most activities one adaptive session plans (server limit). */
+const MAX_SESSION_ACTIVITIES = 20;
 
 /** A submitted answer is a retryable wrong answer only for graded selection
  * questions (MC / fill-blanks). Writing is scored, never right/wrong, so it is
@@ -169,8 +187,84 @@ export function SessionTopik() {
     navState?.additionalCount ?? null,
   );
 
-  async function loadSet(code?: string | null) {
+  // The adaptive session behind this set (reviewed content, graded on the
+  // server, grounded tutor). Null for writing — adaptive sessions serve
+  // objectively graded items only — and when the legacy recommender is the
+  // fallback because no reviewed content fits.
+  const [study, setStudy] = useState<{ sessionId: string; revision: number } | null>(null);
+  // Quiz keys whose server activity is closed: re-answers (다시 풀기) are
+  // practice, checked locally against the revealed key and never credited.
+  const [closed, setClosed] = useState<Set<string>>(new Set());
+  const adaptive = section !== "writing";
+
+  function applySession(s: StudySession) {
+    const acts = visibleActivities(s);
+    setStudy({ sessionId: s.session_id, revision: s.current_revision });
+    setItems(acts.map((a) => activityToQuiz(a, s.learner_band)));
+    setCorrectSet(new Set(acts.filter(answeredCorrectly).map(quizKey)));
+    setAttempted(new Set(acts.filter((a) => a.attempts.length > 0).map(quizKey)));
+    setClosed(new Set(acts.filter((a) => !isOpenActivity(a)).map(quizKey)));
+    const firstOpen = acts.findIndex(isOpenActivity);
+    setIdx(firstOpen >= 0 ? firstOpen : 0);
+    resetQuestionPhase();
+  }
+
+  // Start the adaptive session for this part (and question type) — or resume
+  // the active one with the same scope. Another scope ends the old session on
+  // the server. A resumed session with nothing left open is finished and a
+  // fresh one started.
+  async function startStudy(code: string | null): Promise<StudySession> {
+    const count = additionalCount ?? (remaining || undefined);
+    const body = {
+      track: "topik" as const,
+      explanation_language: (language === "ko" ? "ko" : "en") as "ko" | "en",
+      topik_section: section as "listening" | "reading",
+      ...(code ? { topik_question_type: code } : {}),
+      ...(count ? { activity_count: Math.min(count, MAX_SESSION_ACTIVITIES) } : {}),
+    };
+    let s = await studyApi.start({ ...body, client_request_id: randomUuid() });
+    if (!visibleActivities(s).some(isOpenActivity)) {
+      await studyApi.complete(s.session_id).catch(() => studyApi.abandon(s.session_id));
+      s = await studyApi.start({ ...body, client_request_id: randomUuid() });
+    }
+    return s;
+  }
+
+  // Load the set: the adaptive session for listening/reading, the legacy
+  // recommender for writing or when no reviewed content fits.
+  async function loadSet(code?: string | null, snap?: TopikSessionSnapshot | null) {
     if (busy) return;
+    if (adaptive) {
+      setBusy(true);
+      setError(false);
+      try {
+        const s = await startStudy(code ?? null);
+        if (snap && snap.studySessionId === s.session_id) {
+          // Same session after a refresh: keep what only this screen knows.
+          setDrafts(snap.drafts ?? {});
+          setPoints(snap.points ?? 0);
+          startedAt.current = snap.startedAt ?? Date.now();
+          if (snap.learningSessionId) learningSessionIdRef.current = snap.learningSessionId;
+          setRetrying(!!snap.retrying);
+        } else {
+          setDrafts({});
+          setRetrying(false);
+        }
+        applySession(s);
+        if (s.shortfall_message) toast.show(language === "ko" ? s.shortfall_message.ko : s.shortfall_message.en);
+        return;
+      } catch (e) {
+        if (!isApiCode(e, "session.no_eligible_content")) {
+          if (items === null) setError(true);
+          else toast.error(errorMessage(e));
+          return;
+        }
+        // Nothing reviewed fits: fall through to the recommender.
+        setStudy(null);
+      } finally {
+        setBusy(false);
+      }
+    }
     setBusy(true);
     setError(false);
     try {
@@ -223,7 +317,14 @@ export function SessionTopik() {
     if (booted.current || !dash.data) return;
     booted.current = true;
     const snap = readTopikSession();
-    if (snap && snap.section === section) {
+    if (snap && snap.section === section && snap.studySessionId) {
+      // Adaptive: items and progress come back from the server session.
+      setTypeCode(snap.typeCode ?? null);
+      setGoalCurrent(snap.goalCurrent ?? topik?.goal.current ?? 0);
+      setGoalTarget(snap.goalTarget ?? topik?.goal.target ?? 0);
+      setAdditionalCount(snap.additionalCount ?? null);
+      void loadSet(snap.typeCode ?? null, snap);
+    } else if (snap && snap.section === section) {
       setItems(snap.items);
       setIdx(snap.idx);
       setDrafts(snap.drafts ?? {});
@@ -312,10 +413,18 @@ export function SessionTopik() {
       additionalCount,
       learningSessionId: learningSessionIdRef.current,
       retrying,
+      studySessionId: study?.sessionId ?? null,
     };
     const timer = setTimeout(() => saveTopikSession(snapshot), 300);
     return () => clearTimeout(timer);
-  }, [items, idx, drafts, correctSet, attempted, points, typeCode, section, goalCurrent, goalTarget, additionalCount, retrying]);
+  }, [items, idx, drafts, correctSet, attempted, points, typeCode, section, goalCurrent, goalTarget, additionalCount, retrying, study]);
+
+  // Record that the current activity is on screen (exposure for the
+  // repetition policy). Idempotent server-side.
+  const curActivityId = isStudyItem(cur) ? cur.activity_id : null;
+  useEffect(() => {
+    if (study && curActivityId) void studyApi.present(study.sessionId, curActivityId).catch(() => undefined);
+  }, [study, curActivityId]);
 
   // Submit-enabled iff: a valid answer is selected, we're not mid-request, the
   // question isn't already correct, and the answer differs from the last one
@@ -328,8 +437,32 @@ export function SessionTopik() {
     !!cur &&
     phase !== "submitting" &&
     phase !== "correct" &&
+    phase !== "revealed" &&
     canSubmitTopik(cur, value) &&
     answerChanged;
+
+  // One graded answer on an adaptive activity. A closed activity (다시 풀기)
+  // is practice: checked against the revealed key here, nothing recorded.
+  async function studyAttempt(q: StudyQuiz, submitted: AnswerValue, clientRequestId: string) {
+    if (closed.has(q.quiz_id)) {
+      return {
+        res: { attempt_id: `${q.activity_id}:practice`, correct: submitted.choiceKey === revealedChoiceKey(q.reveal), status: "graded" },
+        closedNow: false,
+        practice: true,
+      };
+    }
+    const r = await studyApi.attempt(study!.sessionId, q.activity_id, {
+      answer: submitted.choiceKey ?? "",
+      client_request_id: clientRequestId,
+    });
+    if (r.reveal) {
+      const reveal = r.reveal;
+      setItems((list) => list?.map((it) => (isStudyItem(it) && it.activity_id === q.activity_id ? { ...it, reveal } : it)) ?? list);
+    }
+    const closedNow = !["pending", "presented", "attempted"].includes(r.activity_status);
+    if (closedNow) setClosed((c) => new Set(c).add(q.quiz_id));
+    return { res: studyToQuizResult(r, q.activity_id), closedNow, practice: false, reveal: r.reveal };
+  }
 
   async function submit() {
     if (!cur || !canSubmit) return;
@@ -337,11 +470,39 @@ export function SessionTopik() {
     const submitted = value;
     try {
       const clientRequestId = (requestIdRef.current ??= randomUuid());
-      const res = await quizApi.attempt(cur.quiz_id, {
-        ...quizAttemptBody(cur, submitted),
-        client_request_id: clientRequestId,
-        learning_session_id: learningSessionIdRef.current,
-      });
+      let res: QuizAttemptResult;
+      if (isStudyItem(cur) && study) {
+        const out = await studyAttempt(cur, submitted, clientRequestId);
+        res = out.res;
+        if (out.practice) {
+          // Practice keeps credit and the correct set as they are.
+          setResult(res);
+          setSubmittedValue(submitted);
+          if (res.correct) setPhase("correct");
+          else {
+            setPhase("incorrect");
+            if (submitted.choiceKey) setWrongKeys((k) => (k.includes(submitted.choiceKey!) ? k : [...k, submitted.choiceKey!]));
+          }
+          return;
+        }
+        if (!res.correct && out.closedNow) {
+          // Second wrong answer: the item closes and the correct option is
+          // shown (the adaptive policy); nothing is credited.
+          setResult(res);
+          setSubmittedValue(submitted);
+          setAttempted((a) => new Set(a).add(cur.quiz_id));
+          if (submitted.choiceKey) setWrongKeys((k) => (k.includes(submitted.choiceKey!) ? k : [...k, submitted.choiceKey!]));
+          setPhase("revealed");
+          toast.show(t("session.topikAnswerShown"));
+          return;
+        }
+      } else {
+        res = await quizApi.attempt(cur.quiz_id, {
+          ...quizAttemptBody(cur, submitted),
+          client_request_id: clientRequestId,
+          learning_session_id: learningSessionIdRef.current,
+        });
+      }
       setResult(res);
       setSubmittedValue(submitted);
       setAttempted((a) => new Set(a).add(cur.quiz_id));
@@ -371,7 +532,9 @@ export function SessionTopik() {
       // Request failed: return to answering so the learner can retry safely.
       // No progress was credited (server never confirmed).
       setPhase(result ? "incorrect" : "answering");
-      toast.error(errorMessage(e));
+      // An ended session (idle expiry) cannot take answers: start a fresh one.
+      if (isApiCode(e, "session.not_active")) void loadSet(typeCode);
+      else toast.error(errorMessage(e));
     }
   }
 
@@ -423,6 +586,11 @@ export function SessionTopik() {
     if (finalizingRef.current) return;
     // Leaving ends the session: drop its snapshot so re-entry starts fresh.
     clearTopikSession();
+    if (study) {
+      // Completed when every activity is resolved, otherwise ended early.
+      const id = study.sessionId;
+      void studyApi.complete(id).catch(() => studyApi.abandon(id).catch(() => undefined));
+    }
     if (attempted.size === 0) {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       nav(-1);
@@ -467,7 +635,7 @@ export function SessionTopik() {
   // Verdict shown in the result header. Only a graded SELECTION answer gets the
   // blue/coral header; writing stays neutral (score shown below instead).
   const headerStatus: ResultStatus =
-    phase === "incorrect"
+    phase === "incorrect" || phase === "revealed"
       ? "incorrect"
       : phase === "correct" && !!result?.correct && !isWriting
         ? "correct"
@@ -477,13 +645,19 @@ export function SessionTopik() {
   // Options are interactive while answering AND after an incorrect result (the
   // learner must be able to pick another option immediately). They lock only on
   // a correct/terminal result or while a request is in flight.
-  const optionsLocked = phase === "correct" || phase === "submitting";
-  // Per-option result markers: blue on the chosen key once correct, coral on any
+  const optionsLocked = phase === "correct" || phase === "submitting" || phase === "revealed";
+  // Per-option result markers: blue on the chosen key once correct (or on the
+  // revealed key once an adaptive item ran out of tries), coral on any
   // wrong-submitted key. Absent while answering.
   const optionResult =
     phase === "correct" && result?.correct
       ? { correctKey: value.choiceKey ?? null, wrongKeys }
-      : { correctKey: null, wrongKeys };
+      : phase === "revealed" && isStudyItem(cur)
+        ? { correctKey: revealedChoiceKey(cur.reveal), wrongKeys }
+        : { correctKey: null, wrongKeys };
+  // The question is finished (Next / completion sheet): answered correctly,
+  // or closed with the answer shown.
+  const resolved = phase === "correct" || phase === "revealed";
   const bookmarkButton = cur && (
     <SaveBookmarkButton
       saved={!!saved[cur.quiz_id]}
@@ -541,6 +715,15 @@ export function SessionTopik() {
       askContext={
         !cur
           ? null
+          : isStudyItem(cur) && study
+            ? // The grounded tutor: hints while the item is open, explanations after.
+              {
+                contextKind: "study_activity",
+                sessionId: study.sessionId,
+                contextId: cur.activity_id,
+                autoExplain: phase === "incorrect" || phase === "revealed",
+                bubble: phase === "incorrect" || phase === "revealed",
+              }
           : phase === "incorrect" && result
             ? { contextKind: "quiz_attempt", contextId: result.attempt_id, autoExplain: true, bubble: true }
             : { contextKind: "quiz", contextId: cur.quiz_id, autoExplain: false, bubble: false }
@@ -552,7 +735,13 @@ export function SessionTopik() {
         <LoadingState />
       ) : (
         <div className="sess__card sess__card--topik">
-          <ResultHeader status={headerStatus} title={copy.title} copy={copy} bookmark={bookmarkButton} />
+          <ResultHeader
+            status={headerStatus}
+            title={copy.title}
+            copy={copy}
+            bookmark={bookmarkButton}
+            incorrectTitle={phase === "revealed" ? t("session.topikAnswerRevealedTitle") : undefined}
+          />
 
           <TopikQuestion
             quiz={cur}
@@ -569,7 +758,7 @@ export function SessionTopik() {
           {phase === "correct" && result && isWriting && <TopikResult result={result} copy={copy} />}
 
           <div className="sess__cta">
-            {phase === "correct" ? (
+            {resolved ? (
               // The final step's 완료 lives in the bottom-up completion sheet
               // (rendered below); intermediate answers keep the inline 다음.
               isLastStep ? null : (
@@ -593,7 +782,7 @@ export function SessionTopik() {
     {/* Bottom-up completion sheet on the final correct answer — identical to the
         one TOPIK Review Learning shows: 다시 시작 (redo the set) + 완료 (finalize,
         opening the summary modal). */}
-    {phase === "correct" && isLastStep && !completed && cur != null && (
+    {resolved && isLastStep && !completed && cur != null && (
       <ReviewCompleteSheet
         /* TAL-018 (673:13337) labels this 다시 풀기, not the review flow's 다시 시작. */
         leftLabel={t("session.solveAgain")}

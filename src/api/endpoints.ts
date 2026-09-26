@@ -60,7 +60,13 @@ import type {
   SpeechAttempt,
   StatsResp,
   StreakCalendarResp,
+  StudyAttemptResult,
+  StudyCustomization,
+  StudyReveal,
+  StudySession,
+  StudyTrack,
   TokenResponse,
+  TutorAnswer,
   VerificationConfirm,
   VerificationStart,
 } from "../lib/types";
@@ -260,6 +266,41 @@ export const recApi = {
   topikQuestionTypes: (section: string) =>
     http.get<{ section: string; items: TopikQuestionType[] }>("/recommendations/topik-question-types", { section }),
 };
+/** Adaptive study sessions: server-assembled sets from reviewed content, graded
+ *  on the server, customizable in natural language, with a grounded tutor. */
+export const studyApi = {
+  /** Start, or resume the active session on the track (same TOPIK scope). */
+  start: (body: {
+    track: StudyTrack;
+    client_request_id: string;
+    activity_count?: number;
+    explanation_language?: "ko" | "en";
+    topik_section?: "listening" | "reading";
+    topik_question_type?: string;
+  }) => http.post<StudySession>("/study-sessions", body),
+  get: (sessionId: string) => http.get<StudySession>(`/study-sessions/${sessionId}`),
+  present: (sessionId: string, activityId: string) =>
+    http.post<void>(`/study-sessions/${sessionId}/activities/${activityId}/present`),
+  attempt: (sessionId: string, activityId: string, body: { answer: string; client_request_id: string; duration_ms?: number }) =>
+    http.post<StudyAttemptResult>(`/study-sessions/${sessionId}/activities/${activityId}/attempts`, body),
+  voiceAttempt: (sessionId: string, activityId: string, audio: Blob, clientRequestId: string) => {
+    const fd = new FormData();
+    fd.append("audio", audio, "attempt.webm");
+    fd.append("client_request_id", clientRequestId);
+    return http.upload<StudyAttemptResult>(`/study-sessions/${sessionId}/activities/${activityId}/voice-attempts`, fd);
+  },
+  hint: (sessionId: string, activityId: string) =>
+    http.post<{ hint: string | null; revealed_text: string | null }>(`/study-sessions/${sessionId}/activities/${activityId}/hint`),
+  reveal: (sessionId: string, activityId: string) =>
+    http.post<StudyReveal>(`/study-sessions/${sessionId}/activities/${activityId}/reveal`),
+  customize: (sessionId: string, body: { prompt: string; expected_revision: number; client_request_id: string }) =>
+    http.post<StudyCustomization>(`/study-sessions/${sessionId}/customizations`, body),
+  complete: (sessionId: string) => http.post<StudySession>(`/study-sessions/${sessionId}/complete`),
+  abandon: (sessionId: string) => http.post<StudySession>(`/study-sessions/${sessionId}/abandon`),
+  askTutor: (sessionId: string, activityId: string, body: { question: string; client_request_id: string; language: "ko" | "en" }) =>
+    http.post<TutorAnswer>(`/study-sessions/${sessionId}/activities/${activityId}/tutor`, body),
+};
+
 export const examApi = {
   list: (params: { section?: string; edition?: number; year?: number } = {}) =>
     http.get<{ items: ExamSet[] }>("/exams", params),

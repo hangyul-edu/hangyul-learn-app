@@ -10,7 +10,21 @@ import { ReviewCompleteSheet } from "../components/ReviewCompleteSheet";
 import { ReviewRewardModal } from "../components/ReviewRewardModal";
 import { useReviewSessionCopy } from "../lib/reviewSessionCopy";
 import { LoadingState, ErrorState } from "../components/ui/states";
-import { recApi, sentenceApi, dashboardApi, learnApi } from "../api/endpoints";
+import { recApi, sentenceApi, dashboardApi, learnApi, studyApi } from "../api/endpoints";
+import {
+  activityToSentence,
+  answeredCorrectly,
+  isApiCode,
+  isOpenActivity,
+  isStudyItem,
+  practiceSentenceCorrect,
+  revealedBlankAnswer,
+  revealedKorean,
+  sentenceKey,
+  studyToSpeech,
+  visibleActivities,
+  type StudySentence,
+} from "../lib/studySession";
 import { useToast } from "../hooks/toast";
 import { useVoiceRecorder } from "../hooks/useVoiceRecorder";
 import { errorMessage } from "../lib/http";
@@ -30,7 +44,7 @@ import {
   AnswerSentenceCard,
   SolvedSentenceCard,
 } from "../components/session/ConversationCards";
-import type { BlankAttempt, Sentence, SpeechAttempt } from "../lib/types";
+import type { BlankAttempt, Sentence, SpeechAttempt, StudyAttemptResult, StudySession } from "../lib/types";
 import icSend from "../assets/brand/ic-send.svg";
 
 /** Which input produced the last evaluated attempt — decides whether the
@@ -72,11 +86,14 @@ function useRemaining() {
   const q = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
   const t = q.data?.tracks.find((x) => x.category === "conversation");
   const remaining = t ? Math.max(t.goal.target - t.goal.current, 0) : 0;
-  return { remaining, level: t?.level ?? 1 };
+  return { remaining, level: t?.level ?? 1, ready: q.isFetched };
 }
 
+/** The most activities one adaptive session plans (server limit). */
+const MAX_SESSION_ACTIVITIES = 20;
+
 export function SessionConversation() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const nav = useNavigate();
   const loc = useLocation();
   const toast = useToast();
@@ -98,7 +115,7 @@ export function SessionConversation() {
   // Level-Up screen so its button returns the user to that source page.
   const navState = loc.state as { from?: string; additionalCount?: number } | null;
   const from = navState?.from ?? "/home";
-  const { remaining, level } = useRemaining();
+  const { remaining, level, ready } = useRemaining();
   // Additional-learning batch size (5/10/15/20), set only when the user opted
   // into extra study after completing today's goal; null for a normal session.
   const [additionalCount, setAdditionalCount] = useState<number | null>(
@@ -142,6 +159,15 @@ export function SessionConversation() {
   const attemptSeq = useRef(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
+  // The adaptive session behind this set (reviewed content, graded on the
+  // server, customizable, with the grounded tutor). Null when the set came
+  // from the legacy recommender — the fallback when no reviewed content fits.
+  const [study, setStudy] = useState<{ sessionId: string; revision: number } | null>(null);
+  // Items whose server activity is closed (answered, or out of tries): a
+  // re-answer is practice, checked locally against the revealed key and never
+  // credited. `missed` = closed without a correct answer (never counted correct).
+  const [closed, setClosed] = useState<Set<string>>(new Set());
+  const [missed, setMissed] = useState<Set<string>>(new Set());
   const startedAt = useRef(Date.now());
   // True once the user has made any attempt (correct or not) — decides whether
   // the session is worth recording on exit, independent of correctness.
@@ -208,19 +234,94 @@ export function SessionConversation() {
     }
   }
 
-  // On mount, restore an in-progress session if one was saved (e.g. after a page
-  // refresh) so we never regenerate content mid-session; otherwise fetch a fresh
-  // set. A new set is requested only when there is nothing to resume.
+  // Show an adaptive session through the existing screen state. Item progress
+  // (resolved / correct / closed) is the server's; UI-only state (hints shown,
+  // bookmarks, points) is left alone. The current item stays current when it is
+  // still in the plan (e.g. after a customization), else the first open one.
+  function applySession(s: StudySession, keepActivityId?: string) {
+    const acts = visibleActivities(s);
+    const resolved = acts.filter((a) => !isOpenActivity(a));
+    setStudy({ sessionId: s.session_id, revision: s.current_revision });
+    setItems(acts.map((a) => activityToSentence(a, s.learner_band)));
+    setAnswered(new Set(resolved.map(sentenceKey)));
+    setCorrectSet(new Set(acts.filter(answeredCorrectly).map(sentenceKey)));
+    setClosed(new Set(resolved.map(sentenceKey)));
+    setMissed(new Set(resolved.filter((a) => !answeredCorrectly(a)).map(sentenceKey)));
+    const kept = keepActivityId ? acts.findIndex((a) => a.activity_id === keepActivityId) : -1;
+    const firstOpen = acts.findIndex(isOpenActivity);
+    setIdx(kept >= 0 ? kept : firstOpen >= 0 ? firstOpen : 0);
+    if (kept < 0) {
+      setResult(null);
+      setAttemptMode(null);
+      setTyped("");
+      reqIdRef.current = null;
+    }
+  }
+
+  // Start the adaptive session — or resume the active one — for the remaining
+  // daily goal (additional learning: the chosen batch). A resumed session with
+  // nothing left open is finished and a fresh one started.
+  async function startStudy(): Promise<StudySession> {
+    const count = additionalCount ?? (remaining || undefined);
+    const body = {
+      track: "conversation" as const,
+      explanation_language: (language === "ko" ? "ko" : "en") as "ko" | "en",
+      ...(count ? { activity_count: Math.min(count, MAX_SESSION_ACTIVITIES) } : {}),
+    };
+    let s = await studyApi.start({ ...body, client_request_id: randomUuid() });
+    if (!visibleActivities(s).some(isOpenActivity)) {
+      await studyApi.complete(s.session_id).catch(() => studyApi.abandon(s.session_id));
+      s = await studyApi.start({ ...body, client_request_id: randomUuid() });
+    }
+    return s;
+  }
+
+  async function bootStudy(snap: ConversationSessionSnapshot | null) {
+    setBusy(true);
+    setError(false);
+    try {
+      const s = await startStudy();
+      if (snap && snap.studySessionId === s.session_id) {
+        // Same session after a refresh: keep what only this screen knows.
+        setPoints(snap.points);
+        setSaved(snap.saved ?? {});
+        setRevealed(snap.revealed ?? {});
+        setHintStage(snap.hintStage ?? {});
+        setPrompt(snap.prompt ?? "");
+        setKeyboard(!!snap.keyboard);
+        setAdditionalCount(snap.additionalCount ?? null);
+        startedAt.current = snap.startedAt ?? Date.now();
+      }
+      applySession(s);
+      if (s.shortfall_message) toast.show(language === "ko" ? s.shortfall_message.ko : s.shortfall_message.en);
+    } catch (e) {
+      if (isApiCode(e, "session.no_eligible_content")) {
+        // Nothing reviewed fits this level yet: fall back to the recommender.
+        setBusy(false);
+        await loadSet();
+        return;
+      }
+      setError(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // On mount, resume: the adaptive session is resumed from the server (the
+  // snapshot only restores this screen's own UI state); a saved legacy set is
+  // restored from the snapshot. A new set is requested only when there is
+  // nothing to resume. Waits for the dashboard, which sizes the set.
   const bootedRef = useRef(false);
   useEffect(() => {
     if (bootedRef.current) return;
-    bootedRef.current = true;
     if (isReview) {
+      bootedRef.current = true;
       void loadReviewItem(reviewSentenceId!);
       return;
     }
     const snap = readConversationSession();
-    if (snap) {
+    if (snap && !snap.studySessionId) {
+      bootedRef.current = true;
       setItems(snap.items);
       setIdx(snap.idx);
       setPoints(snap.points);
@@ -233,11 +334,84 @@ export function SessionConversation() {
       setKeyboard(!!snap.keyboard);
       setAdditionalCount(snap.additionalCount ?? null);
       startedAt.current = snap.startedAt ?? Date.now();
-    } else {
-      void loadSet();
+      return;
     }
+    if (!ready) return;
+    bootedRef.current = true;
+    void bootStudy(snap);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [ready]);
+
+  // Record that the current activity is on screen (exposure for the
+  // repetition policy). Idempotent server-side.
+  const curActivityId = isStudyItem(items?.[idx]) ? (items![idx] as StudySentence).activity_id : null;
+  useEffect(() => {
+    if (study && curActivityId) void studyApi.present(study.sessionId, curActivityId).catch(() => undefined);
+  }, [study, curActivityId]);
+
+  // Natural-language customization of the rest of the adaptive session, from
+  // the existing prompt panel. Honest outcome: applied / asks back / unchanged.
+  async function customize(text: string) {
+    if (!study) {
+      void loadSet(text);
+      return;
+    }
+    if (busy) return;
+    setBusy(true);
+    const keep = isStudyItem(cur) ? cur.activity_id : undefined;
+    try {
+      const res = await studyApi.customize(study.sessionId, {
+        prompt: text,
+        expected_revision: study.revision,
+        client_request_id: randomUuid(),
+      });
+      const msg = res.message ? (language === "ko" ? res.message.ko : res.message.en) : null;
+      if (res.status === "applied") {
+        applySession(res.session, keep);
+        toast.success(msg ?? t("session.customApplied"));
+      } else if (res.status === "conflicted") {
+        applySession(res.session, keep);
+        toast.show(msg ?? t("session.customConflict"));
+      } else if (msg) {
+        toast.show(msg);
+      }
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function updateStudyItem(activityId: string, patch: Partial<StudySentence>) {
+    setItems((list) =>
+      list ? list.map((it) => (isStudyItem(it) && it.activity_id === activityId ? { ...it, ...patch } : it)) : list,
+    );
+  }
+
+  // A server verdict on an adaptive activity, funnelled into the shared
+  // feedback flow. Out of tries: the answer is shown in the blank and the
+  // learner types it to move on (practice, not credited).
+  function onStudyResult(res: StudyAttemptResult, s: StudySentence, mode: AttemptMode, typedText: string) {
+    const key = s.sentence_id;
+    if (res.reveal) updateStudyItem(s.activity_id, { reveal: res.reveal, korean: revealedKorean(res.reveal) ?? s.korean });
+    const closedNow = !["pending", "presented", "attempted"].includes(res.activity_status);
+    if (closedNow) setClosed((c) => new Set(c).add(key));
+    if (!res.correct && closedNow) {
+      setMissed((m) => new Set(m).add(key));
+      setRevealed((m) => ({ ...m, [key]: revealedBlankAnswer(res.reveal) }));
+      setHintStage((m) => ({ ...m, [key]: "answer" }));
+      setKeyboard(true);
+      toast.show(t("session.answerShownAfterTries"));
+    }
+    record(studyToSpeech(res, s.activity_id, typedText), s, mode);
+  }
+
+  // An ended session (idle expiry) cannot take answers: start a fresh one.
+  function recoverStudy(e: unknown): boolean {
+    if (!isApiCode(e, "session.not_active")) return false;
+    void bootStudy(null);
+    return true;
+  }
 
   // Persist the session's durable progress on every change so a refresh restores
   // it. Transient attempt state (typed text, recording, the last result) is
@@ -257,9 +431,10 @@ export function SessionConversation() {
       startedAt: startedAt.current,
       keyboard,
       additionalCount,
+      studySessionId: study?.sessionId ?? null,
     };
     saveConversationSession(snapshot);
-  }, [items, idx, points, correctSet, answered, saved, revealed, hintStage, prompt, keyboard, additionalCount]);
+  }, [items, idx, points, correctSet, answered, saved, revealed, hintStage, prompt, keyboard, additionalCount, study]);
 
   const total = items?.length ?? 0;
   const cur = items?.[idx];
@@ -291,9 +466,10 @@ export function SessionConversation() {
       // A correct review answer awards points server-side and creates a points
       // notification — refresh the unread badge (normal sessions do this on exit).
       if (isReview) qc.invalidateQueries({ queryKey: ["notif-unread"] });
-      // Only a correct answer resolves the item and unlocks progression.
+      // Only a correct answer resolves the item and unlocks progression. An
+      // item that ran out of tries is resolved but never counted as correct.
       setAnswered((a) => new Set(a).add(s.sentence_id));
-      setCorrectSet((c) => new Set(c).add(s.sentence_id));
+      if (!missed.has(s.sentence_id)) setCorrectSet((c) => new Set(c).add(s.sentence_id));
     } else {
       // Wrong answer: the item stays unresolved so the user retries in place.
       // Reset the idempotency key (so the next attempt is scored fresh, not
@@ -311,9 +487,41 @@ export function SessionConversation() {
     if (submitting || composingRef.current || answered.has(s.sentence_id)) return;
     const answerText = typed.trim();
     if (!answerText) return;
+    if (isStudyItem(s) && closed.has(s.sentence_id)) {
+      // Practice re-answer of a closed activity: checked locally, not recorded.
+      const ok = practiceSentenceCorrect(s.reveal, answerText);
+      record(
+        {
+          attempt_id: `${s.activity_id}:practice`,
+          correct: ok,
+          transcription: answerText,
+          target_text: s.korean,
+          pronunciation_score: ok ? 100 : 0,
+          feedback_code: ok ? "correct" : "missed_words",
+          points_earned: 0,
+        },
+        s,
+        "keyboard",
+      );
+      return;
+    }
     setSubmitting(true);
     reqIdRef.current ??= newRequestId();
     const seq = ++attemptSeq.current;
+    if (isStudyItem(s) && study) {
+      try {
+        const res = await studyApi.attempt(study.sessionId, s.activity_id, {
+          answer: answerText,
+          client_request_id: reqIdRef.current,
+        });
+        if (seq === attemptSeq.current) onStudyResult(res, s, "keyboard", answerText);
+      } catch (e) {
+        if (seq === attemptSeq.current && !recoverStudy(e)) toast.error(copy.evaluationError);
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
     try {
       const res = await sentenceApi.blankAttempt(s.sentence_id, {
         inputMode: "keyboard",
@@ -342,8 +550,14 @@ export function SessionConversation() {
     if (hasBlank(s) && !(revealed[s.sentence_id] ?? "")) {
       setHintBusy(true);
       try {
-        const res = await sentenceApi.blankHint(s.sentence_id, 0);
-        setRevealed((m) => ({ ...m, [s.sentence_id]: res.revealed_text }));
+        // A session activity's hint is counted on the server (a hinted answer
+        // is weaker evidence); a closed one's comes from the revealed key.
+        const text = isStudyItem(s)
+          ? closed.has(s.sentence_id)
+            ? revealedBlankAnswer(s.reveal).slice(0, 1)
+            : ((await studyApi.hint(study!.sessionId, s.activity_id)).revealed_text ?? "")
+          : (await sentenceApi.blankHint(s.sentence_id, 0)).revealed_text;
+        setRevealed((m) => ({ ...m, [s.sentence_id]: text }));
       } catch (e) {
         toast.error(errorMessage(e));
         return; // finally still runs; stage is left untouched on failure
@@ -362,8 +576,17 @@ export function SessionConversation() {
     if (hasBlank(s)) {
       setHintBusy(true);
       try {
-        const res = await sentenceApi.blankHint(s.sentence_id, 0, true);
-        setRevealed((m) => ({ ...m, [s.sentence_id]: res.revealed_text }));
+        let text: string;
+        if (isStudyItem(s)) {
+          // Revealing on the server means a later correct answer is not
+          // counted as independent evidence and earns no credit.
+          const reveal = closed.has(s.sentence_id) ? s.reveal : await studyApi.reveal(study!.sessionId, s.activity_id);
+          if (reveal && reveal !== s.reveal) updateStudyItem(s.activity_id, { reveal, korean: revealedKorean(reveal) ?? s.korean });
+          text = revealedBlankAnswer(reveal);
+        } else {
+          text = (await sentenceApi.blankHint(s.sentence_id, 0, true)).revealed_text;
+        }
+        setRevealed((m) => ({ ...m, [s.sentence_id]: text }));
       } catch (e) {
         toast.error(errorMessage(e));
         return;
@@ -385,6 +608,29 @@ export function SessionConversation() {
   // accepts the missing phrase OR the full completed sentence; a sentence with
   // no blank is scored as a plain speech attempt.
   async function gradeRecording(sentence: Sentence, audio: Blob) {
+    if (isStudyItem(sentence) && study) {
+      // A closed activity takes no more graded answers; practice is typed.
+      if (closed.has(sentence.sentence_id)) {
+        setKeyboard(true);
+        return;
+      }
+      setScoring(true);
+      const seq = ++attemptSeq.current;
+      try {
+        const res = await studyApi.voiceAttempt(
+          study.sessionId,
+          sentence.activity_id,
+          audio,
+          (reqIdRef.current ??= newRequestId()),
+        );
+        if (seq === attemptSeq.current) onStudyResult(res, sentence, "voice", res.transcription ?? "");
+      } catch (e) {
+        if (seq === attemptSeq.current && !recoverStudy(e)) toast.error(copy.retryMessage);
+      } finally {
+        setScoring(false);
+      }
+      return;
+    }
     setScoring(true);
     const seq = ++attemptSeq.current;
     try {
@@ -481,6 +727,11 @@ export function SessionConversation() {
     if (finalizingRef.current) return;
     // Leaving ends the session: drop its snapshot so re-entry starts fresh.
     clearConversationSession();
+    if (study) {
+      // Completed when every activity is resolved, otherwise ended early.
+      const id = study.sessionId;
+      void studyApi.complete(id).catch(() => studyApi.abandon(id).catch(() => undefined));
+    }
     if (!attemptedRef.current) {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       nav(-1);
@@ -529,7 +780,7 @@ export function SessionConversation() {
         />
         <button
           className="sess__prompt-send"
-          onClick={() => prompt.trim() && loadSet(prompt.trim())}
+          onClick={() => prompt.trim() && customize(prompt.trim())}
           disabled={!prompt.trim() || busy}
           aria-label={t("session.customSubmitA11y")}
         >
@@ -538,7 +789,7 @@ export function SessionConversation() {
       </div>
     ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [prompt, busy],
+    [prompt, busy, study, idx, items],
   );
 
   return (
@@ -555,13 +806,16 @@ export function SessionConversation() {
       askContext={
         !cur
           ? null
+          : isStudyItem(cur) && study
+            ? // The grounded tutor: hints while the item is open, explanations after.
+              { contextKind: "study_activity", sessionId: study.sessionId, contextId: cur.activity_id, autoExplain: incorrect, bubble: incorrect }
           : incorrect && result
             ? { contextKind: "speech_attempt", contextId: result.attempt_id, autoExplain: true, bubble: true }
             : { contextKind: "sentence", contextId: cur.sentence_id, autoExplain: false, bubble: false }
       }
     >
       {error ? (
-        <ErrorState message={t("session.sentenceLoadError")} onRetry={() => loadSet()} />
+        <ErrorState message={t("session.sentenceLoadError")} onRetry={() => void bootStudy(null)} />
       ) : !cur ? (
         <LoadingState />
       ) : result?.correct ? (

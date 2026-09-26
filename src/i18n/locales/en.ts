@@ -1290,6 +1290,14 @@ export const en: Catalog = {
     pointsEarned: "⚡ +{points} points",
     levelLabel: "Level {n}",
     hint: "Hint",
+    answerShownAfterTries: "That was your second try, so here's the answer. Type it in to continue.",
+    topikAnswerShown: "That was your second try, so the correct answer is highlighted.",
+    topikAnswerRevealedTitle: "Here's the correct answer",
+    customApplied: "The rest of your set now matches your request.",
+    customConflict: "Your set changed in the meantime. Please send your request again.",
+    tutorAutoQuestion: "Give me a hint about why my answer was wrong.",
+    tutorLimit: "You've used all your questions for this item.",
+    tutorWithdrawn: "This item was withdrawn for an error, so it can't be explained.",
   },
 
   /** Chat sheet (Ask AI). */

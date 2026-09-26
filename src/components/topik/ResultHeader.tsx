@@ -21,11 +21,14 @@ export function ResultHeader({
   title,
   copy,
   bookmark,
+  incorrectTitle,
 }: {
   status: ResultStatus;
   /** Question directive shown before answering (e.g. "문제를 풀어보세요"). */
   title: string;
   copy: TopikSessionCopy;
+  /** Replaces the retry title when no retry is left (the answer is shown). */
+  incorrectTitle?: string;
   /** The save/bookmark button — owned by the screen (holds its saved state). */
   bookmark: ReactNode;
 }) {
@@ -43,7 +46,7 @@ export function ResultHeader({
             {status === "correct" ? <CheckBadge /> : <BangBadge />}
           </span>
           <span className="tq-head__title">
-            {status === "correct" ? copy.resultCorrectTitle : copy.resultRetryTitle}
+            {status === "correct" ? copy.resultCorrectTitle : (incorrectTitle ?? copy.resultRetryTitle)}
           </span>
         </div>
       )}

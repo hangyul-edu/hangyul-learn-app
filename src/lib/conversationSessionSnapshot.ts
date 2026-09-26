@@ -23,6 +23,9 @@ export type ConversationSessionSnapshot = {
   keyboard: boolean;
   /** Additional-learning batch size (5/10/15/20), or null for a normal session. */
   additionalCount: number | null;
+  /** The adaptive session the set belongs to (resumed from the server, not
+   *  from `items`); absent/null for a legacy recommendation set. */
+  studySessionId?: string | null;
 };
 
 const store = createSessionSnapshotStore<ConversationSessionSnapshot>(

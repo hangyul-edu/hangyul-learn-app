@@ -32,25 +32,28 @@ vi.mock("../components/SessionCompleteModal", () => ({
     <div data-testid="complete">완료 {correctCount} {points}P</div>
   ),
 }));
-vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn() }) }));
-vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: "ko" } }) }));
-
-const { questions, topikTypes, summary, attempt, recordSession } = vi.hoisted(() => ({
+const { questions, topikTypes, summary, attempt, recordSession, toastShow, study } = vi.hoisted(() => ({
   questions: vi.fn(),
   topikTypes: vi.fn(),
   summary: vi.fn(),
   attempt: vi.fn(),
   recordSession: vi.fn(),
+  toastShow: vi.fn(),
+  study: { start: vi.fn(), present: vi.fn(), attempt: vi.fn(), complete: vi.fn(), abandon: vi.fn() },
 }));
+vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn(), show: toastShow }) }));
+vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: "ko" } }) }));
 vi.mock("../api/endpoints", () => ({
   recApi: { questions, topikQuestionTypes: topikTypes },
   quizApi: { attempt, audio: vi.fn(), bookmark: vi.fn(), unbookmark: vi.fn() },
   dashboardApi: { summary },
   learnApi: { recordSession },
+  studyApi: study,
 }));
 
 import { SessionTopik } from "./SessionTopik";
 import { I18nProvider } from "../i18n";
+import { ApiError } from "../lib/http";
 
 function mc(id: string) {
   return {
@@ -125,6 +128,12 @@ beforeEach(() => {
   });
   topikTypes.mockResolvedValue({ section: "reading", items: [] });
   questions.mockResolvedValue({ items: [mc("A"), mc("B"), mc("C")] });
+  // By default no reviewed content fits, so the recommender is the fallback —
+  // the legacy path most of these tests exercise. The adaptive tests override.
+  study.start.mockRejectedValue(new ApiError(409, "session.no_eligible_content", ""));
+  study.present.mockResolvedValue(undefined);
+  study.complete.mockResolvedValue({});
+  study.abandon.mockResolvedValue({});
 });
 
 describe("SessionTopik — answer flow (incorrect → retry → correct)", () => {
@@ -309,5 +318,146 @@ describe("SessionTopik — answer flow (incorrect → retry → correct)", () =>
     await waitFor(() => expect(screen.getByTestId("counter")).toHaveTextContent("1/3"));
     // Exactly one request despite two taps.
     expect(attempt).toHaveBeenCalledTimes(1);
+  });
+});
+
+/* ---- adaptive study sessions (/study-sessions) through the same screen ---- */
+
+function quizActivity(id: string, over: Record<string, unknown> = {}) {
+  return {
+    activity_id: `act_${id}`,
+    position: id.charCodeAt(0),
+    phase: "practice",
+    activity_kind: "quiz",
+    review_kind: "none",
+    status: "pending",
+    content_version_id: `cv_${id}`,
+    quiz_id: `quiz_${id}`,
+    sentence_id: null,
+    is_custom_practice: false,
+    hints_used: 0,
+    answer_revealed: false,
+    attempts: [],
+    attempts_left: 2,
+    content: {
+      answer_format: "single_choice",
+      material_kind: "text",
+      topik_section: "reading",
+      topik_question_type: "reading_01",
+      prompt: `문제 ${id}`,
+      prompt_translation: null,
+      content_html: null,
+      image_url: null,
+      choices: ["선택 1", "선택 2", "선택 3", "선택 4"],
+      choice_keys: ["1", "2", "3", "4"],
+      blanks: [],
+    },
+    reveal: null,
+    ...over,
+  };
+}
+
+const QUIZ_REVEAL = { answer_key: { correct_answer: "3" }, explanations: [] };
+
+function topikSession(activities: unknown[]) {
+  return {
+    session_id: "ss_t",
+    track: "topik",
+    status: "active",
+    current_revision: 1,
+    learner_band: 3,
+    requested_activity_count: 3,
+    topik_section: "reading",
+    topik_question_type: null,
+    shortfall_reason: null,
+    shortfall_message: null,
+    started_at: "2026-09-26T00:00:00Z",
+    activities,
+  };
+}
+
+function studyRes(over: Record<string, unknown>) {
+  return {
+    attempt_no: 1,
+    correct: false,
+    replayed: false,
+    activity_status: "attempted",
+    attempts_left: 1,
+    evidence_policy: "independent",
+    reveal: null,
+    daily_progress: null,
+    completed_now: false,
+    points_earned: 0,
+    ...over,
+  };
+}
+
+describe("SessionTopik — adaptive session", () => {
+  beforeEach(() => {
+    study.start.mockResolvedValue(topikSession([quizActivity("A"), quizActivity("B"), quizActivity("C")]));
+  });
+
+  it("takes the part's questions from the session and grades on the session", async () => {
+    study.attempt.mockResolvedValue(
+      studyRes({
+        correct: true,
+        activity_status: "completed",
+        attempts_left: 0,
+        reveal: QUIZ_REVEAL,
+        completed_now: true,
+        points_earned: 10,
+        daily_progress: { track_id: "track_topik", target: 3, current: 1, achieved: false },
+      }),
+    );
+    renderScreen();
+    await screen.findByText("문제 A");
+    expect(questions).not.toHaveBeenCalled();
+    expect(study.start).toHaveBeenCalledWith(expect.objectContaining({ track: "topik", topik_section: "reading" }));
+    await userEvent.click(option("3"));
+    await userEvent.click(submitBtn());
+    await waitFor(() =>
+      expect(study.attempt).toHaveBeenCalledWith("ss_t", "act_A", expect.objectContaining({ answer: "3" })),
+    );
+    expect(attempt).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByTestId("counter")).toHaveTextContent("1/3"));
+    expect(screen.getByRole("button", { name: "다음" })).toBeInTheDocument();
+  });
+
+  it("a second wrong answer shows the correct option and moves on, crediting nothing", async () => {
+    study.attempt
+      .mockResolvedValueOnce(studyRes({}))
+      .mockResolvedValueOnce(
+        studyRes({ attempt_no: 2, activity_status: "completed", attempts_left: 0, reveal: QUIZ_REVEAL, evidence_policy: "retry" }),
+      );
+    renderScreen();
+    await screen.findByText("문제 A");
+    await userEvent.click(option("1"));
+    await userEvent.click(submitBtn());
+    await waitFor(() => expect(option("1")).toHaveClass("is-wrong"));
+    // First wrong: retry in place, as before.
+    expect(screen.queryByRole("button", { name: "다음" })).not.toBeInTheDocument();
+    await userEvent.click(option("2"));
+    await userEvent.click(submitBtn());
+    // Second wrong: the item closes, the right option is shown, Next appears.
+    await waitFor(() => expect(option("3")).toHaveClass("is-correct"));
+    expect(option("2")).toHaveClass("is-wrong");
+    expect(toastShow).toHaveBeenCalledWith(expect.stringContaining("정답"));
+    // No retry is offered any more, so the header no longer says "try again".
+    expect(screen.getByText("정답을 확인해 보세요")).toBeInTheDocument();
+    expect(screen.getByTestId("counter")).toHaveTextContent("0/3");
+    await userEvent.click(screen.getByRole("button", { name: "다음" }));
+    expect(await screen.findByText("문제 B")).toBeInTheDocument();
+  });
+
+  it("resumes the server session at its first open question", async () => {
+    study.start.mockResolvedValue(
+      topikSession([
+        quizActivity("A", { status: "completed", attempts: [{ attempt_no: 1, correct: true, graded_at: "" }], reveal: QUIZ_REVEAL }),
+        quizActivity("B"),
+        quizActivity("C"),
+      ]),
+    );
+    renderScreen();
+    expect(await screen.findByText("문제 B")).toBeInTheDocument();
   });
 });

@@ -153,7 +153,7 @@ export function SessionChrome({
           gets a fresh conversation and late responses can't cross over. */}
       {askContext && (
         <AskAiSheet
-          key={askContext.contextId}
+          key={`${askContext.contextId}:${askContext.autoExplain ? "explain" : "ask"}`}
           open={sheetOpen}
           context={askContext}
           onClose={() => setSheetOpen(false)}

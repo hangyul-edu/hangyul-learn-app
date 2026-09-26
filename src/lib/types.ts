@@ -814,3 +814,83 @@ export interface Notice extends NoticeSummary {
   /** Body authoring format; the client renders it with a safe Markdown renderer. */
   content_format?: "markdown";
 }
+
+/* ---- Adaptive study sessions (/study-sessions) ---- */
+export type StudyTrack = "conversation" | "topik";
+export interface StudyReveal {
+  answer_key: {
+    correct_answer?: string | null;
+    korean?: string | null;
+    blanks?: { index?: number; label?: string; answer?: string | null }[];
+  } & Record<string, unknown>;
+  explanations: { kind: string; choice_key: string | null; language: string; body: string }[];
+}
+export interface StudyActivity {
+  activity_id: string;
+  position: number;
+  phase: string;
+  activity_kind: "quiz" | "sentence_blank" | string;
+  review_kind: string;
+  status: "pending" | "presented" | "attempted" | "completed" | "skipped" | "withdrawn" | "replaced" | string;
+  content_version_id: string;
+  quiz_id: string | null;
+  sentence_id: string | null;
+  is_custom_practice: boolean;
+  hints_used: number;
+  answer_revealed: boolean;
+  attempts: { attempt_no: number; correct: boolean | null; graded_at: string }[];
+  attempts_left: number;
+  /** Public payload — never the answer before it is allowed. */
+  content: Record<string, unknown>;
+  reveal: StudyReveal | null;
+}
+export interface StudySession {
+  session_id: string;
+  track: StudyTrack;
+  status: "active" | "completed" | "abandoned" | "expired" | string;
+  current_revision: number;
+  learner_band: number;
+  requested_activity_count: number;
+  topik_section: string | null;
+  topik_question_type: string | null;
+  shortfall_reason: string | null;
+  shortfall_message: { ko: string; en: string } | null;
+  started_at: string;
+  activities: StudyActivity[];
+}
+export interface StudyAttemptResult {
+  attempt_no: number;
+  correct: boolean | null;
+  replayed: boolean;
+  activity_status: string;
+  attempts_left: number;
+  evidence_policy: string;
+  reveal: StudyReveal | null;
+  daily_progress: { track_id: string; goal_key?: string; target: number; current: number; achieved: boolean } | null;
+  completed_now: boolean;
+  points_earned: number;
+  transcription?: string | null;
+}
+export interface StudyCustomization {
+  customization_id: string;
+  status: "applied" | "needs_clarification" | "rejected" | "conflicted" | "cancelled" | "undone" | "processing" | string;
+  operation: string | null;
+  interpreter_route: string | null;
+  fallback_step: string | null;
+  unmet_constraints: string[];
+  message: { ko: string; en: string } | null;
+  new_revision: number | null;
+  added_activity_ids: string[];
+  removed_activity_ids: string[];
+  session: StudySession;
+}
+export interface TutorAnswer {
+  turn_id: string;
+  mode: "hint_only" | "explain" | string;
+  route: string;
+  answer: string;
+  cited_sentence: string | null;
+  examples: string[];
+  turns_left: number;
+  replayed: boolean;
+}

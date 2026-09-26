@@ -73,6 +73,8 @@ interface RequestOptions {
   /** internal: prevents infinite refresh loops. */
   _retry?: boolean;
   signal?: AbortSignal;
+  /** "text" returns the raw body (e.g. a CSV download) instead of parsed JSON. */
+  responseType?: "json" | "text";
 }
 
 function buildUrl(path: string, query?: RequestOptions["query"]): string {
@@ -89,7 +91,7 @@ function buildUrl(path: string, query?: RequestOptions["query"]): string {
 }
 
 export async function apiFetch<T = unknown>(path: string, opts: RequestOptions = {}): Promise<T> {
-  const { method = "GET", body, form, query, auth = true, _retry = false, signal } = opts;
+  const { method = "GET", body, form, query, auth = true, _retry = false, signal, responseType = "json" } = opts;
   const headers: Record<string, string> = { accept: "application/json" };
   if (auth && handlers) {
     const token = handlers.getAccessToken();
@@ -122,6 +124,7 @@ export async function apiFetch<T = unknown>(path: string, opts: RequestOptions =
 
   let data: any = null;
   const text = await res.text();
+  if (res.ok && responseType === "text") return text as T;
   if (text) {
     try {
       data = JSON.parse(text);

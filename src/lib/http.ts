@@ -6,12 +6,15 @@ export class ApiError extends Error {
   status: number;
   code: string;
   detail: string;
-  constructor(status: number, code: string, detail: string) {
+  /** Optional machine-readable context from the problem body (e.g. per-field messages). */
+  details?: Record<string, unknown>;
+  constructor(status: number, code: string, detail: string, details?: Record<string, unknown>) {
     super(detail || code || `HTTP ${status}`);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
     this.detail = detail;
+    this.details = details;
   }
 }
 
@@ -136,7 +139,7 @@ export async function apiFetch<T = unknown>(path: string, opts: RequestOptions =
   if (!res.ok) {
     const code = data?.code || data?.title || "error";
     const detail = data?.detail || friendlyFallback(res.status);
-    throw new ApiError(res.status, code, detail);
+    throw new ApiError(res.status, code, detail, data?.details);
   }
   return data as T;
 }

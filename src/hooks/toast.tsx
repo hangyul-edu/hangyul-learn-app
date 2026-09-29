@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { errorMessage } from "../lib/http";
@@ -77,11 +77,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const value: ToastCtx = {
-    show,
-    success: (m) => show(m, "success"),
-    error: (m) => show(m, "error"),
-  };
+  // Stable across renders, so `useToastError`'s callback (and any effect that
+  // lists the toast API) does not change identity whenever a toast appears.
+  const value = useMemo<ToastCtx>(
+    () => ({
+      show,
+      success: (m) => show(m, "success"),
+      error: (m) => show(m, "error"),
+    }),
+    [show],
+  );
   return (
     <Ctx.Provider value={value}>
       {children}

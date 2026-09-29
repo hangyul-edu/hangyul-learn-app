@@ -74,9 +74,12 @@ export function Streak() {
   // (which requires reaching the daily custom-learning goal). We only key off
   // the server-provided `date` (normalized to YYYY-MM-DD so it matches any time
   // suffix), and only when the loaded month matches the viewed month so a stale
-  // response can't mismark. Today is additionally union-ed in from the sun's
-  // `studied_today` so a view-only day (which advances the streak/sun before any
-  // counted attempt) is marked consistently with the rest of the app.
+  // response can't mismark. A day on which a sentence / TOPIK question was only
+  // displayed (never answered) is a learning day too: the display is recorded
+  // through `POST /learning/activity`, which advances the streak and marks the
+  // day server-side. Today is additionally union-ed in from the sun's
+  // `studied_today` — which `useMarkStudied` lights optimistically the moment
+  // an item appears — so the calendar agrees with the sun before a refetch.
   const completed = useMemo(() => {
     const dates = new Set<string>();
     const m = q.data?.month;

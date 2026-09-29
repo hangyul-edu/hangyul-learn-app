@@ -14,6 +14,7 @@ import { SaveBookmarkButton } from "../components/SaveBookmarkButton";
 import { LoadingState, ErrorState } from "../components/ui/states";
 import { quizApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
+import { useRecordDisplayedItem } from "../hooks/learningActivity";
 import { errorMessage } from "../lib/http";
 import { randomUuid } from "../lib/uuid";
 import { useReviewSessionCopy } from "../lib/reviewSessionCopy";
@@ -123,6 +124,11 @@ export function SessionReview() {
       /* ignore */
     }
   }, [value, quiz, rewardPoints, draftKey]);
+
+  // The saved question on screen counts as study: displaying it records
+  // today's learning activity (streak + learning day + the sun), once per UTC
+  // day and silently — reviewing it counts even before an answer.
+  useRecordDisplayedItem("topik", error ? null : quiz?.quiz_id);
 
   const completed = rewardPoints !== null;
   const incorrect = !!result && !result.correct;

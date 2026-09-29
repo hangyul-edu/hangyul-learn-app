@@ -7,6 +7,7 @@ import { Sheet } from "../components/ui/Modal";
 import { Async, EmptyState, LoadingState } from "../components/ui/states";
 import { sentenceApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
+import { useRecordDisplayedItem } from "../hooks/learningActivity";
 import { useVoiceRecorder } from "../hooks/useVoiceRecorder";
 import { errorMessage } from "../lib/http";
 import type { Page, Sentence, SpeechAttempt } from "../lib/types";
@@ -41,6 +42,9 @@ export function Conversation() {
 
   const items = q.data?.items ?? [];
   const cur = items[idx];
+  // The sentence on screen counts as study (streak + learning day + the sun),
+  // recorded once per UTC day and silently.
+  useRecordDisplayedItem("conversation", cur?.sentence_id);
 
   async function playAudio(s: Sentence) {
     try {

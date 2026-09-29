@@ -39,12 +39,12 @@ function stats(period: ManagementPeriod, over: Partial<ManagementStats> = {}): M
     timezone: "UTC",
     range: { start_date: "2026-07-20", end_date: "2026-07-26" },
     has_any_eligible_learning_record: true,
-    today: { study_seconds: 3600, conversation_sentence_count: 3, topik_question_count: 2, learning_count: 5 },
+    today: { study_seconds: 3600, conversation_sentence_count: 3, topik_question_count: 2 },
     buckets: [
       { key: "d1", start_date: "2026-07-20", end_date: "2026-07-20", study_seconds: 1200, conversation_sentence_count: 4, topik_question_count: 1, is_current: false },
       { key: "d2", start_date: "2026-07-23", end_date: "2026-07-23", study_seconds: 3600, conversation_sentence_count: 3, topik_question_count: 2, is_current: true },
     ],
-    period_totals: { conversation_sentence_count: 7, topik_question_count: 3, learning_count: 10 },
+    period_totals: { conversation_sentence_count: 7, topik_question_count: 3 },
     ...over,
   };
 }
@@ -79,7 +79,12 @@ describe("LearningManagement", () => {
     expect(await screen.findByText("꾸준히 쌓이는 기록, 대단해요!")).toBeInTheDocument();
     const summary = document.querySelector(".lmgmt__summary") as HTMLElement;
     expect(within(summary).getByText("01:00")).toBeInTheDocument(); // 3600s → HH:MM
-    expect(within(summary).getByText("5")).toBeInTheDocument(); // server learning_count
+    // Conversation and TOPIK are shown separately — never as one summed total.
+    expect(within(screen.getByTestId("lmgmt-today-sentences")).getByText("오늘 학습한 문장")).toBeInTheDocument();
+    expect(within(screen.getByTestId("lmgmt-today-sentences")).getByText("3개")).toBeInTheDocument();
+    expect(within(screen.getByTestId("lmgmt-today-questions")).getByText("오늘 학습한 문제")).toBeInTheDocument();
+    expect(within(screen.getByTestId("lmgmt-today-questions")).getByText("2개")).toBeInTheDocument();
+    expect(within(summary).queryByText(/^5(개)?$/)).not.toBeInTheDocument();
     // Chart bars + current-bucket value (today selected by default). HMA-002
     // labels its bar "1h33m" — unspaced.
     expect(screen.getByText("월")).toBeInTheDocument();
@@ -229,9 +234,9 @@ describe("LearningManagement", () => {
     management.mockResolvedValue(
       stats("7d", {
         has_any_eligible_learning_record: true,
-        today: { study_seconds: 0, conversation_sentence_count: 0, topik_question_count: 0, learning_count: 0 },
+        today: { study_seconds: 0, conversation_sentence_count: 0, topik_question_count: 0 },
         buckets: [{ key: "d", start_date: "2026-07-23", end_date: "2026-07-23", study_seconds: 0, conversation_sentence_count: 0, topik_question_count: 0, is_current: true }],
-        period_totals: { conversation_sentence_count: 0, topik_question_count: 0, learning_count: 0 },
+        period_totals: { conversation_sentence_count: 0, topik_question_count: 0 },
       }),
     );
     renderPage();

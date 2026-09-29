@@ -26,6 +26,7 @@ import {
   type StudySentence,
 } from "../lib/studySession";
 import { useToast } from "../hooks/toast";
+import { useRecordDisplayedItem } from "../hooks/learningActivity";
 import { useVoiceRecorder } from "../hooks/useVoiceRecorder";
 import { errorMessage } from "../lib/http";
 import { randomUuid } from "../lib/uuid";
@@ -439,10 +440,12 @@ export function SessionConversation() {
   const total = items?.length ?? 0;
   const cur = items?.[idx];
   const progress = total ? answered.size / total : 0;
-  // Note: opening/viewing a sentence does NOT count as learning. Today is only
-  // credited as a learning day once the user answers a sentence correctly —
-  // that happens server-side on the correct attempt, and the sun refreshes when
-  // the dashboard query is invalidated on session exit.
+  // A sentence on screen counts as study: displaying it records today's
+  // learning activity (streak + learning day + the sun), once per UTC day and
+  // silently — no answer needed. A correct answer additionally feeds the goal,
+  // points and the conversation count through the attempt endpoints. Nothing
+  // is recorded while loading or on the error state (no sentence shown).
+  useRecordDisplayedItem("conversation", error ? null : cur?.sentence_id);
 
   async function toggleSave(s: Sentence) {
     const on = saved[s.sentence_id];

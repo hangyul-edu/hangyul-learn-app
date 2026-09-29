@@ -9,6 +9,7 @@ import { QuestionView, examAnswerString, isAnswered } from "../components/Questi
 import type { AnswerValue } from "../components/QuestionView";
 import { examApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
+import { useRecordDisplayedItem } from "../hooks/learningActivity";
 import { ApiError, errorMessage } from "../lib/http";
 import type { ExamResult, ExamSet } from "../lib/types";
 
@@ -70,6 +71,10 @@ export function ExamPlay() {
     queryFn: () => examApi.get(examId),
     retry: false,
   });
+  // The exam question on screen counts as study (streak + learning day + the
+  // sun), recorded once per UTC day and silently. Nothing is shown — so nothing
+  // recorded — while loading, when locked, or on the graded result.
+  useRecordDisplayedItem("topik", result ? null : q.data?.questions?.[idx]?.quiz_id);
 
   if (q.error instanceof ApiError && q.error.status === 402 && !locked) setLocked(true);
   if (locked)

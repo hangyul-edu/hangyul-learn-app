@@ -28,15 +28,17 @@ function SavedProbe() {
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn() }) }));
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: "ko" } }) }));
 
-const { get, attempt, bookmark, unbookmark, audio } = vi.hoisted(() => ({
+const { get, attempt, bookmark, unbookmark, audio, recordActivity } = vi.hoisted(() => ({
   get: vi.fn(),
   attempt: vi.fn(),
   bookmark: vi.fn(),
   unbookmark: vi.fn(),
   audio: vi.fn(),
+  recordActivity: vi.fn(),
 }));
 vi.mock("../api/endpoints", () => ({
   quizApi: { get, attempt, bookmark, unbookmark, audio },
+  learnApi: { recordActivity },
 }));
 
 import { SessionReview } from "./SessionReview";
@@ -92,8 +94,27 @@ beforeEach(() => {
   vi.clearAllMocks();
   sessionStorage.clear();
   get.mockResolvedValue(QUIZ);
+  recordActivity.mockResolvedValue({ studied_today: true, learning_day_created: true, total_learning_days: 1 });
 });
 afterEach(() => vi.restoreAllMocks());
+
+describe("SessionReview — study activity", () => {
+  it("records a TOPIK activity once when the saved question is displayed, before any answer", async () => {
+    renderReview();
+    await screen.findByText(/알맞은 것을 고르십시오/);
+    await waitFor(() => expect(recordActivity).toHaveBeenCalledTimes(1));
+    expect(recordActivity).toHaveBeenCalledWith("topik", "q1");
+    expect(attempt).not.toHaveBeenCalled();
+  });
+
+  it("records nothing when the question fails to load", async () => {
+    get.mockRejectedValue(new Error("nope"));
+    renderReview();
+    await waitFor(() => expect(get).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 0));
+    expect(recordActivity).not.toHaveBeenCalled();
+  });
+});
 
 describe("SessionReview — saved TOPIK question", () => {
   it("renders the exact saved question via the TOPIK renderer", async () => {

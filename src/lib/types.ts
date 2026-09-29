@@ -751,17 +751,16 @@ export interface ManagementStats {
   timezone: string;
   range: { start_date: string; end_date: string };
   has_any_eligible_learning_record: boolean;
+  /** Conversation and TOPIK are separate metrics — the API has no combined total. */
   today: {
     study_seconds: number;
     conversation_sentence_count: number;
     topik_question_count: number;
-    learning_count: number;
   };
   buckets: ManagementBucket[];
   period_totals: {
     conversation_sentence_count: number;
     topik_question_count: number;
-    learning_count: number;
   };
 }
 

@@ -6,6 +6,7 @@ import { EmptyState } from "../components/ui/states";
 import { TextField } from "../components/ui/Field";
 import { recApi, sentenceApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
+import { useRecordDisplayedItem } from "../hooks/learningActivity";
 import { errorMessage } from "../lib/http";
 import type { RecQuota, Sentence } from "../lib/types";
 
@@ -17,6 +18,10 @@ export function Recommendations() {
   const [quota, setQuota] = useState<RecQuota | null>(null);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<Record<string, boolean>>({});
+  // Recommended sentences are shown in full here (this screen has no detail
+  // view), so their appearance counts as study (streak + learning day + the
+  // sun), recorded once per UTC day and silently.
+  useRecordDisplayedItem("conversation", items?.[0]?.sentence_id);
 
   async function recommend() {
     setBusy(true);

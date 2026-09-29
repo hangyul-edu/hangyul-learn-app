@@ -12,6 +12,7 @@ import { QuestionView, isAnswered, quizAttemptBody } from "../components/Questio
 import type { AnswerValue } from "../components/QuestionView";
 import { learnApi, practiceApi, quizApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
+import { useRecordDisplayedItem } from "../hooks/learningActivity";
 import { ApiError, errorMessage } from "../lib/http";
 import type { Quiz, QuizAttemptResult } from "../lib/types";
 
@@ -43,6 +44,10 @@ export function Practice() {
   // The bookmark glyph reflects the question being shown, so it re-seeds from
   // the server's flag whenever the card advances.
   useEffect(() => setSaved(!!current?.bookmarked), [current]);
+  // The practice question on screen counts as study (streak + learning day +
+  // the sun), recorded once per UTC day and silently. `current` is undefined
+  // before the set starts and on the completion screen, so neither records.
+  useRecordDisplayedItem("topik", current?.quiz_id);
 
   function onChoose(key: string) {
     setValue({ choiceKey: key });

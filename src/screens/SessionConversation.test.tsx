@@ -32,8 +32,9 @@ vi.mock("../components/SessionChrome", () => ({
 }));
 vi.mock("../components/SessionCompleteModal", () => ({ SessionCompleteModal: () => null }));
 
-const { recSentences, blankAttempt, blankHint, speechAttempt, summary, toastError, toastShow, toastSuccess, study } = vi.hoisted(
+const { recSentences, blankAttempt, blankHint, speechAttempt, summary, toastError, toastShow, toastSuccess, study, recordActivity } = vi.hoisted(
   () => ({
+    recordActivity: vi.fn(),
     recSentences: vi.fn(),
     blankAttempt: vi.fn(),
     blankHint: vi.fn(),
@@ -71,7 +72,7 @@ vi.mock("../api/endpoints", () => ({
     audio: vi.fn().mockResolvedValue({ url: "http://x/a.mp3" }),
   },
   dashboardApi: { summary },
-  learnApi: { recordSession: vi.fn() },
+  learnApi: { recordSession: vi.fn(), recordActivity },
   studyApi: study,
 }));
 
@@ -140,6 +141,17 @@ beforeEach(() => {
   });
 });
 afterEach(() => vi.restoreAllMocks());
+
+describe("SessionConversation — study activity on display", () => {
+  it("records a conversation activity once when the sentence is displayed, before any answer", async () => {
+    recordActivity.mockResolvedValue({ studied_today: true, learning_day_created: true, total_learning_days: 1 });
+    renderScreen();
+    await screen.findByText(/덕분에 잘/);
+    await waitFor(() => expect(recordActivity).toHaveBeenCalledTimes(1));
+    expect(recordActivity).toHaveBeenCalledWith("conversation", SENTENCE.sentence_id);
+    expect(blankAttempt).not.toHaveBeenCalled();
+  });
+});
 
 describe("SessionConversation — fill-in-the-blank", () => {
   it("renders the prefix, inline blank, and the API explanation (not the answer/full sentence)", async () => {

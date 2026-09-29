@@ -9,6 +9,7 @@ import { QuestionView, isAnswered, quizAttemptBody } from "../components/Questio
 import type { AnswerValue } from "../components/QuestionView";
 import { quizApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
+import { useRecordDisplayedItem } from "../hooks/learningActivity";
 import { errorMessage } from "../lib/http";
 import type { Quiz, QuizAttemptResult } from "../lib/types";
 
@@ -22,6 +23,9 @@ export function QuizPlay() {
   const [result, setResult] = useState<QuizAttemptResult | null>(null);
 
   const q = useQuery({ queryKey: ["quiz", quizId], queryFn: () => quizApi.get(quizId) });
+  // The question on screen counts as study (streak + learning day + the sun),
+  // recorded once per UTC day and silently.
+  useRecordDisplayedItem("topik", q.data?.quiz_id);
 
   async function submit(quiz: Quiz) {
     setBusy(true);

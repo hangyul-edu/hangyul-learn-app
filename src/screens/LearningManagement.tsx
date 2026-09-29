@@ -143,16 +143,31 @@ export function LearningManagement() {
           <>
             <h1 className="lmgmt__heading">{headline}</h1>
 
-            {/* Today's summary — server-provided, HH:MM + combined learning count. */}
+            {/* Today's summary — server-provided HH:MM, then the conversation
+                and TOPIK counts side by side. They are independent metrics and
+                are never summed into one "learning" total. */}
             <div className="lmgmt__summary">
               <div className="lmgmt__summary-col">
                 <span className="lmgmt__summary-label">{t("learningManagement.todayTime")}</span>
                 <span className="lmgmt__summary-value">{fmtHHMM(data.today.study_seconds)}</span>
               </div>
               <div className="lmgmt__summary-divider" aria-hidden="true" />
-              <div className="lmgmt__summary-col">
-                <span className="lmgmt__summary-label">{t("learningManagement.todayHeading")}</span>
-                <span className="lmgmt__summary-value">{data.today.learning_count}</span>
+              <div className="lmgmt__summary-col" data-testid="lmgmt-today-sentences">
+                <span className="lmgmt__summary-label">{t("learningManagement.todaySentences")}</span>
+                <span className="lmgmt__summary-value">
+                  {t("learningManagement.countUnit", {
+                    n: data.today.conversation_sentence_count.toLocaleString(),
+                  })}
+                </span>
+              </div>
+              <div className="lmgmt__summary-divider" aria-hidden="true" />
+              <div className="lmgmt__summary-col" data-testid="lmgmt-today-questions">
+                <span className="lmgmt__summary-label">{t("learningManagement.todayQuestions")}</span>
+                <span className="lmgmt__summary-value">
+                  {t("learningManagement.countUnit", {
+                    n: data.today.topik_question_count.toLocaleString(),
+                  })}
+                </span>
               </div>
             </div>
 

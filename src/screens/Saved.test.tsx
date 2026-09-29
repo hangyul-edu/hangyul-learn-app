@@ -9,12 +9,14 @@ import type { Quiz } from "../lib/types";
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn() }) }));
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { user_id: "u1", app_language: "ko" } }) }));
 
-const { savedSentences, bookmarks, quizMarkViewed } = vi.hoisted(() => ({
+const { savedSentences, bookmarks, quizMarkViewed, recordActivity } = vi.hoisted(() => ({
   savedSentences: vi.fn(),
   bookmarks: vi.fn(),
   quizMarkViewed: vi.fn(),
+  recordActivity: vi.fn(),
 }));
 vi.mock("../api/endpoints", () => ({
+  learnApi: { recordActivity },
   sentenceApi: {
     saved: savedSentences,
     audio: vi.fn(),
@@ -112,6 +114,14 @@ async function expectQuestionsTab() {
   expect(await screen.findByRole("button", { name: /저장한 문제/ })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /저장한 문장/ })).not.toBeInTheDocument();
 }
+
+describe("Saved — the list itself is not studying", () => {
+  it("records no study activity for the saved list (only the review screens it opens do)", async () => {
+    renderRoundTrip("/saved", "topik");
+    expect(await screen.findByText(/알맞은 것을 고르십시오/)).toBeInTheDocument();
+    expect(recordActivity).not.toHaveBeenCalled();
+  });
+});
 
 describe("Saved — Questions tab restored when returning from a review", () => {
   it("restores Questions on back, surviving the StrictMode double-mount", async () => {

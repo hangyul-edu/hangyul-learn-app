@@ -27,6 +27,7 @@ import {
   type StudyQuiz,
 } from "../lib/studySession";
 import { useToast } from "../hooks/toast";
+import { useRecordDisplayedItem } from "../hooks/learningActivity";
 import { errorMessage } from "../lib/http";
 import { useTopikSessionCopy } from "../lib/topikSessionCopy";
 import { TOPIK_TYPE_LABEL_EN, TOPIK_TYPE_LABEL_KO } from "../lib/topikTypeLabels";
@@ -418,6 +419,12 @@ export function SessionTopik() {
     const timer = setTimeout(() => saveTopikSession(snapshot), 300);
     return () => clearTimeout(timer);
   }, [items, idx, drafts, correctSet, attempted, points, typeCode, section, goalCurrent, goalTarget, additionalCount, retrying, study]);
+
+  // A question on screen counts as study: displaying it records today's
+  // learning activity (streak + learning day + the sun), once per UTC day and
+  // silently — no answer needed. Nothing is recorded while loading or on the
+  // error state (no question shown).
+  useRecordDisplayedItem("topik", error ? null : cur?.quiz_id);
 
   // Record that the current activity is on screen (exposure for the
   // repetition policy). Idempotent server-side.

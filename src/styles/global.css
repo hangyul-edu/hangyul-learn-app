@@ -828,7 +828,9 @@ textarea.input {
   box-shadow: 0 4px 4px rgba(0, 0, 0, 0.05);
 }
 .lmgmt__summary-col {
-  /* Half the run each. At 375 this resolves to the frame's own 141.5. */
+  /* An equal share of the run each: time, sentences, questions. The frame's two
+     141.5 columns became three when the combined learning count was split into
+     its conversation and TOPIK parts (the two are never summed). */
   flex: 1 1 0;
   min-width: 0;
   display: flex;

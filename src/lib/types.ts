@@ -209,7 +209,9 @@ export interface QuizMaterial {
   kind: string;
   html: string | null;
   image_url: string | null;
-  audio: { url?: string } | null;
+  /** Present for listening questions. The server sends only `duration_ms`;
+   *  the playable URL comes from `quizApi.audio` (never `url` here). */
+  audio: { duration_ms?: number; url?: string } | null;
 }
 export interface QuizAnswerConfig {
   format: AnswerFormat;

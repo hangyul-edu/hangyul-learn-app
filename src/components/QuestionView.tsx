@@ -1,6 +1,8 @@
-import { OptionCard } from "./ui/kit";
+import { useState } from "react";
+import { Button, OptionCard } from "./ui/kit";
 import { useTranslation } from "../i18n";
 import { TextArea, TextField } from "./ui/Field";
+import { quizApi } from "../api/endpoints";
 import type { Quiz } from "../lib/types";
 
 export interface AnswerValue {
@@ -53,9 +55,7 @@ export function QuestionView({
         <div className="card card--flat" style={{ background: "var(--surface-2)", fontSize: 14, lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: material.html }} />
       )}
       {material?.image_url && <img src={material.image_url} alt="" style={{ width: "100%", borderRadius: 14 }} />}
-      {material?.audio?.url && (
-        <audio controls src={material.audio.url} style={{ width: "100%" }} />
-      )}
+      {material?.audio && <QuizAudio key={quiz.quiz_id} quizId={quiz.quiz_id} />}
 
       <div className="card card--pad-lg">
         <div className="eyebrow" style={{ marginBottom: 8 }}>{t("session.questionLabel")}</div>
@@ -101,6 +101,40 @@ export function QuestionView({
         />
       )}
       {quiz.hint && <div className="muted" style={{ fontSize: 12.5 }}>💡 {t("session.hint")}: {quiz.hint}</div>}
+    </div>
+  );
+}
+
+/**
+ * Listening clip. The question payload only says a clip exists (`duration_ms`);
+ * the signed, short-lived URL comes from GET /quizzes/{id}/audio, fetched when
+ * the learner asks to play it.
+ */
+function QuizAudio({ quizId }: { quizId: string }) {
+  const { t } = useTranslation();
+  const [src, setSrc] = useState<string | null>(null);
+  const [state, setState] = useState<"idle" | "loading" | "error">("idle");
+
+  async function load() {
+    setState("loading");
+    try {
+      setSrc((await quizApi.audio(quizId)).url);
+    } catch {
+      setState("error");
+    }
+  }
+
+  if (src) return <audio controls autoPlay src={src} style={{ width: "100%" }} />;
+  return (
+    <div className="stack" style={{ gap: 6 }}>
+      <Button variant="secondary" block loading={state === "loading"} onClick={load}>
+        {t("topikSession.audioPlay")}
+      </Button>
+      {state === "error" && (
+        <div className="muted" role="alert" style={{ fontSize: 12.5 }}>
+          {t("topikSession.audioError")}
+        </div>
+      )}
     </div>
   );
 }

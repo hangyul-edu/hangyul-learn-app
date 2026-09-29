@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/react";
-import { Sheet } from "./Modal";
+import { render, screen } from "@testing-library/react";
+import { Dialog, Sheet } from "./Modal";
+
+describe("Dialog", () => {
+  it("is announced as a modal dialog named by its title", () => {
+    render(<Dialog open title="구독을 해지할까요?" text="body" />);
+    const dialog = screen.getByRole("dialog", { name: "구독을 해지할까요?" });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+  });
+});
 
 describe("Sheet hardware-back handling", () => {
   afterEach(() => {

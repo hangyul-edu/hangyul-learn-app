@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { useTranslation } from "../../i18n";
 import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
@@ -132,12 +132,19 @@ export function Dialog({
   children?: ReactNode;
 }) {
   useLockScroll(open);
+  const titleId = useId();
   if (!open) return null;
   return (
     <div className="overlay overlay--center" onClick={onClose}>
-      <div className="dialog" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onClick={(e) => e.stopPropagation()}
+      >
         {emoji && <div className="dialog__emoji">{emoji}</div>}
-        <div className="dialog__title">{title}</div>
+        <div className="dialog__title" id={titleId}>{title}</div>
         {warn && <div className="dialog__warn">{warn}</div>}
         {text && <div className="dialog__text">{text}</div>}
         {children}

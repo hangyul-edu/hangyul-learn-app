@@ -71,29 +71,49 @@ export function setAuthHandlers(h: AuthHandlers): void {
   handlers = h;
 }
 
-let refreshInFlight: Promise<boolean> | null = null;
+/**
+ * How a refresh attempt ended:
+ * - `refreshed` — a new pair is stored; retry the request.
+ * - `rejected` — the server refused the refresh token (unknown, rotated,
+ *   revoked, session ended). Only this means the session is over.
+ * - `unavailable` — the refresh never got an answer about the token (network
+ *   failure, 5xx, rate limit). The session may be perfectly valid, so it is
+ *   kept and `error` is surfaced instead.
+ */
+type RefreshOutcome =
+  | { kind: "refreshed" }
+  | { kind: "rejected" }
+  | { kind: "unavailable"; error: Error };
 
-async function refreshTokens(): Promise<boolean> {
-  if (!handlers) return false;
-  const refreshToken = handlers.getRefreshToken();
-  if (!refreshToken) return false;
+// One refresh at a time: refresh tokens are single-use, so concurrent 401s
+// must share a single rotation rather than race each other with the same token.
+let refreshInFlight: Promise<RefreshOutcome> | null = null;
+
+function refreshTokens(refreshToken: string): Promise<RefreshOutcome> {
   if (!refreshInFlight) {
-    refreshInFlight = (async () => {
+    refreshInFlight = (async (): Promise<RefreshOutcome> => {
       try {
-        const res = await fetch(`${API_BASE_URL}/auth/token/refresh`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ refresh_token: refreshToken }),
-        });
-        if (!res.ok) return false;
+        let res: Response;
+        try {
+          res = await fetch(`${API_BASE_URL}/auth/token/refresh`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ refresh_token: refreshToken }),
+          });
+        } catch {
+          return { kind: "unavailable", error: new NetworkError() };
+        }
+        if (res.status >= 500 || res.status === 429) {
+          return { kind: "unavailable", error: new ApiError(res.status, `http_${res.status}`, "httpError.server") };
+        }
+        if (!res.ok) return { kind: "rejected" };
         const data = await res.json();
-        handlers!.onRefreshed(data.access_token, data.refresh_token, data.expires_in ?? 1800);
-        return true;
-      } catch {
-        return false;
+        handlers?.onRefreshed(data.access_token, data.refresh_token, data.expires_in ?? 1800);
+        return { kind: "refreshed" };
       } finally {
-        // cleared after callers observe the result
-        setTimeout(() => (refreshInFlight = null), 0);
+        // Callers already hold this promise; later 401s start a new rotation
+        // with whatever refresh token is current by then.
+        refreshInFlight = null;
       }
     })();
   }
@@ -130,10 +150,8 @@ function buildUrl(path: string, query?: RequestOptions["query"]): string {
 export async function apiFetch<T = unknown>(path: string, opts: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, form, query, auth = true, _retry = false, signal, responseType = "json" } = opts;
   const headers: Record<string, string> = { accept: "application/json" };
-  if (auth && handlers) {
-    const token = handlers.getAccessToken();
-    if (token) headers.authorization = `Bearer ${token}`;
-  }
+  const sentToken = auth ? handlers?.getAccessToken() ?? null : null;
+  if (sentToken) headers.authorization = `Bearer ${sentToken}`;
   let payload: BodyInit | undefined;
   if (form) {
     payload = form; // browser sets multipart boundary
@@ -151,10 +169,19 @@ export async function apiFetch<T = unknown>(path: string, opts: RequestOptions =
   }
 
   // Auto-refresh on 401 for authenticated calls (once).
-  if (res.status === 401 && auth && !_retry && handlers?.getRefreshToken()) {
-    const ok = await refreshTokens();
-    if (ok) return apiFetch<T>(path, { ...opts, _retry: true });
-    handlers?.onExpired();
+  const refreshToken = handlers?.getRefreshToken();
+  if (res.status === 401 && auth && !_retry && handlers && refreshToken) {
+    const retry = () => apiFetch<T>(path, { ...opts, _retry: true });
+    // Another call already refreshed while this one was in flight: the 401 was
+    // for the old access token, so retry rather than spend the new refresh token.
+    if (handlers.getAccessToken() !== sentToken) return retry();
+    const outcome = await refreshTokens(refreshToken);
+    if (outcome.kind === "refreshed") return retry();
+    if (outcome.kind === "unavailable") throw outcome.error;
+    // Rejected — unless the stored pair changed meanwhile (another tab rotated
+    // the same token first), in which case the current pair is still good.
+    if (handlers.getRefreshToken() !== refreshToken) return retry();
+    handlers.onExpired();
   }
 
   if (res.status === 204) return undefined as T;

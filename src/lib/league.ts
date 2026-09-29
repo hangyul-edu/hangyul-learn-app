@@ -63,7 +63,7 @@ export const LEAGUE_POINT_RULES: LeaguePointRule[] = [
     id: "attendance",
     label: "league.ruleAttendance",
     points: "5P",
-    details: ["league.ruleAttendanceDetail"],
+    details: ["league.ruleAttendanceDetail", "league.ruleAttendanceDay"],
     aria: "league.ruleAttendanceAria",
   },
   {

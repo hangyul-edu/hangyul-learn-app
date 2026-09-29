@@ -459,7 +459,9 @@ export const en: Catalog = {
     noPromotion: "(no promotion)",
     ruleAttendance: "Attendance",
     ruleAttendanceDetail: "+10P for a 7-day streak",
-    ruleAttendanceAria: "Attendance, 5 points, 10 bonus points for a 7-day streak",
+    ruleAttendanceDay: "Once a day, resets at midnight in your phone number's country",
+    ruleAttendanceAria:
+      "Attendance, 5 points, 10 bonus points for a 7-day streak, once a day, resets at midnight in your phone number's country",
     ruleLearning: "Practice",
     ruleLearningDetail1: "+10P per sentence or question",
     ruleLearningDetail2: "+100P for clearing a level",

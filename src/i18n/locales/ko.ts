@@ -471,7 +471,11 @@ export const ko = {
     noPromotion: "(승급 없음)",
     ruleAttendance: "출석",
     ruleAttendanceDetail: "7일 연속 출석 시 +10P",
-    ruleAttendanceAria: "출석, 5포인트, 7일 연속 출석 시 10포인트 추가",
+    // Attendance days roll over at local midnight, read in the member's local
+    // timezone — the country of their verified phone number, not the device.
+    ruleAttendanceDay: "하루 1회, 가입 휴대폰 번호 국가 기준 자정에 초기화",
+    ruleAttendanceAria:
+      "출석, 5포인트, 7일 연속 출석 시 10포인트 추가, 하루 1회, 가입 휴대폰 번호 국가 기준 자정에 초기화",
     ruleLearning: "맞춤 학습",
     ruleLearningDetail1: "문장/문제당 +10P",
     ruleLearningDetail2: "레벨 클리어 시 +100P",

@@ -110,7 +110,7 @@ export function QuestionView({
  * the signed, short-lived URL comes from GET /quizzes/{id}/audio, fetched when
  * the learner asks to play it.
  */
-function QuizAudio({ quizId }: { quizId: string }) {
+export function QuizAudio({ quizId }: { quizId: string }) {
   const { t } = useTranslation();
   const [src, setSrc] = useState<string | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "error">("idle");

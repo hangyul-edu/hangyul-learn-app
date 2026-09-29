@@ -8,7 +8,7 @@ import icAlert from "../assets/brand/ic-24-alert.svg";
 import icBookplus from "../assets/brand/ic-24-bookplus.svg";
 import { CharacterArt } from "../components/brand/ProfileAssets";
 import { EmptyState, LoadingState } from "../components/ui/states";
-import { QuestionView, isAnswered, quizAttemptBody } from "../components/QuestionView";
+import { QuestionView, QuizAudio, isAnswered, quizAttemptBody } from "../components/QuestionView";
 import type { AnswerValue } from "../components/QuestionView";
 import { learnApi, practiceApi, quizApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
@@ -198,7 +198,8 @@ export function Practice() {
             <div className="pqz__material" dangerouslySetInnerHTML={{ __html: quiz.material.html }} />
           )}
           {quiz.material?.image_url && <img className="pqz__material-img" src={quiz.material.image_url} alt="" />}
-          {quiz.material?.audio?.url && <audio className="pqz__audio" controls src={quiz.material.audio.url} />}
+          {/* The payload only says a clip exists; the signed URL is fetched on play. */}
+          {quiz.material?.audio && <QuizAudio key={quiz.quiz_id} quizId={quiz.quiz_id} />}
 
           <p className="pqz__stem">{quiz.prompt}</p>
           {quiz.prompt_translation && <p className="pqz__trans">{quiz.prompt_translation}</p>}

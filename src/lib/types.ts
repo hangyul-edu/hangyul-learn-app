@@ -295,7 +295,8 @@ export interface Lecture {
   track_id: string;
   course_id: string | null;
   title: string;
-  kind: "video" | "reading" | "listening";
+  /** `LectureKind` on the backend. */
+  kind: "video" | "speak_practice" | "question_practice";
   duration_seconds: number;
   thumbnail_url: string | null;
   topik_question_type: string | null;

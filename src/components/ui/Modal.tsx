@@ -19,9 +19,15 @@ function useLockScroll(open: boolean) {
  * When open, push a history entry so the device/browser Back gesture closes
  * the sheet (instead of navigating away). Repeated closes are guarded so the
  * back entry is only consumed once.
+ *
+ * The entry is tied to `open` alone. Callers pass inline `onClose` arrows, and
+ * re-running on every new one would pop and re-push the entry — the pop is
+ * asynchronous, so it lands on the fresh entry and closes the sheet unasked.
  */
 function useHardwareBackClose(open: boolean, onClose: () => void) {
   const closing = useRef(false);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   useEffect(() => {
     if (!open) return;
     closing.current = false;
@@ -29,7 +35,7 @@ function useHardwareBackClose(open: boolean, onClose: () => void) {
     const onPop = () => {
       if (closing.current) return;
       closing.current = true;
-      onClose();
+      onCloseRef.current();
     };
     window.addEventListener("popstate", onPop);
     return () => {
@@ -40,7 +46,7 @@ function useHardwareBackClose(open: boolean, onClose: () => void) {
         window.history.back();
       }
     };
-  }, [open, onClose]);
+  }, [open]);
 }
 
 export function Sheet({

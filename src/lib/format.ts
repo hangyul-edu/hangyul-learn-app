@@ -114,11 +114,8 @@ export function formatPhone(p?: string | null): string {
  * Supported phone-prefix countries.
  *
  * This table carries ONLY locale-independent data — ISO code, dial code, flag —
- * and points at a catalog key for the display name. It previously mixed the two:
- * KR held the translation key "ui.defaultCountry" while the other eight held
- * hardcoded endonyms, so the selector rendered the raw key for Korea and never
- * localized any of the others. Every name now resolves through `t()`, from one
- * source, in both locales.
+ * and points at a catalog key for the display name. Every name resolves through
+ * `t()`, from one source, in both locales.
  */
 export const NATIONALITIES: {
   code: string;

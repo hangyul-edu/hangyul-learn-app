@@ -12,9 +12,10 @@ import chatbotFab from "../assets/brand/chatbot-fab.svg";
  * chatbot mascot (with the incorrect-answer bubble + explanation sheet), and the
  * session progress bar. Mode-specific content (the AI panel + exercise) passed in.
  *
- * The mascot/bubble is active only when `askContext` is set (i.e. after a
- * server-confirmed incorrect answer for the current attempt); tapping either
- * opens the context-anchored explanation sheet.
+ * The mascot is active whenever `askContext` is set (there is a current item);
+ * the bubble shows only when `askContext.bubble` is set (after a
+ * server-confirmed incorrect answer). Tapping either opens the context-anchored
+ * chat sheet.
  */
 export function SessionChrome({
   title,
@@ -36,8 +37,10 @@ export function SessionChrome({
   progress?: number;
   /** The AI-customization control (Conversation prompt or TOPIK dropdown). */
   panel?: ReactNode;
-  /** Explanation context — present only after a server-confirmed incorrect
-   *  answer for the current attempt; null otherwise (mascot inactive). */
+  /** Chat context for the current item — anchored to the item itself (free
+   *  questions), or to the attempt after a server-confirmed incorrect answer
+   *  (auto-explain + bubble); null when there is no current item (mascot
+   *  inactive). */
   askContext: AskContext | null;
   /** Back-chevron handler — runs the same completion/exit flow as the CTA so
    *  exiting via back shows the summary modal when applicable. */

@@ -27,8 +27,9 @@ type AgreeKey = "age" | "terms" | "privacy" | "third" | "marketing" | "serviceNo
  * is dropped without an error and the account is created as if the box were
  * never ticked. That is what happened — these went out as `*_consent`, which
  * the schema has no fields for, while the accepted `*_opt_in` names were
- * hardcoded false. `service_notification_opt_in` is the flag the push fan-out
- * gates on, so every account was created unable to receive a push.
+ * hardcoded false. `service_notification_opt_in` seeds the service-notifications
+ * toggle the push fan-out gates on, so every account was created unable to
+ * receive a push.
  */
 export function consentPayload(agree: Record<AgreeKey, boolean>) {
   return {

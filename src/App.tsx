@@ -132,7 +132,7 @@ const router = createBrowserRouter(
         <Route path="/setup/profile" element={<RequireAuth><SetupProfile /></RequireAuth>} />
         <Route path="/setup/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
 
-        {/* Main app with bottom-nav shell (the five bottom-nav tab roots) */}
+        {/* Main app with bottom-nav shell (the five bottom-nav tab roots, plus /learn and /social) */}
         <Route element={<RequireAuth><AppShell /></RequireAuth>}>
           <Route path="/home" element={<Home />} />
           <Route path="/learn" element={<Learn />} />

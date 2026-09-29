@@ -8,9 +8,11 @@ import { useTranslation } from "../i18n";
 /**
  * Notification Settings (알림 설정) — two push-preference toggles.
  *
- * Both switches control **push delivery only**: the backend always writes the
- * in-app notification record and gates only the external push on these fields
- * (see NotificationService._fanout_push). This screen never touches the
+ * The service switch controls **push delivery only**: the backend still writes
+ * the in-app notification record and gates only the external push on it (see
+ * NotificationService._fanout_push). The marketing switch is the marketing
+ * consent: without it a promotional notice creates neither an inbox row nor a
+ * push (NotificationService.deliver_marketing). This screen never touches the
  * in-app notification list, history, or unread state.
  */
 type PushKey = "service_notifications" | "marketing";

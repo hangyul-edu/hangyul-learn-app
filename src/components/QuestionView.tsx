@@ -18,7 +18,7 @@ export function isAnswered(quiz: Quiz, v: AnswerValue): boolean {
   return (v.text ?? "").trim().length > 0;
 }
 
-/** Body for POST /quizzes/{id}/attempt. */
+/** Body for POST /quizzes/{id}/attempts. */
 export function quizAttemptBody(quiz: Quiz, v: AnswerValue): Record<string, unknown> {
   const f = quiz.answer.format;
   if (f === "single_choice") return { answer: v.choiceKey };

@@ -40,6 +40,7 @@ cp .env.example .env
 |---|---|---|
 | `VITE_API_BASE_URL` | Backend base URL used by the app. **Leave empty for local dev** → the app calls `/api`, which the Vite dev server proxies to the backend (no CORS). Set it to the real origin for production builds, e.g. `https://api.hangyul.app`. | *(empty → `/api`)* |
 | `VITE_DEV_BACKEND` | Where the dev proxy forwards `/api` (dev only). | `http://127.0.0.1:8000` |
+| `VITE_CHANNEL_TALK_PLUGIN_KEY` | ChannelTalk web SDK plugin key. When set, the messenger boots at startup and the FAQ support button opens it. | *(empty → SDK not loaded)* |
 
 ### Setting the backend API base URL
 
@@ -115,7 +116,9 @@ Go to **http://localhost:5173**. You land on the welcome screen.
 1. **Sign up** → *이메일로 시작하기*: enter name, phone, email, password →
    verify phone → verify email → accept agreements → done. The account is created
    and you're logged in.
-   - **Getting the verification codes (offline dev):** they're in the API log.
+   - **Getting the verification codes (offline dev):** they're in the API log
+     (the uvicorn terminal; the greps below assume you redirected its output to
+     `/tmp/hangyul-api.log`).
      ```bash
      # phone code
      grep "verification code to +8210" /tmp/hangyul-api.log | tail -1
@@ -143,8 +146,10 @@ Go to **http://localhost:5173**. You land on the welcome screen.
 14. **내 정보** → settings, **계정 관리** (change email / phone / password),
     logout, delete account.
 
-> Premium-gated areas (lecture playback, AI practice, exams, higher daily goals)
-> return `402` for free members; the app shows a clean upgrade prompt. Start a
+> Premium-gated areas (premium lectures, AI practice, premium exam sets, AI
+> sentence recommendations past the free quota) return `402` for free members;
+> the app shows a clean upgrade prompt. A daily goal above 5 is rejected (`422`)
+> for free members. Start a
 > free trial from **멤버십** to unlock them for testing.
 
 ### Use test accounts
@@ -207,8 +212,8 @@ frontend/
 ├─ vite.config.ts          # dev server + /api → backend proxy
 ├─ .env.example
 └─ src/
-   ├─ main.tsx             # providers: QueryClient, Toast, Router, Auth
-   ├─ App.tsx              # routes + auth gating (RequireAuth / RequireGuest)
+   ├─ main.tsx             # providers: QueryClient, I18n, Toast, Auth
+   ├─ App.tsx              # router (createBrowserRouter) + auth gating (RequireAuth / RequireGuest)
    ├─ styles/              # design system (orange theme tokens + components)
    ├─ i18n/                # typed ko/en catalogs, t() and <T>, language context
    ├─ lib/                 # config, http client (+refresh), storage, types, format

@@ -15,7 +15,7 @@ import { useSocialLogin } from "../hooks/socialLogin";
  * Single-screen authentication landing — the first screen an unauthenticated
  * user sees. Every action routes to its existing flow:
  *   로그인 → /login · 회원가입 → /signup · social → useSocialLogin
- *   이메일 찾기 / 비밀번호 찾기 → /forgot (email / password tab)
+ *   이메일 찾기 / 비밀번호 찾기 → /forgot (email / password mode)
  * All content fits one mobile screen; flexible spacers absorb the slack so
  * short devices don't clip or scroll.
  */

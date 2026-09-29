@@ -5,8 +5,8 @@ import { FindPassword } from "./FindPassword";
 /**
  * `/forgot` dispatcher. Both recovery flows have their own faithful full-screen
  * layouts; this routes to the right one based on the navigation-state `mode`
- * ("email" — find email; "password" — find password). Callers (Login, the
- * email-recovery result) navigate to `/forgot` with the desired mode.
+ * ("email" — find email; "password" — find password). Callers (Welcome, Login,
+ * the email-recovery results) navigate to `/forgot` with the desired mode.
  */
 export function Forgot() {
   const location = useLocation();

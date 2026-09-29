@@ -239,10 +239,9 @@ export const learnApi = {
   management: (period: ManagementPeriod, timezone?: string) =>
     http.get<ManagementStats>("/learning/management", { period, timezone }),
   /**
-   * Record a qualifying learning view (a conversation sentence or TOPIK question
-   * became the active on-screen item) so today counts as a learning day and the
-   * sun lights up. Idempotent per local day — safe to fire on every view.
-   * (Lecture playback lights the sun via `progress` instead.)
+   * Record a qualifying learning activity so today counts as a learning day and
+   * the sun lights up. Idempotent per (UTC) day — safe to fire repeatedly.
+   * The app calls it only from lecture playback (see `useMarkStudied`).
    */
   recordActivity: (activity_type: "conversation" | "topik" | "lecture", content_id?: string) =>
     http.post<DailyLearningActivity>("/learning/activity", { activity_type, content_id: content_id ?? null }),
@@ -490,7 +489,7 @@ export const supportApi = {
   faq: (faqId: string, lang?: string) =>
     http.get<Faq>(`/support/faqs/${encodeURIComponent(faqId)}`, { lang }, { auth: false }),
   // Notices are read while authenticated so the server can personalize the
-  // per-user `is_new` flag (and record reads).
+  // per-user `is_new` flag. Reading does not record a read — markNoticeRead does.
   notices: (params?: { cursor?: string; lang?: string }) =>
     http.get<{ items: NoticeSummary[]; next_cursor: string | null }>("/support/notices", {
       limit: 20,

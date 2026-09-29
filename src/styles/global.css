@@ -5896,8 +5896,7 @@ textarea.input {
   background: rgba(255, 103, 0, 0.1);
 }
 /* Pressed mode chip, and the second hint step (정답보기): a light peach tint
-   signals the state change from the idle gray chip while staying subtle. The
-   HintIcon uses currentColor, so it turns orange to match. */
+   signals the state change from the idle gray chip while staying subtle. */
 .sess__chip[aria-pressed="true"],
 .sess__chip--answer {
   background: rgba(255, 103, 0, 0.05);

@@ -43,8 +43,8 @@ export function tierIndex(tier: string | null | undefined): number {
  * mirror the backend `POINT_RULES` (attendance 5 / streak +10, customized
  * learning 10 / level-clear +100, course 100, review 5) so the guide never
  * drifts from real scoring; the schedule + promotion rules mirror the season
- * bounds and `PROMOTE_CUTOFF_RANK` (top 20%) with the green floor / golden
- * ceiling guards in `close_season`.
+ * bounds and `PROMOTION_SHARE` (top 20%) with the green floor / golden
+ * ceiling guards in `league_cutoffs`.
  */
 export type RewardIconKind = "attendance" | "learning" | "course" | "review";
 

@@ -6,8 +6,7 @@ import { SunIcon } from "./brand/HomeIcons";
 
 /**
  * A11y copy for the sun. Kept in one place so the label stays consistent across
- * every render site. (The app chrome uses Korean literals; there is no i18n
- * catalog; callers translate with `t()`.)
+ * every render site. (These are i18n catalog keys; callers translate with `t()`.)
  */
 export const SUN_COPY_KEYS = {
   lit: "misc.sunStudied",

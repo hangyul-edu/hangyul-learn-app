@@ -157,7 +157,7 @@ export function Social() {
   const [deleteTarget, setDeleteTarget] = useState<Friend | null>(null);
   const [busy, setBusy] = useState<Set<string>>(new Set());
   // Add Friend opens from the header / empty states / a ?add=1 or ?tab=find deep
-  // link (from the Friend League empty state). The incoming-request sheet opens
+  // link. The incoming-request sheet opens
   // from a received-tab row or a ?request=<id> deep link.
   const [addOpen, setAddOpen] = useState(initialTab === "find" || params.get("add") === "1");
   const [incomingId, setIncomingId] = useState<string | null>(params.get("request"));

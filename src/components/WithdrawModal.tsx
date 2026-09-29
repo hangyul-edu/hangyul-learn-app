@@ -9,8 +9,7 @@ import { useTranslation } from "../i18n";
  * both are disabled while a deletion request is in flight. Focus is trapped
  * inside and restored to the opener (the 탈퇴하기 item) on close.
  *
- * Legal copy is the approved product/withdrawal wording (see the report note on
- * subscription-cancellation behavior).
+ * Legal copy is the approved product/withdrawal wording.
  */
 export function WithdrawModal({
   open,

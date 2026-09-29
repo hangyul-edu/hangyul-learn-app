@@ -19,9 +19,10 @@ const api = gameApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 const promoted: LeagueResultSummary = {
   season_id: "2026-W27",
   previous_tier: "green",
-  previous_tier_label: "Green 리그",
+  // The server's labels are English whatever the app language.
+  previous_tier_label: "Green League",
   resulting_tier: "lime",
-  resulting_tier_label: "Lime 리그",
+  resulting_tier_label: "Lime League",
   final_rank: 5,
   total_participants: 30,
   outcome: "promoted",
@@ -71,6 +72,7 @@ describe("League result screen", () => {
     expect(screen.getByRole("heading", { name: "축하합니다!" })).toBeInTheDocument();
     // Real threshold + target league, real final rank.
     expect(screen.getByText(/상위 6위 안에 들어/)).toBeInTheDocument();
+    // Composed in Korean — not the server's English "Lime League".
     expect(screen.getByText(/Lime 리그로 승급했어요/)).toBeInTheDocument();
     expect(screen.getByText("최종 순위 5위 / 30명")).toBeInTheDocument();
   });
@@ -96,18 +98,27 @@ describe("League result screen", () => {
 
   it("renders retention copy for a retained result", async () => {
     api.leagueLifecycle.mockResolvedValue(
-      lifecycle({ ...promoted, outcome: "retained", resulting_tier: "green", resulting_tier_label: "Green 리그" }),
+      lifecycle({ ...promoted, outcome: "retained", resulting_tier: "green", resulting_tier_label: "Green League" }),
     );
     renderResult();
     expect(await screen.findByRole("heading", { name: "잘 버텼어요!" })).toBeInTheDocument();
+    expect(screen.getByText(/Green 리그를 지켜냈어요/)).toBeInTheDocument();
   });
 
   it("renders demotion copy for a demoted result", async () => {
     api.leagueLifecycle.mockResolvedValue(
-      lifecycle({ ...promoted, outcome: "demoted", resulting_tier: "green", resulting_tier_label: "Green 리그" }),
+      lifecycle({ ...promoted, outcome: "demoted", resulting_tier: "green", resulting_tier_label: "Green League" }),
     );
     renderResult();
     expect(await screen.findByRole("heading", { name: "아쉬워요..." })).toBeInTheDocument();
+  });
+
+  it("offers a retry when the result cannot be loaded", async () => {
+    // Regression: an error kept the screen on its loading spinner forever.
+    api.leagueLifecycle.mockRejectedValueOnce(new Error("down"));
+    renderResult();
+    await userEvent.click(await screen.findByRole("button", { name: "다시 시도" }));
+    expect(await screen.findByRole("heading", { name: "축하합니다!" })).toBeInTheDocument();
   });
 
   it("redirects to the league screen when there is no settled result", async () => {

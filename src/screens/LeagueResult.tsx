@@ -3,7 +3,7 @@ import { useTranslation, type TranslationKey } from "../i18n";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../components/ui/kit";
-import { LoadingState } from "../components/ui/states";
+import { ErrorState, LoadingState } from "../components/ui/states";
 import { TIER_META, type LeagueTier } from "../lib/league";
 import { CitrusBadge } from "../components/brand/LeagueGuideArt";
 import { gameApi } from "../api/endpoints";
@@ -37,24 +37,26 @@ function resultCopy(
   t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
 ): { title: string; desc: string } {
   const outcome: LeagueResultOutcome = result.outcome;
+  // The server's `resulting_tier_label` is always English ("Lime League"), so
+  // the label is composed in the app language like every other league screen;
+  // the server label is only the fallback for a tier this build doesn't know.
+  const meta = TIER_META[result.resulting_tier as LeagueTier];
+  const tier = meta ? t("league.tierLabel", { tier: meta.name }) : result.resulting_tier_label;
   if (outcome === "promoted") {
     return {
       title: t("leagueLifecycle.resultCongrats"),
-      desc: t("leagueLifecycle.resultPromoted", {
-        rank: result.promote_cutoff_rank,
-        tier: result.resulting_tier_label,
-      }),
+      desc: t("leagueLifecycle.resultPromoted", { rank: result.promote_cutoff_rank, tier }),
     };
   }
   if (outcome === "demoted") {
     return {
       title: t("leagueLifecycle.resultTryAgain"),
-      desc: t("leagueLifecycle.resultDemoted", { tier: result.resulting_tier_label }),
+      desc: t("leagueLifecycle.resultDemoted", { tier }),
     };
   }
   return {
     title: t("leagueLifecycle.resultWellDone"),
-    desc: t("leagueLifecycle.resultRetained", { tier: result.resulting_tier_label }),
+    desc: t("leagueLifecycle.resultRetained", { tier }),
   };
 }
 
@@ -82,6 +84,14 @@ export function LeagueResult() {
   useEffect(() => {
     if (!lifecycle.isLoading && !lifecycle.error && result === null) nav("/league", { replace: true });
   }, [lifecycle.isLoading, lifecycle.error, result, nav]);
+
+  if (lifecycle.error && !result) {
+    return (
+      <div className="screen lgr">
+        <ErrorState message={t("league.loadError")} onRetry={() => lifecycle.refetch()} />
+      </div>
+    );
+  }
 
   if (lifecycle.isLoading || !result) {
     return (

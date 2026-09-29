@@ -50,7 +50,7 @@ describe("AuthProvider with a session shared across tabs", () => {
     localStorage.clear();
   });
 
-  async function mount() {
+  async function mount(expected = "signed-in") {
     render(
       <QueryClientProvider client={new QueryClient()}>
         <AuthProvider>
@@ -58,8 +58,26 @@ describe("AuthProvider with a session shared across tabs", () => {
         </AuthProvider>
       </QueryClientProvider>,
     );
-    await screen.findByText("signed-in");
+    await screen.findByText(expected);
   }
+
+  it("keeps the stored session when the cold-start profile load cannot reach the server", async () => {
+    fetchMock.mockImplementation(async () => {
+      throw new TypeError("Failed to fetch");
+    });
+    await mount("signed-out");
+    expect(loadSession()?.refreshToken).toBe(first.refresh);
+  });
+
+  it("clears the stored session when cold start finds it rejected", async () => {
+    fetchMock.mockImplementation(async (url: string) =>
+      String(url).includes("/auth/token/refresh")
+        ? res(401, { code: "invalid_refresh_token" })
+        : res(401, { code: "invalid_token" }),
+    );
+    await mount("signed-out");
+    expect(loadSession()).toBeNull();
+  });
 
   function lastBearer(): string | undefined {
     const init = fetchMock.mock.calls[fetchMock.mock.calls.length - 1][1] as { headers: Record<string, string> };

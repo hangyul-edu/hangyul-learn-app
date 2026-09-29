@@ -110,8 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await http.post("/auth/logout", { refresh_token: refresh });
     } catch (e) {
-      if (e instanceof NetworkError) throw e;
-      if (e instanceof ApiError && e.status >= 500) throw e;
+      if (isTransient(e)) throw e;
       /* 4xx / already-revoked → normalize as effectively logged out (done) */
     }
   }
@@ -130,8 +129,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setMeState(profile);
           setStatus("signed-in");
         }
-      } catch {
-        if (!cancelled) hardSignOut();
+      } catch (e) {
+        if (cancelled) return;
+        if (isTransient(e)) {
+          // Offline or the API is down: nothing is known to be wrong with the
+          // stored session, so leave it for the next launch instead of wiping
+          // a long-lived auto-login over a failed request.
+          sessionRef.current = null;
+          setStatus("signed-out");
+        } else {
+          hardSignOut();
+        }
       }
     })();
     return () => {
@@ -149,6 +157,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [status, me],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
+
+/** A failure that says nothing about the session itself: no answer, or a 5xx. */
+function isTransient(e: unknown): boolean {
+  return e instanceof NetworkError || (e instanceof ApiError && e.status >= 500);
 }
 
 /**

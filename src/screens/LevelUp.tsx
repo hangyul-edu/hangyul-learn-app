@@ -103,7 +103,7 @@ export function LevelUp() {
   // Reflect the new level everywhere on entry.
   useEffect(() => {
     qc.invalidateQueries({ queryKey: ["dashboard"] });
-    qc.invalidateQueries({ queryKey: ["my-learning"] });
+    qc.invalidateQueries({ queryKey: ["management"] });
     qc.invalidateQueries({ queryKey: ["points"] });
   }, [qc]);
 

@@ -750,7 +750,7 @@ export function SessionConversation() {
       });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["notif-unread"] });
-      qc.invalidateQueries({ queryKey: ["my-learning"] });
+      qc.invalidateQueries({ queryKey: ["management"] });
       if (res.leveled_up && res.level_up) {
         nav("/level-up", { replace: true, state: { levelUp: res.level_up, from } });
         return;

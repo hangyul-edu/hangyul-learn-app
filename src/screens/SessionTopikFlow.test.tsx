@@ -11,14 +11,17 @@ vi.mock("../components/SessionChrome", () => ({
     correct,
     total,
     progress,
+    onBack,
     children,
   }: {
     correct: number;
     total: number;
     progress: number;
+    onBack: () => void;
     children: React.ReactNode;
   }) => (
     <div>
+      <button onClick={onBack}>chrome-back</button>
       <div data-testid="counter">
         {correct}/{total}
       </div>
@@ -104,8 +107,7 @@ const retryRes = (id: string) => ({
   daily_progress: { target: 3, current: 3, achieved: true },
 });
 
-function renderScreen() {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function renderScreen(qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })) {
   const router = createMemoryRouter([{ path: "/", element: <SessionTopik /> }], {
     initialEntries: [{ pathname: "/", state: { section: "reading" } }],
   });
@@ -156,6 +158,24 @@ describe("SessionTopik — answer flow (incorrect → retry → correct)", () =>
     renderScreen();
     expect(await screen.findByText("문제 A")).toBeInTheDocument();
     expect(questions).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaving an attempted session refreshes the learning-management stats", async () => {
+    // Regression: exit invalidated a ["my-learning"] key no query uses, so the
+    // Learning Management screen (["management", period]) kept stale totals.
+    attempt.mockResolvedValueOnce(wrongRes("A"));
+    recordSession.mockResolvedValue({ leveled_up: false });
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    qc.setQueryData(["management", "7d"], { period: "7d" });
+    renderScreen(qc);
+    await screen.findByText("문제 A");
+    await userEvent.click(option("2"));
+    await userEvent.click(submitBtn());
+    await waitFor(() => expect(attempt).toHaveBeenCalledTimes(1));
+
+    await userEvent.click(screen.getByRole("button", { name: "chrome-back" }));
+    await waitFor(() => expect(recordSession).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(qc.getQueryState(["management", "7d"])?.isInvalidated).toBe(true));
   });
 
   it("selecting an option enables Submit but does not change progress", async () => {

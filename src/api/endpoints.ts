@@ -419,9 +419,18 @@ export const billingApi = {
     http.post<{ attempt_id: string; queued_at: string }>(`/billing/invoices/${invoiceId}/retry`, {}),
 };
 export const aiApi = {
-  createConversation: () => http.post<{ conversation_id: string }>("/ai/conversations", {}),
-  send: (id: string, content: string) =>
-    http.post<{ reply?: string; message?: unknown }>(`/ai/conversations/${id}/messages`, { content }),
+  // The next two serve the standalone AI chat screen. They read the same
+  // responses as startConversation/sendMessage below — the server nests the id
+  // under `conversation` and the reply under `assistant_message` — and hand
+  // back the flat shape that screen consumes.
+  createConversation: async (): Promise<{ conversation_id: string }> => {
+    const res = await aiApi.startConversation({});
+    return { conversation_id: res.conversation.conversation_id };
+  },
+  send: async (id: string, content: string): Promise<{ reply?: string; message?: unknown }> => {
+    const res = await aiApi.sendMessage(id, content);
+    return { reply: res.assistant_message.content, message: res.assistant_message };
+  },
   /** Start a context-anchored conversation (e.g. explain the wrong answer). */
   startConversation: (body: {
     topic?: string;

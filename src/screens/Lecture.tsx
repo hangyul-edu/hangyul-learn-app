@@ -37,7 +37,6 @@ export function Lecture() {
   const [muteSpeaking, setMuteSpeaking] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [premiumLocked, setPremiumLocked] = useState(false);
-  const [, setSaving] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const markStudied = useMarkStudied();
@@ -86,10 +85,13 @@ export function Lecture() {
   }
 
   async function saveProgress(seconds: number, done: boolean) {
-    setSaving(true);
     try {
       await learnApi.progress(lectureId, seconds);
       setPos(seconds);
+      // The catalog's started/done markers come from the progress just written.
+      // (This screen's own ["lecture", id] is left alone: refetching it would
+      // re-request the playback URL and reload the video mid-play.)
+      qc.invalidateQueries({ queryKey: ["lectures"] });
       if (done) {
         toast.success(t("courses.completedToast"));
         qc.invalidateQueries({ queryKey: ["dashboard"] });
@@ -97,8 +99,6 @@ export function Lecture() {
       }
     } catch (e) {
       toast.error(errorMessage(e));
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -129,7 +129,15 @@ export function Lecture() {
                   poster={l.thumbnail_url ?? undefined}
                   playsInline
                   muted={muteSpeaking}
-                  onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || l.duration_seconds)}
+                  onLoadedMetadata={(e) => {
+                    const v = e.currentTarget;
+                    const total = v.duration || l.duration_seconds;
+                    setDuration(total);
+                    // Resume where the learner left off (the scrubber already
+                    // shows that position); a finished lecture starts over.
+                    const resumeAt = l.my_playback?.last_position_seconds ?? 0;
+                    if (!l.my_playback?.completed && resumeAt > 0 && resumeAt < total) v.currentTime = resumeAt;
+                  }}
                   onTimeUpdate={(e) => {
                     setPos(e.currentTarget.currentTime);
                     if (e.currentTarget.currentTime > 0) markStudied("lecture", lectureId);

@@ -149,6 +149,15 @@ describe("SessionTopik — answer flow (incorrect → retry → correct)", () =>
     expect(screen.getByTestId("progress")).toHaveTextContent("0");
   });
 
+  it("still loads the set when the dashboard request fails", async () => {
+    // Regression: boot waited for dashboard DATA, so a failed dashboard left
+    // the session on its loading spinner forever.
+    summary.mockRejectedValue(new ApiError(500, "internal_error", "boom"));
+    renderScreen();
+    expect(await screen.findByText("문제 A")).toBeInTheDocument();
+    expect(questions).toHaveBeenCalledTimes(1);
+  });
+
   it("selecting an option enables Submit but does not change progress", async () => {
     renderScreen();
     await screen.findByText("문제 A");

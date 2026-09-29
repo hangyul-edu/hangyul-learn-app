@@ -312,10 +312,12 @@ export function SessionTopik() {
   const startedAt = useRef(Date.now());
   // On boot, resume a saved session (same section) if one exists — e.g. after a
   // refresh — so we never regenerate content or drop drafts; otherwise fetch a
-  // fresh set once the dashboard (remaining goal) has resolved.
+  // fresh set once the dashboard (remaining goal) has settled. A failed
+  // dashboard still boots — the set is then sized by the server's default —
+  // so the screen never waits on it forever.
   const booted = useRef(false);
   useEffect(() => {
-    if (booted.current || !dash.data) return;
+    if (booted.current || !dash.isFetched) return;
     booted.current = true;
     const snap = readTopikSession();
     if (snap && snap.section === section && snap.studySessionId) {
@@ -351,7 +353,7 @@ export function SessionTopik() {
       void loadSet();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dash.data]);
+  }, [dash.isFetched]);
 
   const total = items?.length ?? 0;
   const cur = items?.[idx];

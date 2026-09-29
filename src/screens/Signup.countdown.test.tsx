@@ -146,3 +146,39 @@ describe("the sign-up verification countdown", () => {
     await waitFor(() => expect(timerLabels()).toHaveLength(1));
   });
 });
+
+describe("editing a verified identity", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  // Regression: a code/token stayed bound to the value it was sent to while the
+  // field changed underneath it, so signup sent a new number/address with the
+  // old one's proof — rejected by the server with the field already locked.
+  it("changing the phone number drops the pending phone code", async () => {
+    const user = userEvent.setup();
+    api.startPhone.mockResolvedValue(started(180));
+    renderSignup();
+
+    await user.type(screen.getByLabelText("Phone number"), "1012345678");
+    await user.click(screen.getByRole("button", { name: "Request phone verification code" }));
+    await screen.findByLabelText("Phone verification code");
+
+    await user.type(screen.getByLabelText("Phone number"), "9");
+    expect(screen.queryByLabelText("Phone verification code")).toBeNull();
+  });
+
+  it("changing the email drops the pending email code", async () => {
+    const user = userEvent.setup();
+    api.startEmail.mockResolvedValue(started(180));
+    renderSignup();
+
+    const email = screen.getByLabelText("Email", { selector: "#su-email" });
+    await user.type(email, "learner@talkhangyul.co.kr");
+    await user.click(screen.getByRole("button", { name: "Request email verification code" }));
+    await screen.findByLabelText("Email verification code");
+
+    await user.type(email, "x");
+    expect(screen.queryByLabelText("Email verification code")).toBeNull();
+  });
+});

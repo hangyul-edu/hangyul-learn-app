@@ -85,6 +85,18 @@ export function Signup() {
     confirm: authApi.confirmEmail,
   });
 
+  // A code (and the token it yields) proves ownership of the exact number or
+  // address it was sent to, and the backend checks that match at signup. So
+  // editing either identity drops its verification instead of leaving a proof
+  // for the old value behind — which would fail at submit with the verified
+  // field already locked.
+  function resetPhoneVerification() {
+    if (phoneV.requested || phoneV.verified) phoneV.reset();
+  }
+  function resetEmailVerification() {
+    if (emailV.requested || emailV.verified) emailV.reset();
+  }
+
   const allAgreed = REQUIRED_AGREEMENTS.every((k) => agree[k]);
   /** "Agree to all" reflects and toggles every row, optional ones included. */
   const everyAgreed = AGREEMENTS.every((a) => agree[a.key]);
@@ -193,7 +205,13 @@ export function Signup() {
               {t("findEmail.phoneLabel")}
             </label>
             <div className="signup__row">
-              <CountrySelect value={country} onChange={setCountry} />
+              <CountrySelect
+                value={country}
+                onChange={(c) => {
+                  if (c !== country) resetPhoneVerification();
+                  setCountry(c);
+                }}
+              />
               <input
                 id="su-phone"
                 className={`signup__input signup__input--flex ${errors.phone ? "is-error" : ""}`}
@@ -202,7 +220,10 @@ export function Signup() {
                 placeholder={t("findEmail.phonePlaceholder")}
                 aria-label={t("findEmail.phoneA11y")}
                 value={localPhone}
-                onChange={(e) => setLocalPhone(e.target.value.replace(/\D/g, ""))}
+                onChange={(e) => {
+                  setLocalPhone(e.target.value.replace(/\D/g, ""));
+                  resetPhoneVerification();
+                }}
                 disabled={phoneV.verified}
               />
               <button
@@ -277,7 +298,10 @@ export function Signup() {
                 spellCheck={false}
                 placeholder={t("signup.emailPlaceholder")}
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  resetEmailVerification();
+                }}
                 onBlur={() => setEmail((v) => v.trim())}
                 disabled={emailV.verified}
               />

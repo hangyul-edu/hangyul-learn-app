@@ -1490,6 +1490,7 @@ export const ko = {
     inputPlaceholder: "메시지를 입력하세요",
     greeting: "안녕하세요! 한국어 학습을 도와드릴게요. 무엇이든 물어보세요 😊",
     error: "죄송해요, 답변을 가져오지 못했어요. 잠시 후 다시 시도해 주세요.",
+    startError: "대화를 시작하지 못했어요.", // app-authored
   },
 
   /** AI sentence recommendations. */

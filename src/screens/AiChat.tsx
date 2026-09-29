@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "../i18n";
 import { Screen } from "../components/layout/Screen";
 import { Button } from "../components/ui/kit";
-import { LoadingState } from "../components/ui/states";
+import { ErrorState, LoadingState } from "../components/ui/states";
 import { aiApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
@@ -12,36 +12,33 @@ interface Msg {
   content: string;
 }
 
-function extractReply(res: { reply?: string; message?: unknown }): string {
-  if (res.reply) return res.reply;
-  const m = res.message as Record<string, unknown> | undefined;
-  if (m && typeof m.content === "string") return m.content;
-  if (m && typeof m.text === "string") return m.text as string;
-  return "…";
-}
-
 export function AiChat() {
   const { t } = useTranslation();
   const toast = useToast();
   const [convId, setConvId] = useState<string | null>(null);
   const [starting, setStarting] = useState(true);
+  const [startFailed, setStartFailed] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  async function start() {
+    setStarting(true);
+    setStartFailed(false);
+    try {
+      const { conversation } = await aiApi.startConversation({});
+      setConvId(conversation.conversation_id);
+      setMessages([{ role: "assistant", content: t("aiChat.greeting") }]);
+    } catch {
+      setStartFailed(true);
+    } finally {
+      setStarting(false);
+    }
+  }
+
   useEffect(() => {
-    (async () => {
-      try {
-        const c = await aiApi.createConversation();
-        setConvId(c.conversation_id);
-        setMessages([{ role: "assistant", content: t("aiChat.greeting") }]);
-      } catch (e) {
-        toast.error(errorMessage(e));
-      } finally {
-        setStarting(false);
-      }
-    })();
+    void start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -56,8 +53,8 @@ export function AiChat() {
     setMessages((m) => [...m, { role: "user", content }]);
     setSending(true);
     try {
-      const res = await aiApi.send(convId, content);
-      setMessages((m) => [...m, { role: "assistant", content: extractReply(res) }]);
+      const { assistant_message } = await aiApi.sendMessage(convId, content);
+      setMessages((m) => [...m, { role: "assistant", content: assistant_message.content }]);
     } catch (e) {
       setMessages((m) => [...m, { role: "assistant", content: t("aiChat.error") }]);
       toast.error(errorMessage(e));
@@ -67,6 +64,12 @@ export function AiChat() {
   }
 
   if (starting) return <Screen title={t("aiChat.title")} back><LoadingState text={t("aiChat.preparing")} /></Screen>;
+  if (startFailed)
+    return (
+      <Screen title={t("aiChat.title")} back>
+        <ErrorState message={t("aiChat.startError")} onRetry={() => void start()} />
+      </Screen>
+    );
 
   return (
     <div className="screen">
@@ -109,7 +112,8 @@ export function AiChat() {
           placeholder={t("aiChat.inputPlaceholder")}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && send()}
+          // Enter while a Korean IME is composing only commits the syllable.
+          onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && send()}
         />
         <Button style={{ flex: "0 0 56px", padding: 0 }} loading={sending} disabled={!text.trim()} onClick={send}>
           ➤

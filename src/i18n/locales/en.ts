@@ -1504,6 +1504,7 @@ export const en: Catalog = {
     inputPlaceholder: "Type a message",
     greeting: "Hi! I'm here to help you learn Korean. Ask me anything 😊",
     error: "Sorry, we couldn't get an answer. Please try again shortly.",
+    startError: "We couldn't start the conversation.", // app-authored
   },
 
   /** AI sentence recommendations. */

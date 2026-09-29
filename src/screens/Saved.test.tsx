@@ -123,6 +123,16 @@ describe("Saved — the list itself is not studying", () => {
   });
 });
 
+describe("Saved — question titles", () => {
+  it("labels a question by its localized section, never the raw type code", async () => {
+    // Regression: the title printed topik_question_type verbatim ("reading_03").
+    bookmarks.mockResolvedValue({ items: [{ ...QUIZ, topik_question_type: "reading_03" }], next_cursor: null });
+    renderRoundTrip("/saved", "topik");
+    expect(await screen.findByText("[TOPIK 3급 · 읽기]")).toBeInTheDocument();
+    expect(screen.queryByText(/reading_03/)).not.toBeInTheDocument();
+  });
+});
+
 describe("Saved — Questions tab restored when returning from a review", () => {
   it("restores Questions on back, surviving the StrictMode double-mount", async () => {
     renderRoundTrip("/saved"); // reached from Home (no nav state)

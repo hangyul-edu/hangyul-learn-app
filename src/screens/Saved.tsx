@@ -74,14 +74,14 @@ const modeTitleKey = (m: Mode): TranslationKey =>
   m === "sentence" ? "saved.savedSentences" : "saved.savedQuestions";
 const isSentence = (it: SavedSentenceItem | Quiz): it is SavedSentenceItem => "sentence_id" in it;
 const itemId = (it: SavedSentenceItem | Quiz) => (isSentence(it) ? it.sentence_id : it.quiz_id);
+/** "[TOPIK 3급 · 읽기]" — the section in the app language. `topik_question_type`
+ * is a raw taxonomy code (`reading_03`), never display text. */
 function quizTitle(
   q: Quiz,
   t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
 ): string {
-  const skill =
-    q.topik_question_type ||
-    (q.topik_section && SKILL_LABEL_KEYS[q.topik_section] ? t(SKILL_LABEL_KEYS[q.topik_section]) : null);
-  return t("saved.quizTitle", { level: q.level, skill: skill ? ` · ${skill}` : "" });
+  const skillKey = q.topik_section ? SKILL_LABEL_KEYS[q.topik_section] : undefined;
+  return t("saved.quizTitle", { level: q.level, skill: skillKey ? ` · ${t(skillKey)}` : "" });
 }
 function dedup(list: (SavedSentenceItem | Quiz)[]): (SavedSentenceItem | Quiz)[] {
   const seen = new Set<string>();

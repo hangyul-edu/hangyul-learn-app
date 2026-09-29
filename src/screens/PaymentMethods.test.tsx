@@ -89,10 +89,12 @@ function setMethods(...methods: PaymentMethod[]) {
   api.methods.mockResolvedValue({ methods });
 }
 
-function renderScreen(entry = "/account/payment") {
-  const qc = new QueryClient({
+function renderScreen(
+  entry = "/account/payment",
+  qc = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  });
+  }),
+) {
   return render(
     // Assertions below are written against the Korean copy.
     <I18nProvider language="ko">
@@ -497,6 +499,24 @@ describe("PaymentMethods recovery flow", () => {
     await waitFor(() =>
       expect(screen.queryByRole("alert", { name: "자동 결제 실패 안내" })).not.toBeInTheDocument(),
     );
+  });
+
+  it("R13b. a recovered payment refreshes the premium-gated data", async () => {
+    // Regression: only the wallet, the recovery notice and /users/me were
+    // refreshed, but premium gating reads the subscription and the dashboard
+    // (paywall_required), so locked content stayed locked after paying.
+    setMethods(card());
+    billing.recovery.mockResolvedValueOnce(RECOVERY).mockResolvedValue(NO_RECOVERY);
+    billing.retryInvoice.mockResolvedValue({ attempt_id: "pa", queued_at: "x" });
+    billing.invoice.mockResolvedValue({ invoice: { status: "paid" }, payments: [] });
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    qc.setQueryData(["dashboard"], { paywall_required: true });
+    qc.setQueryData(["invoices-inf"], { pages: [], pageParams: [] });
+    renderScreen("/account/payment", qc);
+    await userEvent.click(await screen.findByRole("button", { name: "지금 바로 구독료 결제하기" }));
+    await screen.findByRole("dialog", { name: "결제 완료" });
+    expect(qc.getQueryState(["dashboard"])?.isInvalidated).toBe(true);
+    expect(qc.getQueryState(["invoices-inf"])?.isInvalidated).toBe(true);
   });
 
   it("R14/R15/R16. failed retry shows a safe failure modal and keeps the notice", async () => {

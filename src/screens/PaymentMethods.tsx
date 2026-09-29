@@ -307,6 +307,11 @@ export function PaymentMethods() {
       }
       if (result?.kind === "success") {
         setResultModal({ kind: "success" });
+        // The paid invoice restores premium: the subscription card, the
+        // dashboard's paywall flag and the payment history all changed.
+        for (const key of [["sub-me"], ["dashboard"], ["invoices"], ["invoices-inf"]]) {
+          qc.invalidateQueries({ queryKey: key });
+        }
       } else if (result?.kind === "failure") {
         setResultModal({ kind: "failure", failureClass: result.failureClass });
       }
@@ -335,8 +340,8 @@ export function PaymentMethods() {
 
   async function confirmSuccess() {
     setResultModal(null);
-    // Reconcile everything the success touched: recovery notice, wallet, and the
-    // global premium entitlement (so locked content unlocks without a restart).
+    // Reconcile the recovery notice and the wallet, and re-read the profile's
+    // membership. (Premium-gated screens were already refreshed on success.)
     invalidate();
     invalidateRecovery();
     try {

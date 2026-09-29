@@ -174,6 +174,19 @@ describe("stopping by hand", () => {
 
     expect(getUserMedia).toHaveBeenCalledTimes(1);
   });
+
+  it("does not open a second microphone when tapped again during the permission prompt", async () => {
+    // `recording` only turns true once the prompt is answered, so a second tap
+    // while it is up must not start a parallel take that orphans the first.
+    const { api } = mountRecorder();
+
+    await act(async () => {
+      await Promise.all([api.current!.start(), api.current!.start()]);
+    });
+
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+    expect(FakeMediaRecorder.instances).toHaveLength(1);
+  });
 });
 
 describe("unmounting", () => {

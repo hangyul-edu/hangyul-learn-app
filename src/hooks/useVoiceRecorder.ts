@@ -56,6 +56,7 @@ export function useVoiceRecorder({
 }: VoiceRecorderOptions): VoiceRecorder {
   const [recording, setRecording] = useState(false);
   const takeRef = useRef<ActiveTake | null>(null);
+  const openingRef = useRef(false);
   const mountedRef = useRef(true);
   // Callbacks are read when the take ends, so a re-render never leaves it
   // holding a stale closure over the screen's state.
@@ -74,8 +75,15 @@ export function useVoiceRecorder({
   }, []);
 
   const start = useCallback(async () => {
-    if (takeRef.current) return; // a take is already running
-    const stream = await openMicrophone();
+    // A take is already running, or its permission prompt is still up.
+    if (takeRef.current || openingRef.current) return;
+    openingRef.current = true;
+    let stream: MediaStream | null;
+    try {
+      stream = await openMicrophone();
+    } finally {
+      openingRef.current = false;
+    }
     if (stream === null) {
       if (mountedRef.current) handlers.current.onUnavailable();
       return;

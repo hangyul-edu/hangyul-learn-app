@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "../../i18n";
 import { quizApi } from "../../api/endpoints";
 import { countTopikChars } from "../../lib/topikChars";
+import { sanitizeHtml } from "../../lib/sanitizeHtml";
 import type { TopikSessionCopy } from "../../lib/topikSessionCopy";
 import type { Quiz, TopikQuestionFormat } from "../../lib/types";
 import type { AnswerValue } from "../QuestionView";
@@ -344,10 +345,10 @@ function Writing({
 
 /* ---- shared pieces --------------------------------------------------------- */
 
-/** Server-authored passage / table / guiding-questions HTML (text elements
- * only — the server never returns media here). */
+/** Server-authored passage / table / guiding-questions HTML, reduced to text
+ * markup before rendering (see lib/sanitizeHtml). */
 function Passage({ html }: { html: string }) {
-  return <div className="tq-passage" dangerouslySetInnerHTML={{ __html: html }} />;
+  return <div className="tq-passage" dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} />;
 }
 
 function UnsupportedQuestion({ copy }: { copy: TopikSessionCopy }) {

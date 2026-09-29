@@ -14,6 +14,7 @@ import { learnApi, practiceApi, quizApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { useRecordDisplayedItem } from "../hooks/learningActivity";
 import { ApiError, errorMessage } from "../lib/http";
+import { sanitizeHtml } from "../lib/sanitizeHtml";
 import type { Quiz, QuizAttemptResult } from "../lib/types";
 
 export function Practice() {
@@ -195,7 +196,7 @@ export function Practice() {
           </div>
 
           {quiz.material?.html && (
-            <div className="pqz__material" dangerouslySetInnerHTML={{ __html: quiz.material.html }} />
+            <div className="pqz__material" dangerouslySetInnerHTML={{ __html: sanitizeHtml(quiz.material.html) }} />
           )}
           {quiz.material?.image_url && <img className="pqz__material-img" src={quiz.material.image_url} alt="" />}
           {/* The payload only says a clip exists; the signed URL is fetched on play. */}

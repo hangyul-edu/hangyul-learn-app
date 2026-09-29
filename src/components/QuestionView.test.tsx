@@ -34,3 +34,21 @@ describe("QuestionView listening material", () => {
     expect(audio).toHaveAttribute("src", "https://cdn.example/clip.mp3");
   });
 });
+
+describe("QuestionView reading material", () => {
+  it("renders the passage without script-capable markup", () => {
+    const reading = {
+      ...listening,
+      material: { kind: "text", html: '<p>지문<img src=x onerror="alert(1)"></p>', image_url: null, audio: null },
+    } as unknown as Quiz;
+    const { container } = render(
+      <I18nProvider language="ko">
+        <QuestionView quiz={reading} value={{}} onChange={() => {}} />
+      </I18nProvider>,
+    );
+
+    expect(screen.getByText("지문")).toBeInTheDocument();
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.innerHTML).not.toContain("onerror");
+  });
+});

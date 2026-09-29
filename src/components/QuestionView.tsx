@@ -3,6 +3,7 @@ import { Button, OptionCard } from "./ui/kit";
 import { useTranslation } from "../i18n";
 import { TextArea, TextField } from "./ui/Field";
 import { quizApi } from "../api/endpoints";
+import { sanitizeHtml } from "../lib/sanitizeHtml";
 import type { Quiz } from "../lib/types";
 
 export interface AnswerValue {
@@ -52,7 +53,7 @@ export function QuestionView({
   return (
     <div className="stack" style={{ gap: 14 }}>
       {material?.html && (
-        <div className="card card--flat" style={{ background: "var(--surface-2)", fontSize: 14, lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: material.html }} />
+        <div className="card card--flat" style={{ background: "var(--surface-2)", fontSize: 14, lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(material.html) }} />
       )}
       {material?.image_url && <img src={material.image_url} alt="" style={{ width: "100%", borderRadius: 14 }} />}
       {material?.audio && <QuizAudio key={quiz.quiz_id} quizId={quiz.quiz_id} />}

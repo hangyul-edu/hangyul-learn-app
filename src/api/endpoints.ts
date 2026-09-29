@@ -8,6 +8,7 @@ import type {
   Course,
   DailyLearningActivity,
   ChannelTalkIdentity,
+  CouponRedemption,
   DashboardSummary,
   ExamResult,
   ExamSet,
@@ -513,8 +514,12 @@ export const subApi = {
     http.post<{ subscription?: { status?: string } }>("/subscriptions", { plan_id, method_id }),
   cancel: (reason?: string) => http.post<unknown>("/subscriptions/cancel", { reason }),
   resume: () => http.post<unknown>("/subscriptions/resume"),
+  // The server has no /coupons/validate or /coupons/apply: both always 404.
+  // Kept only until Subscription.tsx switches to `redeemCoupon`.
   validateCoupon: (code: string) => http.post<Record<string, unknown>>("/subscriptions/coupons/validate", { code }),
   applyCoupon: (code: string) => http.post<Record<string, unknown>>("/subscriptions/coupons/apply", { code }),
+  /** One call validates and applies; the server enforces the 10/24h attempt cap. */
+  redeemCoupon: (code: string) => http.post<CouponRedemption>("/subscriptions/coupons/redeem", { code }),
   paymentMethods: () => http.get<{ items?: unknown[]; methods?: unknown[] }>("/payment-methods"),
 };
 

@@ -4,9 +4,8 @@ import closeIcon from "../assets/brand/ic-modal-close.svg";
 
 /**
  * Course-access code ("수강권 코드") registration modal. Opening it calls no API;
- * only 등록하기 triggers the parent's `onSubmit(code)`, which runs the existing
- * redemption flow (validateCoupon → applyCoupon) and refreshes authoritative
- * entitlement state. The `code` is controlled by the parent so it survives a swap
+ * only 등록하기 triggers the parent's `onSubmit(code)`, which runs the redemption
+ * and refreshes authoritative entitlement state. The `code` is controlled by the parent so it survives a swap
  * to the failure modal and back (edit-and-retry). The server decides validity,
  * eligibility, immediate-vs-scheduled application, and one-time use.
  *

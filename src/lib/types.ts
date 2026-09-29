@@ -667,6 +667,19 @@ export interface Plan {
   /** Whole-percent saving of the current price vs. the list price. */
   discount_percent?: number;
 }
+/** POST /subscriptions/coupons/redeem — the grant a coupon code produced. */
+export interface CouponRedemption {
+  coupon_id: string;
+  code: string;
+  plan_name: string;
+  subscription_type: "course_pass_coupon";
+  duration_days: number;
+  /** false → queued behind the running subscription (see `queue_position`). */
+  activated: boolean;
+  queue_position: number;
+  effective_start_at: string;
+  effective_end_at: string;
+}
 export interface MySubscription {
   status: string;
   plan_id?: string | null;

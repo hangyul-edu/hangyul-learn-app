@@ -77,8 +77,13 @@ export function formatLongDate(iso: string | null | undefined, language: AppLang
   });
 }
 
+/** Currencies with no minor unit: their `*_cents` amounts are whole units (ISO 4217). */
+const ZERO_DECIMAL = new Set(["KRW", "JPY"]);
+
+/** Format a server `*_cents` amount (the currency's minor unit) for display. */
 export function formatMoney(cents: number, currency = "KRW"): string {
-  const amount = currency === "KRW" ? cents : cents / 100;
+  const zeroDecimal = ZERO_DECIMAL.has(currency.toUpperCase());
+  const amount = zeroDecimal ? cents : cents / 100;
   try {
     return new Intl.NumberFormat("ko-KR", {
       style: "currency",
@@ -86,7 +91,7 @@ export function formatMoney(cents: number, currency = "KRW"): string {
       // The designs print "$5.99", not the locale-qualified "US$5.99" the
       // default `currencyDisplay: "symbol"` produces for USD under ko-KR.
       currencyDisplay: "narrowSymbol",
-      maximumFractionDigits: currency === "KRW" ? 0 : 2,
+      maximumFractionDigits: zeroDecimal ? 0 : 2,
     }).format(amount);
   } catch {
     return `${amount.toLocaleString()} ${currency}`;

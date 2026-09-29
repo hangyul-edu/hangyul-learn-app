@@ -49,16 +49,18 @@ export function QuizPlay() {
                 {t("study.submit")}
               </Button>
             ) : (
-              <div className="card" style={{ borderColor: result.correct ? "var(--success)" : "var(--danger)", background: result.correct ? "var(--success-bg)" : "var(--danger-bg)" }}>
-                <div style={{ fontWeight: 900, fontSize: 18, color: result.correct ? "var(--success)" : "var(--danger)" }}>
-                  {t(result.correct ? "study.quizCorrect" : result.status === "submitted" ? "study.quizSubmitted" : "study.quizWrong")}
+              // Writing is scored, never right/wrong (`correct` is null): it gets
+              // the neutral "submitted" verdict plus its score, not "wrong".
+              <div className="card" style={{ borderColor: result.correct === false ? "var(--danger)" : "var(--success)", background: result.correct === false ? "var(--danger-bg)" : "var(--success-bg)" }}>
+                <div style={{ fontWeight: 900, fontSize: 18, color: result.correct === false ? "var(--danger)" : "var(--success)" }}>
+                  {t(result.correct ? "study.quizCorrect" : result.correct === false ? "study.quizWrong" : "study.quizSubmitted")}
                 </div>
                 {result.correct_answer && <div style={{ marginTop: 8, fontSize: 14 }}>{t("study.answerPrefix")} <b>{result.correct_answer}</b></div>}
                 {result.explanation && <div className="muted" style={{ marginTop: 6, fontSize: 13.5, lineHeight: 1.55 }}>{result.explanation}</div>}
                 <div className="row" style={{ gap: 8, marginTop: 12 }}>
-                  {!!result.xp_awarded && <span className="badge badge--brand">+{result.xp_awarded} XP</span>}
+                  {!!result.xp_earned && <span className="badge badge--brand">+{result.xp_earned} XP</span>}
                   {!!result.points_earned && <span className="badge badge--brand">⚡ +{result.points_earned}</span>}
-                  {typeof result.score === "number" && <span className="badge">{t("study.scoreBadge", { score: result.score })}</span>}
+                  {result.writing && <span className="badge">{t("study.scoreBadge", { score: result.writing.score })}</span>}
                 </div>
                 <div style={{ height: 12 }} />
                 <Button block variant="secondary" onClick={() => nav(-1)}>{t("study.backToList")}</Button>

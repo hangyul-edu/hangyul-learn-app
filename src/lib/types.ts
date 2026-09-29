@@ -270,10 +270,8 @@ export interface QuizAttemptResult {
   corrected_text?: string | null;
   /** Authoritative writing-answer character count (same rule as the client). */
   server_character_count?: number | null;
-  xp_awarded?: number;
   xp_earned?: number;
   points_earned?: number;
-  score?: number | null;
   /** `graded` — a definitive result is available; `submitted` — recorded, grading deferred. */
   status?: "graded" | "submitted" | string;
   /** Server-authoritative daily-goal snapshot after this attempt. `current` =

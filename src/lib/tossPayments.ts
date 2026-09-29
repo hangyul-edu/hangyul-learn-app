@@ -45,12 +45,14 @@ function loadSdk(): Promise<TossPaymentsFactory> {
     const script = document.createElement("script");
     script.src = SDK_URL;
     script.async = true;
-    script.onload = () =>
-      window.TossPayments ? resolve(window.TossPayments) : reject(new Error("Toss SDK unavailable"));
-    script.onerror = () => {
+    // A failed load must not be cached: the next attempt starts over.
+    const fail = (message: string) => {
       loading = null;
-      reject(new Error("Toss SDK failed to load"));
+      reject(new Error(message));
     };
+    script.onload = () =>
+      window.TossPayments ? resolve(window.TossPayments) : fail("Toss SDK unavailable");
+    script.onerror = () => fail("Toss SDK failed to load");
     document.head.appendChild(script);
   });
   return loading;

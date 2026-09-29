@@ -8,6 +8,7 @@
  * without an API change.
  */
 import type { AppLanguage } from "./language";
+import { localeFor } from "./format";
 import type { TranslationKey } from "../i18n";
 
 /** Notice-card sentence describing why the automatic payment failed (§3). */
@@ -67,7 +68,7 @@ export function formatRetryAt(
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  const locale = language === "ko" ? "ko-KR" : "en-US";
+  const locale = localeFor(language);
   const time = new Intl.DateTimeFormat(locale, {
     hour: "numeric",
     minute: "2-digit",

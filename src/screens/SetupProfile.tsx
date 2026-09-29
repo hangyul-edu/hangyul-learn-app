@@ -23,6 +23,8 @@ export function SetupProfile() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [nickname, setNickname] = useState("");
+  const nicknameRef = useRef(nickname);
+  nicknameRef.current = nickname;
   const [checkToken, setCheckToken] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
   const [checkMsg, setCheckMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -46,6 +48,9 @@ export function SetupProfile() {
     setCheckToken(null);
     try {
       const res = await userApi.checkNickname(value);
+      // The token is bound to the exact nickname checked; if it was edited
+      // while the check was in flight, this verdict is for a stale value.
+      if (nicknameRef.current.trim() !== value) return;
       if (res.available && res.check_token) {
         setCheckToken(res.check_token);
         setCheckMsg({ ok: true, text: t("profileSetup.nicknameAvailable") });

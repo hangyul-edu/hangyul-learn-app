@@ -150,3 +150,22 @@ describe("EditProfile unsaved-changes guard", () => {
     expect(modal()).not.toBeInTheDocument();
   });
 });
+
+describe("EditProfile nickname check", () => {
+  it("ignores a check that answers for a nickname edited since", async () => {
+    // Regression: a late "available" for the OLD value still armed Save with a
+    // token the server binds to that old nickname, so saving then failed.
+    let answer!: (v: unknown) => void;
+    api.checkNickname.mockReturnValue(new Promise((r) => (answer = r)));
+    renderEdit();
+    const input = screen.getByLabelText("닉네임");
+    await userEvent.type(input, "2"); // 곰돌이2
+    await userEvent.click(screen.getByRole("button", { name: "닉네임 변경 확인" }));
+    await userEvent.type(input, "3"); // 곰돌이23 — edited mid-check
+    answer({ nickname: "곰돌이2", available: true, check_token: "tok-old" });
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "닉네임 변경 확인" })).toBeEnabled());
+    expect(screen.queryByText("사용가능한 닉네임입니다.")).not.toBeInTheDocument();
+    expect(document.querySelector<HTMLButtonElement>(".setupp__submit")).toBeDisabled();
+  });
+});

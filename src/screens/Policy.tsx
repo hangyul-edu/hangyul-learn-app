@@ -1,17 +1,7 @@
-import type { ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation, type TranslationKey } from "../i18n";
 import { isPolicyId, policyDoc, TERMS_OF_SERVICE, type PolicyId } from "../lib/policies";
 import { DetailHeader } from "../components/DetailHeader";
-
-/* ------------------------------- header --------------------------------- */
-/** Borderless More-section app bar (back chevron + centered title), matching
- *  the notification-settings / friend-management headers. */
-export function PolicyHeader({ title }: { title: ReactNode }) {
-  return (
-    <DetailHeader title={title} />
-  );
-}
 
 /* ------------------------------- detail --------------------------------- */
 /** Email addresses, without swallowing the sentence-ending period after the
@@ -86,7 +76,7 @@ export function Policy() {
   const id: PolicyId = isPolicyId(doc) ? doc : TERMS_OF_SERVICE;
   return (
     <div className="screen pol">
-      <PolicyHeader title={policyDoc(language, id).title} />
+      <DetailHeader title={policyDoc(language, id).title} />
       <div className="screen__body pol__body">
         <PolicyBody id={id} />
       </div>
@@ -119,7 +109,7 @@ export function PolicyList() {
   const nav = useNavigate();
   return (
     <div className="screen pol">
-      <PolicyHeader title={t("policy.title")} />
+      <DetailHeader title={t("policy.title")} />
       <div className="screen__body pol__list-body">
         <nav className="pol__menu" aria-label={t("policy.title")}>
           {LIST_ITEMS.map((item) => (

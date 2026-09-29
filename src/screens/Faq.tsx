@@ -55,14 +55,9 @@ export function Faq() {
 
   // Reflect the debounced search box into the URL — always replacing, never
   // pushing. The query is a filter on this screen, not a screen of its own, so
-  // it must not add a history entry.
-  //
-  // Entering search used to push while clearing replaced, which left a second
-  // /faq entry stacked behind the current one: backing out of a cleared search
-  // landed on FAQ-001 again, so it took an extra press to leave the FAQ flow.
-  // Replacing throughout means typing, editing and clearing all stay on one
-  // entry, and backing out is the same count however the screen was reached —
-  // from More, by searching from FAQ-001, or by opening /faq?q=… directly.
+  // it must not add a history entry: typing, editing and clearing all stay on
+  // one entry, so backing out takes the same number of presses however the
+  // screen was reached (from More, from FAQ-001, or via /faq?q=… directly).
   useEffect(() => {
     const current = (params.get("q") ?? "").trim();
     if (debounced === current) return;

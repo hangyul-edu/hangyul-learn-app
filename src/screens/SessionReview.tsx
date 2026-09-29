@@ -131,7 +131,10 @@ export function SessionReview() {
   useRecordDisplayedItem("topik", error ? null : quiz?.quiz_id);
 
   const completed = rewardPoints !== null;
-  const incorrect = !!result && !result.correct;
+  // Writing is scored, never right/wrong (`correct` is null) — it keeps the
+  // neutral header and shows the score card below.
+  const isWriting = !!result?.writing || result?.status === "submitted";
+  const incorrect = !!result && !isWriting && !result.correct;
 
   async function submit() {
     if (!quiz || submitting || completed || !canSubmitTopik(quiz, value)) return;
@@ -145,18 +148,20 @@ export function SessionReview() {
         review_session_id: reviewSessionId.current,
       });
       setResult(res);
-      if (res.correct) {
+      // A correct selection completes the item — and so does any writing
+      // answer, which is scored rather than right/wrong (as in SessionTopik).
+      if (res.correct || res.writing || res.status === "submitted") {
         setWrongKey(null); // clear any prior wrong highlight — show only the correct option
         setRewardPoints(res.points_earned ?? 0);
         setSessionPoints((p) => p + (res.points_earned ?? 0));
-        // The review award created a points notification — refresh the badge.
+        // A review award creates a points notification — refresh the badge.
         qc.invalidateQueries({ queryKey: ["notif-unread"] });
         try {
           sessionStorage.removeItem(draftKey);
         } catch {
           /* ignore */
         }
-      } else if (res.status !== "submitted" && !res.writing) {
+      } else {
         // A graded-wrong selection: highlight ONLY this submission (coral),
         // replacing any earlier wrong highlight. The correct answer is never
         // revealed on a wrong attempt.
@@ -210,9 +215,6 @@ export function SessionReview() {
       ? { contextKind: "quiz_attempt" as const, contextId: result.attempt_id, autoExplain: true, bubble: true }
       : { contextKind: "quiz" as const, contextId: quiz.quiz_id, autoExplain: false, bubble: false };
 
-  // Writing is scored, never right/wrong — it keeps the neutral header and shows
-  // the score card below.
-  const isWriting = !!result?.writing || result?.status === "submitted";
   // Verdict shown in the result header: blue "correct" / coral "retry" for a
   // graded selection answer; neutral otherwise.
   const headerStatus: ResultStatus =

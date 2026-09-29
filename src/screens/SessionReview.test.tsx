@@ -248,6 +248,33 @@ describe("SessionReview — saved TOPIK question", () => {
     expect(screen.queryByRole("button", { name: "다시 듣기" })).not.toBeInTheDocument();
   });
 
+  it("completes a scored essay, whose result is never right or wrong", async () => {
+    // Regression: the server sends `correct: null` for writing, and only a
+    // truthy `correct` completed the item — so an essay review had no sheet,
+    // kept Submit live, and was treated as a wrong answer.
+    get.mockResolvedValue({
+      ...QUIZ,
+      quiz_id: "q4",
+      question_type: "writing_opinion_essay",
+      prompt: "다음을 주제로 글을 쓰십시오.",
+      answer: { format: "free_response", choices: [], blanks: [], min_length: 1, max_length: 700 },
+    });
+    attempt.mockResolvedValue({
+      attempt_id: "a5",
+      correct: null,
+      points_earned: 5,
+      status: "graded",
+      writing: { score: 30, max_score: 50, suggestions: [], grammar_issues: [], corrected_text: null },
+    });
+    renderReview();
+    await userEvent.type(await screen.findByRole("textbox"), "저는 한국어를 좋아합니다.");
+    await userEvent.click(screen.getByRole("button", { name: "제출" }));
+
+    expect(await screen.findByRole("button", { name: "다시 풀기" })).toBeInTheDocument();
+    // Submit is retired (hidden, disabled) — the essay can't be re-sent.
+    expect(document.querySelector<HTMLButtonElement>(".sess__submit")).toBeDisabled();
+  });
+
   it("an incorrect answer stays on the item with no sheet and allows retry", async () => {
     attempt.mockResolvedValue({
       attempt_id: "a2",

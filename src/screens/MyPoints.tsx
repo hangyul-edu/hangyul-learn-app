@@ -2,9 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation, type TranslationKey } from "../i18n";
 import { useQuery } from "@tanstack/react-query";
 import { EmptyState, ErrorState, LoadingState, SkeletonList, Spinner } from "../components/ui/states";
-import { useAuth } from "../hooks/auth";
 import { gameApi } from "../api/endpoints";
-import { normalizeLanguage, type AppLanguage } from "../lib/language";
+import type { AppLanguage } from "../lib/language";
 import type { PointTransaction } from "../lib/types";
 
 type Phase = "loading" | "ready" | "error";
@@ -139,8 +138,9 @@ function PointRow({ tx, lang }: { tx: PointTransaction; lang: AppLanguage }) {
 
 /* -------------------------------- screen -------------------------------- */
 export function MyPoints() {
-  const { me } = useAuth();
-  const lang = normalizeLanguage(me?.app_language);
+  // Dates follow the language the UI is actually in. The profile's
+  // app_language only seeds it, so after a local choice the two can differ.
+  const { language: lang } = useTranslation();
   const copy = usePointsCopy();
 
   // Current weekly-league total — refetch on entry/focus so it reflects newly

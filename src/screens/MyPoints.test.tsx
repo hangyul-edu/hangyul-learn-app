@@ -37,11 +37,12 @@ const history: PointsHistoryResponse = {
   ],
 };
 
-function renderPoints() {
+function renderPoints(uiLanguage: "ko" | "en" = mockLang) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    // Mirrors <LanguageSync>: the provider adopts the profile language.
-    <I18nProvider language={mockLang}>
+    // Mirrors <LanguageSync>: the provider adopts the profile language unless
+    // the viewer has made a local choice (`uiLanguage`).
+    <I18nProvider language={uiLanguage}>
       <QueryClientProvider client={qc}>
         <MyPoints />
       </QueryClientProvider>
@@ -156,6 +157,16 @@ describe("My Points screen", () => {
     expect(screen.getByText("July 2026")).toBeInTheDocument();
     expect(screen.getByText("Course completed")).toBeInTheDocument();
     expect(screen.getByText("7-day attendance streak bonus")).toBeInTheDocument();
+  });
+
+  it("dates follow the UI language, not the profile's app_language", async () => {
+    // Regression: dates read me.app_language, so a viewer who switched the UI
+    // to Korean locally got "July 2026" headers under Korean copy.
+    mockLang = "en"; // profile
+    renderPoints("ko"); // local choice
+    expect(await screen.findByText("리그 포인트")).toBeInTheDocument();
+    expect(screen.getByText("2026년 7월")).toBeInTheDocument();
+    expect(screen.queryByText("July 2026")).not.toBeInTheDocument();
   });
 
   it("paginates on sentinel intersection, appending without duplicates", async () => {

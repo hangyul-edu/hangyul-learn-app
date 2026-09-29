@@ -1,9 +1,8 @@
-import type { ReactNode } from "react";
 import { authApi } from "../api/endpoints";
 import type { SocialProvider } from "../lib/types";
 
 /**
- * Social sign-in, shared by the auth landing and the login screen.
+ * Social sign-in for the auth landing.
  *
  * `start(provider)` performs a full-page navigation to the backend's
  * `/auth/social/{provider}/start`, which redirects the browser to the
@@ -11,19 +10,13 @@ import type { SocialProvider } from "../lib/types";
  * callback, the backend exchanges the code + issues our session server-side,
  * and the browser lands on `/auth/complete` where the one-time login code is
  * swapped for tokens (see `AuthComplete`). There is no token to paste.
- *
- * `element` is always `null`; Welcome still renders it, so it stays until that
- * call site drops it.
  */
-export function useSocialLogin(): {
-  start: (provider: SocialProvider) => void;
-  element: ReactNode;
-} {
+export function useSocialLogin(): { start: (provider: SocialProvider) => void } {
   function start(provider: SocialProvider) {
     // Leave the SPA and enter the provider's authorization flow. `return_to`
     // is a same-site path the backend validates against open redirects.
     window.location.assign(authApi.socialStartUrl(provider, "/"));
   }
 
-  return { start, element: null };
+  return { start };
 }

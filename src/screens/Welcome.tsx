@@ -102,8 +102,6 @@ export function Welcome() {
           </button>
         </div>
       </div>
-
-      {social.element}
     </div>
   );
 }

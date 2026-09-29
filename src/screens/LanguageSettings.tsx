@@ -8,7 +8,7 @@ import { LoadingState } from "../components/ui/states";
 import { settingsApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
-import { ApiError, NetworkError } from "../lib/http";
+import { NetworkError } from "../lib/http";
 import { SUPPORTED_LANGUAGES, normalizeLanguage, type AppLanguage } from "../lib/language";
 import { useI18n } from "../i18n";
 import { DetailHeader } from "../components/DetailHeader";
@@ -58,18 +58,13 @@ export function LanguageSettings() {
       // language until this point, matching the design's post-save modal.
       setLanguage(applied);
       qc.setQueryData(["settings-language"], { app_language: applied });
-      qc.invalidateQueries({ queryKey: ["settings"] }); // derived explanation/AI language
       setSavedOpen(true); // success feedback; navigation waits for 확인
     },
     onError: (e) => {
       // Keep the previous global language and the pending selection for retry.
-      const msg =
-        e instanceof NetworkError
-          ? t("common.networkError")
-          : e instanceof ApiError && e.status === 422
-            ? t("languageSettings.errorToast") // validation — no raw payload
-            : t("languageSettings.errorToast");
-      toast.error(msg);
+      // Server errors (validation included) get one fixed message, never the
+      // raw payload.
+      toast.error(t(e instanceof NetworkError ? "common.networkError" : "languageSettings.errorToast"));
     },
   });
 

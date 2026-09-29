@@ -13,7 +13,8 @@ import { useToast } from "../hooks/toast";
 import { ApiError, errorMessage } from "../lib/http";
 import { paymentErrorMessage } from "../lib/paymentErrors";
 import { formatMoney, formatLongDate } from "../lib/format";
-import type { Invoice, MySubscription, Plan } from "../lib/types";
+import { hasLiveSubscription, planNameOf } from "../lib/subscription";
+import type { CouponRedemption, Invoice, Plan } from "../lib/types";
 import { CancelReasonModal } from "../components/CancelReasonModal";
 import { DetailHeader } from "../components/DetailHeader";
 
@@ -37,38 +38,24 @@ function fmtDot(iso?: string | null): string {
   if (Number.isNaN(d.getTime())) return "";
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
-/** Read the first present string field from an unknown response object. */
-function str(o: unknown, ...keys: string[]): string | null {
-  if (!o || typeof o !== "object") return null;
-  for (const k of keys) {
-    const v = (o as Record<string, unknown>)[k];
-    if (typeof v === "string" && v) return v;
-  }
-  return null;
-}
 /**
- * Build the applied-subscription detail from the redemption response + refreshed
- * sub. `t` is passed in because this runs outside the component tree.
+ * The success modal's detail, straight from the redemption. A grant that is
+ * not `activated` is queued behind the running subscription; its effective
+ * dates are then a projection. `t` is passed in because this runs outside the
+ * component tree.
  */
 function buildSuccess(
-  applyRes: unknown,
-  fresh: MySubscription,
+  grant: CouponRedemption,
   t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
 ): VoucherSuccess {
-  const plan = str(applyRes, "plan_name") ?? fresh.plan_name ?? t("subscription.planFallback");
-  const from = str(applyRes, "current_period_start", "valid_from", "starts_at", "start_at");
-  const to =
-    str(applyRes, "current_period_end", "valid_until", "ends_at", "end_at") ?? fresh.current_period_end ?? null;
-  const scheduled =
-    !!applyRes &&
-    typeof applyRes === "object" &&
-    (!!(applyRes as Record<string, unknown>).scheduled || !!(applyRes as Record<string, unknown>).applies_at);
-  const validity = from && to ? `${fmtDot(from)}~${fmtDot(to)}` : to ? `~${fmtDot(to)}` : "-";
+  const plan = grant.plan_name || t("subscription.planFallback");
+  const from = fmtDot(grant.effective_start_at);
+  const to = fmtDot(grant.effective_end_at);
   return {
-    subtitle: t(scheduled ? "subscription.voucherScheduled" : "subscription.voucherApplied", { plan }),
+    subtitle: t(grant.activated ? "subscription.voucherApplied" : "subscription.voucherScheduled", { plan }),
     plan,
     type: t("subscription.voucherType"),
-    validity,
+    validity: from && to ? `${from}~${to}` : to ? `~${to}` : "-",
   };
 }
 
@@ -93,7 +80,12 @@ export function Subscription() {
   const [busy, setBusy] = useState(false);
 
   const mine = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
-  const plans = useQuery({ queryKey: ["sub-plans"], queryFn: subApi.plans, enabled: planOpen });
+  const m = mine.data;
+  // A cancelled subscription still shows (with 해지 취소) until it lapses.
+  const hasSub = hasLiveSubscription(m) || m?.status === "cancelled";
+  // Plans feed the plan sheet and the current plan's name — /subscriptions/me
+  // carries only its id.
+  const plans = useQuery({ queryKey: ["sub-plans"], queryFn: subApi.plans, enabled: planOpen || hasSub });
   const planList: Plan[] = plans.data?.plans ?? plans.data?.items ?? [];
 
   // Payment history — cursor-based infinite scroll (billingApi.invoices → next_cursor).
@@ -158,35 +150,29 @@ export function Subscription() {
     }
   }
 
-  // Redemption is server-authoritative: validate then apply. Entitlement is never
-  // updated locally — refresh() re-reads /subscriptions/me on success. The server
-  // enforces validity, eligibility, immediate-vs-scheduled application, one-time use.
-  // A code-domain rejection (4xx: invalid / expired / already used) shows the
-  // dedicated failure modal; a temporary failure (network / 5xx / unknown) stays
-  // inline in the voucher modal via the generic error line.
+  // Redemption is server-authoritative: one POST validates and applies (active
+  // now, or queued behind the running subscription). Entitlement is never
+  // updated locally — refresh() re-reads it. A code-domain rejection (invalid /
+  // already used / revoked / expired) shows the dedicated failure modal. The
+  // 10-per-24h attempt cap (429) and temporary failures (network / 5xx) stay
+  // inline in the voucher modal — the code itself may well be fine.
   async function redeem(code: string) {
     if (busy) return;
     setBusy(true);
     setVoucherError(null);
     try {
-      await subApi.validateCoupon(code);
-      const applyRes = await subApi.applyCoupon(code);
-      // Authoritative refresh: re-read /subscriptions/me for the applied state,
-      // seed the cache so the screen already reflects it, invalidate related data.
-      const fresh = await subApi.mine();
-      qc.setQueryData(["sub-me"], fresh);
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
-      qc.invalidateQueries({ queryKey: ["invoices-inf"] });
+      const grant = await subApi.redeemCoupon(code);
+      refresh();
       setVoucherOpen(false);
-      setVoucherSuccess(buildSuccess(applyRes, fresh, t)); // → success modal
+      setVoucherSuccess(buildSuccess(grant, t)); // → success modal
     } catch (e) {
-      if (e instanceof ApiError && e.status >= 400 && e.status < 500) {
+      if (e instanceof ApiError && e.status >= 400 && e.status < 500 && e.status !== 429) {
         // Code-domain rejection — replace the input modal with the failure modal
         // (code preserved for edit-and-retry). No entitlement change.
         setVoucherOpen(false);
         setCouponFailOpen(true);
       } else {
-        setVoucherError(errorMessage(e)); // temporary — keep modal open, allow retry
+        setVoucherError(errorMessage(e)); // keep modal open, allow retry
       }
     } finally {
       setBusy(false);
@@ -230,11 +216,9 @@ export function Subscription() {
   }
 
   // --- Subscription state mapping (authoritative from /subscriptions/me) ---
-  const m = mine.data;
   const status = m?.status ?? "";
-  const hasSub = !!m && (m.is_premium || ["trial", "active", "cancelled", "grace_period"].includes(status));
   const scheduledCancel = !!m?.cancel_at_period_end;
-  const planName = m?.plan_name ?? t("subscription.planFallback");
+  const planName = planNameOf(m, planList) ?? t("subscription.planFallback");
   const endIso = m?.current_period_end;
   const endDate = longDate(endIso);
 
@@ -415,7 +399,7 @@ export function Subscription() {
         )}
       </Sheet>
 
-      {/* Voucher / course-code registration (reuses subApi.validateCoupon / applyCoupon) */}
+      {/* Voucher / course-code registration (subApi.redeemCoupon) */}
       <VoucherModal
         open={voucherOpen}
         loading={busy}

@@ -682,19 +682,24 @@ export interface CouponRedemption {
   effective_start_at: string;
   effective_end_at: string;
 }
+/** GET /subscriptions/me. It carries no premium flag and no plan name: derive
+ *  a live subscription from `status` (lib/subscription) and the name from the
+ *  plan list by `plan_id`. Premium *gating* is the dashboard's
+ *  `paywall_required`, which also covers tester/admin roles. */
 export interface MySubscription {
+  /** Effective status, incl. the derived `trial_ending` (a trial's last 72h). */
   status: string;
   plan_id?: string | null;
-  plan_name?: string | null;
   current_period_end?: string | null;
   cancel_at_period_end?: boolean;
-  is_premium?: boolean;
   /** Server-authoritative one-time-trial flag: true once the account has ever
    *  started the free trial. Free-trial eligibility = !trial_started. */
   trial_started?: boolean;
   in_trial?: boolean;
   /** Currency of the plan in force ("KRW" / "USD"); null without a plan. */
   plan_currency?: string | null;
+  /** True when the current period is covered by a coupon grant, not a payment. */
+  coupon_backed?: boolean;
 }
 
 /* ---- Settings ---- */

@@ -5,16 +5,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 
 /* -------------------------------- mocks --------------------------------- */
-const { banners, summary, mine, lectures } = vi.hoisted(() => ({
+const { banners, summary, lectures } = vi.hoisted(() => ({
   banners: vi.fn(),
   summary: vi.fn(),
-  mine: vi.fn(),
   lectures: vi.fn(),
 }));
 vi.mock("../api/endpoints", () => ({
   bannerApi: { list: banners },
   dashboardApi: { summary },
-  subApi: { mine },
   learnApi: { lectures },
 }));
 
@@ -62,8 +60,7 @@ function renderPage() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  summary.mockResolvedValue({ streak_days: 3, studied_today: true });
-  mine.mockResolvedValue({ is_premium: false, status: "free" });
+  summary.mockResolvedValue({ streak_days: 3, studied_today: true, paywall_required: true });
   banners.mockResolvedValue({ banners: [banner("b1"), banner("b2")] });
   lectures.mockResolvedValue(
     feed([
@@ -107,6 +104,21 @@ describe("LectureHome unified feed", () => {
     await screen.findByText("Lecture fresh");
     expect(screen.getByLabelText(/Lecture resume, 이어보기/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Lecture done, 완료/)).toBeInTheDocument();
+  });
+
+  it("tags free lectures for a member without premium access", async () => {
+    renderPage();
+    expect(await screen.findByLabelText("Lecture conv-1, 무료 강의")).toBeInTheDocument();
+  });
+
+  it("drops the Free tag for a member with premium access", async () => {
+    // Regression: premium was read from `is_premium` on /subscriptions/me,
+    // which the server never sends — so paid and coupon members were treated
+    // as free. The dashboard's paywall_required is the live check.
+    summary.mockResolvedValue({ streak_days: 3, studied_today: true, paywall_required: false });
+    renderPage();
+    expect(await screen.findByLabelText("Lecture conv-1")).toBeInTheDocument();
+    expect(screen.queryByLabelText(/무료 강의/)).not.toBeInTheDocument();
   });
 
   it("empty banners + lectures: banner empty view + lecture sections still render", async () => {

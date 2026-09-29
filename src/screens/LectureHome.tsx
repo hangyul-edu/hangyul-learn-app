@@ -6,7 +6,7 @@ import { DailyLearningSun } from "../components/DailyLearningSun";
 import { SkeletonList } from "../components/ui/states";
 import { ChatbotBottomSheet } from "../components/ChatbotBottomSheet";
 import chatbotFab from "../assets/brand/chatbot-fab.svg";
-import { bannerApi, dashboardApi, learnApi, subApi } from "../api/endpoints";
+import { bannerApi, dashboardApi, learnApi } from "../api/endpoints";
 import type { Banner, Lecture } from "../lib/types";
 
 // The lecture page shows the FULL catalog — conversation and TOPIK lectures
@@ -171,12 +171,13 @@ export function LectureHome() {
   const [chatOpen, setChatOpen] = useState(false);
   const [filter, setFilter] = useState<TrackFilter>("all");
   const dash = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
-  const sub = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
-  // Premium lecture access (paid, trial, or voucher all set is_premium server-side).
-  const isPremium = sub.data?.is_premium === true || sub.data?.status === "trial";
+  // Premium access is the dashboard's server-computed `paywall_required` — the
+  // same live check the lecture player enforces (paid, trial, coupon, and the
+  // tester/admin roles).
+  const isPremium = dash.data?.paywall_required === false;
   // Until entitlement is known, avoid misleading Free badges — treat as premium
   // (hides Free) rather than falsely tagging paid content as free.
-  const entitlementKnown = sub.isSuccess;
+  const entitlementKnown = dash.isSuccess;
 
   // One unified catalog fetch; the track filter is a server-side query param.
   const feed = useQuery({

@@ -7,6 +7,7 @@ import imgPreparing from "../assets/brand/llc-preparing.png";
 import imgWaiting from "../assets/brand/llc-waiting.svg";
 import { gameApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
+import { localeFor } from "../lib/format";
 import { errorMessage } from "../lib/http";
 import type { LeagueLifecycleResponse } from "../lib/types";
 
@@ -268,7 +269,7 @@ function PreparingModal({ nextStartsAt }: { nextStartsAt: string | null }) {
           {t("leagueLifecycle.preparingTitle")}
         </h2>
         <p className="llc__desc" id="llc-prep-desc" aria-live="polite">
-          {formatNextStart(nextStartsAt, t, language === "ko" ? "ko-KR" : "en-US")}
+          {formatNextStart(nextStartsAt, t, localeFor(language))}
         </p>
       </div>
       <button

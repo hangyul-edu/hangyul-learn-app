@@ -10,7 +10,7 @@ import { AddFriendSheet, IncomingFriendRequestSheet } from "../components/social
 import { friendApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
-import { timeAgo } from "../lib/format";
+import { localeFor, timeAgo } from "../lib/format";
 import type { Friend, FriendRequest } from "../lib/types";
 import { DetailHeader } from "../components/DetailHeader";
 import { PlusIcon } from "../components/PlusIcon";
@@ -64,7 +64,7 @@ function useFmCopy() {
        formatted, so it substitutes for the locally computed one but still goes
        through the same wrapper. */
     requestAge: (iso?: string, preformatted?: string | null) => {
-      const age = preformatted ?? (iso ? timeAgo(iso, t, language === "ko" ? "ko-KR" : "en-US") : "");
+      const age = preformatted ?? (iso ? timeAgo(iso, t, localeFor(language)) : "");
       return age ? t("friends.requestAge", { age }) : "";
     },
   };

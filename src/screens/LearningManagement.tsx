@@ -7,6 +7,7 @@ import { learnApi } from "../api/endpoints";
 import { LearningSectionSwitcher } from "../components/LearningSectionSwitcher";
 import { Button } from "../components/ui/kit";
 import { ErrorState } from "../components/ui/states";
+import { localeFor } from "../lib/format";
 import type { ManagementBucket, ManagementPeriod, ManagementStats } from "../lib/types";
 
 const PERIODS: { id: ManagementPeriod; label: TranslationKey }[] = [
@@ -268,7 +269,7 @@ function Chart({
   onSelect: (key: string) => void;
 }) {
   const { t, language } = useTranslation();
-  const locale = language === "ko" ? "ko-KR" : "en-US";
+  const locale = localeFor(language);
   const max = Math.max(1, ...data.buckets.map((b) => b.study_seconds));
   return (
     <div className="lmgmt__chart" role="group" aria-label={t("learningManagement.periodHeading")}>

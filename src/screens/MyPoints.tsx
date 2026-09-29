@@ -3,6 +3,7 @@ import { useTranslation, type TranslationKey } from "../i18n";
 import { useQuery } from "@tanstack/react-query";
 import { EmptyState, ErrorState, LoadingState, SkeletonList, Spinner } from "../components/ui/states";
 import { gameApi } from "../api/endpoints";
+import { localeFor } from "../lib/format";
 import type { AppLanguage } from "../lib/language";
 import type { PointTransaction } from "../lib/types";
 
@@ -67,14 +68,12 @@ function describe(
 }
 
 /* ------------------------------ formatting ------------------------------ */
-const locale = (lang: AppLanguage) => (lang === "ko" ? "ko-KR" : "en-US");
-
 function monthLabel(date: Date, lang: AppLanguage): string {
-  return new Intl.DateTimeFormat(locale(lang), { year: "numeric", month: "long" }).format(date);
+  return new Intl.DateTimeFormat(localeFor(lang), { year: "numeric", month: "long" }).format(date);
 }
 function dateLabel(date: Date, lang: AppLanguage): string {
   const sameYear = date.getFullYear() === new Date().getFullYear();
-  return new Intl.DateTimeFormat(locale(lang), {
+  return new Intl.DateTimeFormat(localeFor(lang), {
     ...(sameYear ? {} : { year: "numeric" }),
     month: lang === "ko" ? "long" : "short",
     day: "numeric",

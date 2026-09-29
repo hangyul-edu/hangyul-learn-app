@@ -40,16 +40,11 @@ import {
 } from "../lib/topikSessionSnapshot";
 
 /**
- * The full picker label for a TOPIK question type, in the app language.
- *
- * This screen used to build the label from the API's `title_ko` (always, in
- * both languages), so the dropdown at the top of the session was Korean for
- * English users AND carried the wrong wording for Korean ones — those fields
- * are generator descriptions, not the design's labels. Both languages now come
- * from the dropdown frames; see ../lib/topikTypeLabels.
- *
- * A code absent from the map falls back to the old template so a question type
- * added server-side still renders rather than vanishing.
+ * The full picker label for a TOPIK question type, in the app language, taken
+ * from the dropdown frames (see ../lib/topikTypeLabels). The API's `title_ko` /
+ * `title_en` are generator descriptions, not UI labels, so they are used only
+ * as the fallback for a code the map does not know yet — a question type added
+ * server-side still renders rather than vanishing.
  */
 function typeLabel(
   item: TopikQuestionType,

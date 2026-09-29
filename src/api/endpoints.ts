@@ -247,7 +247,8 @@ export const learnApi = {
   /**
    * Record a qualifying learning activity so today counts as a learning day and
    * the sun lights up. Idempotent per (UTC) day — safe to fire repeatedly.
-   * The app calls it only from lecture playback (see `useMarkStudied`).
+   * The app calls it when a sentence / TOPIK question is displayed and on
+   * lecture playback (see `useMarkStudied` / `useRecordDisplayedItem`).
    */
   recordActivity: (activity_type: "conversation" | "topik" | "lecture", content_id?: string) =>
     http.post<DailyLearningActivity>("/learning/activity", { activity_type, content_id: content_id ?? null }),
@@ -317,16 +318,25 @@ export const practiceApi = {
   start: (lectureId: string, count: number) =>
     http.post<{ practice_set_id: string; items: Quiz[]; count: number }>(`/lectures/${lectureId}/practice`, { count }),
 };
-/** Which Toss MID the card-registration widget launches under. Domestic and
- *  international cards use different merchants; the issued billing key is
- *  region-agnostic, so only the launch config differs. */
+/** Which card button started the registration; recorded on the intent. Both
+ *  open the same Toss merchant (Toss card billing takes Korean-issued cards). */
 export type CardRegion = "domestic" | "international";
+/** `widget` is what the Toss JS SDK's `requestBillingAuth` needs; an empty
+ *  `client_key` means card billing is not configured on the server. */
 type CardIntent = {
   intent_id: string;
   customer_key: string;
   widget: { client_key: string; success_url: string; fail_url: string; card_region: CardRegion };
 };
 type RedirectIntent = { intent_id: string; authorize_url: string; customer_key: string };
+/** What `TossPayments(client_key).brandpay({customerKey, redirectUrl})` needs;
+ *  an empty `client_key` means BrandPay is not configured on the server. */
+type BrandpayIntent = {
+  intent_id: string;
+  customer_key: string;
+  client_key: string;
+  redirect_url: string;
+};
 
 export const payApi = {
   methods: () => http.get<{ methods: PaymentMethod[] }>("/payment-methods"),
@@ -339,19 +349,25 @@ export const payApi = {
   cardConfirm: (intent_id: string, auth_key: string) =>
     http.post<{ method: PaymentMethod }>("/payment-methods/cards/confirm", { intent_id, auth_key }),
   tosspayIntent: (return_url: string) =>
-    http.post<RedirectIntent>("/payment-methods/tosspay/intent", {
+    http.post<BrandpayIntent>("/payment-methods/tosspay/intent", {
       client_idempotency_key: randomUuid(),
       return_url,
     }),
-  tosspayConfirm: (intent_id: string, code: string, state: string) =>
-    http.post<{ method: PaymentMethod }>("/payment-methods/tosspay/confirm", { intent_id, code, state }),
+  /** Once the BrandPay SDK's addPaymentMethod / requestBillingAuth resolved. */
+  tosspayConfirm: (intent_id: string) =>
+    http.post<{ method: PaymentMethod }>("/payment-methods/tosspay/confirm", { intent_id }),
   naverpayIntent: (return_url: string) =>
     http.post<RedirectIntent>("/payment-methods/naverpay/intent", {
       client_idempotency_key: randomUuid(),
       return_url,
     }),
-  naverpayConfirm: (intent_id: string, reserve_id: string) =>
-    http.post<{ method: PaymentMethod }>("/payment-methods/naverpay/confirm", { intent_id, reserve_id }),
+  /** `reserveId` + `tempReceiptId` from Naver's registration redirect. */
+  naverpayConfirm: (intent_id: string, reserve_id: string, temp_receipt_id: string) =>
+    http.post<{ method: PaymentMethod }>("/payment-methods/naverpay/confirm", {
+      intent_id,
+      reserve_id,
+      temp_receipt_id,
+    }),
   setDefault: (id: string) => http.post<void>(`/payment-methods/${id}/set-default`, {}),
   replace: (id: string, new_method_id: string) =>
     http.put<void>(`/payment-methods/${id}/replace`, { new_method_id }),

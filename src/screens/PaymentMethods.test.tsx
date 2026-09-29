@@ -31,6 +31,15 @@ vi.mock("../api/endpoints", () => ({
 const bootstrapMe = vi.fn();
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ bootstrapMe }) }));
 
+// The Toss SDK loads a remote script and navigates away; stub the boundary.
+const requestTossBillingAuth = vi.fn();
+const requestBrandpayRegistration = vi.fn();
+vi.mock("../lib/tossPayments", () => ({
+  requestTossBillingAuth: (opts: unknown) => requestTossBillingAuth(opts),
+  requestBrandpayRegistration: (opts: unknown) => requestBrandpayRegistration(opts),
+  isUserCancel: (e: { code?: string } | null) => e?.code === "USER_CANCEL",
+}));
+
 import { billingApi, payApi } from "../api/endpoints";
 import { PaymentMethods } from "./PaymentMethods";
 
@@ -74,7 +83,7 @@ function setMethods(...methods: PaymentMethod[]) {
   api.methods.mockResolvedValue({ methods });
 }
 
-function renderScreen() {
+function renderScreen(entry = "/account/payment") {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -82,7 +91,7 @@ function renderScreen() {
     // Assertions below are written against the Korean copy.
     <I18nProvider language="ko">
       <QueryClientProvider client={qc}>
-        <MemoryRouter>
+        <MemoryRouter initialEntries={[entry]}>
           <ToastProvider>
             <PaymentMethods />
           </ToastProvider>
@@ -94,6 +103,7 @@ function renderScreen() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  sessionStorage.clear();
   // jsdom doesn't implement scrollIntoView; the screen scrolls its card list
   // after mutations. Stub it so those calls don't throw (matches League.test).
   Element.prototype.scrollIntoView = vi.fn();
@@ -196,16 +206,39 @@ describe("PaymentMethods screen", () => {
     expect(api.remove).not.toHaveBeenCalled();
   });
 
-  it("10. connects an easy-payment provider (Toss Pay)", async () => {
+  it("10. connects Toss Pay through the BrandPay SDK, then confirms", async () => {
     setMethods();
-    api.tosspayIntent.mockResolvedValue({ intent_id: "pmi_1", authorize_url: "https://pay/x", customer_key: "ck" });
+    api.tosspayIntent.mockResolvedValue({ intent_id: "pmi_1", customer_key: "cus_1", client_key: "test_ck_bp", redirect_url: "https://api/cb" });
     api.tosspayConfirm.mockResolvedValue({ method: tossPay() });
+    requestBrandpayRegistration.mockResolvedValue(undefined);
     renderScreen();
     await userEvent.click(await screen.findByLabelText("토스페이 연결하기"));
-    expect(api.tosspayIntent).toHaveBeenCalledTimes(1);
-    await userEvent.type(await screen.findByRole("textbox"), "code123");
-    await userEvent.click(screen.getByRole("button", { name: "등록 완료" }));
-    await waitFor(() => expect(api.tosspayConfirm).toHaveBeenCalledWith("pmi_1", "code123", "pmi_1"));
+    await waitFor(() => expect(api.tosspayConfirm).toHaveBeenCalledWith("pmi_1"));
+    expect(requestBrandpayRegistration).toHaveBeenCalledWith({ clientKey: "test_ck_bp", customerKey: "cus_1", redirectUrl: "https://api/cb" });
+    // The SDK must finish before the server is asked to link the method.
+    expect(requestBrandpayRegistration.mock.invocationCallOrder[0]).toBeLessThan(api.tosspayConfirm.mock.invocationCallOrder[0]);
+    expect(await screen.findByText("등록되었어요")).toBeInTheDocument();
+  });
+
+  it("10b. a member closing the BrandPay window links nothing and shows no error", async () => {
+    setMethods();
+    api.tosspayIntent.mockResolvedValue({ intent_id: "pmi_1", customer_key: "cus_1", client_key: "test_ck_bp", redirect_url: "https://api/cb" });
+    requestBrandpayRegistration.mockRejectedValue({ code: "USER_CANCEL" });
+    renderScreen();
+    await userEvent.click(await screen.findByLabelText("토스페이 연결하기"));
+    await waitFor(() => expect(requestBrandpayRegistration).toHaveBeenCalled());
+    expect(api.tosspayConfirm).not.toHaveBeenCalled();
+    // No toast at all: cancelling is the member's choice, not a failure.
+    expect(document.querySelector(".hg-toast-wrap")?.textContent ?? "").toBe("");
+  });
+
+  it("10c. without a BrandPay client key the SDK is never opened", async () => {
+    setMethods();
+    api.tosspayIntent.mockResolvedValue({ intent_id: "pmi_1", customer_key: "cus_1", client_key: "", redirect_url: "https://api/cb" });
+    renderScreen();
+    await userEvent.click(await screen.findByLabelText("토스페이 연결하기"));
+    expect(await screen.findByText(/지금은 이 결제수단을 등록할 수 없어요/)).toBeInTheDocument();
+    expect(requestBrandpayRegistration).not.toHaveBeenCalled();
   });
 
   it("11. renders a connected easy-pay provider with radio + delete, other still connectable", async () => {
@@ -236,7 +269,8 @@ describe("PaymentMethods screen", () => {
 
   it("14. refetches methods after a successful registration flow", async () => {
     setMethods();
-    api.cardIntent.mockResolvedValue({ intent_id: "pmi_c", customer_key: "ck", widget: { client_key: "test_ck_domestic", success_url: "https://w", fail_url: "https://f", card_region: "domestic" } });
+    // No client key (card billing not configured): the manual entry is the flow.
+    api.cardIntent.mockResolvedValue({ intent_id: "pmi_c", customer_key: "ck", widget: { client_key: "", success_url: "https://w", fail_url: "https://w", card_region: "domestic" } });
     api.cardConfirm.mockResolvedValue({ method: card() });
     renderScreen();
     await screen.findByLabelText("국내 카드 추가");
@@ -247,6 +281,75 @@ describe("PaymentMethods screen", () => {
     await userEvent.click(screen.getByRole("button", { name: "등록 완료" }));
     await waitFor(() => expect(api.cardConfirm).toHaveBeenCalledWith("pmi_c", "authkey"));
     await waitFor(() => expect(api.methods.mock.calls.length).toBeGreaterThan(initialCalls));
+  });
+
+  it("14b. opens Toss's card window through the SDK with the intent's keys", async () => {
+    setMethods();
+    const widget = { client_key: "test_ck_x", success_url: "https://app/account/payment", fail_url: "https://app/account/payment", card_region: "domestic" };
+    api.cardIntent.mockResolvedValue({ intent_id: "pmi_c", customer_key: "cus_1", widget });
+    requestTossBillingAuth.mockResolvedValue(undefined);
+    renderScreen();
+    await userEvent.click(await screen.findByLabelText("국내 카드 추가"));
+    await waitFor(() =>
+      expect(requestTossBillingAuth).toHaveBeenCalledWith({
+        clientKey: "test_ck_x",
+        customerKey: "cus_1",
+        successUrl: widget.success_url,
+        failUrl: widget.fail_url,
+      }),
+    );
+    // Remembered for the return, and no manual sheet in the way.
+    expect(JSON.parse(sessionStorage.getItem("hangyul.pm-registration.v1") ?? "{}")).toEqual({ provider: "toss_card", intentId: "pmi_c" });
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  });
+
+  it("14c. confirms a card when Toss returns with an authKey", async () => {
+    setMethods();
+    sessionStorage.setItem("hangyul.pm-registration.v1", JSON.stringify({ provider: "toss_card", intentId: "pmi_c" }));
+    api.cardConfirm.mockResolvedValue({ method: card() });
+    renderScreen("/account/payment?customerKey=cus_1&authKey=ak_1");
+    await waitFor(() => expect(api.cardConfirm).toHaveBeenCalledWith("pmi_c", "ak_1"));
+    expect(await screen.findByText("등록되었어요")).toBeInTheDocument();
+    expect(sessionStorage.getItem("hangyul.pm-registration.v1")).toBeNull();
+  });
+
+  it("14d. shows Toss's failure message and confirms nothing", async () => {
+    setMethods();
+    sessionStorage.setItem("hangyul.pm-registration.v1", JSON.stringify({ provider: "toss_card", intentId: "pmi_c" }));
+    renderScreen("/account/payment?code=PAY_PROCESS_CANCELED&message=%EC%B7%A8%EC%86%8C%EB%90%A8");
+    expect(await screen.findByText("취소됨")).toBeInTheDocument();
+    expect(api.cardConfirm).not.toHaveBeenCalled();
+  });
+
+  it("14e. opens Naver's reserved window and confirms on its return", async () => {
+    setMethods();
+    const window_ = "https://test-m.pay.naver.com/payments/recurrent/RSV1";
+    api.naverpayIntent.mockResolvedValue({ intent_id: "pmi_n", authorize_url: window_, customer_key: "ck" });
+    renderScreen();
+    await userEvent.click(await screen.findByLabelText("네이버페이 연결하기"));
+    const link = await screen.findByRole("link", { name: /결제창 열기/ });
+    expect(link).toHaveAttribute("href", window_);
+    expect(link).not.toHaveAttribute("target");
+    expect(JSON.parse(sessionStorage.getItem("hangyul.pm-registration.v1") ?? "{}")).toEqual({ provider: "naver_pay", intentId: "pmi_n" });
+  });
+
+  it("14f. confirms Naver Pay with reserveId + tempReceiptId from the return", async () => {
+    setMethods();
+    sessionStorage.setItem("hangyul.pm-registration.v1", JSON.stringify({ provider: "naver_pay", intentId: "pmi_n" }));
+    api.naverpayConfirm.mockResolvedValue({ method: tossPay({ provider: "naver_pay", kind: "naver_pay" }) });
+    renderScreen("/account/payment?resultCode=Success&reserveId=RSV1&tempReceiptId=TMP1");
+    await waitFor(() => expect(api.naverpayConfirm).toHaveBeenCalledWith("pmi_n", "RSV1", "TMP1"));
+  });
+
+  it("14g. accepts a pasted Naver return address in the manual entry", async () => {
+    setMethods();
+    api.naverpayIntent.mockResolvedValue({ intent_id: "pmi_n", authorize_url: "https://m.pay.naver.com/payments/recurrent/R", customer_key: "ck" });
+    api.naverpayConfirm.mockResolvedValue({ method: tossPay({ provider: "naver_pay", kind: "naver_pay" }) });
+    renderScreen();
+    await userEvent.click(await screen.findByLabelText("네이버페이 연결하기"));
+    await userEvent.type(await screen.findByRole("textbox"), "https://app/account/payment?resultCode=Success&reserveId=R&tempReceiptId=T");
+    await userEvent.click(screen.getByRole("button", { name: "등록 완료" }));
+    await waitFor(() => expect(api.naverpayConfirm).toHaveBeenCalledWith("pmi_n", "R", "T"));
   });
 
   it("15. prevents duplicate delete submissions while one is in-flight", async () => {

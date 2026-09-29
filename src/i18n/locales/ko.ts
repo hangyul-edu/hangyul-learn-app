@@ -326,10 +326,11 @@ export const ko = {
     domesticCardTitle: "국내 카드 등록",
     internationalCardTitle: "해외 카드 등록",
     authKeyPlaceholder: "결제창에서 발급된 인증키(authKey)",
-    tossTitle: "토스페이 연결",
-    tossPlaceholder: "연결 후 전달된 인증 코드(code)",
+    registerUnavailable: "지금은 이 결제수단을 등록할 수 없어요. 다른 결제수단을 이용해 주세요.",
     naverTitle: "네이버페이 연결",
-    naverPlaceholder: "연결 후 전달된 예약 번호(reserve_id)",
+    naverPlaceholder: "돌아온 주소 또는 reserveId와 tempReceiptId",
+    naverValuesInvalid: "reserveId와 tempReceiptId를 모두 입력해 주세요.",
+    registerFailed: "결제수단을 등록하지 못했어요. 다시 시도해 주세요.",
     authValueLabel: "인증 값",
     registerDone: "등록 완료",
     registered: "등록되었어요",
@@ -353,7 +354,7 @@ export const ko = {
     connectA11y: "{name} 연결하기",
     connect: "연결하기",
     deleteA11y: "{name} 삭제",
-    flowHint: "결제창에서 인증을 마친 뒤 발급되는 값을 붙여넣어 등록을 완료해요.",
+    flowHint: "결제창에서 인증을 마치면 이 화면으로 돌아와 등록이 완료돼요. 돌아오지 않았다면 발급된 값을 붙여넣어 주세요.",
     openPaymentWindow: "결제창 열기 ↗",
     delete: "삭제",
     retryingStatus: "결제를 진행하고 있어요",
@@ -1124,8 +1125,10 @@ export const ko = {
   /** Learning management (study records). */
   learningManagement: {
     title: "내 학습 기록",
-    todayHeading: "오늘의 학습",
     todayTime: "오늘 공부한 시간",
+    /* Today's summary shows conversation and TOPIK separately — never a sum. */
+    todaySentences: "오늘 학습한 문장",
+    todayQuestions: "오늘 학습한 문제",
     sentences: "학습한 문장 수",
     questions: "학습한 문제 수",
     countUnit: "{n}개", // 1916:25920

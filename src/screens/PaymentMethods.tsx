@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, Sheet } from "../components/ui/Modal";
 import { Button } from "../components/ui/kit";
@@ -15,6 +16,18 @@ import {
   formatRetryAt,
   noticeReasonKey,
 } from "../lib/paymentRecovery";
+import {
+  hasReturnParams,
+  naverValuesFromText,
+  parseRegistrationReturn,
+  savePendingRegistration,
+  takePendingRegistration,
+} from "../lib/paymentReturn";
+import {
+  isUserCancel,
+  requestBrandpayRegistration,
+  requestTossBillingAuth,
+} from "../lib/tossPayments";
 import { useTranslation, type TranslationKey } from "../i18n";
 import type { MethodProvider, PaymentMethod } from "../lib/types";
 import cardArt from "../assets/brand/pm-card-art.svg";
@@ -77,7 +90,9 @@ function cardName(m: PaymentMethod): string {
   return paren > 0 ? m.display_name.slice(0, paren).trim() : m.display_name;
 }
 
-/* One connection/registration flow driven through the shared Sheet. */
+/* One connection/registration flow driven through the shared Sheet: a link to
+   the provider's window (which returns to this page, handled on mount) plus a
+   manual entry for the value it returns. */
 type Flow = {
   title: string;
   authorizeUrl: string;
@@ -144,6 +159,8 @@ export function PaymentMethods() {
   const toast = useToast();
   const toastError = useToastError();
   const qc = useQueryClient();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { bootstrapMe } = useAuth();
   const q = useQuery({ queryKey: QK, queryFn: payApi.methods });
   const recoveryQ = useQuery({ queryKey: RECOVERY_QK, queryFn: billingApi.recovery });
@@ -302,8 +319,40 @@ export function PaymentMethods() {
     retryBtnRef.current?.focus();
   }
 
+  /* --- return from a provider's registration window --- */
+  const handledReturn = useRef(false);
+  useEffect(() => {
+    if (handledReturn.current || !hasReturnParams(location.search)) return;
+    handledReturn.current = true;
+    const search = location.search;
+    // Drop the provider's parameters so a reload does not confirm again.
+    navigate({ pathname: location.pathname }, { replace: true, state: location.state });
+    const pending = takePendingRegistration();
+    if (!pending) return;
+    const ret = parseRegistrationReturn(pending.provider, search);
+    if (!ret) return;
+    if (ret.kind === "failed") {
+      toast.error(ret.message || t("paymentMethods.registerFailed"));
+      return;
+    }
+    setConfirming(true);
+    const confirmed =
+      ret.kind === "toss_card"
+        ? payApi.cardConfirm(pending.intentId, ret.authKey)
+        : payApi.naverpayConfirm(pending.intentId, ret.reserveId, ret.tempReceiptId);
+    confirmed
+      .then(() => {
+        toast.success(t("paymentMethods.registered"));
+        invalidate();
+      })
+      .catch((e) => toast.error(errorMessage(e)))
+      .finally(() => setConfirming(false));
+    // Runs once per arrival; the handled flag guards StrictMode's re-run.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
+
   /* --- registration / connection flows --- */
-  async function start(key: string, open: () => Promise<Flow>) {
+  async function start(key: string, open: () => Promise<Flow | null>) {
     if (starting) return; // prevent duplicate launches
     setStarting(key);
     try {
@@ -318,9 +367,22 @@ export function PaymentMethods() {
   const startCard = (region: CardRegion) =>
     start(`card-${region}`, async () => {
       const res = await payApi.cardIntent(RETURN_URL(), region);
+      if (res.widget.client_key) {
+        // Toss opens its window through the SDK and returns to this page.
+        savePendingRegistration({ provider: "toss_card", intentId: res.intent_id });
+        await requestTossBillingAuth({
+          clientKey: res.widget.client_key,
+          customerKey: res.customer_key,
+          successUrl: res.widget.success_url,
+          failUrl: res.widget.fail_url,
+        });
+        return null;
+      }
+      // No client key (card billing not configured, e.g. local dev with the
+      // fake provider): only the manual entry remains.
       return {
         title: t(region === "domestic" ? "paymentMethods.domesticCardTitle" : "paymentMethods.internationalCardTitle"),
-        authorizeUrl: res.widget.success_url,
+        authorizeUrl: "",
         placeholder: t("paymentMethods.authKeyPlaceholder"),
         confirm: (t) => payApi.cardConfirm(res.intent_id, t).then(() => undefined),
       };
@@ -328,23 +390,42 @@ export function PaymentMethods() {
   const startTossPay = () =>
     start("toss_pay", async () => {
       const res = await payApi.tosspayIntent(RETURN_URL());
-      return {
-        title: t("paymentMethods.tossTitle"),
-        authorizeUrl: res.authorize_url,
-        placeholder: t("paymentMethods.tossPlaceholder"),
-        // The authorize URL carries state=intent_id; the real redirect returns
-        // both code and state. Reuse the intent id as state for manual confirm.
-        confirm: (t) => payApi.tosspayConfirm(res.intent_id, t, res.intent_id).then(() => undefined),
-      };
+      if (!res.client_key) throw new Error(t("paymentMethods.registerUnavailable"));
+      // BrandPay runs in place: the SDK's promises resolve once the member has
+      // registered a method and agreed to 자동결제 (our API exchanged the
+      // customer's code meanwhile), then the server links that method.
+      try {
+        await requestBrandpayRegistration({
+          clientKey: res.client_key,
+          customerKey: res.customer_key,
+          redirectUrl: res.redirect_url,
+        });
+      } catch (e) {
+        if (isUserCancel(e)) return null;
+        throw e;
+      }
+      await payApi.tosspayConfirm(res.intent_id);
+      toast.success(t("paymentMethods.registered"));
+      invalidate();
+      return null;
     });
   const startNaverPay = () =>
     start("naver_pay", async () => {
+      // The server has already reserved the registration: authorize_url is
+      // Naver's window, which returns here with reserveId + tempReceiptId.
       const res = await payApi.naverpayIntent(RETURN_URL());
+      savePendingRegistration({ provider: "naver_pay", intentId: res.intent_id });
       return {
         title: t("paymentMethods.naverTitle"),
         authorizeUrl: res.authorize_url,
         placeholder: t("paymentMethods.naverPlaceholder"),
-        confirm: (t) => payApi.naverpayConfirm(res.intent_id, t).then(() => undefined),
+        confirm: (text) => {
+          const values = naverValuesFromText(text);
+          if (!values) return Promise.reject(new Error(t("paymentMethods.naverValuesInvalid")));
+          return payApi
+            .naverpayConfirm(res.intent_id, values.reserveId, values.tempReceiptId)
+            .then(() => undefined);
+        },
       };
     });
 
@@ -531,7 +612,9 @@ export function PaymentMethods() {
           {t("paymentMethods.flowHint")}
         </p>
         {flow?.authorizeUrl && (
-          <a className="btn btn--secondary btn--block" href={flow.authorizeUrl} target="_blank" rel="noreferrer" style={{ marginBottom: 12 }}>
+          // Same tab: the window returns to this page, which finishes the
+          // registration from the saved intent (sessionStorage is per tab).
+          <a className="btn btn--secondary btn--block" href={flow.authorizeUrl} rel="noreferrer" style={{ marginBottom: 12 }}>
             {t("paymentMethods.openPaymentWindow")}
           </a>
         )}

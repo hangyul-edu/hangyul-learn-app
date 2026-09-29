@@ -100,6 +100,15 @@ describe("Notification Settings (알림 설정)", () => {
     expect(await screen.findByText("설정을 변경하지 못했어요.")).toBeInTheDocument();
   });
 
+  it("offers a retry when the saved settings cannot be loaded", async () => {
+    // Regression: a failed load rendered an empty page with no error or retry.
+    api.settings.mockRejectedValueOnce(new Error("boom"));
+    renderSettings();
+    await userEvent.click(await screen.findByRole("button", { name: "다시 시도" }));
+    expect(await screen.findByRole("switch", { name: "서비스 알림" })).toBeInTheDocument();
+    expect(api.settings).toHaveBeenCalledTimes(2);
+  });
+
   it("ignores rapid repeat taps on the same switch (one request)", async () => {
     let resolve!: () => void;
     api.updateSettings.mockReturnValue(new Promise((r) => { resolve = () => r(settings({ service_notifications: false })); }));

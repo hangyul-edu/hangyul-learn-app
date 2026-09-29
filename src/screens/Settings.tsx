@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { notifApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { useTranslation } from "../i18n";
+import { Async } from "../components/ui/states";
 
 /**
  * Notification Settings (알림 설정) — two push-preference toggles.
@@ -91,29 +92,32 @@ export function Settings() {
       </header>
 
       <div className="screen__body nset__body">
-        {/* Render only once the saved values are loaded — never flash defaults. */}
-        {settings && (
-          <>
-            <div className="nset__row">
-              <span className="nset__label">{t("notificationSettings.service")}</span>
-              <Switch
-                on={!!settings.service_notifications}
-                disabled={pending.has("service_notifications")}
-                label={t("notificationSettings.service")}
-                onToggle={() => toggle("service_notifications")}
-              />
-            </div>
-            <div className="nset__row">
-              <span className="nset__label">{t("notificationSettings.marketing")}</span>
-              <Switch
-                on={!!settings.marketing}
-                disabled={pending.has("marketing")}
-                label={t("notificationSettings.marketing")}
-                onToggle={() => toggle("marketing")}
-              />
-            </div>
-          </>
-        )}
+        {/* Render only once the saved values are loaded — never flash defaults
+            — and offer a retry if they could not be loaded at all. */}
+        <Async loading={q.isLoading} error={q.error} data={settings} onRetry={() => q.refetch()}>
+          {(current) => (
+            <>
+              <div className="nset__row">
+                <span className="nset__label">{t("notificationSettings.service")}</span>
+                <Switch
+                  on={!!current.service_notifications}
+                  disabled={pending.has("service_notifications")}
+                  label={t("notificationSettings.service")}
+                  onToggle={() => toggle("service_notifications")}
+                />
+              </div>
+              <div className="nset__row">
+                <span className="nset__label">{t("notificationSettings.marketing")}</span>
+                <Switch
+                  on={!!current.marketing}
+                  disabled={pending.has("marketing")}
+                  label={t("notificationSettings.marketing")}
+                  onToggle={() => toggle("marketing")}
+                />
+              </div>
+            </>
+          )}
+        </Async>
       </div>
     </div>
   );

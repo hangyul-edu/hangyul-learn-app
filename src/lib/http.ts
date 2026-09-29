@@ -169,8 +169,8 @@ export async function apiFetch<T = unknown>(path: string, opts: RequestOptions =
   }
 
   // Auto-refresh on 401 for authenticated calls (once).
-  const refreshToken = handlers?.getRefreshToken();
-  if (res.status === 401 && auth && !_retry && handlers && refreshToken) {
+  const refreshToken = res.status === 401 && auth && !_retry ? handlers?.getRefreshToken() : null;
+  if (handlers && refreshToken) {
     const retry = () => apiFetch<T>(path, { ...opts, _retry: true });
     // Another call already refreshed while this one was in flight: the 401 was
     // for the old access token, so retry rather than spend the new refresh token.

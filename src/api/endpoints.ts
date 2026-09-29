@@ -420,8 +420,8 @@ export const billingApi = {
 };
 export const aiApi = {
   createConversation: () => http.post<{ conversation_id: string }>("/ai/conversations", {}),
-  send: (id: string, content: string, mode = "tutor") =>
-    http.post<{ reply?: string; message?: unknown }>(`/ai/conversations/${id}/messages`, { content, mode }),
+  send: (id: string, content: string) =>
+    http.post<{ reply?: string; message?: unknown }>(`/ai/conversations/${id}/messages`, { content }),
   /** Start a context-anchored conversation (e.g. explain the wrong answer). */
   startConversation: (body: {
     topic?: string;

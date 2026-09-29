@@ -139,9 +139,14 @@ export function Subscription() {
     if (busy) return;
     setBusy(true);
     try {
-      if (trial) await subApi.startTrial(p.plan_id);
-      else await subApi.subscribe(p.plan_id);
-      toast.success(t(trial ? "subscription.trialStarted" : "subscription.subStarted"));
+      if (trial) {
+        await subApi.startTrial(p.plan_id);
+        toast.success(t("subscription.trialStarted"));
+      } else {
+        const res = await subApi.subscribe(p.plan_id);
+        if (res?.subscription?.status === "payment_pending") toast.show(t("subscription.subPending"));
+        else toast.success(t("subscription.subStarted"));
+      }
       setPlanOpen(false);
       refresh();
     } catch (e) {

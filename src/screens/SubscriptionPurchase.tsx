@@ -209,7 +209,11 @@ export function SubscriptionPurchase() {
       // Separate flows: trial only for eligible accounts, paid otherwise. The
       // backend rechecks both, so this can never grant a second trial.
       if (eligible) await subApi.startTrial(plan.plan_id);
-      else await subApi.subscribe(plan.plan_id);
+      else {
+        const res = await subApi.subscribe(plan.plan_id);
+        // Charge not decided yet: no access until it settles, so say so.
+        if (res?.subscription?.status === "payment_pending") toast.show(t("subscription.subPending"));
+      }
       qc.invalidateQueries({ queryKey: ["sub-me"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       nav("/subscription", { replace: true });

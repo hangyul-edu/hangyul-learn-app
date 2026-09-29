@@ -85,8 +85,14 @@ export const authApi = {
     http.post<SignupResponse>("/auth/signup/email", body, { auth: false }),
   login: (email: string, password: string, auto_login: boolean) =>
     http.post<TokenResponse>("/auth/login/email", { email, password, auto_login }, { auth: false }),
-  social: (provider: SocialProvider, id_token: string) =>
-    http.post<TokenResponse>("/auth/login/social", { provider, id_token }, { auth: false }),
+  // Native id_token login. `nonce` is the raw value handed to the provider SDK;
+  // the server requires the token's nonce claim to match it.
+  social: (provider: SocialProvider, id_token: string, nonce?: string) =>
+    http.post<TokenResponse>(
+      "/auth/login/social",
+      nonce ? { provider, id_token, nonce } : { provider, id_token },
+      { auth: false },
+    ),
   // Real web login: a full-page navigation to the backend, which redirects to
   // the provider's actual authorization screen. No token is ever handled here.
   socialStartUrl: (provider: SocialProvider, returnTo = "/") =>
@@ -452,7 +458,10 @@ export const subApi = {
   plans: () => http.get<{ plans?: Plan[]; items?: Plan[] }>("/subscriptions/plans", undefined, { auth: false }),
   mine: () => http.get<MySubscription>("/subscriptions/me"),
   startTrial: (plan_id: string) => http.post<unknown>("/subscriptions/trial", { plan_id }),
-  subscribe: (plan_id: string, method_id?: string) => http.post<unknown>("/subscriptions", { plan_id, method_id }),
+  // 201 = paid and active; 202 = the first charge is still undecided
+  // (`subscription.status === "payment_pending"`, no access yet); a decline is 402.
+  subscribe: (plan_id: string, method_id?: string) =>
+    http.post<{ subscription?: { status?: string } }>("/subscriptions", { plan_id, method_id }),
   cancel: (reason?: string) => http.post<unknown>("/subscriptions/cancel", { reason }),
   resume: () => http.post<unknown>("/subscriptions/resume"),
   validateCoupon: (code: string) => http.post<Record<string, unknown>>("/subscriptions/coupons/validate", { code }),

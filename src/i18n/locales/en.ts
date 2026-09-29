@@ -242,6 +242,7 @@ export const en: Catalog = {
     voucherApplied: "Your {plan} subscription is active",
     trialStarted: "Your free trial has started! 🎉",
     subStarted: "Your subscription has started! 🎉",
+    subPending: "We're confirming your payment. You'll get access as soon as it goes through.",
     cancelScheduled: "Cancellation scheduled",
     resumed: "Your subscription has resumed",
     voucherFailTitle: "Couldn't register that code",

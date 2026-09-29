@@ -249,6 +249,7 @@ export const ko = {
     voucherApplied: "{plan} 구독이 적용되었어요",
     trialStarted: "무료 체험을 시작했어요! 🎉",
     subStarted: "구독을 시작했어요! 🎉",
+    subPending: "결제를 확인하고 있어요. 완료되면 바로 이용할 수 있어요.",
     cancelScheduled: "해지 예약되었어요",
     resumed: "구독을 다시 시작했어요",
     voucherFailTitle: "쿠폰 등록에 실패했습니다",

@@ -5,17 +5,18 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 /* -------------------------------- mocks --------------------------------- */
-const { plans, mine, paymentMethods, startTrial, subscribe } = vi.hoisted(() => ({
+const { plans, mine, paymentMethods, startTrial, subscribe, toastShow } = vi.hoisted(() => ({
   plans: vi.fn(),
   mine: vi.fn(),
   paymentMethods: vi.fn(),
   startTrial: vi.fn(),
   subscribe: vi.fn(),
+  toastShow: vi.fn(),
 }));
 vi.mock("../api/endpoints", () => ({
   subApi: { plans, mine, paymentMethods, startTrial, subscribe },
 }));
-vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn() }) }));
+vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn(), show: toastShow }) }));
 
 import { SubscriptionPurchase } from "./SubscriptionPurchase";
 import { I18nProvider } from "../i18n";
@@ -163,6 +164,17 @@ describe("SubscriptionPurchase", () => {
     await userEvent.click(await screen.findByRole("button", { name: "지금 바로 시작하기" }));
     await waitFor(() => expect(subscribe).toHaveBeenCalledWith("p_year"));
     expect(startTrial).not.toHaveBeenCalled();
+    expect(toastShow).not.toHaveBeenCalled();
+  });
+
+  it("a first charge still being confirmed says so instead of claiming access", async () => {
+    mine.mockResolvedValue({ status: "expired", trial_started: true });
+    subscribe.mockResolvedValue({ subscription: { status: "payment_pending" } });
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "지금 바로 시작하기" }));
+    await waitFor(() =>
+      expect(toastShow).toHaveBeenCalledWith("결제를 확인하고 있어요. 완료되면 바로 이용할 수 있어요."),
+    );
   });
 
   it("duplicate CTA taps send only one request", async () => {

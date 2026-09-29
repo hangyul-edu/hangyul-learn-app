@@ -174,8 +174,9 @@ the page — you stay signed in).
   the session from `localStorage` and calls `/users/me`).
 - Open **DevTools → Network** and watch requests carry
   `Authorization: Bearer …`. When the access token expires the app calls
-  `/auth/token/refresh` transparently and retries; if the refresh token is dead
-  it signs you out and returns to the welcome screen.
+  `/auth/token/refresh` transparently and retries; if the server rejects the
+  refresh token it signs you out and returns to the welcome screen. A refresh
+  that fails for network/5xx reasons surfaces an error but keeps the session.
 - Every screen calls real endpoints — Home → `/dashboard/summary`, 리그 →
   `/leagues/me` + `/leagues/current/rankings`, etc.
 
@@ -260,8 +261,9 @@ loading/error/retry/caching, and central token/refresh handling in `lib/http.ts`
 
 **“401 / logged out unexpectedly” or token expiration**
 - Access tokens are short-lived (~30 min). The app refreshes them automatically.
-- Refresh tokens are **single-use**; if two tabs race a refresh, one may be
-  invalidated and you'll be signed out — just log in again.
+- Refresh tokens are **single-use**. Tabs share the stored session: a tab that
+  loses a refresh race adopts the pair the winning tab stored (same session
+  only) and retries, instead of signing out.
 - Changing your password intentionally signs you out of all sessions.
 
 **API requests fail / spinner never ends**

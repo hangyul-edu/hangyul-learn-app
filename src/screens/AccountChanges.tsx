@@ -7,6 +7,7 @@ import { useToast } from "../hooks/toast";
 import { countdownLabel } from "../hooks/verification";
 import { errorMessage } from "../lib/http";
 import { NATIONALITIES } from "../lib/format";
+import { passwordProblem } from "../lib/validation";
 import { CountrySelect } from "../components/ui/CountrySelect";
 
 /* ------------------------- Password ------------------------- */
@@ -27,8 +28,8 @@ export function ChangePassword() {
   const [pw2, setPw2] = useState("");
   const [busy, setBusy] = useState(false);
 
-  // Authoritative policy (matches backend): ≥8 chars, letter + number + special.
-  const policyOk = pw.length >= 8 && /[A-Za-z]/.test(pw) && /\d/.test(pw) && /[^A-Za-z0-9]/.test(pw);
+  // The shared policy that mirrors the backend: 8–64 chars, letter + number + special.
+  const policyOk = passwordProblem(pw) === null;
   const matches = pw2.length > 0 && pw === pw2;
   const differs = pw.length > 0 && pw !== cur;
   const canSubmit = cur.length > 0 && policyOk && matches && differs && !busy;

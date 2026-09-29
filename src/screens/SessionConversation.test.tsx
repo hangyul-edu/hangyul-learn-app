@@ -782,6 +782,16 @@ describe("SessionConversation — adaptive session", () => {
     expect(blankHint).not.toHaveBeenCalled();
   });
 
+  it("a hint on a session that has ended starts a fresh session instead of failing", async () => {
+    study.hint.mockRejectedValueOnce(new ApiError(409, "session.not_active", ""));
+    renderScreen();
+    await screen.findByText(/덕분에 잘/);
+    expect(study.start).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getByRole("button", { name: /힌트보기/ }));
+    await waitFor(() => expect(study.start).toHaveBeenCalledTimes(2));
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
   it("the prompt panel customizes the rest of the session instead of regenerating it", async () => {
     const replaced = activity("act_3", { content: { ...activity("act_3").content, display_text: "커피 ___ 주세요.", translation: "Coffee, please." } });
     study.customize.mockResolvedValue({

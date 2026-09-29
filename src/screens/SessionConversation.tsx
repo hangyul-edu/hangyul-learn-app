@@ -407,7 +407,8 @@ export function SessionConversation() {
     record(studyToSpeech(res, s.activity_id, typedText), s, mode);
   }
 
-  // An ended session (idle expiry) cannot take answers: start a fresh one.
+  // An ended session (idle expiry) takes no answers, hints or reveals: start a
+  // fresh one.
   function recoverStudy(e: unknown): boolean {
     if (!isApiCode(e, "session.not_active")) return false;
     void bootStudy(null);
@@ -562,7 +563,7 @@ export function SessionConversation() {
           : (await sentenceApi.blankHint(s.sentence_id, 0)).revealed_text;
         setRevealed((m) => ({ ...m, [s.sentence_id]: text }));
       } catch (e) {
-        toast.error(errorMessage(e));
+        if (!recoverStudy(e)) toast.error(errorMessage(e));
         return; // finally still runs; stage is left untouched on failure
       } finally {
         setHintBusy(false);
@@ -591,7 +592,7 @@ export function SessionConversation() {
         }
         setRevealed((m) => ({ ...m, [s.sentence_id]: text }));
       } catch (e) {
-        toast.error(errorMessage(e));
+        if (!recoverStudy(e)) toast.error(errorMessage(e));
         return;
       } finally {
         setHintBusy(false);

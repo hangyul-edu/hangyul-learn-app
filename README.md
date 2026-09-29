@@ -14,7 +14,7 @@ integrated.
 
 ## 1. Requirements
 
-- **Node.js ≥ 18** (tested on 20/22/26) and npm.
+- **Node.js 20.19+ or 22.12+** (Vite 7's minimum; tested on 20/22/26) and npm.
 - The **Hangyul backend** running and reachable (see §5).
 
 ---
@@ -95,7 +95,7 @@ DB_URL="sqlite+aiosqlite:////tmp/hangyul_dev.db" APP_ENV=local \
 ```
 
 On startup the API seeds the fixed catalogs — subscription plans, sentences,
-quizzes and exam sets. Admin-managed content (FAQs, notices, banners, courses
+quizzes, exam sets and the curriculum (skills, prerequisites, topics). Admin-managed content (FAQs, notices, banners, courses
 and lectures) is **never** seeded and starts empty; create it in the admin
 portal if you need it. In a **second terminal**, run the frontend
 (`npm run dev`). That's it — the two talk over the dev proxy.

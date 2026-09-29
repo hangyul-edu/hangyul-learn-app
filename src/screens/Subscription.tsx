@@ -93,7 +93,7 @@ export function Subscription() {
   const [busy, setBusy] = useState(false);
 
   const mine = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
-  const plans = useQuery({ queryKey: ["plans"], queryFn: subApi.plans, enabled: planOpen });
+  const plans = useQuery({ queryKey: ["sub-plans"], queryFn: subApi.plans, enabled: planOpen });
   const planList: Plan[] = plans.data?.plans ?? plans.data?.items ?? [];
 
   // Payment history — cursor-based infinite scroll (billingApi.invoices → next_cursor).

@@ -62,7 +62,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   api.recordActivity.mockResolvedValue({ studied_today: true, learning_day_created: true, total_learning_days: 1 });
   api.quizGet.mockResolvedValue(QUIZ);
-  api.quizDaily.mockResolvedValue({ items: [QUIZ] });
+  api.quizDaily.mockResolvedValue({ date: "2026-09-29", questions: [QUIZ] });
   api.quizList.mockResolvedValue({ items: [QUIZ], next_cursor: null });
   api.sentenceList.mockResolvedValue({ items: [SENTENCE], next_cursor: null });
   api.examGet.mockResolvedValue({ exam_id: "e-1", title: "모의고사", questions: [QUIZ] });

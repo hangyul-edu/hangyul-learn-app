@@ -203,7 +203,7 @@ export const sentenceApi = {
 export const quizApi = {
   list: (params: { answer_format?: string; level?: number; limit?: number }) =>
     http.get<{ items: Quiz[] }>("/quizzes", { limit: 20, ...params }),
-  daily: () => http.get<{ items: Quiz[]; date?: string }>("/quizzes/daily"),
+  daily: () => http.get<{ date: string; questions: Quiz[] }>("/quizzes/daily"),
   get: (id: string) => http.get<Quiz>(`/quizzes/${id}`),
   // Signed, short-lived CDN URL for a listening question's audio (fetched lazily
   // when the learner plays it, never embedded in the question payload).

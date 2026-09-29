@@ -62,9 +62,9 @@ export function Topik() {
           </div>
           {daily.isLoading ? (
             <SkeletonList rows={2} height={44} />
-          ) : daily.data?.items?.length ? (
+          ) : daily.data?.questions.length ? (
             <div className="stack" style={{ gap: 8 }}>
-              {daily.data.items.slice(0, 5).map((q) => (
+              {daily.data.questions.slice(0, 5).map((q) => (
                 <QuizRow key={q.quiz_id} q={q} onClick={() => nav(`/quiz/${q.quiz_id}`)} />
               ))}
             </div>

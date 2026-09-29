@@ -31,11 +31,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [me, setMeState] = useState<Me | null>(null);
   const sessionRef = useRef<StoredSession | null>(loadSession());
 
+  // The stored session is shared by every open tab, and refresh tokens are
+  // single-use: once another tab rotates the pair, the copy held here is dead.
+  // Adopt the stored pair when it is a newer pair for the SAME server session,
+  // so this tab neither sends a revoked refresh token nor signs everyone out
+  // after losing that race. A different session (another account signed in
+  // elsewhere) is never adopted — this tab keeps acting as the user it shows.
+  function currentSession(): StoredSession | null {
+    const held = sessionRef.current;
+    if (!held) return null;
+    const stored = loadSession();
+    if (stored && stored.refreshToken !== held.refreshToken) {
+      const sid = sessionIdOf(held.refreshToken);
+      if (sid !== null && sid === sessionIdOf(stored.refreshToken)) sessionRef.current = stored;
+    }
+    return sessionRef.current;
+  }
+
   // Wire the http layer to this provider's session (token read + refresh + expiry).
   useEffect(() => {
     setAuthHandlers({
-      getAccessToken: () => sessionRef.current?.accessToken ?? null,
-      getRefreshToken: () => sessionRef.current?.refreshToken ?? null,
+      getAccessToken: () => currentSession()?.accessToken ?? null,
+      getRefreshToken: () => currentSession()?.refreshToken ?? null,
       onRefreshed: (access, refresh, expiresIn) => {
         if (!sessionRef.current) return;
         sessionRef.current = {
@@ -143,6 +160,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [status, me],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
+
+/**
+ * The server session id (`sid` claim) a token belongs to, or null when the
+ * token is not a readable JWT. Rotation keeps the sid, so two refresh tokens
+ * with the same sid are successive pairs of one sign-in. Read without
+ * verification — it only decides which of our own stored pairs is newer.
+ */
+export function sessionIdOf(token: string): string | null {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+    const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+    const sid = (JSON.parse(json) as { sid?: unknown }).sid;
+    return typeof sid === "string" ? sid : null;
+  } catch {
+    return null;
+  }
 }
 
 export function useAuth(): AuthCtx {

@@ -1,21 +1,55 @@
 import { API_BASE_URL } from "./config";
 import { resolveMessage } from "../i18n/current";
 
-/** Normalized API error. Carries the backend `code` (the real contract) + a friendly message. */
+/** One entry of a `validation_error` problem's `errors[]`: which field, never its value. */
+export interface ApiFieldError {
+  loc: (string | number)[];
+  type?: string;
+  msg?: string;
+}
+
+/**
+ * Normalized API error. Carries the backend `code` (the real contract) + a friendly message.
+ *
+ * Built from the RESPONSE only. The request body is never attached to an error
+ * (or logged anywhere in this module) — some bodies carry card numbers
+ * (PCI DSS, docs/payments/09-security.md §9.1).
+ */
 export class ApiError extends Error {
   status: number;
   code: string;
   detail: string;
   /** Optional machine-readable context from the problem body (e.g. per-field messages). */
   details?: Record<string, unknown>;
-  constructor(status: number, code: string, detail: string, details?: Record<string, unknown>) {
+  /** `errors[]` of a `validation_error`, reduced to `loc` / `type` / `msg`. */
+  fieldErrors?: ApiFieldError[];
+  constructor(
+    status: number,
+    code: string,
+    detail: string,
+    details?: Record<string, unknown>,
+    fieldErrors?: ApiFieldError[],
+  ) {
     super(detail || code || `HTTP ${status}`);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
     this.detail = detail;
     this.details = details;
+    this.fieldErrors = fieldErrors;
   }
+}
+
+/** Keep only where + why from a problem's `errors[]` (the server already drops `input`). */
+function pickFieldErrors(raw: unknown): ApiFieldError[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  return raw
+    .filter((e): e is { loc: unknown[]; type?: unknown; msg?: unknown } => !!e && Array.isArray(e.loc))
+    .map((e) => ({
+      loc: e.loc.filter((p): p is string | number => typeof p === "string" || typeof p === "number"),
+      type: typeof e.type === "string" ? e.type : undefined,
+      msg: typeof e.msg === "string" ? e.msg : undefined,
+    }));
 }
 
 export class NetworkError extends Error {
@@ -139,7 +173,7 @@ export async function apiFetch<T = unknown>(path: string, opts: RequestOptions =
   if (!res.ok) {
     const code = data?.code || data?.title || "error";
     const detail = data?.detail || friendlyFallback(res.status);
-    throw new ApiError(res.status, code, detail, data?.details);
+    throw new ApiError(res.status, code, detail, data?.details, pickFieldErrors(data?.errors));
   }
   return data as T;
 }

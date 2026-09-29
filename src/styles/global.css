@@ -11577,6 +11577,88 @@ textarea.input {
   color: #262c31;
   cursor: pointer;
 }
+/* Domestic vs international: the one-line "which button?" guide above the add
+   rows, a second caption line inside each row, a region·currency tag on each
+   registered card, and cards whose currency can't pay the live plan dimmed.
+   app-authored: SET-001 draws neither (it predates overseas-card billing). */
+.pm__card-hint {
+  margin: 4px 0 10px;
+  font-size: 12px;
+  line-height: 17px;
+  font-weight: 500;
+  color: var(--gray-4);
+}
+.pm__add-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.pm__add-sub {
+  font-size: 11.5px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--gray-4);
+}
+.pm__row-tag {
+  flex: 0 0 auto;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: #f4f4f5;
+  font-size: 10px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.pm__row-tag.is-intl {
+  background: rgba(255, 103, 0, 0.08);
+  color: #ff6700;
+}
+.pm__row--locked { opacity: 0.45; }
+
+/* Overseas-card form (InternationalCardSheet). */
+.pm-intl {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pm-intl__intro,
+.pm-intl__security {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 18px;
+  color: var(--ink-2);
+}
+.pm-intl__error {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 103, 0, 0.06);
+  color: var(--negative);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+}
+.pm-intl__error p { margin: 0; }
+.pm-intl__error-sub { margin-top: 4px !important; color: var(--ink-2); }
+.pm-intl__state {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 6px 0 4px;
+  text-align: center;
+}
+.pm-intl__state p { margin: 0; }
+.pm-intl__state-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.pm-intl__state-text {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
 .pm__sr {
   position: absolute;
   width: 1px;

@@ -318,15 +318,41 @@ export const practiceApi = {
   start: (lectureId: string, count: number) =>
     http.post<{ practice_set_id: string; items: Quiz[]; count: number }>(`/lectures/${lectureId}/practice`, { count }),
 };
-/** Which card button started the registration; recorded on the intent. Both
- *  open the same Toss merchant (Toss card billing takes Korean-issued cards). */
-export type CardRegion = "domestic" | "international";
+export type { CardRegion } from "../lib/types";
 /** `widget` is what the Toss JS SDK's `requestBillingAuth` needs; an empty
  *  `client_key` means card billing is not configured on the server. */
 type CardIntent = {
   intent_id: string;
   customer_key: string;
-  widget: { client_key: string; success_url: string; fail_url: string; card_region: CardRegion };
+  widget: { client_key: string; success_url: string; fail_url: string; card_region: "domestic" };
+};
+/** One currency an overseas card can be registered in (charged only in it). */
+export type InternationalCurrencyOption = {
+  currency: string;
+  requires_holder_birth_date: boolean;
+  /** Advisory list of networks for a brand hint; Toss makes the final call. */
+  accepted_brands: string[];
+};
+/** GET /payment-methods/cards/international/options. */
+export type InternationalCardOptions = {
+  available: boolean;
+  currencies: InternationalCurrencyOption[];
+  /** The live subscription's plan currency: any other currency is refused. Null = free choice. */
+  required_currency?: string | null;
+};
+/**
+ * POST /payment-methods/cards/international — exactly these fields (the server
+ * rejects unknown ones). No CVC / PIN: Toss's API takes neither for this flow.
+ * PCI DSS: this object only ever lives for the duration of one request.
+ */
+export type InternationalCardRegistration = {
+  client_idempotency_key: string;
+  currency: string;
+  card_number: string;
+  expiry_month: number;
+  expiry_year: number;
+  /** `YYMMDD`; omitted unless the currency requires it or the member gave it. */
+  holder_birth_date?: string;
 };
 type RedirectIntent = { intent_id: string; authorize_url: string; customer_key: string };
 /** What `TossPayments(client_key).brandpay({customerKey, redirectUrl})` needs;
@@ -340,12 +366,19 @@ type BrandpayIntent = {
 
 export const payApi = {
   methods: () => http.get<{ methods: PaymentMethod[] }>("/payment-methods"),
-  cardIntent: (return_url: string, card_region: CardRegion = "domestic") =>
+  /** Korean-issued cards only: Toss's hosted billing window. Overseas cards
+   *  go through `registerInternationalCard` (the server refuses them here). */
+  cardIntent: (return_url: string) =>
     http.post<CardIntent>("/payment-methods/cards/intent", {
       client_idempotency_key: randomUuid(),
       return_url,
-      card_region,
+      card_region: "domestic",
     }),
+  internationalCardOptions: () =>
+    http.get<InternationalCardOptions>("/payment-methods/cards/international/options"),
+  /** Card data travels only in this JSON body; never cache, log or persist it. */
+  registerInternationalCard: (body: InternationalCardRegistration) =>
+    http.post<{ method: PaymentMethod }>("/payment-methods/cards/international", body),
   cardConfirm: (intent_id: string, auth_key: string) =>
     http.post<{ method: PaymentMethod }>("/payment-methods/cards/confirm", { intent_id, auth_key }),
   tosspayIntent: (return_url: string) =>

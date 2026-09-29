@@ -141,8 +141,16 @@ Go to **http://localhost:5173**. You land on the welcome screen.
 11. **친구** → search by phone, send/accept requests.
 12. **AI 튜터** → chat with the tutor.
 13. **멤버십** → start a trial / subscribe, apply a coupon, manage **결제 수단**
-    (add a card via the hosted-widget intent → paste the authKey to confirm) and
-    view **결제 내역** (invoices).
+    and view **결제 내역** (invoices). Cards have two flows, picked by where
+    the card was issued:
+    - **국내 카드** (Korean-issued, charged in KRW): Toss's billing window via
+      the SDK; without a Toss client key (offline dev) paste the authKey to
+      confirm.
+    - **해외 카드** (issued abroad): the app's own form — choose the billing
+      currency, then card number + MM/YY (birth date only if the currency
+      requires it; never a CVC). Offline dev offers KRW and USD and accepts
+      any Luhn-valid number with a future expiry, e.g. `4242 4242 4242 4242`.
+    See `docs/payments/02-payment-method-registration.md` §2.3.5.
 14. **내 정보** → settings, **계정 관리** (change email / phone / password),
     logout, delete account.
 

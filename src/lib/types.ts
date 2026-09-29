@@ -357,7 +357,10 @@ export interface ExamResult {
 
 /* ---- Payment / billing ---- */
 export type MethodKind = "card" | "toss_pay" | "naver_pay";
-export type MethodProvider = "toss_card" | "toss_pay" | "naver_pay";
+/** `toss_intl_card` = an overseas-issued card registered through the app's own form. */
+export type MethodProvider = "toss_card" | "toss_intl_card" | "toss_pay" | "naver_pay";
+/** Where a card was issued: `domestic` (Korean, Toss window) or `international` (app form). */
+export type CardRegion = "domestic" | "international";
 export interface PaymentMethod {
   method_id: string;
   kind: MethodKind;
@@ -375,6 +378,10 @@ export interface PaymentMethod {
   expiry_year?: number | null;
   registered_at?: string;
   revoked_at?: string | null;
+  /** Cards only; null for wallets. */
+  card_region?: CardRegion | null;
+  /** The only currency this method can be charged in (e.g. "USD"); null = no restriction tracked. */
+  billing_currency?: string | null;
 }
 export interface Money {
   amount_cents: number;
@@ -387,6 +394,8 @@ export type PaymentFailureClass =
   | "method_revoked"
   | "declined_generic"
   | "provider_outage"
+  /** The plan's currency no longer matches the card's; no retry can fix it. */
+  | "currency_mismatch"
   | "unknown";
 /** Consolidated failed-automatic-payment recovery state (GET /billing/recovery). */
 export interface PaymentRecovery {
@@ -669,6 +678,8 @@ export interface MySubscription {
    *  started the free trial. Free-trial eligibility = !trial_started. */
   trial_started?: boolean;
   in_trial?: boolean;
+  /** Currency of the plan in force ("KRW" / "USD"); null without a plan. */
+  plan_currency?: string | null;
 }
 
 /* ---- Settings ---- */

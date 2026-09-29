@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, Sheet } from "../components/ui/Modal";
@@ -6,10 +6,12 @@ import { Button } from "../components/ui/kit";
 import { TextField } from "../components/ui/Field";
 import { SkeletonList } from "../components/ui/states";
 import { NaverPayLogo, TossPayLogo } from "../components/brand/PayBrand";
-import { billingApi, payApi, type CardRegion } from "../api/endpoints";
+import { billingApi, payApi, subApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
-import { useToast, useToastError } from "../hooks/toast";
+import { useToast } from "../hooks/toast";
 import { ApiError, errorMessage } from "../lib/http";
+import { currencyMismatchText, paymentErrorMessage } from "../lib/paymentErrors";
+import { InternationalCardSheet } from "../components/InternationalCardSheet";
 import {
   NOTICE_GUIDANCE_KEY,
   failureModalKeys,
@@ -29,7 +31,7 @@ import {
   requestTossBillingAuth,
 } from "../lib/tossPayments";
 import { useTranslation, type TranslationKey } from "../i18n";
-import type { MethodProvider, PaymentMethod } from "../lib/types";
+import type { MethodProvider, PaymentMethod, Plan } from "../lib/types";
 import cardArt from "../assets/brand/pm-card-art.svg";
 import trashIcon from "../assets/brand/ic-trash.svg";
 import successIcon from "../assets/brand/ic-modal-success.svg";
@@ -89,6 +91,10 @@ function cardName(m: PaymentMethod): string {
   const paren = m.display_name.indexOf("(");
   return paren > 0 ? m.display_name.slice(0, paren).trim() : m.display_name;
 }
+
+/* Subscription states whose plan currency binds the default method — the
+   server's _RENEWING_STATES plus the derived `trial_ending`. */
+const RENEWING = new Set(["trial", "trial_ending", "active", "payment_pending", "payment_failed", "grace_period", "suspended"]);
 
 /* One connection/registration flow driven through the shared Sheet: a link to
    the provider's window (which returns to this page, handled on mount) plus a
@@ -157,7 +163,6 @@ function PaymentResultModal({
 export function PaymentMethods() {
   const { t, language } = useTranslation();
   const toast = useToast();
-  const toastError = useToastError();
   const qc = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
@@ -167,7 +172,31 @@ export function PaymentMethods() {
   const methods = q.data?.methods ?? [];
   const cards = methods.filter((m) => m.kind === "card");
 
+  /* --- currency binding: a card charged in one currency pays only plans in it --- */
+  const subQ = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
+  const sub = subQ.data;
+  const liveCurrency = sub && RENEWING.has(sub.status) ? sub.plan_currency?.toUpperCase() ?? null : null;
+  // Arriving from the purchase screen: the plan being bought (and maybe a
+  // request to open the overseas-card form straight away).
+  const navState = location.state as { selectedPlanId?: string; addCard?: string } | null;
+  const buyingPlanId = navState?.selectedPlanId;
+  const plansQ = useQuery({ queryKey: ["sub-plans"], queryFn: subApi.plans, enabled: !!buyingPlanId });
+  const plans: Plan[] = plansQ.data?.plans ?? plansQ.data?.items ?? [];
+  const buyingCurrency = plans.find((p) => p.plan_id === buyingPlanId)?.currency?.toUpperCase() ?? null;
+  const preferredCurrency = liveCurrency ?? buyingCurrency;
+  const currencyLocked = (m: PaymentMethod) =>
+    !!liveCurrency && !!m.billing_currency && m.billing_currency.toUpperCase() !== liveCurrency;
+  const methodTag = (m: PaymentMethod): string | null => {
+    const region = m.card_region
+      ? t(m.card_region === "international" ? "paymentMethods.regionInternational" : "paymentMethods.regionDomestic")
+      : null;
+    const currency = m.billing_currency?.toUpperCase() ?? null;
+    if (region && currency) return t("paymentMethods.cardTag", { region, currency });
+    return region ?? currency;
+  };
+
   const [removeTarget, setRemoveTarget] = useState<PaymentMethod | null>(null);
+  const [intlOpen, setIntlOpen] = useState(navState?.addCard === "international");
   const [flow, setFlow] = useState<Flow | null>(null);
   const [token, setToken] = useState("");
   const [starting, setStarting] = useState<string | null>(null);
@@ -193,7 +222,7 @@ export function PaymentMethods() {
     },
     onError: (e, _id, ctx) => {
       if (ctx?.prev) qc.setQueryData(QK, ctx.prev);
-      toast.error(errorMessage(e));
+      toast.error(paymentErrorMessage(e));
     },
     onSettled: invalidate,
   });
@@ -201,6 +230,11 @@ export function PaymentMethods() {
   function selectPrimary(m: PaymentMethod) {
     // A primary change mid-retry could invalidate the in-flight charge — block it.
     if (m.is_default || setDefault.isPending || retry.isPending) return;
+    if (currencyLocked(m)) {
+      // The server would refuse it (payment_method.currency_mismatch); say why up front.
+      toast.error(currencyMismatchText(m.billing_currency, liveCurrency));
+      return;
+    }
     setDefault.mutate(m.method_id);
   }
 
@@ -222,7 +256,7 @@ export function PaymentMethods() {
       setRemoveTarget(null);
       invalidate();
     },
-    onError: toastError, // keep the modal open
+    onError: (e) => toast.error(paymentErrorMessage(e)), // keep the modal open
   });
 
   /* --- failed-automatic-payment recovery --- */
@@ -359,14 +393,17 @@ export function PaymentMethods() {
       setToken("");
       setFlow(await open());
     } catch (e) {
-      toast.error(errorMessage(e));
+      // e.g. payment_method.currency_mismatch: a KRW method while on a USD plan.
+      toast.error(paymentErrorMessage(e));
     } finally {
       setStarting(null);
     }
   }
-  const startCard = (region: CardRegion) =>
-    start(`card-${region}`, async () => {
-      const res = await payApi.cardIntent(RETURN_URL(), region);
+  /* Korean-issued cards: Toss's hosted billing window (it takes only domestic
+     cards). Overseas cards use the app's own form — InternationalCardSheet. */
+  const startDomesticCard = () =>
+    start("card-domestic", async () => {
+      const res = await payApi.cardIntent(RETURN_URL());
       if (res.widget.client_key) {
         // Toss opens its window through the SDK and returns to this page.
         savePendingRegistration({ provider: "toss_card", intentId: res.intent_id });
@@ -381,7 +418,7 @@ export function PaymentMethods() {
       // No client key (card billing not configured, e.g. local dev with the
       // fake provider): only the manual entry remains.
       return {
-        title: t(region === "domestic" ? "paymentMethods.domesticCardTitle" : "paymentMethods.internationalCardTitle"),
+        title: t("paymentMethods.domesticCardTitle"),
         authorizeUrl: "",
         placeholder: t("paymentMethods.authKeyPlaceholder"),
         confirm: (t) => payApi.cardConfirm(res.intent_id, t).then(() => undefined),
@@ -428,6 +465,13 @@ export function PaymentMethods() {
         },
       };
     });
+
+  const closeIntl = useCallback(() => setIntlOpen(false), []);
+  const intlRegistered = useCallback(() => {
+    setIntlOpen(false);
+    toast.success(t("paymentMethods.registered"));
+    void qc.invalidateQueries({ queryKey: QK });
+  }, [qc, t, toast]);
 
   async function confirmFlow() {
     if (!flow || !token.trim() || confirming) return;
@@ -502,17 +546,26 @@ export function PaymentMethods() {
             <section className="pm__section" aria-label={t("paymentMethods.cardsSection")} ref={cardsRef}>
               <h2 className="pm__section-title">{t("paymentMethods.cardsSection")}</h2>
               <ul className="pm__list" role="list">
-                {cards.map((m) => (
+                {cards.map((m) => {
+                  const tag = methodTag(m);
+                  const locked = currencyLocked(m);
+                  const name = tag ? `${m.display_name} ${tag}` : m.display_name;
+                  return (
                   <li key={m.method_id}>
                     <div
-                      className="pm__row"
+                      className={`pm__row ${locked ? "pm__row--locked" : ""}`}
                       role="button"
                       tabIndex={0}
                       aria-pressed={m.is_default}
-                      aria-label={t("paymentMethods.defaultMethodA11y", {
-                        name: m.display_name,
-                        state: t(m.is_default ? "paymentMethods.selected" : "paymentMethods.notSelected"),
-                      })}
+                      aria-disabled={locked || undefined}
+                      aria-label={
+                        locked
+                          ? t("paymentMethods.currencyLockedA11y", { name })
+                          : t("paymentMethods.defaultMethodA11y", {
+                              name,
+                              state: t(m.is_default ? "paymentMethods.selected" : "paymentMethods.notSelected"),
+                            })
+                      }
                       onClick={() => selectPrimary(m)}
                       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectPrimary(m); } }}
                     >
@@ -523,6 +576,9 @@ export function PaymentMethods() {
                             run — no space before the parenthesis. */}
                         <span className="pm__row-name">{cardName(m)}</span>
                         {m.masked_card_number && <span className="pm__row-masked">({m.masked_card_number})</span>}
+                        {/* Region + the only currency it can be charged in, so
+                            two cards of the same issuer stay distinguishable. */}
+                        {tag && <span className={`pm__row-tag ${m.card_region === "international" ? "is-intl" : ""}`}>{tag}</span>}
                       </div>
                       <button
                         className="pm__del"
@@ -533,16 +589,26 @@ export function PaymentMethods() {
                       </button>
                     </div>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
 
-              <button className="pm__add" onClick={() => startCard("domestic")} disabled={!!starting || retry.isPending} aria-label={t("paymentMethods.addDomesticA11y")}>
+              {/* Two distinct flows, chosen by where the card was issued:
+                  Korean → Toss's window (KRW); overseas → our own form. */}
+              <p className="pm__card-hint">{t("paymentMethods.cardChoiceHint")}</p>
+              <button className="pm__add" onClick={startDomesticCard} disabled={!!starting || retry.isPending} aria-label={t("paymentMethods.addDomesticA11y")}>
                 <Plus />
-                <span className="pm__add-label">{t("paymentMethods.addDomestic")}</span>
+                <span className="pm__add-text">
+                  <span className="pm__add-label">{t("paymentMethods.addDomestic")}</span>
+                  <span className="pm__add-sub">{t("paymentMethods.addDomesticSub")}</span>
+                </span>
               </button>
-              <button className="pm__add" onClick={() => startCard("international")} disabled={!!starting || retry.isPending} aria-label={t("paymentMethods.addInternationalA11y")}>
+              <button className="pm__add" onClick={() => setIntlOpen(true)} disabled={!!starting || retry.isPending} aria-label={t("paymentMethods.addInternationalA11y")}>
                 <Plus />
-                <span className="pm__add-label">{t("paymentMethods.addInternational")}</span>
+                <span className="pm__add-text">
+                  <span className="pm__add-label">{t("paymentMethods.addInternational")}</span>
+                  <span className="pm__add-sub">{t("paymentMethods.addInternationalSub")}</span>
+                </span>
               </button>
             </section>
 
@@ -557,10 +623,11 @@ export function PaymentMethods() {
                     <li key={provider}>
                       {connected ? (
                         <div
-                          className="pm__row pm__ez"
+                          className={`pm__row pm__ez ${currencyLocked(connected) ? "pm__row--locked" : ""}`}
                           role="button"
                           tabIndex={0}
                           aria-pressed={connected.is_default}
+                          aria-disabled={currencyLocked(connected) || undefined}
                           aria-label={t("paymentMethods.defaultMethodA11y", {
                             name: t(labelKey),
                             state: t(connected.is_default ? "paymentMethods.selected" : "paymentMethods.notSelected"),
@@ -622,6 +689,14 @@ export function PaymentMethods() {
         <div style={{ height: 12 }} />
         <Button block loading={confirming} disabled={!token.trim()} onClick={confirmFlow}>{t("paymentMethods.registerDone")}</Button>
       </Sheet>
+
+      {/* --- overseas-issued card: the app's own form --- */}
+      <InternationalCardSheet
+        open={intlOpen}
+        onClose={closeIntl}
+        preferredCurrency={preferredCurrency}
+        onRegistered={intlRegistered}
+      />
 
       {/* --- deletion / disconnect confirmation --- */}
       <Dialog

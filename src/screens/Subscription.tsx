@@ -11,6 +11,7 @@ import { FailModal } from "../components/FailModal";
 import { subApi, billingApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { ApiError, errorMessage } from "../lib/http";
+import { paymentErrorMessage } from "../lib/paymentErrors";
 import { formatMoney, formatLongDate } from "../lib/format";
 import type { Invoice, MySubscription, Plan } from "../lib/types";
 import { CancelReasonModal } from "../components/CancelReasonModal";
@@ -150,7 +151,8 @@ export function Subscription() {
       setPlanOpen(false);
       refresh();
     } catch (e) {
-      toast.error(errorMessage(e));
+      // subscription.currency_mismatch: the card is charged in another currency.
+      toast.error(paymentErrorMessage(e));
     } finally {
       setBusy(false);
     }

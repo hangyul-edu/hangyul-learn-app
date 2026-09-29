@@ -5,18 +5,19 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 /* -------------------------------- mocks --------------------------------- */
-const { plans, mine, paymentMethods, startTrial, subscribe, toastShow } = vi.hoisted(() => ({
+const { plans, mine, paymentMethods, startTrial, subscribe, toastShow, toastError } = vi.hoisted(() => ({
   plans: vi.fn(),
   mine: vi.fn(),
   paymentMethods: vi.fn(),
   startTrial: vi.fn(),
   subscribe: vi.fn(),
   toastShow: vi.fn(),
+  toastError: vi.fn(),
 }));
 vi.mock("../api/endpoints", () => ({
   subApi: { plans, mine, paymentMethods, startTrial, subscribe },
 }));
-vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn(), show: toastShow }) }));
+vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: toastError, success: vi.fn(), show: toastShow }) }));
 
 import { SubscriptionPurchase } from "./SubscriptionPurchase";
 import { I18nProvider } from "../i18n";
@@ -301,5 +302,60 @@ describe("SubscriptionPurchase — plan cards", () => {
     expect(screen.getByText("25% 할인")).toBeInTheDocument(); // server, not 20%
     expect(screen.getByText("$5.00")).toBeInTheDocument(); // server current_monthly_cents
     expect(screen.getByText("$9.99/월 ($120.00)").closest("s")).toBeInTheDocument(); // server monthly+total
+  });
+});
+
+describe("SubscriptionPurchase currency pre-check", () => {
+  const KRW_CARD = { ...METHOD, card_region: "domestic", billing_currency: "KRW" };
+  const USD_CARD = { ...METHOD, method_id: "pm_usd", is_default: false, provider: "toss_intl_card", card_region: "international", billing_currency: "USD" };
+
+  it("explains a KRW default method vs a USD plan and never calls subscribe", async () => {
+    mine.mockResolvedValue({ status: "expired", trial_started: true });
+    paymentMethods.mockResolvedValue({ methods: [KRW_CARD] });
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "지금 바로 시작하기" }));
+    const dialog = await screen.findByRole("alertdialog");
+    expect(within(dialog).getByText("이 결제수단으로는 결제할 수 없어요")).toBeInTheDocument();
+    expect(within(dialog).getByText(/원화\(KRW\)로만 결제돼요. 달러\(USD\) 요금제는 해외 카드로/)).toBeInTheDocument();
+    expect(subscribe).not.toHaveBeenCalled();
+    expect(startTrial).not.toHaveBeenCalled();
+    // The path out: straight to the overseas-card form, keeping the plan.
+    await userEvent.click(within(dialog).getByRole("button", { name: "해외 카드 등록" }));
+    expect(await screen.findByText("PAYMENT REG")).toBeInTheDocument();
+    expect(screen.getByTestId("loc").textContent).toContain('"addCard":"international"');
+    expect(screen.getByTestId("loc").textContent).toContain('"selectedPlanId":"p_year"');
+  });
+
+  it("also blocks the trial, and suggests switching when a matching method exists", async () => {
+    paymentMethods.mockResolvedValue({ methods: [KRW_CARD, USD_CARD] });
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "7일 무료 체험 시작하기" }));
+    const dialog = await screen.findByRole("alertdialog");
+    expect(within(dialog).getByText(/달러\(USD\) 결제수단을 기본 결제수단으로 선택하면/)).toBeInTheDocument();
+    expect(startTrial).not.toHaveBeenCalled();
+    await userEvent.click(within(dialog).getByRole("button", { name: "결제수단 관리" }));
+    expect(await screen.findByText("PAYMENT REG")).toBeInTheDocument();
+    expect(screen.getByTestId("loc").textContent).not.toContain("addCard");
+  });
+
+  it("proceeds when the default method's currency matches the plan", async () => {
+    mine.mockResolvedValue({ status: "expired", trial_started: true });
+    paymentMethods.mockResolvedValue({ methods: [{ ...USD_CARD, is_default: true }] });
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "지금 바로 시작하기" }));
+    await waitFor(() => expect(subscribe).toHaveBeenCalledWith("p_year"));
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  });
+
+  it("still maps a server subscription.currency_mismatch as a fallback", async () => {
+    const { ApiError } = await import("../lib/http");
+    mine.mockResolvedValue({ status: "expired", trial_started: true });
+    subscribe.mockRejectedValue(
+      new ApiError(422, "subscription.currency_mismatch", "raw", { card_currency: "KRW", plan_currency: "USD" }),
+    );
+    renderPage(); // METHOD has no billing_currency: the pre-check cannot tell
+    await userEvent.click(await screen.findByRole("button", { name: "지금 바로 시작하기" }));
+    await waitFor(() => expect(toastError).toHaveBeenCalled());
+    expect(toastError.mock.calls[0][0]).toMatch(/원화\(KRW\)로만 결제돼요/);
   });
 });

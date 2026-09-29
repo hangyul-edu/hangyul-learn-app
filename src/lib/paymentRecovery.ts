@@ -23,6 +23,8 @@ export function noticeReasonKey(failureClass?: string | null): TranslationKey {
       return "paymentRecovery.reasonMethodRevoked";
     case "provider_outage":
       return "paymentRecovery.reasonProviderOutage";
+    case "currency_mismatch":
+      return "paymentRecovery.reasonCurrencyMismatch";
     default:
       return "paymentRecovery.reasonGeneric";
   }
@@ -41,6 +43,8 @@ export function failureModalKeys(failureClass?: string | null): [TranslationKey,
       return ["paymentRecovery.failUnusableTitle", "paymentRecovery.failUnusableSub"];
     case "provider_outage":
       return ["paymentRecovery.failTemporaryTitle", "paymentRecovery.failTemporarySub"];
+    case "currency_mismatch":
+      return ["paymentRecovery.failCurrencyTitle", "paymentRecovery.failCurrencySub"];
     default:
       return ["paymentRecovery.failGenericTitle", "paymentRecovery.failGenericSub"];
   }

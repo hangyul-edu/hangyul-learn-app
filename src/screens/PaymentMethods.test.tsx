@@ -13,6 +13,8 @@ vi.mock("../api/endpoints", () => ({
     methods: vi.fn(),
     cardIntent: vi.fn(),
     cardConfirm: vi.fn(),
+    internationalCardOptions: vi.fn(),
+    registerInternationalCard: vi.fn(),
     tosspayIntent: vi.fn(),
     tosspayConfirm: vi.fn(),
     naverpayIntent: vi.fn(),
@@ -25,6 +27,10 @@ vi.mock("../api/endpoints", () => ({
     recovery: vi.fn(),
     invoice: vi.fn(),
     retryInvoice: vi.fn(),
+  },
+  subApi: {
+    mine: vi.fn(async () => ({ status: "none" })),
+    plans: vi.fn(async () => ({ plans: [] })),
   },
 }));
 
@@ -276,7 +282,8 @@ describe("PaymentMethods screen", () => {
     await screen.findByLabelText("국내 카드 추가");
     const initialCalls = api.methods.mock.calls.length;
     await userEvent.click(screen.getByLabelText("국내 카드 추가"));
-    expect(api.cardIntent).toHaveBeenCalledWith(expect.any(String), "domestic");
+    // Domestic only: overseas cards never go through Toss's window.
+    expect(api.cardIntent).toHaveBeenCalledWith(expect.any(String));
     await userEvent.type(await screen.findByRole("textbox"), "authkey");
     await userEvent.click(screen.getByRole("button", { name: "등록 완료" }));
     await waitFor(() => expect(api.cardConfirm).toHaveBeenCalledWith("pmi_c", "authkey"));

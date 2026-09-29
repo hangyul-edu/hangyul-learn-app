@@ -12,7 +12,7 @@ import payRibbon from "../assets/brand/pay-ribbon.svg";
 import payRadioOn from "../assets/brand/pay-radio-on.svg";
 import payRadioOff from "../assets/brand/pay-radio-off.svg";
 import { useToast } from "../hooks/toast";
-import { errorMessage } from "../lib/http";
+import { currencyLabel, currencyMismatchText, paymentErrorMessage } from "../lib/paymentErrors";
 import type { MySubscription, PaymentMethod, Plan } from "../lib/types";
 
 type ScreenStatus = "loading" | "ready" | "submitting" | "missing_plans" | "failed";
@@ -172,6 +172,10 @@ export function SubscriptionPurchase() {
   // registration popup is only for users with no payment method at all. Being
   // the default is not required (the server resolves the method to charge).
   const hasPaymentMethod = methods.some((m) => m.status === "active");
+  // The method the server will charge (method_id is omitted → the default).
+  const active = methods.filter((m) => m.status === "active");
+  const chargeMethod = active.find((m) => m.is_default) ?? active[0];
+  const [currencyBlock, setCurrencyBlock] = useState<{ plan: Plan; card: string; hasMatching: boolean } | null>(null);
   // Free-trial eligibility is server-authoritative (never local): !trial_started.
   const eligible = mine ? !mine.trial_started : undefined;
   const entryMode: "free_trial" | "direct_paid" = eligible ? "free_trial" : "direct_paid";
@@ -203,6 +207,16 @@ export function SubscriptionPurchase() {
       setPayModal(true); // gate: only when NO payment method is registered
       return;
     }
+    // A method charges only its billing_currency (domestic / Toss Pay / Naver
+    // Pay: KRW). Explain up front instead of letting the server refuse with
+    // subscription.currency_mismatch (still mapped below as a fallback).
+    const card = chargeMethod?.billing_currency?.toUpperCase();
+    const planCur = plan.currency?.toUpperCase();
+    if (card && planCur && card !== planCur) {
+      const hasMatching = active.some((m) => m.billing_currency?.toUpperCase() === planCur);
+      setCurrencyBlock({ plan, card, hasMatching });
+      return;
+    }
     submittingRef.current = true;
     setSubmitting(true);
     try {
@@ -219,7 +233,8 @@ export function SubscriptionPurchase() {
       nav("/subscription", { replace: true });
     } catch (e) {
       // e.g. trial already used → refresh eligibility so the UI switches to paid.
-      toast.error(errorMessage(e));
+      // subscription.currency_mismatch gets its own copy (card vs plan currency).
+      toast.error(paymentErrorMessage(e));
       void mineQ.refetch();
     } finally {
       submittingRef.current = false;
@@ -231,6 +246,22 @@ export function SubscriptionPurchase() {
     setPayModal(false);
     nav("/account/payment", {
       state: { from: "/subscription/start", selectedPlanId: selectedId, entryMode },
+    });
+  }
+
+  /** From the currency explanation: straight to the overseas-card form for a
+   *  non-KRW plan (unless a matching method exists and only needs selecting). */
+  function goFixCurrency() {
+    const block = currencyBlock;
+    setCurrencyBlock(null);
+    const addIntl = !!block && !block.hasMatching && block.plan.currency?.toUpperCase() !== "KRW";
+    nav("/account/payment", {
+      state: {
+        from: "/subscription/start",
+        selectedPlanId: selectedId,
+        entryMode,
+        ...(addIntl ? { addCard: "international" } : {}),
+      },
     });
   }
 
@@ -335,6 +366,27 @@ export function SubscriptionPurchase() {
             <div className="lgo__actions">
               <button className="lgo__btn lgo__btn--cancel" onClick={() => setPayModal(false)}>{t("common.cancel")}</button>
               <button className="lgo__btn lgo__btn--go" onClick={goRegisterPayment}>{t("purchase.registerMethod")}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {currencyBlock && (
+        <div className="overlay overlay--center" onClick={() => setCurrencyBlock(null)}>
+          <div className="lgo" role="alertdialog" aria-modal="true" aria-labelledby="pm-cur-title" onClick={(e) => e.stopPropagation()}>
+            <h2 className="lgo__title" id="pm-cur-title">{t("purchase.currencyTitle")}</h2>
+            <p className="lgo__copy" style={{ textAlign: "center" }}>
+              {currencyBlock.hasMatching
+                ? t("purchase.currencySwitchDefault", { currency: currencyLabel(currencyBlock.plan.currency, t) })
+                : currencyMismatchText(currencyBlock.card, currencyBlock.plan.currency, t)}
+            </p>
+            <div className="lgo__actions">
+              <button className="lgo__btn lgo__btn--cancel" onClick={() => setCurrencyBlock(null)}>{t("common.cancel")}</button>
+              <button className="lgo__btn lgo__btn--go" onClick={goFixCurrency}>
+                {!currencyBlock.hasMatching && currencyBlock.plan.currency?.toUpperCase() !== "KRW"
+                  ? t("purchase.currencyAddIntl")
+                  : t("purchase.currencyManage")}
+              </button>
             </div>
           </div>
         </div>

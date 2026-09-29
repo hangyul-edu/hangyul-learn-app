@@ -16,8 +16,7 @@ import { InviteLanding } from "./InviteLanding";
 
 const api = friendApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
-function renderInvite(token = "tok-1") {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function renderInvite(token = "tok-1", qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })) {
   return render(
     // Assertions below are written against the Korean design frames.
     <I18nProvider language="ko">
@@ -52,6 +51,23 @@ describe("InviteLanding", () => {
     expect(await screen.findByText("Beam")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "친구 신청" }));
     await waitFor(() => expect(api.request).toHaveBeenCalledWith("u1"));
+  });
+
+  it("accepting refreshes the friend lists the Social screen shows", async () => {
+    // Regression: nothing was invalidated, so Social kept its pre-accept
+    // friends / requests (and friend league) until the cache went stale.
+    api.resolveInvitation.mockResolvedValue({
+      inviter: { user_id: "u2", nickname: "Beam", profile_image_type: "NONE", relationship: "request_received", request_id: "r1" },
+      is_self: false,
+    });
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    qc.setQueryData(["friends"], { items: [] });
+    qc.setQueryData(["friend-requests-received"], { items: [] });
+    renderInvite("tok-1", qc);
+    await userEvent.click(await screen.findByRole("button", { name: "수락" }));
+    await waitFor(() => expect(api.accept).toHaveBeenCalledWith("r1"));
+    await waitFor(() => expect(qc.getQueryState(["friends"])?.isInvalidated).toBe(true));
+    expect(qc.getQueryState(["friend-requests-received"])?.isInvalidated).toBe(true);
   });
 
   it("shows a friendly message for an invalid/expired token", async () => {

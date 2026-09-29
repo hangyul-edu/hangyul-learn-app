@@ -204,7 +204,9 @@ export function Profile() {
   // Subscription state is authoritative from /subscriptions/me — trial vs paid
   // vs none is derived from the server status, never from UI copy.
   const s = sub.data;
-  const subState: "trial" | "paid" | "none" = s?.status === "trial" ? "trial" : s?.is_premium ? "paid" : "none";
+  // `trial_ending` is still the trial (its last 72h), not a paid plan.
+  const inTrial = s?.status === "trial" || s?.status === "trial_ending";
+  const subState: "trial" | "paid" | "none" = inTrial ? "trial" : s?.is_premium ? "paid" : "none";
   // MOR-001 prints the date in the app language, not always in Korean.
   const nextBilling = formatLongDate(s?.current_period_end, language);
   // While loading or on error the state is unknown — render a neutral (paid-style)

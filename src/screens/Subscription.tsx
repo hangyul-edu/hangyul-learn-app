@@ -273,7 +273,9 @@ export function Subscription() {
                   <span className="subm__value">{t("subscription.statusCanceling")}</span>
                 </div>
               )}
-              {!scheduledCancel && ["trial", "active"].includes(status) && (
+              {/* `trial_ending` is a trial in its last 72h — exactly when a
+                  member most wants to cancel before the first charge. */}
+              {!scheduledCancel && ["trial", "trial_ending", "active"].includes(status) && (
                 <button className="subm__cancel" onClick={() => setCancelOpen(true)}>{t("subscription.cancel")}</button>
               )}
             </div>

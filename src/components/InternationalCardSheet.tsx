@@ -135,7 +135,7 @@ export function InternationalCardSheet({
     setFieldErrors((f) => ({ ...f, currency: undefined, birthDate: undefined }));
   }
 
-  // Stable: the Sheet re-arms its Back-gesture history entry whenever this changes.
+  // No closing (Back gesture included) while the card is being registered.
   const close = useCallback(() => {
     if (submittingRef.current) return;
     onClose();

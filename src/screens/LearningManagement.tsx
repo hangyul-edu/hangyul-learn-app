@@ -33,10 +33,8 @@ function fmtShort(seconds: number): string {
 /**
  * X-axis label for one bar, derived here rather than taken from the response.
  *
- * The API used to send a generated Korean label ("월", "1주", "9월") that did not
- * vary with the app language, so rendering it left English users reading Korean
- * axis labels. That field is gone: the bucket's dates carry everything needed,
- * so every client formats its own — which also means switching language
+ * The API sends no label: the bucket's dates carry everything needed, so each
+ * client formats its own in the app language — and switching language
  * re-renders the axis immediately, with no refetch.
  *
  * `Intl` reproduces both Figma frames exactly: weekday `short` gives 월…일

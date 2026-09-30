@@ -7,8 +7,8 @@ import type { DashboardTrack } from "../lib/types";
 
 /* The learning-mode tabs and the track card, shared verbatim by Home (MAI-002)
  * and Personalized (TAL-001). Both screens read the same ["dashboard"] query,
- * so keeping one implementation is what keeps them identical — they previously
- * carried two copies whose gauges had drifted to different stroke weights. */
+ * so keeping one implementation is what keeps them identical (two copies'
+ * gauges drift apart). */
 
 /**
  * Open horseshoe gauge with the percentage centered (yellow when complete).

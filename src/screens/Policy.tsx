@@ -91,8 +91,7 @@ const LIST_ITEMS: { id: PolicyId; label: TranslationKey }[] = [
   { id: "refund", label: "policy.refund" },
 ];
 
-/** Figma TRM-001 lists seven lines; the app previously omitted the mail-order
- *  registration number and the contact number. */
+/** The seven business-information lines Figma TRM-001 lists, in its order. */
 const BUSINESS_LINES: TranslationKey[] = [
   "policy.bizCeo",
   "policy.bizEmail",

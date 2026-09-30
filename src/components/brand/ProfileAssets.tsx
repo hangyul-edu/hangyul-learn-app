@@ -16,8 +16,7 @@ import avatar03Art from "../../assets/brand/avatar-03.svg";
 /**
  * Default circular profile image — exported whole from Figma AME-006
  * (Group 1410118219, node 290:13284). The grey ring, inner disc and the
- * smiling tangerine mark are one artwork there, so the two nested CSS circles
- * this used to stack are gone with it.
+ * smiling tangerine mark are one artwork there, so it is one image here.
  */
 export function ProfilePlaceholder() {
   return <img className="setupp__placeholder" src={profilePlaceholderArt} alt="" aria-hidden="true" />;

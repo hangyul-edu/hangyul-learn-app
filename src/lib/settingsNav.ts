@@ -16,10 +16,10 @@ export const settingsOrigin = (from: string): SettingsOrigin => ({ from });
  *
  * Presence of an origin — not history depth — is what tells us there is an
  * in-app entry behind this one. `window.history.state.idx` cannot answer that:
- * it is re-seeded to 0 whenever a restored history entry arrives without it, and
- * the old code read a 0 there as "opened cold" and PUSHED the parent on top of
- * the child. The parent's own back then popped straight back into the child, and
- * the two bounced forever with the real origin stranded below.
+ * it is re-seeded to 0 whenever a restored history entry arrives without it, so
+ * reading a 0 there as "opened cold" would PUSH the parent on top of the child.
+ * The parent's own back would then pop straight back into the child, and the
+ * two would bounce forever with the real origin stranded below.
  *
  * So: pop when we know we were pushed (keeping the parent's scroll and its own
  * back destination), and otherwise REPLACE with the parent. Neither path ever

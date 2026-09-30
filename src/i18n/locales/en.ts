@@ -858,8 +858,8 @@ export const en: Catalog = {
   attendance: {
     // Verbatim from MAI-003 EN (1942:28711). The EN design is not a literal
     // translation of the KO frame — it reads "Checked in today!" where KO reads
-    // 오늘 출석 완료!. No trailing emoji: the frame carried one briefly and it
-    // was removed, so the streak line ends on the exclamation mark.
+    // 오늘 출석 완료!. No trailing emoji: the frame has none, so the streak
+    // line ends on the exclamation mark.
     title: "Checked in today!",
     streak: "{days}-day streak going!",
     points: "+{points}P",

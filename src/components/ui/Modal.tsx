@@ -156,7 +156,7 @@ export function Dialog({
 /**
  * Two-choice confirmation — Figma cp_G_01_modals (MOR-005 1:5727,
  * MOR-011 624:10160): the actions sit side by side as two equal 136px buttons
- * with an 8px gap, cancel first. They were previously stacked.
+ * with an 8px gap, cancel first.
  */
 export function ConfirmDialog({
   open,

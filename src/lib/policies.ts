@@ -27,8 +27,8 @@ export type PolicyId =
 /**
  * The Terms of Service, referenced by id rather than spelled out at each call
  * site: the sign-up agreement sheet and the Terms & Policies detail page must
- * show the same document. The sign-up flow used to carry its own five-article
- * summary (`terms`), which drifted from TRM-002; there is now one copy.
+ * show the same document, so there is one copy (a separate sign-up summary
+ * would drift from TRM-002).
  */
 export const TERMS_OF_SERVICE = "terms-of-use" satisfies PolicyId;
 

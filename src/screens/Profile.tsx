@@ -76,7 +76,7 @@ function avatarDiscStyle(me: Me | null) {
 /**
  * Stat icons — the real emoji artwork exported from MOR-001_더보기메인
  * (📒 노트 1:5569, 🌤️ 작은 구름 뒤의 태양 1:5587, 🏅 스포츠 메달 1:5604).
- * Rendered at Figma's 16px; they were previously hand-drawn grey outlines.
+ * Rendered at Figma's 16px.
  */
 const STAT_ART: Record<StatKind, string> = {
   total: statTotalDays,

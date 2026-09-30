@@ -164,7 +164,7 @@ export function CitrusOutline({
  * Classes are named for the UI element each one is anchored to rather than
  * numbered, because the variant a slot renders is NOT its slot number: the
  * medium-large sketch belongs beside Log in and the smallest behind the Google
- * button, so variants 1 and 3 are swapped relative to the old --1/--3 naming.
+ * button, so variants 1 and 3 sit in each other's slots.
  * Top-to-bottom the painted centres run 150 -> 305 -> 434 -> 576.
  */
 export function AuthDecor() {

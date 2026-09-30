@@ -54,7 +54,7 @@ describe("useRecordDisplayedItem", () => {
     expect(recordActivity).toHaveBeenCalledTimes(1);
   });
 
-  it("does not re-send for later items on the same UTC day (the endpoint is idempotent per day)", async () => {
+  it("does not re-send for later items on the same local day (the endpoint is idempotent per day)", async () => {
     const h = mount({ id: "s1" });
     await flush();
     h.rerender({ id: "s2" });

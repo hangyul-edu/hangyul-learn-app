@@ -5,7 +5,7 @@ import type { QuizAttemptResult } from "../../lib/types";
  * Structured attempt result for the TOPIK page. One envelope renders three
  * shapes from the server response:
  *  - writing → a score against max_score plus suggestions, grammar feedback, and
- *    a corrected version (this feedback was previously computed but never shown);
+ *    a corrected version;
  *  - deferred writing (status "submitted", no score yet) → an awaiting-review state;
  *  - selection / fill-blank → correct/incorrect with the representative answer.
  */

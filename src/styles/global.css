@@ -517,11 +517,6 @@ textarea.input {
   position: relative;
 }
 
-.pin__box:focus {
-  outline: none;
-  border-color: var(--brand-400);
-  box-shadow: 0 0 0 4px var(--brand-100);
-}
 
 /* segmented / option cards */
 .optioncard {
@@ -901,11 +896,6 @@ textarea.input {
   /* HMA-004 puts "학습 기록이 아직 없어요" at y=431, 104.72 under the section
      title's 37.28 line box (289 -> 326.28). */
   padding: 104.7px 20px 0;
-}
-.lmgmt__history-summary {
-  margin: 0;
-  color: var(--ink-3);
-  font-size: 15px;
 }
 .lmgmt__empty {
   display: flex;
@@ -1384,11 +1374,6 @@ textarea.input {
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
-.grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
 .big-num {
   font-family: var(--font-display);
   font-weight: 900;
@@ -1406,9 +1391,6 @@ textarea.input {
 }
 .tap {
   cursor: pointer;
-}
-.hstack-scroll::-webkit-scrollbar {
-  display: none;
 }
 .fab {
   position: absolute;
@@ -4865,8 +4847,8 @@ textarea.input {
   flex: 0 1 31px;
   min-height: 0;
 }
-/* The 31px now comes from .plearn__gap; the tab strip's own 15px used to
-   collapse into it, and flex items do not collapse. */
+/* The 31px comes from .plearn__gap alone: flex items do not collapse margins,
+   so the tab strip's own 15px would add to it. */
 .plearn .home__tabs {
   margin-top: 0;
 }
@@ -8244,9 +8226,6 @@ textarea.input {
      each modal is its button row. */
   animation: pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.1);
   text-align: center;
-}
-.wdd__close:active {
-  opacity: 0.6;
 }
 .wdd__icon {
   /* Group 1410118966 (1542:22993) — the exported 60px badge already carries its
@@ -11827,7 +11806,6 @@ textarea.input {
   flex-direction: column;
   min-height: 100%;
 }
-.ntf__back:active { opacity: 0.55; }
 
 /* Filter pills — Group 1410118907 (766:48531): a 26-tall row at (20, 105);
    the 전체 chip is 58 wide, the rest 60, ~6px apart, r29. */
@@ -12052,10 +12030,9 @@ textarea.input {
   background: linear-gradient(125.27deg, #fffcf5 7.41%, #fffbf0 52.87%, #ffead1 88.98%);
   display: flex;
   flex-direction: column;
-  /* The frame IS one viewport, so this screen never scrolls. It used to set
-     min-height:100%, which overrode .screen's min-height:0 — the column then
-     could not shrink inside the 100dvh app frame and the page scrolled on any
-     viewport under 812. */
+  /* The frame IS one viewport, so this screen never scrolls. min-height must
+     stay 0: min-height:100% would stop the column shrinking inside the 100dvh
+     app frame and the page would scroll on any viewport under 812. */
   min-height: 0;
   overflow: hidden;
 }
@@ -13376,8 +13353,7 @@ textarea.input {
   font-size: 14px;
   line-height: 1.6;
 }
-.pqz__material-img,
-.pqz__audio {
+.pqz__material-img {
   width: 100%;
   margin-top: 16px;
 }

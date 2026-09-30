@@ -1,9 +1,11 @@
 import { http } from "../lib/http";
 import { API_BASE_URL } from "../lib/config";
 import { randomUuid } from "../lib/uuid";
+import { deviceTimeZone } from "../lib/timezone";
 import type {
   AppSettings,
   AttendanceCheckIn,
+  TimezoneSync,
   Banner,
   Course,
   DailyLearningActivity,
@@ -136,6 +138,10 @@ export const userApi = {
     fd.append("file", file);
     return http.upload<{ profile_image_url: string }>("/users/me/profile-image/upload", fd);
   },
+  /** Tell the server the device's IANA timezone — the clock for every daily
+   * boundary. Idempotent; see `lib/timezoneSync.ts` for when it is called. */
+  syncTimezone: (timezone: string) =>
+    http.put<TimezoneSync>("/users/me/timezone", { timezone }),
 };
 
 /* ---------------------------- Onboarding ---------------------------- */
@@ -243,11 +249,12 @@ export const learnApi = {
   streakCalendar: (year?: number, month?: number) => http.get<StreakCalendarResp>("/learning/streak-calendar", { year, month }),
   stats: (range: string) => http.get<StatsResp>("/learning/stats", { range }),
   /** Learning Management dashboard: today's summary + period chart + totals. */
-  management: (period: ManagementPeriod, timezone?: string) =>
-    http.get<ManagementStats>("/learning/management", { period, timezone }),
+  management: (period: ManagementPeriod) =>
+    http.get<ManagementStats>("/learning/management", { period }),
   /**
    * Record a qualifying learning activity so today counts as a learning day and
-   * the sun lights up. Idempotent per (UTC) day — safe to fire repeatedly.
+   * the sun lights up. Idempotent per day (the member's local day, in the
+   * device timezone the app syncs) — safe to fire repeatedly.
    * The app calls it when a sentence / TOPIK question is displayed and on
    * lecture playback (see `useMarkStudied` / `useRecordDisplayedItem`).
    */
@@ -492,7 +499,7 @@ export const notifApi = {
   list: (params: { group?: string; cursor?: string }) =>
     http.get<{ sections?: NotificationSection[]; items?: NotificationItem[]; unread_count?: number; next_cursor?: string | null }>(
       "/notifications",
-      { limit: 30, tz: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", ...params },
+      { limit: 30, tz: deviceTimeZone(), ...params },
     ),
   /** Open the inbox → mark every notification read (clears the bell badge). */
   readAll: () => http.post<void>("/notifications/read-all"),

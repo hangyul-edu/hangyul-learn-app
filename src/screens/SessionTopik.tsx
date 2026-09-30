@@ -418,7 +418,7 @@ export function SessionTopik() {
   }, [items, idx, drafts, correctSet, attempted, points, typeCode, section, goalCurrent, goalTarget, additionalCount, retrying, study]);
 
   // A question on screen counts as study: displaying it records today's
-  // learning activity (streak + learning day + the sun), once per UTC day and
+  // learning activity (streak + learning day + the sun), once per local day and
   // silently — no answer needed. Nothing is recorded while loading or on the
   // error state (no question shown).
   useRecordDisplayedItem("topik", error ? null : cur?.quiz_id);

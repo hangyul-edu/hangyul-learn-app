@@ -254,7 +254,8 @@ describe("LearningManagement", () => {
     }
     management.mockResolvedValue(stats("1m", { buckets: [{ key: "w1", start_date: "2026-07-01", end_date: "2026-07-05", study_seconds: 600, conversation_sentence_count: 1, topik_question_count: 0, is_current: true }] }));
     await userEvent.click(screen.getByRole("menuitem", { name: "이번 달" }));
-    await waitFor(() => expect(management).toHaveBeenCalledWith("1m", expect.anything()));
+    // Only the period: days follow the device timezone the app syncs.
+    await waitFor(() => expect(management).toHaveBeenCalledWith("1m"));
     expect(await screen.findByText("1주")).toBeInTheDocument();
   });
 

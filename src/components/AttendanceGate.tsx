@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { gameApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
 import { AttendanceModal } from "./AttendanceModal";
+import { syncDeviceTimezone } from "../lib/timezoneSync";
 import type { AttendanceCheckIn } from "../lib/types";
 
 interface AttendanceModalData {
@@ -62,6 +63,9 @@ export function AttendanceGate() {
     inFlightRef.current = true;
     (async () => {
       try {
+        // The server dates the check-in on the member's local day, so make
+        // sure it has the device's current zone first (a no-op when it does).
+        await syncDeviceTimezone();
         const res = await gameApi.checkIn();
         if (!isValidResponse(res)) {
           // Malformed: never show the modal or imply success.

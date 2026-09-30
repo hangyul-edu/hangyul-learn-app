@@ -2,14 +2,10 @@ import { useCallback, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { learnApi } from "../api/endpoints";
+import { localDay } from "../lib/timezone";
 import type { DashboardSummary } from "../lib/types";
 
 type Activity = "conversation" | "topik" | "lecture";
-
-/** The UTC calendar day — the boundary `POST /learning/activity` is idempotent on. */
-function utcDay(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 /**
  * Returns a stable `mark(activityType, contentId?)` to call the moment a
@@ -24,19 +20,20 @@ function utcDay(): string {
  *
  * It optimistically lights the sun everywhere by patching the shared
  * ["dashboard"] cache, then records the activity on the server. The record is
- * idempotent per (UTC) day, so this fires the network call at most once per
- * mount per UTC day — later items, re-renders and StrictMode re-runs are
+ * idempotent per day (the member's local day, in the device timezone), so this
+ * fires the network call at most once per mount per local day — later items,
+ * re-renders and StrictMode re-runs are
  * no-ops. Failures are silent (studying is never blocked); a failed call
  * re-arms so the next item retries, and reconciles the sun with the server
  * (invalidate) so it never lies about persisted state.
  */
 export function useMarkStudied() {
   const qc = useQueryClient();
-  // The UTC day this mount has already recorded (or is recording), if any.
+  // The local day this mount has already recorded (or is recording), if any.
   const firedDayRef = useRef<string | null>(null);
   return useCallback(
     (activityType: Activity, contentId?: string) => {
-      const day = utcDay();
+      const day = localDay();
       if (firedDayRef.current === day) return;
       firedDayRef.current = day;
       qc.setQueryData<DashboardSummary>(["dashboard"], (prev) =>

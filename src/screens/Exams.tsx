@@ -72,7 +72,7 @@ export function ExamPlay() {
     retry: false,
   });
   // The exam question on screen counts as study (streak + learning day + the
-  // sun), recorded once per UTC day and silently. Nothing is shown — so nothing
+  // sun), recorded once per local day and silently. Nothing is shown — so nothing
   // recorded — while loading, when locked, or on the graded result.
   useRecordDisplayedItem("topik", result ? null : q.data?.questions?.[idx]?.quiz_id);
 

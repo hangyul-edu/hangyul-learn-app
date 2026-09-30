@@ -20,7 +20,7 @@ export function Recommendations() {
   const [saved, setSaved] = useState<Record<string, boolean>>({});
   // Recommended sentences are shown in full here (this screen has no detail
   // view), so their appearance counts as study (streak + learning day + the
-  // sun), recorded once per UTC day and silently.
+  // sun), recorded once per local day and silently.
   useRecordDisplayedItem("conversation", items?.[0]?.sentence_id);
 
   async function recommend() {

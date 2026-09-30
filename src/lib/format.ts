@@ -1,5 +1,6 @@
 import type { TranslationKey } from "../i18n";
 import type { AppLanguage } from "./language";
+import { deviceTimeZone } from "./timezone";
 
 type Translate = (key: TranslationKey, vars?: Record<string, string | number>) => string;
 
@@ -18,17 +19,17 @@ export function timeAgo(iso: string | null | undefined, t: Translate, locale = "
   return new Date(iso).toLocaleDateString(locale, { month: "long", day: "numeric" });
 }
 
-// The product's configured display timezone. Notice dates are formatted in
-// KST so they render identically regardless of the device's local timezone
-// (we never slice the raw timestamp string).
-const DISPLAY_TZ = "Asia/Seoul";
-
-function displayDateParts(iso?: string | null): { y: string; m: string; d: string } | null {
+// Notice dates are shown on the device's calendar, like every other date in
+// the app (the instant is converted, never sliced from the raw string).
+function displayDateParts(
+  iso: string | null | undefined,
+  timeZone: string,
+): { y: string; m: string; d: string } | null {
   if (!iso) return null;
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return null;
   const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: DISPLAY_TZ,
+    timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -41,14 +42,14 @@ function displayDateParts(iso?: string | null): { y: string; m: string; d: strin
 }
 
 /** Notice-list date, e.g. `26.06.29` (yy.MM.dd). Invalid/missing → "". */
-export function formatNoticeListDate(iso?: string | null): string {
-  const p = displayDateParts(iso);
+export function formatNoticeListDate(iso?: string | null, timeZone = deviceTimeZone()): string {
+  const p = displayDateParts(iso, timeZone);
   return p ? `${p.y.slice(2)}.${p.m}.${p.d}` : "";
 }
 
 /** Notice-detail date, e.g. `2026.06.29` (yyyy.MM.dd). Invalid/missing → "". */
-export function formatNoticeDetailDate(iso?: string | null): string {
-  const p = displayDateParts(iso);
+export function formatNoticeDetailDate(iso?: string | null, timeZone = deviceTimeZone()): string {
+  const p = displayDateParts(iso, timeZone);
   return p ? `${p.y}.${p.m}.${p.d}` : "";
 }
 

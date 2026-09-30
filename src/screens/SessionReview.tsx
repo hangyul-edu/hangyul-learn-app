@@ -126,7 +126,7 @@ export function SessionReview() {
   }, [value, quiz, rewardPoints, draftKey]);
 
   // The saved question on screen counts as study: displaying it records
-  // today's learning activity (streak + learning day + the sun), once per UTC
+  // today's learning activity (streak + learning day + the sun), once per local
   // day and silently — reviewing it counts even before an answer.
   useRecordDisplayedItem("topik", error ? null : quiz?.quiz_id);
 

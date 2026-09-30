@@ -46,7 +46,7 @@ export function Practice() {
   // the server's flag whenever the card advances.
   useEffect(() => setSaved(!!current?.bookmarked), [current]);
   // The practice question on screen counts as study (streak + learning day +
-  // the sun), recorded once per UTC day and silently. `current` is undefined
+  // the sun), recorded once per local day and silently. `current` is undefined
   // before the set starts and on the completion screen, so neither records.
   useRecordDisplayedItem("topik", current?.quiz_id);
 

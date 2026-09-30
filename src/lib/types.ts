@@ -806,6 +806,17 @@ export interface AttendanceCheckIn {
   streak_bonus_awarded: boolean;
 }
 
+/** `PUT /users/me/timezone` — the member's clock after syncing the device zone. */
+export interface TimezoneSync {
+  timezone: string;
+  changed: boolean;
+  /** The member's current day (YYYY-MM-DD); stays on a day already under way
+   * after a westward trip until the local date catches up. */
+  today: string;
+  /** When the next day begins (UTC ISO instant — their next local midnight). */
+  resets_at: string;
+}
+
 /* ---- Support ---- */
 export interface Faq {
   faq_id: string;

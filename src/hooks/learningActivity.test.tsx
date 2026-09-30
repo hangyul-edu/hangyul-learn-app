@@ -63,12 +63,13 @@ describe("useRecordDisplayedItem", () => {
     expect(recordActivity).toHaveBeenCalledTimes(1);
   });
 
-  it("records again once the UTC day rolls over", async () => {
+  it("records again once the device's local day rolls over", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-09-29T23:59:00Z"));
+    // Local wall-clock times: one minute either side of the device's midnight.
+    vi.setSystemTime(new Date(2026, 8, 29, 23, 59));
     const h = mount({ id: "s1" });
     await flush();
-    vi.setSystemTime(new Date("2026-09-30T00:01:00Z"));
+    vi.setSystemTime(new Date(2026, 8, 30, 0, 1));
     h.rerender({ id: "s2" });
     await flush();
     expect(recordActivity).toHaveBeenCalledTimes(2);

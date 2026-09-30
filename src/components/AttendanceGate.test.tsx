@@ -4,8 +4,21 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 /* -------------------------------- mocks --------------------------------- */
-const { checkIn } = vi.hoisted(() => ({ checkIn: vi.fn() }));
-vi.mock("../api/endpoints", () => ({ gameApi: { checkIn } }));
+const { checkIn, syncTimezone, calls } = vi.hoisted(() => {
+  const calls: string[] = [];
+  return {
+    calls,
+    checkIn: vi.fn(async () => {
+      calls.push("checkIn");
+      return {};
+    }),
+    syncTimezone: vi.fn(async () => {
+      calls.push("syncTimezone");
+      return { timezone: "Asia/Seoul", changed: true, today: "2026-07-22", resets_at: "" };
+    }),
+  };
+});
+vi.mock("../api/endpoints", () => ({ gameApi: { checkIn }, userApi: { syncTimezone } }));
 
 let authState: {
   status: string;
@@ -18,6 +31,7 @@ vi.mock("../hooks/auth", () => ({ useAuth: () => authState }));
 
 import { AttendanceGate } from "./AttendanceGate";
 import { I18nProvider } from "../i18n";
+import { resetTimezoneSync } from "../lib/timezoneSync";
 
 const FRESH = {
   checked_in_today: false,
@@ -42,14 +56,32 @@ const dialog = () => screen.queryByRole("dialog");
 
 beforeEach(() => {
   vi.clearAllMocks();
+  calls.length = 0;
+  resetTimezoneSync();
   authState = { status: "signed-in", me: { app_language: "ko", onboarding_completed: true } };
-  checkIn.mockResolvedValue(FRESH);
+  checkIn.mockImplementation(async () => {
+    calls.push("checkIn");
+    return FRESH;
+  });
 });
 afterEach(() => {
   document.body.style.overflow = "";
 });
 
 describe("AttendanceGate", () => {
+  it("syncs the device timezone before checking in, so the server dates it on the local day", async () => {
+    renderGate();
+    await waitFor(() => expect(checkIn).toHaveBeenCalledTimes(1));
+    expect(syncTimezone).toHaveBeenCalledWith(Intl.DateTimeFormat().resolvedOptions().timeZone);
+    expect(calls).toEqual(["syncTimezone", "checkIn"]);
+  });
+
+  it("still checks in when the timezone sync fails", async () => {
+    syncTimezone.mockRejectedValueOnce(new Error("offline"));
+    renderGate();
+    await waitFor(() => expect(checkIn).toHaveBeenCalledTimes(1));
+  });
+
   it("shows the completion modal for a fresh, points-awarding check-in", async () => {
     renderGate();
     await waitFor(() => expect(checkIn).toHaveBeenCalledTimes(1));

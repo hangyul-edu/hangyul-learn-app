@@ -63,9 +63,6 @@ function bucketLabel(
   return new Intl.DateTimeFormat(locale, { month: "short" }).format(date);
 }
 
-const BROWSER_TZ =
-  typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : undefined;
-
 export function LearningManagement() {
   const { t } = useTranslation();
   const nav = useNavigate();
@@ -78,7 +75,8 @@ export function LearningManagement() {
 
   const q = useQuery({
     queryKey: ["management", period],
-    queryFn: () => learnApi.management(period, BROWSER_TZ),
+    // Days are the member's local days in the device timezone the app syncs.
+    queryFn: () => learnApi.management(period),
     placeholderData: keepPreviousData,
   });
   const data = q.data;

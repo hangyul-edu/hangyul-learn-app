@@ -442,7 +442,7 @@ export function SessionConversation() {
   const cur = items?.[idx];
   const progress = total ? answered.size / total : 0;
   // A sentence on screen counts as study: displaying it records today's
-  // learning activity (streak + learning day + the sun), once per UTC day and
+  // learning activity (streak + learning day + the sun), once per local day and
   // silently — no answer needed. A correct answer additionally feeds the goal,
   // points and the conversation count through the attempt endpoints. Nothing
   // is recorded while loading or on the error state (no sentence shown).

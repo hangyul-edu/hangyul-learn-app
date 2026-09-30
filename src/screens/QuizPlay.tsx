@@ -24,7 +24,7 @@ export function QuizPlay() {
 
   const q = useQuery({ queryKey: ["quiz", quizId], queryFn: () => quizApi.get(quizId) });
   // The question on screen counts as study (streak + learning day + the sun),
-  // recorded once per UTC day and silently.
+  // recorded once per local day and silently.
   useRecordDisplayedItem("topik", q.data?.quiz_id);
 
   async function submit(quiz: Quiz) {

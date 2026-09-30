@@ -180,6 +180,20 @@ the page — you stay signed in).
 - Every screen calls real endpoints — Home → `/dashboard/summary`, 리그 →
   `/leagues/me` + `/leagues/current/rankings`, etc.
 
+### Day boundaries follow the device timezone
+
+Attendance, the streak, daily goals, calendars, allowances and reminders all
+roll over at the member's **local midnight** in the device's timezone. The app
+reads it with `Intl.DateTimeFormat().resolvedOptions().timeZone`
+(`lib/timezone.ts`) and syncs it with `PUT /users/me/timezone`
+(`lib/timezoneSync.ts`, driven by `hooks/useDeviceTimezoneSync.ts`): on
+sign-in, on returning to the foreground, and on a light one-minute check. The
+attendance check-in waits for that sync, and a changed zone refreshes every
+cached query. To try it, change the OS timezone (or Chrome DevTools → Sensors →
+Location) and return to the tab: the request appears in the Network panel. The
+weekly league is the exception — its schedule is shown in US Eastern Time
+because every member's league shares one week.
+
 ---
 
 ## 7. Build for production

@@ -47,6 +47,7 @@ import { FaqDetail } from "./screens/FaqDetail";
 import { NoticeList } from "./screens/NoticeList";
 import { NoticeDetail } from "./screens/NoticeDetail";
 import { AttendanceGate } from "./components/AttendanceGate";
+import { useDeviceTimezoneSync } from "./hooks/useDeviceTimezoneSync";
 import { OfflineGate } from "./components/OfflineScreen";
 import { CourseDetail } from "./screens/Courses";
 import { LectureHome } from "./screens/LectureHome";
@@ -205,10 +206,18 @@ function LanguageSync() {
   return null;
 }
 
+/** Keeps the server on the device's timezone — the clock for every daily
+ * boundary (see hooks/useDeviceTimezoneSync). */
+function TimezoneSync() {
+  useDeviceTimezoneSync();
+  return null;
+}
+
 export function App() {
   return (
     <OfflineGate>
       <LanguageSync />
+      <TimezoneSync />
       <RouterProvider router={router} />
       {/* App-root daily attendance: fires the check-in once per signed-in
           session and shows the completion modal for a fresh, points-awarding

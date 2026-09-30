@@ -96,11 +96,11 @@ describe("Regular League guide sheet", () => {
     });
   });
 
-  it("explains that an attendance day follows the phone number's country, not the device", () => {
+  it("explains that an attendance day ends at midnight in the device's time zone", () => {
     renderGuide();
     const dialog = screen.getByRole("dialog");
     const card = within(dialog).getByText(ko("league.ruleAttendance")).closest(".lgg__pt") as HTMLElement;
-    expect(within(card).getByText("하루 1회, 가입 휴대폰 번호 국가 기준 자정에 초기화")).toBeInTheDocument();
+    expect(within(card).getByText("하루 1회, 현재 기기 시간대 기준 자정에 초기화")).toBeInTheDocument();
   });
 
   it("scrolls as a single vertical surface (no nested scroll containers)", () => {

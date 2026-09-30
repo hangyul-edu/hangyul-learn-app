@@ -4818,6 +4818,13 @@ textarea.input {
   line-height: 14px;
 }
 
+.strk__day-note {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 16px;
+}
+
 .strk__error {
   margin-top: 28px;
   text-align: center;

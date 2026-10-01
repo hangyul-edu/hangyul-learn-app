@@ -53,6 +53,7 @@ import { CourseDetail } from "./screens/Courses";
 import { LectureHome } from "./screens/LectureHome";
 import { Lecture } from "./screens/Lecture";
 import { Practice } from "./screens/Practice";
+import { SpeakPractice } from "./screens/SpeakPractice";
 import { Exams, ExamPlay } from "./screens/Exams";
 import { Recommendations } from "./screens/Recommendations";
 import { PersonalizedSettings } from "./screens/PersonalizedSettings";
@@ -159,6 +160,7 @@ const router = createBrowserRouter(
         <Route path="/level-up" element={<RequireAuth><LevelUp /></RequireAuth>} />
         <Route path="/lectures/:lectureId" element={<RequireAuth><Lecture /></RequireAuth>} />
         <Route path="/lectures/:lectureId/practice" element={<RequireAuth><Practice /></RequireAuth>} />
+        <Route path="/lectures/:lectureId/speak" element={<RequireAuth><SpeakPractice /></RequireAuth>} />
         <Route path="/exams" element={<RequireAuth><Exams /></RequireAuth>} />
         <Route path="/exams/:examId" element={<RequireAuth><ExamPlay /></RequireAuth>} />
         <Route path="/account/payment" element={<RequireAuth><PaymentMethods /></RequireAuth>} />

@@ -7,11 +7,11 @@ import { SkeletonList } from "../components/ui/states";
 import { ChatbotBottomSheet } from "../components/ChatbotBottomSheet";
 import chatbotFab from "../assets/brand/chatbot-fab.svg";
 import { bannerApi, dashboardApi, learnApi } from "../api/endpoints";
-import type { Banner, Lecture } from "../lib/types";
+import type { Banner, Course, Lecture } from "../lib/types";
 
-// The lecture page shows the FULL catalog — conversation and TOPIK lectures
-// together, with an optional track filter chip. Lectures carry no level, so
-// nothing is pre-filtered by the user's learning level.
+// The Classes tab (COU-001) shows the FULL catalog — conversation and TOPIK
+// series together, with an optional track filter chip. Courses carry no
+// level, so nothing is pre-filtered by the user's learning level.
 type TrackFilter = "all" | "track_conversation" | "track_topik";
 
 const TRACK_LABEL_KEYS: Record<string, TranslationKey> = {
@@ -135,18 +135,60 @@ function LectureCard({ lecture, isPremium }: { lecture: Lecture; isPremium: bool
   );
 }
 
+/* ------------------------------ Series card ----------------------------- */
+/**
+ * COU-001's series card (2658:26081…): the course's key art with the Free
+ * badge, opening the course page (COU-002). The art falls back to the first
+ * lesson's thumbnail; the progress marker sits in the badge slot the design
+ * gives the level, since courses carry no level.
+ */
+function CourseCard({ course, isPremium }: { course: Course; isPremium: boolean }) {
+  const { t } = useTranslation();
+  const nav = useNavigate();
+  const lessons = course.lessons_preview ?? [];
+  const art = course.cover_image_url ?? lessons.find((l) => l.thumbnail_url)?.thumbnail_url ?? null;
+  const showFree = !isPremium && lessons.some((l) => l.access === "free");
+  const done = course.lesson_count > 0 && course.completed_lesson_count >= course.lesson_count;
+  const marker = done
+    ? t("courses.done")
+    : course.completed_lesson_count > 0 || lessons.some((l) => l.started)
+      ? t("courses.resume")
+      : null;
+  return (
+    <button
+      className="lechome__card"
+      onClick={() => nav(`/courses/${course.course_id}`)}
+      aria-label={`${course.title}${marker ? `, ${marker}` : ""}${showFree ? t("courses.freeSuffix") : ""}`}
+    >
+      <div className="lechome__thumb">
+        {art ? (
+          <img className="lechome__thumb-img" src={art} alt="" loading="lazy" />
+        ) : (
+          <div className="lechome__thumb-ph" aria-hidden="true" />
+        )}
+        {showFree && <span className="lechome__free" aria-hidden="true">Free</span>}
+        {marker && <span className="lechome__level" aria-hidden="true">{marker}</span>}
+      </div>
+      <p className="lechome__card-title">{course.title}</p>
+    </button>
+  );
+}
+
 /* --------------------------- Track section ----------------------------- */
+/** One track's row: its series, then any lecture not filed under a series. */
 function TrackSection({
   trackId,
+  courses,
   lectures,
   isPremium,
 }: {
   trackId: string;
+  courses: Course[];
   lectures: Lecture[];
   isPremium: boolean;
 }) {
   const { t } = useTranslation();
-  if (lectures.length === 0) return null;
+  if (courses.length + lectures.length === 0) return null;
   const title = t("courses.trackLabel", {
     name: TRACK_LABEL_KEYS[trackId] ? t(TRACK_LABEL_KEYS[trackId]) : trackId,
   });
@@ -154,6 +196,11 @@ function TrackSection({
     <section className="lechome__section" aria-label={title}>
       <h2 className="lechome__section-title">{title}</h2>
       <div className="lechome__row" role="list">
+        {courses.map((c) => (
+          <div role="listitem" key={c.course_id}>
+            <CourseCard course={c} isPremium={isPremium} />
+          </div>
+        ))}
         {lectures.map((l) => (
           <div role="listitem" key={l.lecture_id}>
             <LectureCard lecture={l} isPremium={isPremium} />
@@ -179,24 +226,31 @@ export function LectureHome() {
   // (hides Free) rather than falsely tagging paid content as free.
   const entitlementKnown = dash.isSuccess;
 
-  // One unified catalog fetch; the track filter is a server-side query param.
-  const feed = useQuery({
-    queryKey: ["lectures", filter],
-    queryFn: () => learnApi.lectures(filter === "all" ? undefined : filter),
-  });
+  // COU-001 lists series (courses); lectures not filed under one still get a
+  // card so nothing becomes unreachable. The track filter is a server-side
+  // query param on both.
+  const track = filter === "all" ? undefined : filter;
+  const series = useQuery({ queryKey: ["courses", filter], queryFn: () => learnApi.courses(track) });
+  const feed = useQuery({ queryKey: ["lectures", filter], queryFn: () => learnApi.lectures(track) });
 
   const byTrack = useMemo(() => {
-    const groups = new Map<string, Lecture[]>();
+    const groups = new Map<string, { courses: Course[]; lectures: Lecture[] }>();
+    const bucket = (trackId: string) => {
+      const group = groups.get(trackId) ?? { courses: [], lectures: [] };
+      groups.set(trackId, group);
+      return group;
+    };
+    for (const course of series.data?.items ?? []) bucket(course.track_id).courses.push(course);
     for (const lecture of feed.data?.items ?? []) {
-      const bucket = groups.get(lecture.track_id) ?? [];
-      bucket.push(lecture);
-      groups.set(lecture.track_id, bucket);
+      if (!lecture.course_id) bucket(lecture.track_id).lectures.push(lecture);
     }
     return groups;
-  }, [feed.data]);
+  }, [series.data, feed.data]);
 
   const streak = dash.data?.streak_days;
-  const total = feed.data?.items.length ?? 0;
+  const total = [...byTrack.values()].reduce((n, g) => n + g.courses.length + g.lectures.length, 0);
+  const loading = series.isLoading || feed.isLoading;
+  const failed = series.isError || feed.isError;
 
   return (
     <div className="screen lechome">
@@ -239,17 +293,25 @@ export function LectureHome() {
           ))}
         </div>
 
-        {feed.isLoading ? (
+        {loading ? (
           <div className="lechome__sections">
             <div className="lechome__section-title lechome__skel-title" aria-hidden="true" />
             <SkeletonList rows={1} height={130} />
             <div className="lechome__section-title lechome__skel-title" aria-hidden="true" />
             <SkeletonList rows={1} height={130} />
           </div>
-        ) : feed.isError ? (
+        ) : failed ? (
           <div className="lechome__err">
             <span>{t("courses.loadError")}</span>
-            <button className="lechome__retry" onClick={() => feed.refetch()}>{t("common.retry")}</button>
+            <button
+              className="lechome__retry"
+              onClick={() => {
+                void series.refetch();
+                void feed.refetch();
+              }}
+            >
+              {t("common.retry")}
+            </button>
           </div>
         ) : total === 0 ? (
           <div className="lechome__course-empty">
@@ -257,11 +319,12 @@ export function LectureHome() {
           </div>
         ) : (
           <div className="lechome__sections">
-            {[...byTrack.entries()].map(([trackId, lectures]) => (
+            {[...byTrack.entries()].map(([trackId, group]) => (
               <TrackSection
                 key={trackId}
                 trackId={trackId}
-                lectures={lectures}
+                courses={group.courses}
+                lectures={group.lectures}
                 isPremium={entitlementKnown ? isPremium : true}
               />
             ))}

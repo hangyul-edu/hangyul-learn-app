@@ -173,6 +173,7 @@ export function Lecture() {
       setFinished({ points: done.points_earned });
       void qc.invalidateQueries({ queryKey: ["dashboard"] });
       void qc.invalidateQueries({ queryKey: ["course"] });
+      void qc.invalidateQueries({ queryKey: ["courses"] });
       void qc.invalidateQueries({ queryKey: ["lectures"] });
     } catch (e) {
       // 409: skipped through rather than watched — nothing to celebrate.

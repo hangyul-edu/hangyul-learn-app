@@ -1,4 +1,5 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "../i18n";
 import { useQuery } from "@tanstack/react-query";
 import { Async, SkeletonList } from "../components/ui/states";
@@ -6,6 +7,9 @@ import { learnApi } from "../api/endpoints";
 import type { Course, Lecture } from "../lib/types";
 import coursePlay from "../assets/brand/course-play.svg";
 import courseMic from "../assets/brand/course-mic.png";
+import courseNotebook from "../assets/brand/course-notebook.svg";
+import { RewardModal } from "../components/ReviewRewardModal";
+import type { CourseRewardState } from "./Lecture";
 import icCheck from "../assets/brand/ic-16-check.svg";
 
 /** mm:ss — COU-002 prints every lesson's length as a zero-padded clock. */
@@ -28,6 +32,7 @@ function fmtDur(sec: number) {
  */
 function LessonRow({ lesson, onOpen, onPractice }: { lesson: Lecture; onOpen: () => void; onPractice: () => void }) {
   const { t } = useTranslation();
+  const topik = lesson.track_id === "track_topik";
   return (
     <li className="cdet__row">
       <button className="cdet__thumb" onClick={onOpen} aria-label={lesson.title}>
@@ -43,9 +48,18 @@ function LessonRow({ lesson, onOpen, onPractice }: { lesson: Lecture; onOpen: ()
         {lesson.completed && <img className="cdet__status-check" src={icCheck} alt="" aria-hidden="true" />}
         {t(lesson.completed ? "courses.doneChip" : "courses.notDone")}
       </span>
-      <button className="cdet__mic" onClick={onPractice} aria-label={t("courses.practiceA11y", { title: lesson.title })}>
-        <img src={courseMic} alt="" aria-hidden="true" />
-      </button>
+      {/* 442:10229 — the mic opens the repeat-after-me practice (COU-014); a
+          TOPIK lecture carries the notebook, which opens the question practice
+          (COU-003 → COU-017). */}
+      {topik ? (
+        <button className="cdet__note" onClick={onPractice} aria-label={t("courses.topikPracticeA11y", { title: lesson.title })}>
+          <img src={courseNotebook} alt="" aria-hidden="true" />
+        </button>
+      ) : (
+        <button className="cdet__mic" onClick={onPractice} aria-label={t("courses.practiceA11y", { title: lesson.title })}>
+          <img src={courseMic} alt="" aria-hidden="true" />
+        </button>
+      )}
     </li>
   );
 }
@@ -54,7 +68,16 @@ export function CourseDetail() {
   const { t } = useTranslation();
   const { courseId = "" } = useParams();
   const nav = useNavigate();
+  const location = useLocation();
   const q = useQuery({ queryKey: ["course", courseId], queryFn: () => learnApi.course(courseId) });
+  // COU-021: the player hands back the points a just-finished lecture paid.
+  const [reward, setReward] = useState(() => (location.state as CourseRewardState | null)?.rewardPoints ?? 0);
+
+  function closeReward() {
+    setReward(0);
+    // Drop the state so a refresh or back-navigation does not pay out twice on screen.
+    nav(location.pathname, { replace: true, state: null });
+  }
 
   return (
     <div className="screen cdet">
@@ -70,8 +93,11 @@ export function CourseDetail() {
         <Async loading={q.isLoading} error={q.error} data={q.data} onRetry={() => q.refetch()} skeleton={<SkeletonList rows={4} />}>
           {(c: Course) => {
             const lessons = c.lessons ?? c.lessons_preview ?? [];
-            // "바로 학습하기" resumes the first unfinished lesson, or restarts.
-            const next = lessons.find((l) => !l.completed) ?? lessons[0];
+            // "바로 학습하기": a returning learner resumes the lesson they were
+            // part-way through; otherwise the first unfinished one (1-1 the
+            // first time), or 1-1 again once the course is done.
+            const next =
+              lessons.find((l) => l.started && !l.completed) ?? lessons.find((l) => !l.completed) ?? lessons[0];
             return (
               <>
                 <div className="cdet__hero">
@@ -89,7 +115,9 @@ export function CourseDetail() {
                       key={l.lecture_id}
                       lesson={l}
                       onOpen={() => nav(`/lectures/${l.lecture_id}`)}
-                      onPractice={() => nav(`/lectures/${l.lecture_id}/practice`)}
+                      onPractice={() =>
+                        nav(`/lectures/${l.lecture_id}/${l.track_id === "track_topik" ? "practice" : "speak"}`)
+                      }
                     />
                   ))}
                 </ul>
@@ -98,6 +126,18 @@ export function CourseDetail() {
           }}
         </Async>
       </div>
+
+      {reward > 0 && (
+        <RewardModal
+          points={reward}
+          title={t("courses.rewardTitle")}
+          subtitle={t("courses.rewardText")}
+          pointsA11y={t("courses.rewardA11y", { points: reward })}
+          confirmLabel={t("courses.rewardConfirm")}
+          closeA11y={t("courses.rewardClose")}
+          onConfirm={closeReward}
+        />
+      )}
     </div>
   );
 }

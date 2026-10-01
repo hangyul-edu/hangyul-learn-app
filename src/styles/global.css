@@ -17330,3 +17330,72 @@ textarea.input {
   width: 35.5px;
   height: 35.5px;
 }
+/* COU-014..019 — the standalone practice screens sit on the warm 125°
+   gradient, with the nav transparent over it (511:8840). */
+.screen--practice {
+  background: linear-gradient(125.27deg, #fffcf5 7.41%, #fffbf0 52.87%, #ffead1 88.98%);
+}
+.screen--practice .topbar {
+  background: transparent;
+}
+.screen--practice .pqz-page__mascot {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.spk-page__card {
+  margin-top: 35px;
+}
+.spk-page__card .lspk {
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.08);
+}
+/* COU-016 / COU-019's bottom bar: 182 tall, white@80%, top r16, two
+   131x111 r16 tiles 10 apart. */
+.spk-page__bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 12px -20px 0;
+  padding: 30px 20px calc(41px + var(--safe-bottom, 0px));
+  border-radius: 16px 16px 0 0;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 73.6px rgba(77, 35, 57, 0.25);
+}
+.spk-page__tile {
+  width: 131px;
+  height: 111px;
+  border: 1px solid var(--gray-2);
+  border-radius: 16px;
+  background: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 25.2px;
+  color: #000;
+  cursor: pointer;
+}
+.spk-page__tile--done {
+  border-color: var(--brand-500);
+  background: var(--brand-500);
+  color: #fff;
+}
+/* COU-018 (511:9962): after a wrong answer an orange bubble sits left of the
+   mascot — "헷갈린 부분 내가 알려줄게!" — and opens the explanation. */
+.pqz-page__bubble {
+  position: absolute;
+  right: 66px;
+  top: 14px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--brand-500);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 14px;
+  color: #fff;
+  white-space: nowrap;
+  cursor: pointer;
+}

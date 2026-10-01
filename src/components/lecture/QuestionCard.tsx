@@ -27,6 +27,7 @@ export function QuestionCard({
   nextLabel,
   onDone,
   onWrong,
+  onSolved,
 }: {
   quiz: Quiz;
   /** `lecture` attempts skip the daily goal, like every lecture-derived attempt. */
@@ -35,6 +36,8 @@ export function QuestionCard({
   onDone: (firstTryCorrect: boolean) => void;
   /** A graded wrong answer, e.g. so the practice mascot can offer to explain it. */
   onWrong?: (result: QuizAttemptResult) => void;
+  /** The question is answered (right, or a writing answer recorded); 다음 now shows. */
+  onSolved?: () => void;
 }) {
   const { t } = useTranslation();
   const toast = useToast();
@@ -73,6 +76,8 @@ export function QuestionCard({
       if (r.correct === false) {
         setRejected(answerKey);
         onWrong?.(r);
+      } else {
+        onSolved?.();
       }
     } catch (e) {
       toast.error(errorMessage(e));

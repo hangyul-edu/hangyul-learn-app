@@ -1426,11 +1426,6 @@ export const ko = {
     startNow: "시작할게요!", // I1464:21699;3021:65365
     questionCount: "{n}문제",
     preparing: "문제를 준비하고 있어요…",
-    seeResults: "결과 보기",
-    reviewComplete: "복습 완료!",
-    reviewCompleteShort: "복습 완료",
-    goBack: "돌아가기",
-    answer: "정답",
     submitShort: "제출",
     premiumOnly: "프리미엄 전용 기능이에요",
     upgrade: "업그레이드",

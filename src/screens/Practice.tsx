@@ -1,22 +1,31 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "../i18n";
 import { useQuery } from "@tanstack/react-query";
 import { Screen } from "../components/layout/Screen";
 import { Button } from "../components/ui/kit";
-import icAlert from "../assets/brand/ic-24-alert.svg";
-import icBookplus from "../assets/brand/ic-24-bookplus.svg";
+import { ConfirmDialog } from "../components/ui/Modal";
 import { CharacterArt } from "../components/brand/ProfileAssets";
 import { EmptyState, LoadingState } from "../components/ui/states";
-import { QuestionView, QuizAudio, isAnswered, quizAttemptBody } from "../components/QuestionView";
-import type { AnswerValue } from "../components/QuestionView";
-import { learnApi, practiceApi, quizApi } from "../api/endpoints";
+import { AskAiSheet } from "../components/AskAiSheet";
+import { QuestionCard } from "../components/lecture/QuestionCard";
+import { learnApi, practiceApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { useRecordDisplayedItem } from "../hooks/learningActivity";
 import { ApiError, errorMessage } from "../lib/http";
-import { sanitizeHtml } from "../lib/sanitizeHtml";
-import type { Quiz, QuizAttemptResult } from "../lib/types";
+import type { Quiz } from "../lib/types";
 
+/**
+ * TOPIK practice for one lecture: COU-003's count picker (1464:21369), then
+ * the question run — COU-017 (511:9629), wrong COU-018 (511:9962), last
+ * COU-019 (511:10118).
+ *
+ * A wrong answer keeps the learner on the question (retry until right) and
+ * the mascot offers to explain it: "헷갈린 부분 내가 알려줄게!" opens the
+ * 물어보기 sheet already explaining that attempt (COU-020, 557:9221). Once the
+ * last question is solved the bottom bar offers 다시 풀기 (from the first
+ * question) and 완료. Leaving early asks first (511:9565).
+ */
 export function Practice() {
   const { t } = useTranslation();
   const { lectureId = "" } = useParams();
@@ -27,11 +36,12 @@ export function Practice() {
   const [count, setCount] = useState(5);
   const [locked, setLocked] = useState(false);
   const [idx, setIdx] = useState(0);
-  const [value, setValue] = useState<AnswerValue>({});
-  const [result, setResult] = useState<QuizAttemptResult | null>(null);
-  const [correct, setCorrect] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const [saved, setSaved] = useState(false);
+  // Bumped by 다시 풀기 so every card starts over unanswered.
+  const [round, setRound] = useState(0);
+  const [solved, setSolved] = useState(false);
+  const [wrongAttempt, setWrongAttempt] = useState<string | null>(null);
+  const [askOpen, setAskOpen] = useState(false);
+  const [quitOpen, setQuitOpen] = useState(false);
 
   // COU-018's nav carries the lesson name; the practice payload does not include
   // it, so it comes from the lecture the practice set belongs to.
@@ -42,33 +52,14 @@ export function Practice() {
   });
 
   const current = items?.[idx];
-  // The bookmark glyph reflects the question being shown, so it re-seeds from
-  // the server's flag whenever the card advances.
-  useEffect(() => setSaved(!!current?.bookmarked), [current]);
   // The practice question on screen counts as study (streak + learning day +
-  // the sun), recorded once per local day and silently. `current` is undefined
-  // before the set starts and on the completion screen, so neither records.
+  // the sun), recorded once per local day and silently.
   useRecordDisplayedItem("topik", current?.quiz_id);
 
-  function onChoose(key: string) {
-    setValue({ choiceKey: key });
-  }
-
-  async function toggleSave(quiz: Quiz) {
-    const nextSaved = !saved;
-    setSaved(nextSaved);
-    try {
-      await (nextSaved ? quizApi.bookmark(quiz.quiz_id) : quizApi.unbookmark(quiz.quiz_id));
-    } catch (e) {
-      setSaved(!nextSaved);
-      toast.error(errorMessage(e));
-    }
-  }
-
-  async function start(count: number) {
+  async function start(n: number) {
     setStarting(true);
     try {
-      const res = await practiceApi.start(lectureId, count);
+      const res = await practiceApi.start(lectureId, n);
       setItems(res.items);
     } catch (e) {
       if (e instanceof ApiError && e.status === 402) setLocked(true);
@@ -78,22 +69,16 @@ export function Practice() {
     }
   }
 
-  async function submit(quiz: Quiz) {
-    setBusy(true);
-    try {
-      const r = await quizApi.attempt(quiz.quiz_id, quizAttemptBody(quiz, value));
-      setResult(r);
-      if (r.correct) setCorrect((c) => c + 1);
-    } catch (e) {
-      toast.error(errorMessage(e));
-    } finally {
-      setBusy(false);
-    }
+  function goTo(next: number) {
+    setSolved(false);
+    setWrongAttempt(null);
+    setAskOpen(false);
+    setIdx(next);
   }
-  function next() {
-    setResult(null);
-    setValue({});
-    setIdx((i) => i + 1);
+
+  function restart() {
+    setRound((r) => r + 1);
+    goTo(0);
   }
 
   if (locked)
@@ -103,7 +88,7 @@ export function Practice() {
       </Screen>
     );
 
-  if (!items)
+  if (!items || !current)
     return (
       <Screen title={t("study.reviewTitle")} back>
         {starting ? (
@@ -140,115 +125,76 @@ export function Practice() {
       </Screen>
     );
 
-  if (idx >= items.length)
-    return (
-      <Screen title={t("study.reviewCompleteShort")} back>
-        <div className="state">
-          <div className="state__emoji">🎉</div>
-          <div className="state__title">{t("study.reviewComplete")}</div>
-          <div className="big-num" style={{ fontSize: 40, color: "var(--brand-600)" }}>{correct} / {items.length}</div>
-          <div className="muted">{t("study.answer")}</div>
-          <Button style={{ marginTop: 10 }} onClick={() => nav(-1)}>{t("study.goBack")}</Button>
-        </div>
-      </Screen>
-    );
+  const last = idx === items.length - 1;
 
-  const quiz = items[idx];
-  const graded = !!result;
-  const wrong = graded && result.correct === false;
-  const ok = graded && result.correct === true;
-  const single = quiz.answer.format === "single_choice";
-  const state = ok ? "is-ok" : wrong ? "is-wrong" : "";
-
-  /* COU-011 (442:9757) and its incorrect variant COU-013 (442:9812): a 333x457
-     white card on a blurred scrim. The 289-wide column runs title -> rubric ->
-     stem -> a 190-tall answer block -> the 116x42 제출. */
   return (
-    <Screen title={lecture.data?.title ?? t("study.reviewTitle")} back>
+    <Screen
+      title={lecture.data?.title ?? t("study.reviewTitle")}
+      back
+      onBack={() => setQuitOpen(true)}
+      className="screen--practice"
+    >
       <div className="pqz-page">
         <span className="pqz-page__count">
           {t("study.practiceCount", { current: idx + 1, total: items.length })}
         </span>
-        {/* 511:9971 — the 45px mascot sits above the progress rail. */}
-        <span className="pqz-page__mascot" aria-hidden="true">
+        {/* 511:9971 — the 45px mascot above the progress rail; after a wrong
+            answer its bubble offers the explanation (COU-018). */}
+        {wrongAttempt && (
+          <button className="pqz-page__bubble" onClick={() => setAskOpen(true)}>
+            {t("courses.explainBubble")}
+          </button>
+        )}
+        <button className="pqz-page__mascot" onClick={() => setAskOpen(true)} aria-label={t("courses.chatbotA11y")}>
           <CharacterArt variant="AVATAR_01" fill="100%" />
-        </span>
+        </button>
         <div className="pqz-page__progress">
           {/* COU-016/019: the rail is full when the counter reads n/n, so it
               tracks the question on screen, not the ones already answered. */}
           <span style={{ width: `${((idx + 1) / items.length) * 100}%` }} />
         </div>
-        <div className="pqz" role="group" aria-labelledby="pqz-title">
-          <div className="pqz__head">
-            <h2 className={`pqz__title ${state}`} id="pqz-title">
-              {wrong && <img className="pqz__alert" src={icAlert} alt="" aria-hidden="true" />}
-              {ok && <span className="badge-check" aria-hidden="true" />}
-              <span>{t(ok ? "study.correctTitle" : wrong ? "study.tryAgain" : "study.solvePrompt")}</span>
-            </h2>
-            <button
-              className="pqz__save"
-              aria-pressed={saved}
-              aria-label={t(saved ? "study.unsaveQuestion" : "study.saveQuestion")}
-              onClick={() => toggleSave(quiz)}
-            >
-              <img src={icBookplus} alt="" aria-hidden="true" />
+
+        <QuestionCard
+          key={`${round}-${current.quiz_id}`}
+          quiz={current}
+          source="custom"
+          onWrong={(r) => setWrongAttempt(r.attempt_id)}
+          onSolved={() => setSolved(true)}
+          onDone={() => (last ? nav(-1) : goTo(idx + 1))}
+        />
+
+        {last && solved && (
+          <div className="spk-page__bar">
+            <button className="spk-page__tile" onClick={restart}>
+              {t("courses.retryQuiz")}
+            </button>
+            <button className="spk-page__tile spk-page__tile--done" onClick={() => nav(-1)}>
+              {t("courses.finish")}
             </button>
           </div>
+        )}
 
-          {quiz.material?.html && (
-            <div className="pqz__material" dangerouslySetInnerHTML={{ __html: sanitizeHtml(quiz.material.html) }} />
-          )}
-          {quiz.material?.image_url && <img className="pqz__material-img" src={quiz.material.image_url} alt="" />}
-          {/* The payload only says a clip exists; the signed URL is fetched on play. */}
-          {quiz.material?.audio && <QuizAudio key={quiz.quiz_id} quizId={quiz.quiz_id} />}
-
-          <p className="pqz__stem">{quiz.prompt}</p>
-          {quiz.prompt_translation && <p className="pqz__trans">{quiz.prompt_translation}</p>}
-
-          <div className="pqz__body">
-            {single ? (
-              <ul className="pqz__opts" role="radiogroup" aria-labelledby="pqz-title">
-                {quiz.answer.choices.map((c, i) => {
-                  const on = value.choiceKey === c.key;
-                  return (
-                    <li key={c.key}>
-                      <button
-                        role="radio"
-                        aria-checked={on}
-                        disabled={graded}
-                        className={`pqz__opt ${on ? "is-on" : ""} ${on ? state : ""}`}
-                        onClick={() => onChoose(c.key)}
-                      >
-                        <span className="pqz__num">{i + 1}</span>
-                        <span className="pqz__label">{c.text}</span>
-                        {on && <span className="pqz__check" aria-hidden="true" />}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <QuestionView quiz={quiz} value={value} onChange={setValue} disabled={graded} />
-            )}
-          </div>
-
-          {graded && result.explanation && <p className="pqz__explain">{result.explanation}</p>}
-
-          {!graded ? (
-            <button
-              className="pqz__cta"
-              disabled={busy || !isAnswered(quiz, value)}
-              onClick={() => submit(quiz)}
-            >
-              {busy ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : t("study.submitShort")}
-            </button>
-          ) : (
-            <button className="pqz__cta" onClick={next}>
-              {t(idx + 1 < items.length ? "study.cardNext" : "study.seeResults")}
-            </button>
-          )}
-        </div>
+        <AskAiSheet
+          key={wrongAttempt ?? current.quiz_id}
+          open={askOpen}
+          context={
+            wrongAttempt
+              ? { contextKind: "quiz_attempt", contextId: wrongAttempt, autoExplain: true, bubble: true }
+              : { contextKind: "quiz", contextId: current.quiz_id, autoExplain: false, bubble: false }
+          }
+          onClose={() => setAskOpen(false)}
+        />
       </div>
+
+      <ConfirmDialog
+        open={quitOpen}
+        title={t("courses.practiceQuitTitle")}
+        text={t("courses.practiceQuitText")}
+        cancelLabel={t("courses.keepGoing")}
+        confirmLabel={t("courses.stopHere")}
+        onCancel={() => setQuitOpen(false)}
+        onConfirm={() => nav(-1)}
+      />
     </Screen>
   );
 }

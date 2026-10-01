@@ -239,6 +239,13 @@ export const learnApi = {
   recordSession: (body: { session_type: "sentence" | "review" | "lecture"; duration_seconds: number; category?: "conversation" | "topik"; lecture_id?: string }) =>
     http.post<SessionFinalizeResult>("/learning/sessions", body),
   course: (courseId: string) => http.get<Course>(`/courses/${courseId}`),
+  /** Course (series) cards for the Classes tab; each previews its first lessons. */
+  courses: (track?: "track_conversation" | "track_topik") =>
+    http.get<{ items: Course[]; next_cursor: string | null; has_more: boolean }>("/courses", {
+      track,
+      limit: 50,
+      lessons_per_course: 20,
+    }),
   /** Unified lecture catalog — both tracks; pass `track` to filter. */
   lectures: (track?: "track_conversation" | "track_topik") =>
     http.get<{ items: Lecture[] }>("/lectures", { track }),

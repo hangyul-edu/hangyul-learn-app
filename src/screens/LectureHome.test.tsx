@@ -5,15 +5,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 
 /* -------------------------------- mocks --------------------------------- */
-const { banners, summary, lectures } = vi.hoisted(() => ({
+const { banners, summary, lectures, courses } = vi.hoisted(() => ({
   banners: vi.fn(),
   summary: vi.fn(),
   lectures: vi.fn(),
+  courses: vi.fn(),
 }));
 vi.mock("../api/endpoints", () => ({
   bannerApi: { list: banners },
   dashboardApi: { summary },
-  learnApi: { lectures },
+  learnApi: { lectures, courses },
 }));
 
 import { LectureHome } from "./LectureHome";
@@ -68,6 +69,33 @@ beforeEach(() => {
       lecture("topik-1", "track_topik"),
     ]),
   );
+  courses.mockResolvedValue({ items: [], next_cursor: null, has_more: false });
+});
+
+describe("LectureHome series (COU-001)", () => {
+  const course = {
+    course_id: "C1",
+    track_id: "track_conversation",
+    title: "Korean Survival Kit",
+    description: null,
+    cover_image_url: "http://x/c1.png",
+    lesson_count: 2,
+    completed_lesson_count: 1,
+    lessons_preview: [lecture("in-course", "track_conversation", { course_id: "C1" })],
+  };
+
+  it("shows each series as a card and keeps unfiled lectures reachable", async () => {
+    courses.mockResolvedValue({ items: [course], next_cursor: null, has_more: false });
+    lectures.mockResolvedValue(
+      feed([lecture("in-course", "track_conversation", { course_id: "C1" }), lecture("loose")]),
+    );
+    renderPage();
+    expect(await screen.findByText("Korean Survival Kit")).toBeInTheDocument();
+    expect(screen.getByText("Lecture loose")).toBeInTheDocument();
+    // A lecture filed under a series is reached through the series, not twice.
+    expect(screen.queryByText("Lecture in-course")).toBeNull();
+    expect(screen.getByLabelText("Korean Survival Kit, 이어보기, 무료 강의")).toBeInTheDocument();
+  });
 });
 
 describe("LectureHome unified feed", () => {

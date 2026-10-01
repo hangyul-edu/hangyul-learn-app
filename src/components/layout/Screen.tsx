@@ -38,6 +38,7 @@ export function Screen({
   right,
   topBar = true,
   nav,
+  className,
   children,
 }: {
   title?: ReactNode;
@@ -47,10 +48,12 @@ export function Screen({
   topBar?: boolean;
   /** add bottom padding so content clears the bottom nav */
   nav?: boolean;
+  /** Extra class on the screen root, e.g. a screen-specific background. */
+  className?: string;
   children: ReactNode;
 }) {
   return (
-    <div className="screen">
+    <div className={className ? `screen ${className}` : "screen"}>
       {topBar && <TopBar title={title} back={back} onBack={onBack} right={right} />}
       <div className={`screen__body ${nav ? "screen__body--nav" : ""}`}>{children}</div>
     </div>

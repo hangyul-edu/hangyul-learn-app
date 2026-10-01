@@ -196,7 +196,8 @@ describe("Lecture player", () => {
     lecture.mockResolvedValue(detail({ last_position_seconds: 120, completed: false }));
     const { container } = renderLecture();
     await loadedVideo(container);
-    fireEvent.click(screen.getByRole("button", { name: "뒤로 가기" }));
+    // COU-004 closes the player with an X, not a back arrow.
+    fireEvent.click(screen.getByRole("button", { name: "닫기" }));
     expect(await screen.findByText("끝까지 해내면 오늘이 더 뿌듯해질 거예요 😊")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "지금 그만할래요" }));
     expect(await screen.findByTestId("course")).toBeInTheDocument();

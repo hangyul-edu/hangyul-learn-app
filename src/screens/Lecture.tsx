@@ -14,12 +14,16 @@ import { useMarkStudied } from "../hooks/learningActivity";
 import { ApiError, errorMessage } from "../lib/http";
 import { dueCheckpoint, isExcluded } from "../lib/lectureCheckpoints";
 import type { LectureCheckpoint, LectureDetail as Lec } from "../lib/types";
-import icClose from "../assets/brand/ic-close.svg";
+import icClose from "../assets/brand/ic-24-close-white.svg";
 import playerPlay from "../assets/brand/player-play.svg";
 import playerBack5 from "../assets/brand/player-back5.svg";
 import playerFwd5 from "../assets/brand/player-fwd5.svg";
 import playerKnob from "../assets/brand/player-knob.svg";
-import chatbotFab from "../assets/brand/chatbot-fab.svg";
+import mascotTangerine from "../assets/brand/ask-mascot-tangerine.svg";
+import mascotDot868 from "../assets/brand/ask-mascot-dot-868.svg";
+import mascotDot878 from "../assets/brand/ask-mascot-dot-878.svg";
+import mascotDot879 from "../assets/brand/ask-mascot-dot-879.svg";
+import mascotDot881 from "../assets/brand/ask-mascot-dot-881.svg";
 
 /** mm:ss, zero-padded — COU-004 prints both ends of the scrubber that way. */
 function fmt(sec: number) {
@@ -211,7 +215,7 @@ export function Lecture() {
       {/* cp_B_01_topNav on black: the close glyph at 20, and the exclude
           switch pinned to the right (COU-004 230:7046 / COU-005). */}
       <header className="lecp__nav">
-        <button className="lecp__close" onClick={requestClose} aria-label={t("common.back")}>
+        <button className="lecp__close" onClick={requestClose} aria-label={t("common.close")}>
           <img src={icClose} alt="" aria-hidden="true" />
         </button>
         <label className="lecp__mute">
@@ -262,7 +266,7 @@ export function Lecture() {
                 <img className="lecp__poster" src={l.thumbnail_url ?? undefined} alt="" />
               )}
 
-              {/* 230:7051 / 230:7053 — the tutor prompt and its 45px FAB open
+              {/* 230:7051 / 230:7053 — the tutor prompt and the 45px mascot open
                   the 물어보기 sheet over the paused video (COU-010). */}
               <button
                 className="lecp__ask"
@@ -273,7 +277,22 @@ export function Lecture() {
                 aria-label={t("courses.chatbotA11y")}
               >
                 <span className="lecp__ask-bubble">{t("courses.askBubble")}</span>
-                <img className="lecp__ask-fab" src={chatbotFab} alt="" aria-hidden="true" />
+                {/* 230:7053 — a white 45px disc with a 3px #FFDC7E ring; the
+                    tangerine (turned 9.31°) and its four highlights are clipped
+                    to the disc, each at its frame offset. */}
+                <span className="lecp__mascot" aria-hidden="true">
+                  <span className="lecp__mascot-art">
+                    <span className="lecp__mascot-body">
+                      <span className="lecp__mascot-turn">
+                        <img src={mascotTangerine} alt="" width={45.284} height={53.099} />
+                      </span>
+                    </span>
+                    <img className="lecp__mascot-dot lecp__mascot-dot--868" src={mascotDot868} alt="" />
+                    <img className="lecp__mascot-dot lecp__mascot-dot--879" src={mascotDot879} alt="" />
+                    <img className="lecp__mascot-dot lecp__mascot-dot--881" src={mascotDot881} alt="" />
+                    <img className="lecp__mascot-dot lecp__mascot-dot--878" src={mascotDot878} alt="" />
+                  </span>
+                </span>
               </button>
             </div>
 

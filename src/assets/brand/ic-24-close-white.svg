@@ -1,0 +1,7 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!-- ic_B_topNav close variant as COU-004 (I230:7046;3095:70546) shows it: Vector 1053 and
+     Vector 1054 (16x16 at 4,4; the second turned 90°), stroke 1.5, round caps, the
+     instance's white override (#FFFFFF, sampled from the frame render). -->
+<path d="M4 4L20 20" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M20 4L4 20" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

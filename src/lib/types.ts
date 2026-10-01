@@ -295,8 +295,8 @@ export interface Lecture {
   track_id: string;
   course_id: string | null;
   title: string;
-  /** `LectureKind` on the backend. */
-  kind: "video" | "speak_practice" | "question_practice";
+  /** Always `video`: practice is attached to a lecture as checkpoints. */
+  kind: "video";
   duration_seconds: number;
   thumbnail_url: string | null;
   topik_question_type: string | null;

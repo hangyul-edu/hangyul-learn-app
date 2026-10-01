@@ -6,6 +6,7 @@ import { Button } from "../components/ui/kit";
 import { ConfirmDialog, Dialog } from "../components/ui/Modal";
 import { Async } from "../components/ui/states";
 import { ChatbotBottomSheet } from "../components/ChatbotBottomSheet";
+import { StreamVideo } from "../components/StreamVideo";
 import { CheckpointOverlay } from "../components/lecture/CheckpointOverlay";
 import { dashboardApi, learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
@@ -225,7 +226,7 @@ export function Lecture() {
           <>
             <div className="lecp__stage">
               {videoUrl ? (
-                <video
+                <StreamVideo
                   ref={videoRef}
                   className="lecp__video"
                   src={videoUrl}

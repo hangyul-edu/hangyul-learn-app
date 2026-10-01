@@ -222,8 +222,9 @@ export const http = {
   patch: <T>(p: string, body?: unknown, o?: RequestOptions) =>
     apiFetch<T>(p, { ...o, method: "PATCH", body }),
   del: <T>(p: string, o?: RequestOptions) => apiFetch<T>(p, { ...o, method: "DELETE" }),
+  /** multipart upload; POST unless `o.method` says otherwise (e.g. "PUT"). */
   upload: <T>(p: string, form: FormData, o?: RequestOptions) =>
-    apiFetch<T>(p, { ...o, method: "POST", form }),
+    apiFetch<T>(p, { method: "POST", ...o, form }),
 };
 
 /**

@@ -23,7 +23,7 @@ function fmtDur(sec: number) {
 // the course-detail screen reachable at /courses/:courseId.
 
 /**
- * Course detail — Figma COU-002_강의 선택 (2414:27684 / EN 2397:26680).
+ * Course detail — Figma COU-002_강의 선택 (2414:27684 / EN 2397:26192).
  *
  * A full-bleed 375x249 cover with the 242x46 "바로 학습하기" straddling its
  * bottom edge, then 77-tall lesson rows on an 87 pitch: a 70px thumbnail

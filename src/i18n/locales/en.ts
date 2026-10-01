@@ -1477,7 +1477,7 @@ export const en: Catalog = {
     done: "Done",
     progress: "Progress",
     premiumLecture: "Premium class",
-    /** COU-002 (EN 2397:26680) — the lesson row's completion chip and CTA. */
+    /** COU-002 (EN 2397:26192) — the lesson row's completion chip and CTA. */
     /** COU-004 (EN 784:55155) — the video player's chrome. */
     excludeSpeaking: "Skip speaking", // EN 784:55155
     excludePractice: "Skip practice", // EN 1135:20153

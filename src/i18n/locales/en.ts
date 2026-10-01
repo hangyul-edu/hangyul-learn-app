@@ -1426,10 +1426,10 @@ export const en: Catalog = {
     reviewTitle: "Review questions",
     reviewDesc: "Sharpen your skills with review questions.",
     /** COU-003 (EN 1464:22035) — the review-count modal. */
-    solvePrompt: "Solve the question",
-    tryAgain: "Try again",
-    correctTitle: "That's right!",
-    practiceCount: "Practice {current}/{total}",
+    solvePrompt: "Try this question", // EN 784:58688
+    tryAgain: "Try again!", // EN 784:58746
+    correctTitle: "Correct!", // EN 784:58804
+    practiceCount: "Question {current}/{total}", // EN 784:58917
     cardNext: "Next",
     saveQuestion: "Save question",
     unsaveQuestion: "Remove from saved",
@@ -1482,18 +1482,58 @@ export const en: Catalog = {
     done: "Done",
     progress: "Progress",
     premiumLecture: "Premium class",
-    completedToast: "You finished the lesson! 🎉",
     /** COU-002 (EN 2397:26680) — the lesson row's completion chip and CTA. */
     /** COU-004 (EN 784:55155) — the video player's chrome. */
-    excludeSpeaking: "Mute speaking",
+    excludeSpeaking: "Skip speaking", // EN 784:55155
+    excludePractice: "Skip practice", // EN 1135:20153
     askBubble: "Ask me anything!",
+    speakPrompt: "Repeat after me!", // EN 784:50115
+    speakPerfect: "Perfect!", // EN 784:50165
+    speakAgain: "Try again!", // EN 784:50221
+    speakRetry: "Retry",
+    listenA11y: "Listen to the sentence",
+    listeningA11y: "Listening. Repeat the sentence.",
+    scoringA11y: "Checking your pronunciation.",
+    saveSentence: "Save sentence",
+    unsaveSentence: "Unsave sentence",
+    micTitle: "Allow Microphone Access", // EN 1565:25072
+    micText: "Microphone access is required to use this feature",
+    micClose: "Close",
+    micAllow: "Allow access",
+    endTitle: "Amazing!", // EN 784:63425
+    endWarn: "You made it to the end! 👏",
+    endText: "You learned one more expression 😊",
+    endCta: "Continue",
+    quitTitle: "Still a bit left,\nquit the class?", // EN 784:52244
+    quitText: "Finishing it will make your day 😊",
+    quitGoalTitle: "Ready to stop?", // EN 1616:25238
+    quitGoalText: "Today's goal is done! Look at you, still going strong 🔥",
+    keepGoing: "Keep going",
+    quitNow: "Quit now",
+    rewardTitle: "Watched!", // EN 1421:21813
+    rewardText: "You've earned your points! 👏",
+    rewardA11y: "You earned {points} points",
+    rewardConfirm: "OK",
+    rewardClose: "Close",
+    sentenceCount: "Sentence {current}/{total}", // EN 784:58866
+    prevSentence: "Previous sentence",
+    nextSentence: "Next sentence",
+    restart: "Retry", // EN 784:59286 labels the restart tile Retry
+    finish: "Done",
+    noSpeakPractice: "This class has no repeat-after-me practice",
+    practiceQuitTitle: "Ready to finish?", // EN 784:59355
+    practiceQuitText: "You're almost there 💪",
+    stopHere: "Stop here",
+    explainBubble: "I'll explain the confusing part!", // EN 784:58975
+    retryQuiz: "Retry", // EN 784:59157
+    topikPracticeA11y: "Question practice for {title}",
     play: "Play",
     pause: "Pause",
     back5: "Back 5 seconds",
     fwd5: "Forward 5 seconds",
     speedA11y: "Playback speed {rate}x",
-    startNow: "Start now",
-    doneChip: "Completed",
+    startNow: "Start Class", // EN 2397:26192
+    doneChip: "Done",
     notDone: "Not done",
     practiceA11y: "Speaking practice for {title}",
     quotaRemaining: "Suggestions left today: {n}",

@@ -17144,3 +17144,189 @@ textarea.input {
   background: #adb4ba;
   box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
 }
+
+/* =========== Lecture checkpoints (COU-006..013) and practice cards =========== */
+/* COU-009's title: "대단해요!" on black, its second line in Brand 1. */
+.dialog__title-accent {
+  display: block;
+  color: var(--brand-500);
+}
+/* The quit confirm's Korean title carries its own line break (235:8047). */
+.dialog__title-lines {
+  white-space: pre-line;
+}
+/* The checkpoint scrim: #000@60% with the frames' background blur 22.9. */
+.lcp {
+  z-index: 40;
+  backdrop-filter: blur(11.45px);
+  -webkit-backdrop-filter: blur(11.45px);
+}
+.lcp > .pqz {
+  margin: 0 auto;
+}
+/* The repeat-after-me card (1:2570 / 511:8840): 333 wide, r16, 423 tall. The
+   header row is 285 wide at 24 in, the glyph lands 77 below the card top. */
+.lspk {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 333px;
+  min-height: 423px;
+  margin: 0 auto;
+  padding: 24px 24px 40px;
+  border-radius: 16px;
+  background: #fff;
+}
+.lspk__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 285px;
+}
+.lspk__title {
+  margin: 0;
+  font: var(--t-h8);
+  color: #000;
+}
+.lspk__glyph {
+  display: grid;
+  place-items: center;
+  height: 48px;
+  margin-top: 52px;
+}
+/* ic_speaker on a Brand 2 @20% pill, padding 8, r48 (511:8937). */
+.lspk__speaker {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 48px;
+  background: rgba(94, 206, 206, 0.2);
+  cursor: pointer;
+}
+/* Listening: the pill breathes so the learner knows the card is hearing them. */
+.lspk__speaker.is-listening {
+  animation: lspk-listen 1.2s ease-in-out infinite;
+}
+@keyframes lspk-listen {
+  50% {
+    box-shadow: 0 0 0 8px rgba(94, 206, 206, 0.18);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lspk__speaker.is-listening {
+    animation: none;
+  }
+}
+/* btn_check / the exclamation mark at 36 (1:2667). */
+.lspk__badge {
+  width: 36px;
+  height: 36px;
+}
+.lspk__badge.badge-check::after {
+  -webkit-mask-size: 18px 13.5px;
+  mask-size: 18px 13.5px;
+}
+.lspk__sentence-row {
+  display: grid;
+  grid-template-columns: 18px 1fr 18px;
+  align-items: center;
+  width: 100%;
+  margin-top: 7px;
+}
+/* Bold 36 in Brand 2; blue once perfect, red when it needs another go. */
+.lspk__korean {
+  margin: 0;
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.5px;
+  text-align: center;
+  color: #5ecece;
+  word-break: keep-all;
+}
+.lspk--correct .lspk__korean {
+  color: #547cf1;
+}
+.lspk--wrong .lspk__korean {
+  color: #ff6b6b;
+}
+/* The 7x14 ‹ › of COU-015 (511:9615); the left one is the same export turned. */
+.lspk__arrow {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.lspk__arrow img {
+  width: 10.42px;
+  height: 17.42px;
+}
+.lspk__arrow--prev img {
+  transform: scaleX(-1);
+}
+/* Body3 — Regular 16 / 2.33 in Gray 4. */
+.lspk__roman {
+  margin: 0;
+  font-size: 16px;
+  line-height: 2.33;
+  letter-spacing: -0.16px;
+  color: var(--gray-4);
+}
+.lspk__trans {
+  margin: 4px 0 0;
+  font: var(--t-h8);
+  color: var(--gray-7);
+  text-align: center;
+}
+/* 다시하기 (1:2661): Gray 1 on a Gray 3 hairline, r36, 8/16, shadow 0 4 2. */
+.lspk__retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 30px;
+  padding: 8px 16px;
+  border: 1px solid var(--gray-3);
+  border-radius: 36px;
+  background: var(--gray-1);
+  filter: drop-shadow(0 4px 2px rgba(0, 0, 0, 0.1));
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 25.2px;
+  color: #000;
+  cursor: pointer;
+}
+/* The export is drawn mirrored in the frame (1:2662). */
+.lspk__retry img {
+  margin: 2px;
+  transform: scaleX(-1);
+}
+.lspk__mic {
+  z-index: 50;
+}
+/* COU-002: TOPIK lectures carry the notebook (442:10229) where conversation
+   lectures carry the mic; the export includes its shadow, so it overhangs. */
+.cdet__note {
+  position: relative;
+  flex-shrink: 0;
+  width: 29px;
+  height: 29px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.cdet__note img {
+  position: absolute;
+  left: -4px;
+  top: 0;
+  width: 35.5px;
+  height: 35.5px;
+}

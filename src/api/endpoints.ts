@@ -5,6 +5,7 @@ import { deviceTimeZone } from "../lib/timezone";
 import type {
   AppSettings,
   AttendanceCheckIn,
+  CheckpointInteraction,
   TimezoneSync,
   Banner,
   Course,
@@ -244,6 +245,19 @@ export const learnApi = {
   lecture: (lectureId: string) => http.get<LectureDetail>(`/lectures/${lectureId}`),
   lecturePlay: (lectureId: string) =>
     http.get<{ video: { url: string; duration_seconds: number; captions_url: string | null } }>(`/lectures/${lectureId}/play`),
+  /** The full sentence / question behind a checkpoint, fetched when playback reaches it. */
+  checkpointInteraction: (lectureId: string, checkpointId: string) =>
+    http.get<CheckpointInteraction>(`/lectures/${lectureId}/checkpoints/${checkpointId}/interaction`),
+  /** Mark a fully watched lecture complete: +100 points the first time (409 if not watched through). */
+  completeLecture: (lectureId: string) =>
+    http.post<{ lecture_id: string; completed: boolean; already_completed: boolean; xp_earned: number; points_earned: number }>(
+      `/lectures/${lectureId}/complete`,
+    ),
+  /** The lecture's repeat-after-me checkpoints, in playback order (COU-014). */
+  speakPractice: (lectureId: string) =>
+    http.get<{ lecture_id: string; items: { checkpoint_id: string; at_second: number; sentence_id: string }[] }>(
+      `/lectures/${lectureId}/speak-practice`,
+    ),
   progress: (lectureId: string, position_seconds: number) =>
     http.post<{ position_seconds: number; max_watched_seconds: number; completed: boolean }>(`/lectures/${lectureId}/progress`, { position_seconds }),
   streakCalendar: (year?: number, month?: number) => http.get<StreakCalendarResp>("/learning/streak-calendar", { year, month }),

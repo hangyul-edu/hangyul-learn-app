@@ -17,6 +17,41 @@ export function ReviewRewardModal({
   copy: ReviewSessionCopy;
   onConfirm: () => void;
 }) {
+  return (
+    <RewardModal
+      points={points}
+      title={copy.rewardTitle}
+      subtitle={copy.rewardSubtitle}
+      pointsA11y={copy.rewardA11y(points)}
+      confirmLabel={copy.confirm}
+      closeA11y={copy.closeA11y}
+      onConfirm={onConfirm}
+    />
+  );
+}
+
+/**
+ * The medal reward card (scomp): the review reward above and the
+ * watch-complete reward on the course page (COU-021 794:76312) are the same
+ * component with different copy. The points are server-authoritative.
+ */
+export function RewardModal({
+  points,
+  title,
+  subtitle,
+  pointsA11y,
+  confirmLabel,
+  closeA11y,
+  onConfirm,
+}: {
+  points: number;
+  title: string;
+  subtitle: string;
+  pointsA11y: string;
+  confirmLabel: string;
+  closeA11y: string;
+  onConfirm: () => void;
+}) {
   const confirmRef = useRef<HTMLButtonElement | null>(null);
 
   // Move focus to the confirm button on open, and let Escape dismiss (same as
@@ -31,10 +66,10 @@ export function ReviewRewardModal({
   }, [onConfirm]);
 
   return (
-    <div className="scomp" role="dialog" aria-modal="true" aria-label={copy.rewardTitle}>
+    <div className="scomp" role="dialog" aria-modal="true" aria-label={title}>
       <div className="scomp__backdrop" onClick={onConfirm} />
       <div className="scomp__card">
-        <button className="scomp__close" onClick={onConfirm} aria-label={copy.closeA11y}>
+        <button className="scomp__close" onClick={onConfirm} aria-label={closeA11y}>
           <img className="scomp__close-icon" src={closeIcon} alt="" width={24} height={24} />
         </button>
 
@@ -45,13 +80,13 @@ export function ReviewRewardModal({
 
         <RewardMedal points={points} />
 
-        <h2 className="scomp__title">{copy.rewardTitle}</h2>
-        <p className="scomp__summary" aria-label={copy.rewardA11y(points)}>
-          {copy.rewardSubtitle}
+        <h2 className="scomp__title">{title}</h2>
+        <p className="scomp__summary" aria-label={pointsA11y}>
+          {subtitle}
         </p>
 
-        <button ref={confirmRef} className="scomp__confirm" onClick={onConfirm} aria-label={copy.confirm}>
-          {copy.confirm}
+        <button ref={confirmRef} className="scomp__confirm" onClick={onConfirm} aria-label={confirmLabel}>
+          {confirmLabel}
         </button>
       </div>
     </div>

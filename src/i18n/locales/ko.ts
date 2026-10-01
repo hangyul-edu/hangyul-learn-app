@@ -1471,11 +1471,59 @@ export const ko = {
     done: "완료",
     progress: "진행률",
     premiumLecture: "프리미엄 강의",
-    completedToast: "학습을 완료했어요! 🎉",
     /** COU-002 (2414:27684) — the lesson row's completion chip and CTA. */
     /** COU-004 (230:7011) — the video player's chrome. */
     excludeSpeaking: "말하기 제외", // 230:7048
+    excludePractice: "문제 풀이 제외", // COU-005 1135:20041
     askBubble: "궁금한 건 나한테 물어봐!", // 230:7052
+    /** COU-006/007/008 (1:2570, 1:2620, 1:2676) — the in-lecture speaking card. */
+    speakPrompt: "따라해보세요!",
+    speakPerfect: "완벽해요!",
+    speakAgain: "다시 한 번 말해보세요!",
+    speakRetry: "다시하기",
+    listenA11y: "문장 듣기",
+    listeningA11y: "듣고 있어요. 문장을 따라 말해보세요.",
+    scoringA11y: "발음을 확인하고 있어요.",
+    saveSentence: "문장 저장",
+    unsaveSentence: "문장 저장 해제",
+    /** Mic permission modal beside COU-007 (1565:25050). */
+    micTitle: "마이크 접근을 허용해주세요",
+    micText: "해당 기능은 마이크 권한이 필요합니다",
+    micClose: "닫기",
+    micAllow: "마이크 접근 허용",
+    /** COU-009 (750:48385) — the end-of-video modal. */
+    endTitle: "대단해요!",
+    endWarn: "끝까지 다 봤어요 👏",
+    endText: "표현 하나를 더 알게 되었네요 😊",
+    endCta: "계속하기",
+    /** Quit confirms beside COU-004/005 (235:8047, goal met 1616:25224). */
+    quitTitle: "아직 조금 남아있지만,\n강의를 종료하시겠어요?",
+    quitText: "끝까지 해내면 오늘이 더 뿌듯해질 거예요 😊",
+    quitGoalTitle: "학습을 종료하시겠어요?",
+    quitGoalText: "오늘 목표는 이미 클리어! 멈추지 않는 당신이 멋있어요",
+    keepGoing: "조금 더 해볼래요",
+    quitNow: "지금 그만할래요",
+    /** COU-021 (794:76312) — the watch-complete reward. */
+    rewardTitle: "시청 완료!",
+    rewardText: "다 보고 포인트까지 챙겼어요 👏",
+    rewardA11y: "{points}포인트를 받았어요",
+    rewardConfirm: "확인",
+    rewardClose: "닫기",
+    /** COU-014/015/016 (511:8840, 511:9151, 511:9450) — standalone speaking practice. */
+    sentenceCount: "연습 문장 {current}/{total}",
+    prevSentence: "이전 문장",
+    nextSentence: "다음 문장",
+    restart: "다시 시작",
+    finish: "완료",
+    noSpeakPractice: "이 강의에는 따라 말하기 연습이 없어요",
+    /** Quit-practice confirm (511:9565). */
+    practiceQuitTitle: "연습을 마칠까요?",
+    practiceQuitText: "조금만 더 하면 더 잘할 수 있어요💪",
+    stopHere: "여기까지 할게요",
+    /** COU-018 (511:9962) / COU-019 (511:10118) — standalone TOPIK practice. */
+    explainBubble: "헷갈린 부분 내가 알려줄게!",
+    retryQuiz: "다시 풀기",
+    topikPracticeA11y: "{title} 문제 연습",
     play: "재생",
     pause: "일시정지",
     back5: "5초 뒤로",

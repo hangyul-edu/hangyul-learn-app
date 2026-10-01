@@ -306,8 +306,21 @@ export interface Lecture {
   access: "free" | "premium";
 }
 /** Full detail from GET /lectures/{id}: adds checkpoints + caller playback. */
+/** speaking_exercise → the conversation modal; multiple_choice / short_answer → the TOPIK modal. */
+export type CheckpointInteractionType = "speaking_exercise" | "multiple_choice" | "short_answer";
+export interface LectureCheckpoint {
+  checkpoint_id: string;
+  interaction_type: CheckpointInteractionType;
+  at_second: number;
+}
+/** GET /lectures/{id}/checkpoints/{cid}/interaction — exactly one payload is set. */
+export interface CheckpointInteraction extends LectureCheckpoint {
+  lecture_id: string;
+  sentence: Sentence | null;
+  question: Quiz | null;
+}
 export interface LectureDetail extends Lecture {
-  checkpoints: { checkpoint_id: string; interaction_type: string; at_second: number }[];
+  checkpoints: LectureCheckpoint[];
   my_playback: { last_position_seconds: number; max_watched_seconds: number; completed: boolean } | null;
 }
 export interface Course {

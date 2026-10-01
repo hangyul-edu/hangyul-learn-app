@@ -1,14 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "../i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../components/ui/kit";
+import { ConfirmDialog, Dialog } from "../components/ui/Modal";
 import { Async } from "../components/ui/states";
-import { learnApi } from "../api/endpoints";
+import { ChatbotBottomSheet } from "../components/ChatbotBottomSheet";
+import { CheckpointOverlay } from "../components/lecture/CheckpointOverlay";
+import { dashboardApi, learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { useMarkStudied } from "../hooks/learningActivity";
 import { ApiError, errorMessage } from "../lib/http";
-import type { LectureDetail as Lec } from "../lib/types";
+import { dueCheckpoint, isExcluded } from "../lib/lectureCheckpoints";
+import type { LectureCheckpoint, LectureDetail as Lec } from "../lib/types";
 import icClose from "../assets/brand/ic-close.svg";
 import playerPlay from "../assets/brand/player-play.svg";
 import playerBack5 from "../assets/brand/player-back5.svg";
@@ -24,6 +28,27 @@ function fmt(sec: number) {
 /** Playback speeds the 1X chip cycles through. */
 const SPEEDS = [1, 1.25, 1.5, 2] as const;
 
+/**
+ * Seconds of playback between progress heartbeats. The server only counts a
+ * lecture as watched when its frontier advances in steps of at most 60s, so
+ * completion depends on these arriving while the video plays.
+ */
+export const HEARTBEAT_SECONDS = 15;
+
+/** Navigation state the course page reads to show COU-021's reward. */
+export type CourseRewardState = { rewardPoints?: number };
+
+/**
+ * The lecture player — COU-004 (conversation, 230:7011) and COU-005 (TOPIK,
+ * 1135:20041).
+ *
+ * At each checkpoint the admin set, playback pauses and the conversation
+ * (COU-006..008) or TOPIK (COU-011..013) card opens; finishing it resumes the
+ * video. The switch in the nav skips one kind: 말하기 제외 the speaking cards
+ * of a conversation lecture, 문제 풀이 제외 the questions of a TOPIK lecture.
+ * At the end the lecture is completed on the server and COU-009 congratulates;
+ * 계속하기 returns to the course, which shows the +100P reward (COU-021).
+ */
 export function Lecture() {
   const { t } = useTranslation();
   const { lectureId = "" } = useParams();
@@ -34,14 +59,29 @@ export function Lecture() {
   const [duration, setDuration] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<number>(SPEEDS[0]);
-  const [muteSpeaking, setMuteSpeaking] = useState(false);
+  const [exclude, setExclude] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [premiumLocked, setPremiumLocked] = useState(false);
+  const [active, setActive] = useState<LectureCheckpoint | null>(null);
+  const [askOpen, setAskOpen] = useState(false);
+  const [quitOpen, setQuitOpen] = useState(false);
+  const [finished, setFinished] = useState<{ points: number } | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const lastTimeRef = useRef(0);
+  const lastBeatRef = useRef(0);
+  const handledRef = useRef(new Set<string>());
 
   const markStudied = useMarkStudied();
 
   const q = useQuery({ queryKey: ["lecture", lectureId], queryFn: () => learnApi.lecture(lectureId) });
+  // Only to pick the quit confirm's wording: "goal already met" vs "a bit left".
+  const dashboard = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary, enabled: quitOpen });
+
+  const checkpoints = useMemo(
+    () => [...(q.data?.checkpoints ?? [])].sort((a, b) => a.at_second - b.at_second),
+    [q.data],
+  );
+  const topik = q.data?.track_id === "track_topik";
 
   useEffect(() => {
     if (q.data) setPos(q.data.my_playback?.last_position_seconds ?? 0);
@@ -71,10 +111,14 @@ export function Lecture() {
     if (videoRef.current) videoRef.current.currentTime = next;
   }
 
+  function play() {
+    void videoRef.current?.play().catch(() => setPlaying(false));
+  }
+
   function togglePlay() {
     const v = videoRef.current;
     if (!v) return;
-    if (v.paused) void v.play().catch(() => setPlaying(false));
+    if (v.paused) play();
     else v.pause();
   }
 
@@ -84,35 +128,93 @@ export function Lecture() {
     if (videoRef.current) videoRef.current.playbackRate = next;
   }
 
-  async function saveProgress(seconds: number, done: boolean) {
+  /** Report the position; quiet, since it runs in the background while watching. */
+  async function heartbeat(seconds: number) {
+    lastBeatRef.current = seconds;
     try {
-      await learnApi.progress(lectureId, seconds);
-      setPos(seconds);
+      await learnApi.progress(lectureId, Math.floor(seconds));
       // The catalog's started/done markers come from the progress just written.
       // (This screen's own ["lecture", id] is left alone: refetching it would
       // re-request the playback URL and reload the video mid-play.)
-      qc.invalidateQueries({ queryKey: ["lectures"] });
-      if (done) {
-        toast.success(t("courses.completedToast"));
-        qc.invalidateQueries({ queryKey: ["dashboard"] });
-        qc.invalidateQueries({ queryKey: ["course"] });
-      }
-    } catch (e) {
-      toast.error(errorMessage(e));
+      void qc.invalidateQueries({ queryKey: ["lectures"] });
+    } catch {
+      // The next beat carries the position again.
     }
   }
 
+  function onTime(v: HTMLVideoElement) {
+    const now = v.currentTime;
+    const previous = lastTimeRef.current;
+    lastTimeRef.current = now;
+    setPos(now);
+    if (now > 0) markStudied("lecture", lectureId);
+    if (now - lastBeatRef.current >= HEARTBEAT_SECONDS || now < lastBeatRef.current) void heartbeat(now);
+    if (active || !q.data) return;
+    const due = dueCheckpoint(checkpoints, previous, now, handledRef.current, (c) =>
+      isExcluded(c.interaction_type, q.data.track_id, exclude),
+    );
+    if (due) {
+      handledRef.current.add(due.checkpoint_id);
+      v.pause();
+      setActive(due);
+    }
+  }
+
+  function closeCheckpoint() {
+    setActive(null);
+    play();
+  }
+
+  async function finish(l: Lec) {
+    const end = duration || l.duration_seconds;
+    await heartbeat(end);
+    try {
+      const done = await learnApi.completeLecture(lectureId);
+      setFinished({ points: done.points_earned });
+      void qc.invalidateQueries({ queryKey: ["dashboard"] });
+      void qc.invalidateQueries({ queryKey: ["course"] });
+      void qc.invalidateQueries({ queryKey: ["lectures"] });
+    } catch (e) {
+      // 409: skipped through rather than watched — nothing to celebrate.
+      if (!(e instanceof ApiError && e.status === 409)) toast.error(errorMessage(e));
+    }
+  }
+
+  function leave() {
+    const l = q.data;
+    if (l?.course_id) nav(`/courses/${l.course_id}`, { replace: true });
+    else nav(-1);
+  }
+
+  function continueAfterEnd() {
+    const l = q.data;
+    const state: CourseRewardState = { rewardPoints: finished?.points ?? 0 };
+    if (l?.course_id) nav(`/courses/${l.course_id}`, { replace: true, state });
+    else nav(-1);
+  }
+
+  function requestClose() {
+    if (q.data?.my_playback?.completed || finished || !q.data) {
+      leave();
+      return;
+    }
+    videoRef.current?.pause();
+    setQuitOpen(true);
+  }
+
+  const goalMet = !!dashboard.data?.tracks.find((tr) => tr.track_id === q.data?.track_id)?.goal.achieved;
+
   return (
     <div className="screen lecp">
-      {/* cp_B_01_topNav on black: the close glyph at 20, and the
-          "말하기 제외" switch pinned to the right (COU-004 230:7046). */}
+      {/* cp_B_01_topNav on black: the close glyph at 20, and the exclude
+          switch pinned to the right (COU-004 230:7046 / COU-005). */}
       <header className="lecp__nav">
-        <button className="lecp__close" onClick={() => nav(-1)} aria-label={t("common.back")}>
+        <button className="lecp__close" onClick={requestClose} aria-label={t("common.back")}>
           <img src={icClose} alt="" aria-hidden="true" />
         </button>
         <label className="lecp__mute">
-          <span className="lecp__mute-label">{t("courses.excludeSpeaking")}</span>
-          <input type="checkbox" checked={muteSpeaking} onChange={(e) => setMuteSpeaking(e.target.checked)} />
+          <span className="lecp__mute-label">{t(topik ? "courses.excludePractice" : "courses.excludeSpeaking")}</span>
+          <input type="checkbox" checked={exclude} onChange={(e) => setExclude(e.target.checked)} />
           <span className="lecp__switch" aria-hidden="true" />
         </label>
       </header>
@@ -128,7 +230,6 @@ export function Lecture() {
                   src={videoUrl}
                   poster={l.thumbnail_url ?? undefined}
                   playsInline
-                  muted={muteSpeaking}
                   onLoadedMetadata={(e) => {
                     const v = e.currentTarget;
                     const total = v.duration || l.duration_seconds;
@@ -136,15 +237,18 @@ export function Lecture() {
                     // Resume where the learner left off (the scrubber already
                     // shows that position); a finished lecture starts over.
                     const resumeAt = l.my_playback?.last_position_seconds ?? 0;
-                    if (!l.my_playback?.completed && resumeAt > 0 && resumeAt < total) v.currentTime = resumeAt;
+                    const start = !l.my_playback?.completed && resumeAt > 0 && resumeAt < total ? resumeAt : 0;
+                    v.currentTime = start;
+                    lastTimeRef.current = start;
+                    lastBeatRef.current = start;
                   }}
-                  onTimeUpdate={(e) => {
-                    setPos(e.currentTarget.currentTime);
-                    if (e.currentTarget.currentTime > 0) markStudied("lecture", lectureId);
-                  }}
+                  onTimeUpdate={(e) => onTime(e.currentTarget)}
                   onPlay={() => setPlaying(true)}
-                  onPause={() => setPlaying(false)}
-                  onEnded={() => void saveProgress(l.duration_seconds, true)}
+                  onPause={(e) => {
+                    setPlaying(false);
+                    if (!e.currentTarget.ended) void heartbeat(e.currentTarget.currentTime);
+                  }}
+                  onEnded={() => void finish(l)}
                 />
               ) : premiumLocked ? (
                 <div className="lecp__gate">
@@ -156,8 +260,16 @@ export function Lecture() {
                 <img className="lecp__poster" src={l.thumbnail_url ?? undefined} alt="" />
               )}
 
-              {/* 230:7051 / 230:7053 — the tutor prompt and its 45px FAB. */}
-              <button className="lecp__ask" onClick={() => nav("/ai")} aria-label={t("courses.chatbotA11y")}>
+              {/* 230:7051 / 230:7053 — the tutor prompt and its 45px FAB open
+                  the 물어보기 sheet over the paused video (COU-010). */}
+              <button
+                className="lecp__ask"
+                onClick={() => {
+                  videoRef.current?.pause();
+                  setAskOpen(true);
+                }}
+                aria-label={t("courses.chatbotA11y")}
+              >
                 <span className="lecp__ask-bubble">{t("courses.askBubble")}</span>
                 <img className="lecp__ask-fab" src={chatbotFab} alt="" aria-hidden="true" />
               </button>
@@ -180,8 +292,8 @@ export function Lecture() {
                   value={pos}
                   aria-label={t("courses.progress")}
                   onChange={(e) => seek(Number(e.target.value))}
-                  onMouseUp={() => void saveProgress(pos, false)}
-                  onTouchEnd={() => void saveProgress(pos, false)}
+                  onMouseUp={() => void heartbeat(pos)}
+                  onTouchEnd={() => void heartbeat(pos)}
                 />
               </div>
 
@@ -203,9 +315,50 @@ export function Lecture() {
                 {speed}X
               </button>
             </div>
+
+            {active && <CheckpointOverlay lectureId={lectureId} checkpoint={active} onClose={closeCheckpoint} />}
           </>
         )}
       </Async>
+
+      <ChatbotBottomSheet
+        open={askOpen}
+        source="lecture"
+        context={{ kind: "lecture", lecture_id: lectureId }}
+        onClose={() => setAskOpen(false)}
+      />
+
+      {/* 235:8047, or 1616:25224 once today's goal is already met. */}
+      <ConfirmDialog
+        open={quitOpen}
+        title={<span className="dialog__title-lines">{t(goalMet ? "courses.quitGoalTitle" : "courses.quitTitle")}</span>}
+        text={t(goalMet ? "courses.quitGoalText" : "courses.quitText")}
+        cancelLabel={t("courses.keepGoing")}
+        confirmLabel={t("courses.quitNow")}
+        onCancel={() => {
+          setQuitOpen(false);
+          play();
+        }}
+        onConfirm={leave}
+      />
+
+      {/* COU-009 (750:48385) — the end of the video. */}
+      <Dialog
+        open={finished !== null}
+        title={
+          <>
+            {t("courses.endTitle")}
+            <span className="dialog__title-accent">{t("courses.endWarn")}</span>
+          </>
+        }
+        text={t("courses.endText")}
+      >
+        <div className="dialog__actions">
+          <Button variant="primary" block onClick={continueAfterEnd}>
+            {t("courses.endCta")}
+          </Button>
+        </div>
+      </Dialog>
     </div>
   );
 }

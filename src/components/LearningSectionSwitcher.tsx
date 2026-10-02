@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { rectInFrame } from "../lib/frame";
 import { useTranslation, type TranslationKey } from "../i18n";
 
 /** The two learning sections reachable from the title dropdown. */
@@ -49,7 +50,9 @@ export function LearningSectionSwitcher({ current }: { current: LearningSection 
       return;
     }
     const measure = () => {
-      const r = triggerRef.current?.getBoundingClientRect();
+      // The menu is position: fixed inside the app frame, so it is placed in
+      // the frame's coordinates (they differ from the window's on desktop).
+      const r = triggerRef.current ? rectInFrame(triggerRef.current) : null;
       if (r) setPos({ top: r.bottom + 6, left: r.left + r.width / 2 });
     };
     measure();

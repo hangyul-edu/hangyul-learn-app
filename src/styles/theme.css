@@ -139,7 +139,10 @@
   --t-tracking-tight: -1px;
 
   /* ---- Layout ---- */
+  /* The phone the app draws on (.app-frame): a phone's own screen, up to 480
+     wide; on desktop the designs' 375x812 phone (see the media query below). */
   --app-max: 480px;
+  --app-h: 100dvh;
   /* Figma navi_user (1825:26629) is 88 tall: a 54px control strip over a 34px
      home-indicator strip. That strip IS the safe-area inset, so the foot tracks
      the inset rather than reserving 34px unconditionally: ~34 on a device with
@@ -151,6 +154,14 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --nav-foot: var(--safe-bottom);
   --nav-total: calc(var(--nav-h) + var(--nav-foot));
+}
+@media (min-width: 620px) {
+  /* Desktop: the designs' phone, 375 x 812, shrinking in height only when the
+     window cannot fit it with a 24px margin above and below. */
+  :root {
+    --app-max: 375px;
+    --app-h: min(812px, calc(100dvh - 48px));
+  }
 }
 
 * {

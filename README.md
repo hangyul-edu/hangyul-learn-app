@@ -65,7 +65,11 @@ npm run dev
 ```
 
 Open **http://localhost:5173**. On a desktop browser the app renders inside a
-centered phone frame; on a phone it fills the screen. It hot-reloads on save.
+centered 375×812 phone frame — the size the designs are drawn at (shorter only
+when the window can't fit it) — so a screen lays out exactly as on a phone; on
+a phone it fills the screen. The frame is a size container (size things with
+`cqw`/`cqh`, not `vw`/`vh`) and the containing block of `position: fixed`
+overlays, so dims, sheets and dialogs stay inside it. It hot-reloads on save.
 
 ---
 

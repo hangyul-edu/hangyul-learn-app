@@ -10,25 +10,40 @@
   /* A real height (not just a floor) so the flex children can shrink and the
      screen bodies scroll inside the frame — otherwise a long screen stretches
      the frame and drags the absolutely-positioned bottom nav past 812. */
-  height: 100dvh;
-  min-height: 100dvh;
+  height: var(--app-h);
+  min-height: var(--app-h);
   background: var(--bg);
   box-shadow: 0 0 60px rgba(120, 70, 20, 0.12);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* The frame is the phone the app draws on, on every device:
+     - its size is a container, so `cqw` / `cqh` (not `vw` / `vh`) size things
+       against the phone, not against a desktop browser window;
+     - layout containment makes it the containing block of every
+       `position: fixed` descendant (container-type alone does not), so dims,
+       sheets and dialogs cover the phone and sit on its edges — on a phone
+       that is the screen, on desktop the framed phone rather than the whole
+       window. */
+  container-type: size;
+  contain: layout;
 }
 @media (min-width: 620px) {
+  /* Desktop draws the phone the designs are made for: 375 wide (--app-max)
+     and 812 tall (--app-h), centred in the window, and shorter only when the
+     window cannot fit 812 plus a 24px margin — so a screen lays out exactly
+     as it does on a phone instead of stretching to a 480-wide, window-tall
+     frame. The hairline is a shadow, not a border, so the 375 stays 375. */
   body {
     background:
       radial-gradient(1200px 600px at 50% -10%, #ffe9d3 0%, transparent 60%), #e6e8eb;
   }
   .app-frame {
-    margin: 24px auto;
-    height: calc(100dvh - 48px);
-    min-height: calc(100dvh - 48px);
+    margin: calc((100dvh - var(--app-h)) / 2) auto;
     border-radius: 34px;
-    border: 1px solid var(--border);
+    box-shadow:
+      0 0 0 1px var(--border),
+      0 0 60px rgba(120, 70, 20, 0.12);
   }
 }
 
@@ -580,6 +595,18 @@ textarea.input {
   z-index: 200;
   pointer-events: none;
   padding: 0 16px;
+}
+@media (min-width: 620px) {
+  /* Toasts render beside the frame, not inside it, so on desktop they are
+     placed on the framed phone by hand: its 375 width, 24px above its foot
+     (the frame is centred, (100dvh - --app-h) / 2 from the window's foot). */
+  .hg-toast-wrap {
+    left: 50%;
+    right: auto;
+    width: var(--app-max);
+    transform: translateX(-50%);
+    bottom: calc((100dvh - var(--app-h)) / 2 + 24px);
+  }
 }
 .hg-toast {
   pointer-events: auto;
@@ -1219,7 +1246,7 @@ textarea.input {
 
 /* Loading skeletons */
 .lmgmt__loading {
-  padding: clamp(18px, 4vh, 28px) 20px 0;
+  padding: clamp(18px, 4cqh, 28px) 20px 0;
 }
 .lmgmt__sk-heading {
   height: 26px;
@@ -1237,7 +1264,7 @@ textarea.input {
   margin-top: 26px;
 }
 .lmgmt__errwrap {
-  padding: clamp(28px, 10vh, 80px) 20px;
+  padding: clamp(28px, 10cqh, 80px) 20px;
 }
 
 .sheet {
@@ -1248,7 +1275,7 @@ textarea.input {
   padding: 8px 18px calc(20px + var(--safe-bottom));
   box-shadow: var(--shadow-lg);
   animation: sheet-up 0.28s cubic-bezier(0.2, 0.9, 0.3, 1);
-  max-height: 86dvh;
+  max-height: 86cqh;
   overflow-y: auto;
 }
 .sheet__grip {
@@ -2403,22 +2430,16 @@ textarea.input {
 }
 
 /* ===================== Terms & Policies (약관 및 정책) ==================== */
-/* Give the page a definite viewport height (the app frame only sets min-height,
-   which lets flex children grow to full content and defeats the inner scroll).
-   With a fixed height, .pol__body becomes a real bounded scroll container. */
+/* Give the page the frame's definite height (100cqh — the phone's, on desktop
+   too), so .pol__body is a real bounded scroll container rather than a flex
+   child grown to its full content. */
 .pol {
   flex: none;
-  height: 100dvh;
+  height: 100cqh;
   display: flex;
   flex-direction: column;
   min-height: 0;
   background: #fff;
-}
-@media (min-width: 620px) {
-  /* Match the framed desktop layout (.app-frame has 24px top/bottom margin). */
-  .pol {
-    height: calc(100dvh - 48px);
-  }
 }
 /* Detail body — a bounded flex scroll container so long legal docs scroll. */
 .pol__body {
@@ -2529,7 +2550,7 @@ textarea.input {
 .setupp__title {
   /* Figma "heading 1" (I290:13199;2537:25942) — Pretendard SemiBold 32 / 1.38,
      tracking -0.32, Gray 7. */
-  margin: clamp(40px, 9vh, 80px) 0 0;
+  margin: clamp(40px, 9cqh, 80px) 0 0;
   color: #262c31;
   font-family: var(--font-body);
   font-weight: 600;
@@ -2695,13 +2716,13 @@ textarea.input {
 .setupp__nick-row {
   display: flex;
   align-items: center;
-  gap: clamp(14px, 5vw, 22px);
-  margin-top: clamp(12px, 2vh, 16px);
+  gap: clamp(14px, 5cqw, 22px);
+  margin-top: clamp(12px, 2cqh, 16px);
 }
 .setupp__nick-input {
   flex: 1;
   min-width: 0;
-  height: clamp(60px, 15.5vw, 70px);
+  height: clamp(60px, 15.5cqw, 70px);
   border: 1.5px solid transparent;
   border-radius: 15px;
   background: var(--su-fill);
@@ -2721,8 +2742,8 @@ textarea.input {
 }
 .setupp__nick-btn {
   flex: 0 0 auto;
-  width: clamp(96px, 27vw, 118px);
-  height: clamp(46px, 12vw, 51px);
+  width: clamp(96px, 27cqw, 118px);
+  height: clamp(46px, 12cqw, 51px);
   border: none;
   border-radius: 10px;
   background: var(--su-dark);
@@ -2767,12 +2788,12 @@ textarea.input {
 /* Intentional breathing room before the bottom action */
 .setupp__spacer {
   flex: 1 1 auto;
-  min-height: clamp(24px, 8vh, 96px);
+  min-height: clamp(24px, 8cqh, 96px);
 }
 
 /* Bottom submit */
 .setupp__submit {
-  height: clamp(56px, 14.5vw, 68px);
+  height: clamp(56px, 14.5cqw, 68px);
   width: 100%;
   border: none;
   border-radius: 17px;
@@ -3988,7 +4009,7 @@ textarea.input {
   align-self: center;
   box-sizing: border-box;
   width: 330px;
-  max-width: calc(100vw - 44px);
+  max-width: calc(100cqw - 44px);
   height: 54px;
   margin: 0;
   /* The copy sits 12/14.5 into a 54-tall box; its two 20px lines run past the
@@ -8044,7 +8065,7 @@ textarea.input {
   width: 320px;
   /* The overlay already carries the 20px gutters — do not subtract them twice. */
   max-width: 100%;
-  max-height: calc(100vh - 40px);
+  max-height: calc(100cqh - 40px);
   overflow-y: auto;
   background: var(--surface);
   border-radius: 10px;
@@ -8155,7 +8176,7 @@ textarea.input {
      every other modal uses; this one had been left on an older clamped spec. */
   width: 320px;
   max-width: 100%;
-  max-height: calc(100vh - 40px);
+  max-height: calc(100cqh - 40px);
   overflow-y: auto;
   background: var(--surface);
   border-radius: 10px;
@@ -8216,7 +8237,7 @@ textarea.input {
   box-sizing: border-box;
   width: 320px;
   max-width: 100%;
-  max-height: calc(100vh - 40px);
+  max-height: calc(100cqh - 40px);
   overflow-y: auto;
   background: var(--surface);
   border-radius: 10px;
@@ -8313,7 +8334,7 @@ textarea.input {
 .lgo {
   width: 100%;
   max-width: 320px;
-  max-height: calc(100vh - 40px);
+  max-height: calc(100cqh - 40px);
   overflow-y: auto;
   background: #fff;
   border-radius: 10px;
@@ -8886,7 +8907,7 @@ textarea.input {
 .subp__noplans,
 .subp__loading,
 .subp__error {
-  margin: clamp(28px, 8vw, 48px) 0 0;
+  margin: clamp(28px, 8cqw, 48px) 0 0;
   color: #6b7178;
 }
 .subp__error {
@@ -8903,7 +8924,7 @@ textarea.input {
   position: relative;
   width: 333px;
   max-width: calc(100% - 32px);
-  max-height: calc(100dvh - 40px);
+  max-height: calc(100cqh - 40px);
   overflow-y: auto;
   background: #fff;
   border-radius: 16px;
@@ -9012,7 +9033,7 @@ textarea.input {
   box-sizing: border-box;
   width: 333px;
   max-width: 100%;
-  max-height: calc(100dvh - 32px);
+  max-height: calc(100cqh - 32px);
   background: #fff;
   border-radius: 16px;
   animation: pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.1);
@@ -9594,7 +9615,7 @@ textarea.input {
   box-sizing: border-box;
   width: 320px;
   max-width: 100%;
-  max-height: calc(100vh - 40px);
+  max-height: calc(100cqh - 40px);
   overflow-y: auto;
   background: var(--surface);
   border-radius: 10px;
@@ -9700,7 +9721,7 @@ textarea.input {
   box-sizing: border-box;
   width: 320px;
   max-width: 100%;
-  max-height: calc(100vh - 40px);
+  max-height: calc(100cqh - 40px);
   overflow-y: auto;
   background: var(--surface);
   border-radius: 10px;
@@ -9812,7 +9833,7 @@ textarea.input {
   box-sizing: border-box;
   width: 320px;
   max-width: 100%;
-  max-height: calc(100vh - 40px);
+  max-height: calc(100cqh - 40px);
   overflow-y: auto;
   background: var(--surface);
   border-radius: 10px;
@@ -9933,7 +9954,7 @@ textarea.input {
   box-sizing: border-box;
   width: 320px;
   max-width: 100%;
-  max-height: calc(100vh - 40px);
+  max-height: calc(100cqh - 40px);
   overflow-y: auto;
   background: var(--surface);
   border-radius: 10px;
@@ -10180,7 +10201,7 @@ textarea.input {
 /* Centred empty-state line. Both empty states with a Figma node — PUS-002
    (1678:25777 / 2431:26084) and NOT-001's — are Body 6, Medium 15 / 22.3. */
 .clset__empty {
-  margin: clamp(40px, 10vw, 60px) 0;
+  margin: clamp(40px, 10cqw, 60px) 0;
   text-align: center;
   color: #adb4ba;
   font-weight: 500;
@@ -10520,13 +10541,13 @@ textarea.input {
 }
 /* --- Banner empty view --- */
 /* Full-width, light cool-gray region occupying ~the same height as the carousel
-   (banner is aspect 2.1/1 inset 18px each side → ≈44vw), so the page below does
+   (banner is aspect 2.1/1 inset 18px each side → ≈44cqw), so the page below does
    not shift when banners are absent. */
 .lechome__banner-empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: clamp(150px, 44vw, 214px);
+  min-height: clamp(150px, 44cqw, 214px);
   margin: 0 0 18px;
   padding: 0 24px;
   background: #f2f4f5;
@@ -11049,7 +11070,7 @@ textarea.input {
   flex: 1;
   background: #fff;
   border-radius: 15px;
-  min-height: 50vh;
+  min-height: 50cqh;
   /* 12 of cream under the card instead of the frame's literal 4 (its bottom is
      808 in an 812 board), which read as touching the screen edge.
 
@@ -11201,7 +11222,7 @@ textarea.input {
   align-items: center;
   gap: 14px;
   justify-content: center;
-  padding: clamp(40px, 12vw, 64px) 0;
+  padding: clamp(40px, 12cqw, 64px) 0;
   color: #778088;
   font-size: 14.5px;
 }
@@ -11873,7 +11894,7 @@ textarea.input {
   -webkit-overflow-scrolling: touch;
   padding-bottom: calc(24px + var(--safe-bottom));
 }
-.ntf__pad { padding: 8px clamp(16px, 5vw, 20px); }
+.ntf__pad { padding: 8px clamp(16px, 5cqw, 20px); }
 
 /* Frame 1410118904 (766:48552) — a 335 column at (20, 142). */
 .ntf__list { padding: 11px 20px 0; }
@@ -14512,8 +14533,8 @@ textarea.input {
   top: calc(100% + 8px);
   right: 0;
   z-index: 62;
-  width: min(230px, 78vw);
-  max-height: 56vh;
+  width: min(230px, 78cqw);
+  max-height: 56cqh;
   overflow-y: auto;
   list-style: none;
   margin: 0;
@@ -14559,16 +14580,6 @@ textarea.input {
   background: rgba(0, 0, 0, 0.7);
   max-width: var(--app-max);
   margin: 0 auto;
-}
-/* On desktop the app is a rounded card (see .app-frame: 24px margin, 34px
-   radius). Inset + round the dim overlay to the same shape so its corners
-   match the frame instead of squaring off past it. */
-@media (min-width: 620px) {
-  .llc {
-    top: 24px;
-    bottom: 24px;
-    border-radius: 34px;
-  }
 }
 /* 380:6282 (KO) / 893:30887 (EN): a 335x172 r16 card. Its centre sits 36.5px
    above the frame's content centre, so the whole overlay is nudged up rather
@@ -15002,7 +15013,7 @@ textarea.input {
 .fl-empty,
 .lg-empty {
   flex: 1;
-  min-height: 54vh; /* fallback if the parent is not a flex column */
+  min-height: 54cqh; /* fallback if the parent is not a flex column */
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -8,6 +8,7 @@ import { LearningSectionSwitcher } from "../components/LearningSectionSwitcher";
 import { Button } from "../components/ui/kit";
 import { ErrorState } from "../components/ui/states";
 import { localeFor } from "../lib/format";
+import { rectInFrame } from "../lib/frame";
 import type { ManagementBucket, ManagementPeriod, ManagementStats } from "../lib/types";
 
 const PERIODS: { id: ManagementPeriod; label: TranslationKey }[] = [
@@ -320,7 +321,8 @@ function PeriodDropdown({
       return;
     }
     const measure = () => {
-      const r = triggerRef.current?.getBoundingClientRect();
+      // position: fixed inside the app frame → placed in frame coordinates.
+      const r = triggerRef.current ? rectInFrame(triggerRef.current) : null;
       if (r) setPos({ top: r.bottom + 6, left: r.right });
     };
     measure();

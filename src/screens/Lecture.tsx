@@ -329,7 +329,16 @@ export function Lecture() {
                   <span>5</span>
                 </button>
                 <button className="lecp__play" onClick={togglePlay} aria-label={t(playing ? "courses.pause" : "courses.play")}>
-                  <img src={playerPlay} alt="" aria-hidden="true" />
+                  {/* ic_64_play: Default (the triangle) while paused, Variant2
+                      (784:52239, two bars) while the video plays. */}
+                  {playing ? (
+                    <span className="lecp__pause" aria-hidden="true">
+                      <span className="lecp__pause-bar lecp__pause-bar--left" />
+                      <span className="lecp__pause-bar lecp__pause-bar--right" />
+                    </span>
+                  ) : (
+                    <img src={playerPlay} alt="" aria-hidden="true" />
+                  )}
                 </button>
                 <button className="lecp__skip lecp__skip--fwd" onClick={() => seek(pos + 5)} aria-label={t("courses.fwd5")}>
                   <img src={playerFwd5} alt="" aria-hidden="true" />

@@ -13875,6 +13875,38 @@ textarea.input {
   max-width: none;
   margin: 0 0 0 -4px;
 }
+.lecp__pause {
+  /* The same Group 1410118189 while playing: Ellipse 919 (62px, #FF6700)
+     under the group's drop shadow (0 4, radius 4, black 0.25 — what the play
+     export's stdDeviation 2 renders), holding ic_64_play's Variant2. */
+  position: relative;
+  display: block;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: #ff6700;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.25));
+}
+.lecp__pause-bar {
+  /* Rectangles 4961 / 4962 (784:52240 / 784:52241): 16x40 at (13, 12) and
+     (35, 12) in the 64px icon, which sits at (9, 9) resized to 44 with SCALE
+     constraints — so the boxes scale by 44/64 (11 x 27.5 at 17.94 / 33.06,
+     17.25) while the corner radius (6) and the drop shadow (0 4, radius 13,
+     black 0.25) keep their component values, as the play triangle's do. */
+  position: absolute;
+  top: 17.25px;
+  width: 11px;
+  height: 27.5px;
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 4px 13px rgba(0, 0, 0, 0.25);
+}
+.lecp__pause-bar--left {
+  left: 17.94px;
+}
+.lecp__pause-bar--right {
+  left: 33.06px;
+}
 .lecp__speed {
   /* 230:7043 — a Gray 7 chip 29 wide at (321, 722). */
   position: absolute;

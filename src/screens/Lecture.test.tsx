@@ -250,6 +250,28 @@ describe("Lecture player", () => {
     expect(progress).not.toHaveBeenCalled();
   });
 
+  it("shows pause while the video plays, and pausing from it stops the video", async () => {
+    // Regression: the button always showed the play triangle.
+    lecture.mockResolvedValue(detail(null));
+    const { container } = renderLecture();
+    const video = await loadedVideo(container);
+    const button = screen.getByRole("button", { name: "재생" });
+    expect(container.querySelector(".lecp__pause")).toBeNull();
+
+    fireEvent.click(button);
+    expect(video.play).toHaveBeenCalled();
+    fireEvent.play(video); // the browser confirms playback started
+    expect(screen.getByRole("button", { name: "일시정지" })).toBe(button);
+    expect(container.querySelector(".lecp__pause")).not.toBeNull();
+
+    Object.defineProperty(video, "paused", { configurable: true, value: false });
+    fireEvent.click(button);
+    expect(video.pause).toHaveBeenCalled();
+    fireEvent.pause(video);
+    expect(screen.getByRole("button", { name: "재생" })).toBe(button);
+    expect(container.querySelector(".lecp__pause")).toBeNull();
+  });
+
   it("labels the playback speed with a lowercase x", async () => {
     lecture.mockResolvedValue(detail(null));
     renderLecture();

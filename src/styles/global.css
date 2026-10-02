@@ -13481,27 +13481,66 @@ textarea.input {
 }
 
 /* ==================== Lecture player (COU-004_코스 재생) ====================
-   230:7011 — a black-chrome player: the 44px black status band, a 50px nav
-   with the white close X and the "말하기 제외" switch (y 44–94), the video
-   from 94 to 643, then a 169px black control block (its last 34 are the home
-   indicator's) carrying the scrubber, the 5-second skips, the 62px play and
-   the speed chip (drawn "1X"; the product reads it as a lowercase "1x"). */
+   230:7011's pieces — the white close X and the "말하기 제외" switch in a 50px
+   nav under a 44px status band, the ask prompt and mascot, and the control
+   block (scrubber, 5-second skips, 62px play, the speed chip read as "1x")
+   — keep their measurements, but float over the video instead of reserving
+   bands of the screen: the picture fills the whole screen, letterboxed and
+   never cropped, and the controls fade in over it on a tap and out again
+   while it plays (see useAutoHideControls). */
 .lecp {
   position: relative;
   background: #000000;
   overflow: hidden;
 }
+.lecp__chrome {
+  /* The control layer. It lets taps through to the picture; only its pieces
+     take them. Hidden, it fades out and then stops taking focus or taps. */
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.2s ease, visibility 0s linear 0s;
+}
+.lecp__chrome > * {
+  pointer-events: auto;
+}
+.lecp[data-controls="hidden"] .lecp__chrome {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lecp__chrome,
+  .lecp[data-controls="hidden"] .lecp__chrome {
+    transition: none;
+  }
+}
+.lecp__scrim {
+  /* Dims the picture under the controls so they read on any frame, darkest
+     behind the nav and the control block. */
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.6) 0,
+    rgba(0, 0, 0, 0.35) 160px,
+    rgba(0, 0, 0, 0.35) calc(100% - 220px),
+    rgba(0, 0, 0, 0.7) 100%
+  );
+}
 .lecp__nav {
-  /* The frame keeps a 44px black status band above the nav; on a device
-     with a taller inset the inset wins. */
-  position: relative;
+  /* Under a 44px status band (a device's taller inset wins). */
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: max(44px, var(--safe-top));
   display: flex;
   align-items: center;
   height: 50px;
-  margin-top: max(44px, var(--safe-top));
   padding: 0 20px;
-  background: #000000;
-  z-index: 2;
 }
 .lecp__close {
   /* ic_B_topNav (I230:7046;3095:70546) — the 24px close X at x=20. */
@@ -13581,22 +13620,26 @@ textarea.input {
   transform: translateX(18.46px);
 }
 .lecp__stage {
-  /* The video runs from the nav's foot to the control block at y=643. */
-  position: relative;
-  flex: 1;
-  min-height: 0;
-  background: #f5f4fa;
+  /* The whole screen is the picture; the controls float over it. */
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000000;
   overflow: hidden;
 }
 .lecp__video,
 .lecp__poster {
+  /* The full frame, letterboxed on black — never cropped or stretched. */
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  background: #f5f4fa;
+  object-fit: contain;
+  background: #000000;
 }
 .lecp__gate {
+  width: 100%;
   height: 100%;
   display: grid;
   place-items: center;
@@ -13616,12 +13659,12 @@ textarea.input {
 }
 .lecp__ask {
   /* 230:7051 / 230:7053 — the 95x20 prompt at (212, 104) and the 45px mascot
-     at (311.1, 110): measured from the stage top (94) and the frame's right
-     edge, the pair spans x 212–356.1 and y 10–61. The prompt is NOT centred
-     on the mascot — it sits 6 above the mascot's top. */
+     at (311.1, 110): measured from the nav's foot (94) and the frame's right
+     edge, the pair spans x 212–356.1 and 10–61 below the nav. The prompt is
+     NOT centred on the mascot — it sits 6 above the mascot's top. */
   position: absolute;
   right: 18.9px;
-  top: 10px;
+  top: calc(max(44px, var(--safe-top)) + 60px);
   width: 144.1px;
   height: 51px;
   padding: 0;
@@ -13753,15 +13796,16 @@ textarea.input {
   height: 2.204px;
 }
 .lecp__controls {
-  /* 230:7013 — a 169px black block; times at 662.5, track at 682, buttons at
-     701 and the speed chip at 722, measured from the frame's 643. Its last 34
-     are the home indicator's, so a device inset replaces them rather than
-     adding to them. */
-  position: relative;
-  flex: 0 0 auto;
+  /* 230:7013 — a 169px block pinned to the foot of the screen, over the
+     picture; times at 662.5, track at 682, buttons at 701 and the speed chip
+     at 722, measured from the block's top (643). Its last 34 are the home
+     indicator's, so a device inset replaces them rather than adding to them. */
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   height: max(169px, calc(135px + var(--safe-bottom)));
   padding: 0 20px;
-  background: #000000;
 }
 .lecp__times {
   /* 230:7027 / 230:7028 — the times centre on 662.5 (19.5 into the block). */

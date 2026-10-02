@@ -272,6 +272,51 @@ describe("Lecture player", () => {
     expect(container.querySelector(".lecp__pause")).toBeNull();
   });
 
+  it("floats the controls over the picture and hides them while it plays", async () => {
+    lecture.mockResolvedValue(detail(null));
+    const { container } = renderLecture();
+    const video = await loadedVideo(container);
+    const player = container.querySelector(".lecp") as HTMLElement;
+    expect(player.dataset.controls).toBe("shown");
+
+    vi.useFakeTimers();
+    try {
+      fireEvent.play(video);
+      act(() => vi.advanceTimersByTime(3000));
+      expect(player.dataset.controls).toBe("hidden");
+
+      // A tap on the picture brings them back…
+      fireEvent.click(container.querySelector(".lecp__stage")!);
+      expect(player.dataset.controls).toBe("shown");
+      // …and a tap on the dimmed picture behind them hides them again.
+      fireEvent.click(container.querySelector(".lecp__scrim")!);
+      expect(player.dataset.controls).toBe("hidden");
+
+      // Pausing shows them and keeps them up.
+      fireEvent.pause(video);
+      act(() => vi.advanceTimersByTime(10_000));
+      expect(player.dataset.controls).toBe("shown");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps the controls up while one of the player's dialogs is open", async () => {
+    lecture.mockResolvedValue(detail({ last_position_seconds: 5, completed: false }));
+    const { container } = renderLecture();
+    const video = await loadedVideo(container);
+    const player = container.querySelector(".lecp") as HTMLElement;
+    vi.useFakeTimers();
+    try {
+      fireEvent.play(video);
+      fireEvent.click(screen.getByRole("button", { name: "닫기" })); // opens the quit confirm
+      act(() => vi.advanceTimersByTime(10_000));
+      expect(player.dataset.controls).toBe("shown");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("labels the playback speed with a lowercase x", async () => {
     lecture.mockResolvedValue(detail(null));
     renderLecture();

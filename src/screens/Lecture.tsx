@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "../i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -11,6 +12,7 @@ import { CheckpointOverlay } from "../components/lecture/CheckpointOverlay";
 import { dashboardApi, learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { useMarkStudied } from "../hooks/learningActivity";
+import { useAutoHideControls } from "../hooks/useAutoHideControls";
 import { ApiError, errorMessage } from "../lib/http";
 import { dueCheckpoint, isExcluded } from "../lib/lectureCheckpoints";
 import type { LectureCheckpoint, LectureDetail as Lec } from "../lib/types";
@@ -71,6 +73,19 @@ export function Lecture() {
   const [askOpen, setAskOpen] = useState(false);
   const [quitOpen, setQuitOpen] = useState(false);
   const [finished, setFinished] = useState<{ points: number } | null>(null);
+  // What keeps the overlaid controls up while the video plays.
+  const [hovering, setHovering] = useState(false);
+  const [scrubbing, setScrubbing] = useState(false);
+  const [focusInside, setFocusInside] = useState(false);
+  const controls = useAutoHideControls({
+    playing,
+    held: hovering || scrubbing || focusInside || askOpen || quitOpen || !!active || !!finished,
+  });
+  // A mouse resting on a piece of the controls holds them (touch has no hover).
+  const hoverHold = {
+    onPointerEnter: (e: ReactPointerEvent) => e.pointerType === "mouse" && setHovering(true),
+    onPointerLeave: (e: ReactPointerEvent) => e.pointerType === "mouse" && setHovering(false),
+  };
   const videoRef = useRef<HTMLVideoElement>(null);
   const lastTimeRef = useRef(0);
   const lastBeatRef = useRef(0);
@@ -90,6 +105,13 @@ export function Lecture() {
   useEffect(() => {
     if (q.data) setPos(q.data.my_playback?.last_position_seconds ?? 0);
   }, [q.data]);
+
+  // On a keyboard, any key brings the controls back, so they can be tabbed to.
+  const showControls = controls.show;
+  useEffect(() => {
+    window.addEventListener("keydown", showControls);
+    return () => window.removeEventListener("keydown", showControls);
+  }, [showControls]);
 
   // Try to fetch a real playback URL; premium content 402s → show the gate.
   useEffect(() => {
@@ -214,66 +236,95 @@ export function Lecture() {
   }
 
   const goalMet = !!dashboard.data?.tracks.find((tr) => tr.track_id === q.data?.track_id)?.goal.achieved;
+  const l = q.data;
 
   return (
-    <div className="screen lecp">
-      {/* cp_B_01_topNav on black: the close glyph at 20, and the exclude
-          switch pinned to the right (COU-004 230:7046 / COU-005). */}
-      <header className="lecp__nav">
-        <button className="lecp__close" onClick={requestClose} aria-label={t("common.close")}>
-          <img src={icClose} alt="" aria-hidden="true" />
-        </button>
-        <label className="lecp__mute">
-          <span className="lecp__mute-label">{t(topik ? "courses.excludePractice" : "courses.excludeSpeaking")}</span>
-          <input type="checkbox" checked={exclude} onChange={(e) => setExclude(e.target.checked)} />
-          <span className="lecp__switch" aria-hidden="true" />
-        </label>
-      </header>
+    <div
+      className="screen lecp"
+      data-controls={controls.visible ? "shown" : "hidden"}
+      onPointerMove={(e) => {
+        // A mouse moving over the player brings the controls back; a finger
+        // does that by tapping the picture instead.
+        if (e.pointerType === "mouse") controls.nudge();
+      }}
+    >
+      {/* The picture fills the screen, letterboxed and never cropped. Tapping
+          it shows the controls; tapping it while they are up hides them. */}
+      <div className="lecp__stage" onClick={controls.toggle}>
+        <Async loading={q.isLoading} error={q.error} data={q.data} onRetry={() => q.refetch()}>
+          {(lecture: Lec) =>
+            videoUrl ? (
+              <StreamVideo
+                ref={videoRef}
+                className="lecp__video"
+                src={videoUrl}
+                poster={lecture.thumbnail_url ?? undefined}
+                playsInline
+                onLoadedMetadata={(e) => {
+                  const v = e.currentTarget;
+                  const total = v.duration || lecture.duration_seconds;
+                  setDuration(total);
+                  // Resume where the learner left off (the scrubber already
+                  // shows that position); a finished lecture starts over.
+                  const resumeAt = lecture.my_playback?.last_position_seconds ?? 0;
+                  const start = !lecture.my_playback?.completed && resumeAt > 0 && resumeAt < total ? resumeAt : 0;
+                  v.currentTime = start;
+                  lastTimeRef.current = start;
+                  lastBeatRef.current = start;
+                }}
+                onTimeUpdate={(e) => onTime(e.currentTarget)}
+                onPlay={() => setPlaying(true)}
+                onPause={(e) => {
+                  setPlaying(false);
+                  if (!e.currentTarget.ended) void heartbeat(e.currentTarget.currentTime);
+                }}
+                onEnded={() => void finish(lecture)}
+              />
+            ) : premiumLocked ? (
+              <div className="lecp__gate">
+                <div className="lecp__gate-emoji">👑</div>
+                <div className="lecp__gate-title">{t("courses.premiumLecture")}</div>
+                <Button size="sm" onClick={() => nav("/subscription")}>{t("study.upgrade")}</Button>
+              </div>
+            ) : (
+              <img className="lecp__poster" src={lecture.thumbnail_url ?? undefined} alt="" />
+            )
+          }
+        </Async>
+      </div>
 
-      <Async loading={q.isLoading} error={q.error} data={q.data} onRetry={() => q.refetch()}>
-        {(l: Lec) => (
+      {/* The controls float over the picture and fade out while it plays.
+          The layer itself lets taps through to the picture; only its pieces
+          take them. Hovering, keyboard focus or dragging inside holds them. */}
+      <div
+        className="lecp__chrome"
+        onFocus={(e) => setFocusInside(e.target instanceof HTMLElement && e.target.matches(":focus-visible"))}
+        onBlur={() => setFocusInside(false)}
+        onPointerDown={controls.show}
+      >
+        {/* Behind the controls: dims the picture so they read on any frame,
+            and tapping an empty spot of it hides them again. */}
+        {videoUrl && <div className="lecp__scrim" onClick={controls.hide} />}
+
+        {/* cp_B_01_topNav: the close glyph at 20, and the exclude switch
+            pinned to the right (COU-004 230:7046 / COU-005). */}
+        <header className="lecp__nav" {...hoverHold}>
+          <button className="lecp__close" onClick={requestClose} aria-label={t("common.close")}>
+            <img src={icClose} alt="" aria-hidden="true" />
+          </button>
+          <label className="lecp__mute">
+            <span className="lecp__mute-label">{t(topik ? "courses.excludePractice" : "courses.excludeSpeaking")}</span>
+            <input type="checkbox" checked={exclude} onChange={(e) => setExclude(e.target.checked)} />
+            <span className="lecp__switch" aria-hidden="true" />
+          </label>
+        </header>
+
+        {l && (
           <>
-            <div className="lecp__stage">
-              {videoUrl ? (
-                <StreamVideo
-                  ref={videoRef}
-                  className="lecp__video"
-                  src={videoUrl}
-                  poster={l.thumbnail_url ?? undefined}
-                  playsInline
-                  onLoadedMetadata={(e) => {
-                    const v = e.currentTarget;
-                    const total = v.duration || l.duration_seconds;
-                    setDuration(total);
-                    // Resume where the learner left off (the scrubber already
-                    // shows that position); a finished lecture starts over.
-                    const resumeAt = l.my_playback?.last_position_seconds ?? 0;
-                    const start = !l.my_playback?.completed && resumeAt > 0 && resumeAt < total ? resumeAt : 0;
-                    v.currentTime = start;
-                    lastTimeRef.current = start;
-                    lastBeatRef.current = start;
-                  }}
-                  onTimeUpdate={(e) => onTime(e.currentTarget)}
-                  onPlay={() => setPlaying(true)}
-                  onPause={(e) => {
-                    setPlaying(false);
-                    if (!e.currentTarget.ended) void heartbeat(e.currentTarget.currentTime);
-                  }}
-                  onEnded={() => void finish(l)}
-                />
-              ) : premiumLocked ? (
-                <div className="lecp__gate">
-                  <div className="lecp__gate-emoji">👑</div>
-                  <div className="lecp__gate-title">{t("courses.premiumLecture")}</div>
-                  <Button size="sm" onClick={() => nav("/subscription")}>{t("study.upgrade")}</Button>
-                </div>
-              ) : (
-                <img className="lecp__poster" src={l.thumbnail_url ?? undefined} alt="" />
-              )}
-
               {/* 230:7051 / 230:7053 — the tutor prompt and the 45px mascot open
                   the 물어보기 sheet over the paused video (COU-010). */}
               <button
+                {...hoverHold}
                 className="lecp__ask"
                 onClick={() => {
                   videoRef.current?.pause();
@@ -299,9 +350,8 @@ export function Lecture() {
                   </span>
                 </span>
               </button>
-            </div>
 
-            <div className="lecp__controls">
+            <div className="lecp__controls" {...hoverHold}>
               <div className="lecp__times">
                 <span>{fmt(pos)}</span>
                 <span>{fmt(duration || l.duration_seconds)}</span>
@@ -318,6 +368,9 @@ export function Lecture() {
                   value={pos}
                   aria-label={t("courses.progress")}
                   onChange={(e) => seek(Number(e.target.value))}
+                  onPointerDown={() => setScrubbing(true)}
+                  onPointerUp={() => setScrubbing(false)}
+                  onPointerCancel={() => setScrubbing(false)}
                   onMouseUp={() => void heartbeat(pos)}
                   onTouchEnd={() => void heartbeat(pos)}
                 />
@@ -350,11 +403,11 @@ export function Lecture() {
                 {speed}x
               </button>
             </div>
-
-            {active && <CheckpointOverlay lectureId={lectureId} checkpoint={active} onClose={closeCheckpoint} />}
           </>
         )}
-      </Async>
+      </div>
+
+      {active && <CheckpointOverlay lectureId={lectureId} checkpoint={active} onClose={closeCheckpoint} />}
 
       <ChatbotBottomSheet
         open={askOpen}

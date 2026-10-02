@@ -186,6 +186,79 @@ describe("Lecture player", () => {
     expect(video.pause).not.toHaveBeenCalled();
   });
 
+  it("shows a skipped checkpoint again once 말하기 제외 is off and the learner rewinds", async () => {
+    lecture.mockResolvedValue(
+      detail(null, { checkpoints: [{ checkpoint_id: "cp1", interaction_type: "speaking_exercise", at_second: 10 }] }),
+    );
+    checkpointInteraction.mockResolvedValue({
+      checkpoint_id: "cp1",
+      lecture_id: "L1",
+      interaction_type: "multiple_choice",
+      at_second: 10,
+      sentence: null,
+      question: QUESTION,
+    });
+    const { container } = renderLecture();
+    const video = await loadedVideo(container);
+    const toggle = screen.getByRole("checkbox", { name: /말하기 제외/ });
+    fireEvent.click(toggle);
+    playTo(video, 9.8);
+    playTo(video, 10.1);
+    expect(checkpointInteraction).not.toHaveBeenCalled();
+
+    fireEvent.click(toggle);
+    playTo(video, 4); // rewind
+    playTo(video, 9.8);
+    playTo(video, 10.1);
+    expect(video.pause).toHaveBeenCalled();
+    expect(await screen.findByText("알맞은 것을 고르십시오.")).toBeInTheDocument();
+  });
+
+  it("shows a checkpoint again when the learner rewinds over one already answered", async () => {
+    lecture.mockResolvedValue(
+      detail(null, { checkpoints: [{ checkpoint_id: "cp1", interaction_type: "multiple_choice", at_second: 10 }] }),
+    );
+    checkpointInteraction.mockResolvedValue({
+      checkpoint_id: "cp1",
+      lecture_id: "L1",
+      interaction_type: "multiple_choice",
+      at_second: 10,
+      sentence: null,
+      question: QUESTION,
+    });
+    const { container } = renderLecture();
+    const video = await loadedVideo(container);
+    playTo(video, 9.8);
+    playTo(video, 10.1);
+    expect(await screen.findByText("알맞은 것을 고르십시오.")).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" }); // close the modal
+    await waitFor(() => expect(screen.queryByText("알맞은 것을 고르십시오.")).toBeNull());
+
+    playTo(video, 3); // rewind
+    playTo(video, 9.8);
+    playTo(video, 10.1);
+    expect(await screen.findByText("알맞은 것을 고르십시오.")).toBeInTheDocument();
+  });
+
+  it("does not report progress for every frame of a backward scrub", async () => {
+    lecture.mockResolvedValue(detail(null));
+    const { container } = renderLecture();
+    const video = await loadedVideo(container);
+    for (let s = 1; s <= 20; s += 1) playTo(video, s); // one beat at 15
+    progress.mockClear();
+    for (let s = 19; s >= 2; s -= 1) playTo(video, s); // dragging back
+    expect(progress).not.toHaveBeenCalled();
+  });
+
+  it("labels the playback speed with a lowercase x", async () => {
+    lecture.mockResolvedValue(detail(null));
+    renderLecture();
+    const chip = await screen.findByRole("button", { name: "재생 속도 1배" });
+    expect(chip).toHaveTextContent("1x");
+    fireEvent.click(chip);
+    expect(chip).toHaveTextContent("1.25x");
+  });
+
   it("labels the switch 문제 풀이 제외 on a TOPIK lecture", async () => {
     lecture.mockResolvedValue(detail(null, { track_id: "track_topik" }));
     renderLecture();

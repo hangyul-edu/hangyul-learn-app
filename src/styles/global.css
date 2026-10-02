@@ -13485,7 +13485,7 @@ textarea.input {
    with the white close X and the "말하기 제외" switch (y 44–94), the video
    from 94 to 643, then a 169px black control block (its last 34 are the home
    indicator's) carrying the scrubber, the 5-second skips, the 62px play and
-   1X. */
+   the speed chip (drawn "1X"; the product reads it as a lowercase "1x"). */
 .lecp {
   position: relative;
   background: #000000;

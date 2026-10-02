@@ -23,23 +23,26 @@ export const MAX_PLAY_STEP_SECONDS = 1.5;
 /**
  * The checkpoint playback just reached, if any.
  *
- * Fires a checkpoint when continuous playback crosses its second — from
+ * Fires a checkpoint whenever continuous playback crosses its second — from
  * `previous` (exclusive) to `current` (inclusive). Resuming mid-lecture or
- * seeking past a checkpoint does not fire it, and one already handled this
- * visit is not fired again when the learner rewinds over it.
+ * seeking past a checkpoint does not fire it. Rewinding before a checkpoint
+ * and playing through it again fires it again — whether it was answered, or
+ * skipped by the exclude switch, the last time: re-watching a stretch means
+ * meeting its checkpoints again, and switching the exclude switch off brings
+ * them back. Once a modal closes, playback resumes past its second, so the
+ * same crossing never fires twice.
  */
 export function dueCheckpoint(
   checkpoints: LectureCheckpoint[],
   previous: number,
   current: number,
-  handled: ReadonlySet<string>,
   skip: (checkpoint: LectureCheckpoint) => boolean,
 ): LectureCheckpoint | null {
   if (current < previous || current - previous > MAX_PLAY_STEP_SECONDS) return null;
   for (const checkpoint of checkpoints) {
     if (checkpoint.at_second > current) break;
     if (checkpoint.at_second <= previous && !(previous === 0 && checkpoint.at_second === 0)) continue;
-    if (handled.has(checkpoint.checkpoint_id) || skip(checkpoint)) continue;
+    if (skip(checkpoint)) continue;
     return checkpoint;
   }
   return null;

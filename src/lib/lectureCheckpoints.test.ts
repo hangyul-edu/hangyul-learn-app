@@ -6,28 +6,35 @@ const CPS: LectureCheckpoint[] = [
   { checkpoint_id: "a", interaction_type: "speaking_exercise", at_second: 10 },
   { checkpoint_id: "b", interaction_type: "multiple_choice", at_second: 30 },
 ];
-const none = new Set<string>();
 const keep = () => false;
 
 describe("dueCheckpoint", () => {
   it("fires when continuous playback crosses the checkpoint second", () => {
-    expect(dueCheckpoint(CPS, 9.8, 10.05, none, keep)?.checkpoint_id).toBe("a");
-    expect(dueCheckpoint(CPS, 10.05, 10.3, none, keep)).toBeNull();
+    expect(dueCheckpoint(CPS, 9.8, 10.05, keep)?.checkpoint_id).toBe("a");
+    // The next tick, after the modal closes and playback resumes, is past it.
+    expect(dueCheckpoint(CPS, 10.05, 10.3, keep)).toBeNull();
   });
 
   it("does not fire checkpoints jumped over by a seek or a skip", () => {
-    expect(dueCheckpoint(CPS, 8, 13, none, keep)).toBeNull();
-    expect(dueCheckpoint(CPS, 40, 9, none, keep)).toBeNull();
+    expect(dueCheckpoint(CPS, 8, 13, keep)).toBeNull();
+    expect(dueCheckpoint(CPS, 40, 9, keep)).toBeNull();
   });
 
-  it("does not fire one already handled, nor one the switch excludes", () => {
-    expect(dueCheckpoint(CPS, 9.8, 10.05, new Set(["a"]), keep)).toBeNull();
-    expect(dueCheckpoint(CPS, 29.9, 30.1, none, (c) => c.interaction_type === "multiple_choice")).toBeNull();
+  it("does not fire one the switch excludes", () => {
+    expect(dueCheckpoint(CPS, 29.9, 30.1, (c) => c.interaction_type === "multiple_choice")).toBeNull();
+  });
+
+  it("fires again when the learner rewinds and plays through it", () => {
+    // Regression: a checkpoint was fired once per visit, so after rewinding
+    // (or switching the exclude switch back off) its modal never came back.
+    expect(dueCheckpoint(CPS, 9.8, 10.05, keep)?.checkpoint_id).toBe("a");
+    expect(dueCheckpoint(CPS, 12, 6, keep)).toBeNull(); // the rewind itself
+    expect(dueCheckpoint(CPS, 9.8, 10.05, keep)?.checkpoint_id).toBe("a");
   });
 
   it("fires a checkpoint at 0 on the first tick", () => {
     const zero: LectureCheckpoint[] = [{ checkpoint_id: "z", interaction_type: "short_answer", at_second: 0 }];
-    expect(dueCheckpoint(zero, 0, 0.2, none, keep)?.checkpoint_id).toBe("z");
+    expect(dueCheckpoint(zero, 0, 0.2, keep)?.checkpoint_id).toBe("z");
   });
 });
 

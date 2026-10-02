@@ -30,7 +30,7 @@ function fmt(sec: number) {
   return `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(Math.floor(sec % 60)).padStart(2, "0")}`;
 }
 
-/** Playback speeds the 1X chip cycles through. */
+/** Playback speeds the speed chip cycles through, shown as "1x", "1.25x"… */
 const SPEEDS = [1, 1.25, 1.5, 2] as const;
 
 /**
@@ -74,7 +74,6 @@ export function Lecture() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const lastTimeRef = useRef(0);
   const lastBeatRef = useRef(0);
-  const handledRef = useRef(new Set<string>());
 
   const markStudied = useMarkStudied();
 
@@ -153,13 +152,19 @@ export function Lecture() {
     lastTimeRef.current = now;
     setPos(now);
     if (now > 0) markStudied("lecture", lectureId);
-    if (now - lastBeatRef.current >= HEARTBEAT_SECONDS || now < lastBeatRef.current) void heartbeat(now);
+    if (now < lastBeatRef.current) {
+      // Rewound: count the next 15s from here. Dragging the scrubber back
+      // fires a time update per frame, and reporting each one flooded the API;
+      // the drag's release (and any pause) reports the position instead.
+      lastBeatRef.current = now;
+    } else if (now - lastBeatRef.current >= HEARTBEAT_SECONDS) {
+      void heartbeat(now);
+    }
     if (active || !q.data) return;
-    const due = dueCheckpoint(checkpoints, previous, now, handledRef.current, (c) =>
+    const due = dueCheckpoint(checkpoints, previous, now, (c) =>
       isExcluded(c.interaction_type, q.data.track_id, exclude),
     );
     if (due) {
-      handledRef.current.add(due.checkpoint_id);
       v.pause();
       setActive(due);
     }
@@ -333,7 +338,7 @@ export function Lecture() {
               </div>
 
               <button className="lecp__speed" onClick={cycleSpeed} aria-label={t("courses.speedA11y", { rate: String(speed) })}>
-                {speed}X
+                {speed}x
               </button>
             </div>
 

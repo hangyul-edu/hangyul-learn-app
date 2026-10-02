@@ -13503,7 +13503,9 @@ textarea.input {
 
 /* ==================== Lecture player (COU-004_코스 재생) ====================
    230:7011's pieces — the white close X and the "말하기 제외" switch in a 50px
-   nav under a 44px status band, the ask prompt and mascot, and the control
+   nav at the top of the screen (Figma's 44px band above it is the phone's
+   status bar, which the page never has to draw), the ask prompt and mascot
+   16 under the nav, and the control
    block (scrubber, 5-second skips, 62px play, the speed chip read as "1x")
    — keep their measurements, but float over the video instead of reserving
    bands of the screen: the picture fills the whole screen, letterboxed and
@@ -13553,11 +13555,13 @@ textarea.input {
   );
 }
 .lecp__nav {
-  /* Under a 44px status band (a device's taller inset wins). */
+  /* At the top of the screen, below only the device's own safe-area inset —
+     like every other screen's top bar (.topbar). Reserving Figma's 44px
+     status-bar band here sat the whole top row 44px low in the browser. */
   position: absolute;
   left: 0;
   right: 0;
-  top: max(44px, var(--safe-top));
+  top: var(--safe-top);
   display: flex;
   align-items: center;
   height: 50px;
@@ -13684,7 +13688,7 @@ textarea.input {
      prompt hangs off it to the left. */
   position: absolute;
   right: 18.9px;
-  top: calc(max(44px, var(--safe-top)) + 66px);
+  top: calc(var(--safe-top) + 66px);
   width: 45px;
   height: 45px;
   padding: 0;

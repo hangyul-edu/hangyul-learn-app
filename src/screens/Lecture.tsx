@@ -108,6 +108,15 @@ export function Lecture() {
 
   // Hidden controls cannot take focus, so for keyboard users Tab is the
   // "tap": it brings them up to be tabbed through.
+  // The "궁금한 건 나한테 물어봐!" prompt is shown once per visit: the first time
+  // the controls come up it appears beside the mascot and fades itself out
+  // (or goes with the controls if they hide first), and never returns.
+  const [prompt, setPrompt] = useState<"pending" | "showing" | "done">("pending");
+  useEffect(() => {
+    if (controls.visible && prompt === "pending") setPrompt("showing");
+    if (!controls.visible && prompt === "showing") setPrompt("done");
+  }, [controls.visible, prompt]);
+
   const showControls = controls.show;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -343,7 +352,11 @@ export function Lecture() {
                 }}
                 aria-label={t("courses.chatbotA11y")}
               >
-                <span className="lecp__ask-bubble">{t("courses.askBubble")}</span>
+                {prompt === "showing" && (
+                  <span className="lecp__ask-bubble" aria-hidden="true" onAnimationEnd={() => setPrompt("done")}>
+                    {t("courses.askBubble")}
+                  </span>
+                )}
                 {/* 230:7053 — a white 45px disc with a 3px #FFDC7E ring; the
                     tangerine (turned 9.31°) and its four highlights are clipped
                     to the disc, each at its frame offset. */}

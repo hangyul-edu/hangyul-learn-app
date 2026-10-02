@@ -303,6 +303,39 @@ describe("Lecture player", () => {
     }
   });
 
+  it("shows the ask prompt once, on the first reveal of the controls, and never again", async () => {
+    lecture.mockResolvedValue(detail(null));
+    const { container } = renderLecture();
+    const video = await loadedVideo(container);
+    fireEvent.play(video);
+    const stage = container.querySelector(".lecp__stage")!;
+    const promptText = "궁금한 건 나한테 물어봐!";
+    expect(screen.queryByText(promptText)).toBeNull(); // controls hidden
+
+    fireEvent.click(stage); // first reveal
+    const prompt = screen.getByText(promptText);
+    fireEvent.animationEnd(prompt); // it fades itself out
+    expect(screen.queryByText(promptText)).toBeNull();
+
+    fireEvent.click(stage); // hide
+    fireEvent.click(stage); // reveal again
+    expect(container.querySelector(".lecp__ask")).not.toBeNull();
+    expect(screen.queryByText(promptText)).toBeNull();
+  });
+
+  it("drops the prompt with the controls if they hide before it fades", async () => {
+    lecture.mockResolvedValue(detail(null));
+    const { container } = renderLecture();
+    const video = await loadedVideo(container);
+    fireEvent.play(video);
+    const stage = container.querySelector(".lecp__stage")!;
+    fireEvent.click(stage);
+    expect(screen.getByText("궁금한 건 나한테 물어봐!")).toBeInTheDocument();
+    fireEvent.click(container.querySelector(".lecp__scrim")!); // hide
+    fireEvent.click(stage); // reveal again
+    expect(screen.queryByText("궁금한 건 나한테 물어봐!")).toBeNull();
+  });
+
   it("shows the controls when the browser refuses to autoplay", async () => {
     lecture.mockResolvedValue(detail(null));
     const { container } = renderLecture();

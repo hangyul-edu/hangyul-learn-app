@@ -13679,31 +13679,34 @@ textarea.input {
   font-size: 15px;
 }
 .lecp__ask {
-  /* 230:7051 / 230:7053 — the 95x20 prompt at (212, 104) and the 45px mascot
-     at (311.1, 110): measured from the nav's foot (94) and the frame's right
-     edge, the pair spans x 212–356.1 and 10–61 below the nav. The prompt is
-     NOT centred on the mascot — it sits 6 above the mascot's top. */
+  /* 230:7053 — the 45px mascot at (311.1, 110): 16 below the nav's foot (94)
+     and 18.9 in from the frame's right edge. The button is the mascot; its
+     prompt hangs off it to the left. */
   position: absolute;
   right: 18.9px;
-  top: calc(max(44px, var(--safe-top)) + 60px);
-  width: 144.1px;
-  height: 51px;
+  top: calc(max(44px, var(--safe-top)) + 66px);
+  width: 45px;
+  height: 45px;
   padding: 0;
   border: none;
   background: none;
   cursor: pointer;
 }
 .lecp__ask-bubble {
-  /* inputField — #FFF8F1, r5.607, the copy at x=5 and centred on 10.5. */
+  /* 230:7051 — the prompt, #FFF8F1 r5.607, its right edge 4.1 short of the
+     mascot (x 307 vs 311.1) and its top 6 above the mascot's (104 vs 110).
+     Its copy (230:7052) is Pretendard Medium 8.718 / 12.961 in #626050, its
+     line box at x=5, y=4 — so the padding is 4 / 5 / 3.039 / 5, which makes
+     the 95x20 of the frame around that line. Sized by its copy rather than
+     fixed at 95x20, a phone that enlarges small text grows the prompt
+     leftwards instead of spilling the copy out of it. It shows once per
+     visit (see Lecture: the first time the controls are revealed) and fades
+     itself out. */
   position: absolute;
-  left: 0;
-  top: 0;
-  box-sizing: border-box;
-  width: 95px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  padding: 0 0 0 5px;
+  right: calc(100% + 4.1px);
+  top: -6px;
+  display: block;
+  padding: 4px 5px 3.039px;
   border-radius: 5.607px;
   background: #fff8f1;
   color: #626050;
@@ -13711,18 +13714,46 @@ textarea.input {
   font-weight: 500;
   font-size: 8.718px;
   line-height: 12.961px;
+  letter-spacing: 0;
   text-align: left;
   white-space: nowrap;
-  /* 230:7051 — drop-shadow 0 4 / sigma 2 / black 0.25. The alpha is right here;
-     the CSS blur is 2x sigma, so 4. */
+  pointer-events: none;
+  /* 230:7051 — drop-shadow 0 4 / radius 4 / black 0.25. */
   box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+  animation: lecp-bubble 3s ease forwards;
+}
+/* In, held, then out — the once-per-visit prompt. */
+@keyframes lecp-bubble {
+  0% {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  8%,
+  88% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes lecp-bubble {
+    0%,
+    95% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
 }
 .lecp__mascot {
   /* 230:7053 / 230:7054 — a white 45px disc; the group casts a drop shadow
      (0 4, radius 4, black 0.25) under disc and ring together. */
   position: absolute;
   right: 0;
-  top: 6px;
+  top: 0;
   width: 45px;
   height: 45px;
   border-radius: 100px;

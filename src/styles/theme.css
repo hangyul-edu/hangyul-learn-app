@@ -173,6 +173,14 @@ body {
   margin: 0;
   padding: 0;
 }
+html {
+  /* Keep the designed px type sizes: without this, mobile browsers inflate
+     small text on their own (Android Chrome's font boosting, iOS on
+     rotation), pushing copy out of boxes drawn for its real size. Pinch zoom
+     and the browser's own zoom still work. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 body {
   font: var(--t-body-5);
   color: var(--ink);

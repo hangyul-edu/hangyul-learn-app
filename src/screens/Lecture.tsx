@@ -106,11 +106,15 @@ export function Lecture() {
     if (q.data) setPos(q.data.my_playback?.last_position_seconds ?? 0);
   }, [q.data]);
 
-  // On a keyboard, any key brings the controls back, so they can be tabbed to.
+  // Hidden controls cannot take focus, so for keyboard users Tab is the
+  // "tap": it brings them up to be tabbed through.
   const showControls = controls.show;
   useEffect(() => {
-    window.addEventListener("keydown", showControls);
-    return () => window.removeEventListener("keydown", showControls);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Tab") showControls();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [showControls]);
 
   // Try to fetch a real playback URL; premium content 402s → show the gate.
@@ -241,15 +245,13 @@ export function Lecture() {
   return (
     <div
       className="screen lecp"
-      data-controls={controls.visible ? "shown" : "hidden"}
-      onPointerMove={(e) => {
-        // A mouse moving over the player brings the controls back; a finger
-        // does that by tapping the picture instead.
-        if (e.pointerType === "mouse") controls.nudge();
-      }}
+      // Until there is a video to watch (loading, an error, the premium gate)
+      // the controls stay up, so the close button is always there.
+      data-controls={controls.visible || !videoUrl ? "shown" : "hidden"}
     >
-      {/* The picture fills the screen, letterboxed and never cropped. Tapping
-          it shows the controls; tapping it while they are up hides them. */}
+      {/* The picture fills the screen, letterboxed and never cropped. The
+          video opens playing with the controls hidden; tapping or clicking the
+          picture shows them, and tapping it while they are up hides them. */}
       <div className="lecp__stage" onClick={controls.toggle}>
         <Async loading={q.isLoading} error={q.error} data={q.data} onRetry={() => q.refetch()}>
           {(lecture: Lec) =>
@@ -271,6 +273,12 @@ export function Lecture() {
                   v.currentTime = start;
                   lastTimeRef.current = start;
                   lastBeatRef.current = start;
+                  // Opening a lecture starts it. If the browser refuses to
+                  // autoplay, bring the controls up so the play button is there.
+                  void v.play().catch(() => {
+                    setPlaying(false);
+                    controls.show();
+                  });
                 }}
                 onTimeUpdate={(e) => onTime(e.currentTarget)}
                 onPlay={() => setPlaying(true)}
@@ -279,6 +287,9 @@ export function Lecture() {
                   if (!e.currentTarget.ended) void heartbeat(e.currentTarget.currentTime);
                 }}
                 onEnded={() => void finish(lecture)}
+                // A video that cannot load never autoplays; bring the controls
+                // up so the learner is not left on a blank screen.
+                onError={() => controls.show()}
               />
             ) : premiumLocked ? (
               <div className="lecp__gate">

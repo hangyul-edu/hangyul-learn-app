@@ -272,33 +272,74 @@ describe("Lecture player", () => {
     expect(container.querySelector(".lecp__pause")).toBeNull();
   });
 
-  it("floats the controls over the picture and hides them while it plays", async () => {
+  it("opens playing, with the controls hidden until the picture is tapped", async () => {
     lecture.mockResolvedValue(detail(null));
     const { container } = renderLecture();
     const video = await loadedVideo(container);
     const player = container.querySelector(".lecp") as HTMLElement;
-    expect(player.dataset.controls).toBe("shown");
+    expect(video.play).toHaveBeenCalled(); // autoplay
+    fireEvent.play(video);
+    expect(player.dataset.controls).toBe("hidden");
 
     vi.useFakeTimers();
     try {
-      fireEvent.play(video);
+      // A tap on the picture brings them up; they fade again while it plays.
+      fireEvent.click(container.querySelector(".lecp__stage")!);
+      expect(player.dataset.controls).toBe("shown");
       act(() => vi.advanceTimersByTime(3000));
       expect(player.dataset.controls).toBe("hidden");
 
-      // A tap on the picture brings them back…
+      // A tap on the dimmed picture behind them hides them at once.
       fireEvent.click(container.querySelector(".lecp__stage")!);
-      expect(player.dataset.controls).toBe("shown");
-      // …and a tap on the dimmed picture behind them hides them again.
       fireEvent.click(container.querySelector(".lecp__scrim")!);
       expect(player.dataset.controls).toBe("hidden");
 
-      // Pausing shows them and keeps them up.
+      // Pausing (e.g. for a checkpoint) does not bring them up by itself.
       fireEvent.pause(video);
       act(() => vi.advanceTimersByTime(10_000));
-      expect(player.dataset.controls).toBe("shown");
+      expect(player.dataset.controls).toBe("hidden");
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("shows the controls when the browser refuses to autoplay", async () => {
+    lecture.mockResolvedValue(detail(null));
+    const { container } = renderLecture();
+    let video: HTMLVideoElement | null = null;
+    await waitFor(() => {
+      video = container.querySelector("video");
+      expect(video).not.toBeNull();
+    });
+    Object.defineProperty(video!, "duration", { configurable: true, value: 300 });
+    video!.pause = vi.fn();
+    video!.play = vi.fn(() => Promise.reject(new DOMException("blocked", "NotAllowedError")));
+    fireEvent.loadedMetadata(video!);
+    await waitFor(() =>
+      expect((container.querySelector(".lecp") as HTMLElement).dataset.controls).toBe("shown"),
+    );
+    expect(screen.getByRole("button", { name: "재생" })).toBeInTheDocument();
+  });
+
+  it("shows the controls when the video cannot load", async () => {
+    lecture.mockResolvedValue(detail(null));
+    const { container } = renderLecture();
+    let video: HTMLVideoElement | null = null;
+    await waitFor(() => {
+      video = container.querySelector("video");
+      expect(video).not.toBeNull();
+    });
+    expect((container.querySelector(".lecp") as HTMLElement).dataset.controls).toBe("hidden");
+    fireEvent.error(video!);
+    expect((container.querySelector(".lecp") as HTMLElement).dataset.controls).toBe("shown");
+  });
+
+  it("keeps the controls up while there is no video to watch, so close is reachable", async () => {
+    lecture.mockResolvedValue(detail(null));
+    lecturePlay.mockRejectedValue(new Error("offline"));
+    const { container } = renderLecture();
+    await screen.findByRole("button", { name: "닫기" });
+    expect((container.querySelector(".lecp") as HTMLElement).dataset.controls).toBe("shown");
   });
 
   it("keeps the controls up while one of the player's dialogs is open", async () => {
@@ -309,6 +350,7 @@ describe("Lecture player", () => {
     vi.useFakeTimers();
     try {
       fireEvent.play(video);
+      fireEvent.click(container.querySelector(".lecp__stage")!); // show them
       fireEvent.click(screen.getByRole("button", { name: "닫기" })); // opens the quit confirm
       act(() => vi.advanceTimersByTime(10_000));
       expect(player.dataset.controls).toBe("shown");

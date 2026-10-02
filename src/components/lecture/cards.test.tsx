@@ -25,7 +25,7 @@ vi.mock("../../hooks/useVoiceRecorder", () => ({
 
 import { I18nProvider } from "../../i18n";
 import { QuestionCard } from "./QuestionCard";
-import { SpeakingCard, listenWindowMs } from "./SpeakingCard";
+import { SpeakingCard, koreanSize, listenWindowMs } from "./SpeakingCard";
 import type { Quiz, Sentence } from "../../lib/types";
 
 const QUIZ = {
@@ -114,5 +114,13 @@ describe("SpeakingCard", () => {
     expect(listenWindowMs("반갑습니다")).toBe(3250);
     expect(listenWindowMs("네")).toBe(2500);
     expect(listenWindowMs("가".repeat(40))).toBe(8000);
+  });
+
+  it("sets a short phrase at the designed size and steps longer sentences down", () => {
+    expect(koreanSize("안녕하세요")).toBe("lg");
+    // Spaces do not count: it is the syllables that fill a line.
+    expect(koreanSize("주말에 친구들과 공원에 갔어요")).toBe("md");
+    expect(koreanSize("주말에 친구들과 함께 한강 공원에 가서 자전거를 타고 치킨을 먹었어요")).toBe("sm");
+    expect(koreanSize("가".repeat(41))).toBe("xs");
   });
 });

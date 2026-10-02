@@ -24,6 +24,19 @@ export function listenWindowMs(korean: string): number {
 }
 
 /**
+ * The sentence's type size. Figma draws a short phrase at Bold 36, which fits
+ * about seven syllables a line in the card; longer sentences step down so
+ * they stay within three or four lines rather than filling the card.
+ */
+export function koreanSize(korean: string): "lg" | "md" | "sm" | "xs" {
+  const syllables = korean.replace(/\s/g, "").length;
+  if (syllables <= 12) return "lg";
+  if (syllables <= 24) return "md";
+  if (syllables <= 40) return "sm";
+  return "xs";
+}
+
+/**
  * The repeat-after-me card — in a lecture (COU-006 1:2570, perfect COU-007
  * 1:2620, try again COU-008 1:2676) and in the standalone speaking practice
  * (COU-014/015/016).
@@ -167,6 +180,9 @@ export function SpeakingCard({
         />
       </div>
 
+      {/* Held to the screen over a lecture, this middle part scrolls when a
+          long sentence and its romanization outgrow the card. */}
+      <div className="lspk__scroll">
       <div className="lspk__glyph">
         {outcome === "prompt" ? (
           <button
@@ -191,7 +207,9 @@ export function SpeakingCard({
         ) : (
           <span className="lspk__arrow" aria-hidden="true" />
         )}
-        <p className="lspk__korean" lang="ko">{sentence.korean}</p>
+        <p className={`lspk__korean lspk__korean--${koreanSize(sentence.korean)}`} lang="ko">
+          {sentence.korean}
+        </p>
         {next ? (
           <button className="lspk__arrow" onClick={next} aria-label={t("courses.nextSentence")}>
             <img src={icChevron} alt="" aria-hidden="true" />
@@ -202,6 +220,7 @@ export function SpeakingCard({
       </div>
       {sentence.romanization && <p className="lspk__roman">[{sentence.romanization}]</p>}
       <p className="lspk__trans">{sentence.translation}</p>
+      </div>
 
       {outcome !== "prompt" && (
         <button className="lspk__retry" onClick={retry}>

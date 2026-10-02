@@ -120,6 +120,10 @@ export function QuestionCard({
         </button>
       </div>
 
+      {/* Everything between the title row and the button. Over a lecture the
+          card is held to the screen and this part scrolls, so a long passage
+          or long choices never push the title or the button out of reach. */}
+      <div className="pqz__scroll">
       {quiz.material?.html && (
         <div className="pqz__material" dangerouslySetInnerHTML={{ __html: sanitizeHtml(quiz.material.html) }} />
       )}
@@ -158,6 +162,7 @@ export function QuestionCard({
       </div>
 
       {finished && result.explanation && <p className="pqz__explain">{result.explanation}</p>}
+      </div>
 
       {!finished ? (
         <button

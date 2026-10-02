@@ -13356,6 +13356,8 @@ textarea.input {
   line-height: 25.2px;
   color: #000;
   text-align: center;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 .pqz__trans {
   width: 277px;
@@ -13365,7 +13367,15 @@ textarea.input {
   line-height: 18.75px;
   color: var(--gray-5);
   text-align: center;
+  overflow-wrap: break-word;
 }
+/* Everything between the title row and the button (scrolls over a lecture). */
+.pqz__scroll {
+  display: flex;
+  flex-direction: column;
+}
+/* A passage or a TOPIK table: a table wider than the card scrolls sideways
+   inside the box rather than widening the card. */
 .pqz__material {
   margin-top: 16px;
   padding: 12px;
@@ -13373,6 +13383,13 @@ textarea.input {
   background: var(--gray-1);
   font-size: 14px;
   line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  overflow-x: auto;
+}
+.pqz__material img {
+  max-width: 100%;
+  height: auto;
 }
 .pqz__material-img {
   width: 100%;
@@ -13394,15 +13411,18 @@ textarea.input {
   padding: 0;
   list-style: none;
 }
+/* The number and tick sit on the first line, so a choice that wraps reads
+   top-down. On one line it is the same 28-tall pill as before (r14 = fully
+   round at that height); on several it is a rounded box, not a stadium. */
 .pqz__opt {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 5px;
   width: 100%;
   min-height: 20px;
   padding: 0 8px 0 4px;
   border: 0;
-  border-radius: 28px;
+  border-radius: 14px;
   background: none;
   text-align: left;
   cursor: pointer;
@@ -13446,10 +13466,14 @@ textarea.input {
   background: #547cf1;
 }
 .pqz__label {
+  flex: 1;
+  min-width: 0;
   font-size: 14px;
   font-weight: 600;
   line-height: 20px;
   color: var(--gray-7);
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 .pqz__opt.is-on.is-wrong .pqz__label {
   color: #ff7378;
@@ -13458,6 +13482,7 @@ textarea.input {
 .pqz__check {
   width: 16px;
   height: 16px;
+  margin-top: 2px;
   margin-left: auto;
   flex-shrink: 0;
   background: var(--brand-500);
@@ -13476,6 +13501,7 @@ textarea.input {
   font-weight: 400;
   line-height: 18.75px;
   color: var(--gray-6);
+  overflow-wrap: break-word;
 }
 /* 1718:24842 — 116x42, r36, Heading 9 white. */
 .pqz__cta {
@@ -17416,6 +17442,56 @@ textarea.input {
 .lcp > .pqz {
   margin: 0 auto;
 }
+/* Over a lecture a card never outgrows the screen: it is held to the
+   overlay's height, its title row and its button stay put, and the content
+   between them scrolls. Short content keeps the designed size and stays
+   centred. */
+.lcp > .pqz,
+.lcp > .lspk {
+  max-height: 100%;
+  min-height: 0;
+}
+.lcp > .lspk {
+  min-height: min(423px, 100%);
+}
+.lcp .pqz__scroll,
+.lcp .lspk__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  /* Run the scroll area to the card's edges, so the scrollbar sits at the
+     border, not beside the text. */
+  margin-inline: -22px;
+  padding-inline: 22px;
+  /* Scroll shadows: a soft shade along an edge only while there is more to
+     scroll that way. The white "local" layers travel with the content and
+     cover the fixed shades once the end is reached. */
+  background:
+    linear-gradient(#fff 30%, rgba(255, 255, 255, 0)) top / 100% 24px no-repeat local,
+    linear-gradient(rgba(255, 255, 255, 0), #fff 70%) bottom / 100% 24px no-repeat local,
+    radial-gradient(farthest-side at 50% 0, rgba(0, 0, 0, 0.14), rgba(0, 0, 0, 0)) top / 100% 10px no-repeat,
+    radial-gradient(farthest-side at 50% 100%, rgba(0, 0, 0, 0.14), rgba(0, 0, 0, 0)) bottom / 100% 10px no-repeat;
+  background-color: #fff;
+}
+/* Its parts keep their size and the area scrolls; flex would otherwise squash
+   them (the passage box first, since it clips its own overflow). */
+.lcp .pqz__scroll > *,
+.lcp .lspk__scroll > * {
+  flex-shrink: 0;
+}
+.lcp .lspk__scroll {
+  align-self: stretch;
+  width: auto;
+  margin-inline: -24px;
+  padding-inline: 24px;
+}
+/* The button / 다시하기 stay pinned under the scrolling part. */
+.lcp .pqz__cta,
+.lcp .lspk__retry {
+  flex-shrink: 0;
+}
 /* The repeat-after-me card (1:2570 / 511:8840): 333 wide, r16, 423 tall. The
    header row is 285 wide at 24 in, the glyph lands 77 below the card top. */
 .lspk {
@@ -17482,14 +17558,25 @@ textarea.input {
   -webkit-mask-size: 18px 13.5px;
   mask-size: 18px 13.5px;
 }
+/* Everything between the title row and 다시하기. */
+.lspk__scroll {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
 .lspk__sentence-row {
   display: grid;
-  grid-template-columns: 18px 1fr 18px;
+  /* minmax(0, …): a plain 1fr would never shrink below the sentence's
+     longest unbreakable run and push the arrows out of the card. */
+  grid-template-columns: 18px minmax(0, 1fr) 18px;
   align-items: center;
   width: 100%;
   margin-top: 7px;
 }
-/* Bold 36 in Brand 2; blue once perfect, red when it needs another go. */
+/* Bold 36 in Brand 2; blue once perfect, red when it needs another go.
+   Korean wraps between words (keep-all); a word too long for a line still
+   breaks rather than running out of the card. */
 .lspk__korean {
   margin: 0;
   font-size: 36px;
@@ -17499,6 +17586,22 @@ textarea.input {
   text-align: center;
   color: #5ecece;
   word-break: keep-all;
+  overflow-wrap: break-word;
+}
+/* Longer sentences step down (koreanSize) so they stay a few lines tall. */
+.lspk__korean--md {
+  font-size: 28px;
+  line-height: 1.35;
+}
+.lspk__korean--sm {
+  font-size: 22px;
+  line-height: 1.4;
+  letter-spacing: -0.3px;
+}
+.lspk__korean--xs {
+  font-size: 18px;
+  line-height: 1.45;
+  letter-spacing: -0.2px;
 }
 .lspk--correct .lspk__korean {
   color: #547cf1;
@@ -17531,12 +17634,20 @@ textarea.input {
   line-height: 2.33;
   letter-spacing: -0.16px;
   color: var(--gray-4);
+  text-align: center;
+  overflow-wrap: break-word;
+}
+/* Once the romanization wraps, 2.33 spreads its lines far apart. */
+.lspk__sentence-row:has(.lspk__korean--sm, .lspk__korean--xs) + .lspk__roman {
+  line-height: 1.6;
+  margin-top: 6px;
 }
 .lspk__trans {
   margin: 4px 0 0;
   font: var(--t-h8);
   color: var(--gray-7);
   text-align: center;
+  overflow-wrap: break-word;
 }
 /* 다시하기 (1:2661): Gray 1 on a Gray 3 hairline, r36, 8/16, shadow 0 4 2. */
 .lspk__retry {

@@ -3,9 +3,10 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
-const { lecture, lecturePlay, progress, completeLecture, checkpointInteraction, recordActivity, summary } = vi.hoisted(() => ({
+const { lecture, lecturePlay, lectureVideo, progress, completeLecture, checkpointInteraction, recordActivity, summary } = vi.hoisted(() => ({
   lecture: vi.fn(),
   lecturePlay: vi.fn(),
+  lectureVideo: vi.fn(),
   progress: vi.fn(),
   completeLecture: vi.fn(),
   checkpointInteraction: vi.fn(),
@@ -13,7 +14,7 @@ const { lecture, lecturePlay, progress, completeLecture, checkpointInteraction, 
   summary: vi.fn(),
 }));
 vi.mock("../api/endpoints", () => ({
-  learnApi: { lecture, lecturePlay, progress, completeLecture, checkpointInteraction, recordActivity },
+  learnApi: { lecture, lecturePlay, lectureVideo, progress, completeLecture, checkpointInteraction, recordActivity },
   dashboardApi: { summary },
   aiApi: {},
   quizApi: { attempt: vi.fn(), bookmark: vi.fn(), unbookmark: vi.fn() },
@@ -98,6 +99,7 @@ function playTo(video: HTMLVideoElement, seconds: number) {
 beforeEach(() => {
   vi.clearAllMocks();
   lecturePlay.mockResolvedValue({ video: { url: "http://x/v.mp4", duration_seconds: 300, captions_url: null } });
+  lectureVideo.mockResolvedValue({ lecture_id: "L1", video_url: "http://x/v.mp4", expires_at: "2026-10-06T12:00:00Z" });
   progress.mockResolvedValue({ position_seconds: 0, max_watched_seconds: 0, completed: false });
   completeLecture.mockResolvedValue({ lecture_id: "L1", completed: true, already_completed: false, xp_earned: 15, points_earned: 100 });
   recordActivity.mockResolvedValue({});
@@ -398,6 +400,31 @@ describe("Lecture player", () => {
     expect((container.querySelector(".lecp") as HTMLElement).dataset.controls).toBe("hidden");
     fireEvent.error(video!);
     expect((container.querySelector(".lecp") as HTMLElement).dataset.controls).toBe("shown");
+  });
+
+  it("swaps in a fresh URL when the stream stops, and carries on from the same second", async () => {
+    // The signed URL runs out mid-watch: the player asks for a new one and
+    // picks up where the learner was, instead of a dead video.
+    lecture.mockResolvedValue(detail({ last_position_seconds: 5, completed: false }));
+    lectureVideo.mockResolvedValue({ lecture_id: "L1", video_url: "http://x/fresh.mp4", expires_at: "2026-10-06T12:00:00Z" });
+    const { container } = renderLecture();
+    const video = await loadedVideo(container);
+    playTo(video, 42);
+    fireEvent.error(video);
+    await waitFor(() => expect(video.getAttribute("src")).toBe("http://x/fresh.mp4"));
+    expect(lectureVideo).toHaveBeenCalledWith("L1");
+    video.currentTime = 0; // a new source starts at the top
+    fireEvent.loadedMetadata(video);
+    expect(video.currentTime).toBe(42);
+  });
+
+  it("stops asking for fresh URLs when the stream keeps failing", async () => {
+    lecture.mockResolvedValue(detail(null));
+    lectureVideo.mockResolvedValue({ lecture_id: "L1", video_url: "http://x/v.mp4", expires_at: "2026-10-06T12:00:00Z" });
+    const { container } = renderLecture();
+    const video = await loadedVideo(container);
+    for (let i = 0; i < 6; i++) fireEvent.error(video);
+    await waitFor(() => expect(lectureVideo).toHaveBeenCalledTimes(3));
   });
 
   it("keeps the controls up while there is no video to watch, so close is reachable", async () => {

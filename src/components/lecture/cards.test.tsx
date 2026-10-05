@@ -8,7 +8,10 @@ const { attempt, speechAttempt, recorder } = vi.hoisted(() => ({
     start: vi.fn(() => Promise.resolve()),
     stop: vi.fn(),
     recording: false,
-    options: null as null | { onRecorded: (b: Blob) => Promise<void> | void; onUnavailable: () => void },
+    options: null as null | {
+      onRecorded: (b: Blob, take: { filename: string; durationMs: number }) => Promise<void> | void;
+      onUnavailable: () => void;
+    },
   },
 }));
 vi.mock("../../api/endpoints", () => ({
@@ -24,6 +27,7 @@ vi.mock("../../hooks/useVoiceRecorder", () => ({
 }));
 
 import { I18nProvider } from "../../i18n";
+import { ApiError } from "../../lib/http";
 import { QuestionCard } from "./QuestionCard";
 import { SpeakingCard, koreanSize, listenWindowMs } from "./SpeakingCard";
 import type { Quiz, Sentence } from "../../lib/types";
@@ -70,6 +74,8 @@ describe("QuestionCard", () => {
   });
 });
 
+const TAKE = { filename: "attempt.m4a", durationMs: 1800 };
+
 describe("SpeakingCard", () => {
   it("listens as soon as it shows and turns blue on a good take", async () => {
     const onOutcome = vi.fn();
@@ -79,12 +85,25 @@ describe("SpeakingCard", () => {
     expect(screen.getByText("따라해보세요!")).toBeInTheDocument();
     await waitFor(() => expect(recorder.start).toHaveBeenCalled());
     await act(async () => {
-      await recorder.options!.onRecorded(new Blob(["x"]));
+      await recorder.options!.onRecorded(new Blob(["x"]), TAKE);
     });
 
-    expect(speechAttempt).toHaveBeenCalledWith("s1", expect.any(Blob), "attempt.webm", "lecture");
+    expect(speechAttempt).toHaveBeenCalledWith("s1", expect.any(Blob), TAKE, "lecture");
     expect(screen.getByText("완벽해요!")).toBeInTheDocument();
     expect(onOutcome).toHaveBeenLastCalledWith("correct");
+  });
+
+  it("does not count a silent take as wrong", async () => {
+    const onOutcome = vi.fn();
+    speechAttempt.mockRejectedValue(new ApiError(422, "speech.no_speech", "Nothing was heard."));
+    ko(<SpeakingCard sentence={SENTENCE} onOutcome={onOutcome} onMicDeclined={vi.fn()} />);
+    await waitFor(() => expect(recorder.start).toHaveBeenCalled());
+    await act(async () => {
+      await recorder.options!.onRecorded(new Blob(["x"]), TAKE);
+    });
+
+    expect(onOutcome).not.toHaveBeenCalledWith("wrong");
+    expect(screen.queryByText("다시 한 번 말해보세요!")).not.toBeInTheDocument();
   });
 
   it("asks for the microphone when it cannot be used, and lets the learner decline", async () => {
@@ -103,7 +122,7 @@ describe("SpeakingCard", () => {
     ko(<SpeakingCard sentence={SENTENCE} onMicDeclined={vi.fn()} />);
     await waitFor(() => expect(recorder.start).toHaveBeenCalledTimes(1));
     await act(async () => {
-      await recorder.options!.onRecorded(new Blob(["x"]));
+      await recorder.options!.onRecorded(new Blob(["x"]), TAKE);
     });
     expect(screen.getByText("다시 한 번 말해보세요!")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /다시하기/ }));

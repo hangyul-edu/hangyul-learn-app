@@ -1065,6 +1065,13 @@ export const ko = {
     server: "일시적인 서버 오류예요. 잠시 후 다시 시도해 주세요.",
   },
 
+  /** A recording that could not be graded; nothing was counted, so the learner just records again. */
+  speechError: {
+    noSpeech: "목소리가 들리지 않았어요. 마이크 가까이에서 조금 더 크게 말해 주세요.",
+    unsupportedAudio: "녹음을 읽을 수 없었어요. 다시 녹음해 주세요.",
+    tooLong: "녹음이 너무 길어요. 15초 안에 말해 주세요.",
+  },
+
   /** Password rules shown under the field. */
   validation: {
     passwordLength: "8~64자로 입력해 주세요.",

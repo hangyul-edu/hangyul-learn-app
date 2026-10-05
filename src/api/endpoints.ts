@@ -2,6 +2,7 @@ import { http } from "../lib/http";
 import { API_BASE_URL } from "../lib/config";
 import { randomUuid } from "../lib/uuid";
 import { deviceTimeZone } from "../lib/timezone";
+import { recordingFilename, type RecordingInfo } from "../lib/recording";
 import type {
   AppSettings,
   AttendanceCheckIn,
@@ -168,9 +169,10 @@ export const sentenceApi = {
   audio: (id: string) => http.get<{ url: string }>(`/sentences/${id}/audio`),
   bookmark: (id: string) => http.post<unknown>(`/sentences/${id}/bookmark`),
   unbookmark: (id: string) => http.del<void>(`/sentences/${id}/bookmark`),
-  speechAttempt: (id: string, audio: Blob, filename: string, source = "custom", reviewSessionId?: string) => {
+  speechAttempt: (id: string, audio: Blob, take: RecordingInfo, source = "custom", reviewSessionId?: string) => {
     const fd = new FormData();
-    fd.append("audio", audio, filename);
+    fd.append("audio", audio, take.filename);
+    fd.append("duration_ms", String(take.durationMs));
     fd.append("source", source);
     // Ties a review attempt to its session so points are awarded once per
     // session (a restart re-answers without re-awarding).
@@ -181,12 +183,21 @@ export const sentenceApi = {
   // grades authoritatively; clientRequestId makes retries idempotent.
   blankAttempt: (
     id: string,
-    opts: { inputMode: "voice" | "keyboard"; answerText?: string; audio?: Blob; clientRequestId?: string; source?: string; reviewSessionId?: string },
+    opts: {
+      inputMode: "voice" | "keyboard";
+      answerText?: string;
+      audio?: Blob;
+      take?: RecordingInfo;
+      clientRequestId?: string;
+      source?: string;
+      reviewSessionId?: string;
+    },
   ) => {
     const fd = new FormData();
     fd.append("input_mode", opts.inputMode);
     if (opts.answerText != null) fd.append("answer_text", opts.answerText);
-    if (opts.audio) fd.append("audio", opts.audio, "attempt.webm");
+    if (opts.audio) fd.append("audio", opts.audio, opts.take?.filename ?? recordingFilename(opts.audio.type));
+    if (opts.take) fd.append("duration_ms", String(opts.take.durationMs));
     if (opts.clientRequestId) fd.append("client_request_id", opts.clientRequestId);
     fd.append("source", opts.source ?? "custom");
     // See speechAttempt: award review points once per session, not per restart.
@@ -260,6 +271,9 @@ export const learnApi = {
   lecturePlay: (lectureId: string) =>
     http.get<{ video: { url: string; duration_seconds: number; captions_url: string | null } }>(`/lectures/${lectureId}/play`),
   /** The full sentence / question behind a checkpoint, fetched when playback reaches it. */
+  /** A fresh signed playback URL only — for when the one from `lecturePlay` ran out mid-watch. */
+  lectureVideo: (lectureId: string) =>
+    http.get<{ lecture_id: string; video_url: string; expires_at: string }>(`/lectures/${lectureId}/video`),
   checkpointInteraction: (lectureId: string, checkpointId: string) =>
     http.get<CheckpointInteraction>(`/lectures/${lectureId}/checkpoints/${checkpointId}/interaction`),
   /** Mark a fully watched lecture complete: +100 points the first time (409 if not watched through). */
@@ -325,9 +339,10 @@ export const studyApi = {
     http.post<void>(`/study-sessions/${sessionId}/activities/${activityId}/present`),
   attempt: (sessionId: string, activityId: string, body: { answer: string; client_request_id: string; duration_ms?: number }) =>
     http.post<StudyAttemptResult>(`/study-sessions/${sessionId}/activities/${activityId}/attempts`, body),
-  voiceAttempt: (sessionId: string, activityId: string, audio: Blob, clientRequestId: string) => {
+  voiceAttempt: (sessionId: string, activityId: string, audio: Blob, take: RecordingInfo, clientRequestId: string) => {
     const fd = new FormData();
-    fd.append("audio", audio, "attempt.webm");
+    fd.append("audio", audio, take.filename);
+    fd.append("duration_ms", String(take.durationMs));
     fd.append("client_request_id", clientRequestId);
     return http.upload<StudyAttemptResult>(`/study-sessions/${sessionId}/activities/${activityId}/voice-attempts`, fd);
   },

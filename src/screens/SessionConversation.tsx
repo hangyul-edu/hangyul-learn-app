@@ -29,6 +29,7 @@ import { useToast } from "../hooks/toast";
 import { useRecordDisplayedItem } from "../hooks/learningActivity";
 import { useVoiceRecorder } from "../hooks/useVoiceRecorder";
 import { errorMessage } from "../lib/http";
+import { needsRetake, speechErrorMessage, type RecordingInfo } from "../lib/recording";
 import { randomUuid } from "../lib/uuid";
 import {
   useSessionConversationCopy,
@@ -178,9 +179,9 @@ export function SessionConversation() {
   // always graded against the item the learner was actually reading.
   const recordingForRef = useRef<Sentence | null>(null);
   const recorder = useVoiceRecorder({
-    onRecorded: (audio) => {
+    onRecorded: (audio, take) => {
       const sentence = recordingForRef.current;
-      if (sentence) void gradeRecording(sentence, audio);
+      if (sentence) void gradeRecording(sentence, audio, take);
     },
     onUnavailable: () => toast.error(copy.micPermission),
   });
@@ -611,7 +612,7 @@ export function SessionConversation() {
   // Grade one recorded take of the current sentence. Voice fill-in-the-blank
   // accepts the missing phrase OR the full completed sentence; a sentence with
   // no blank is scored as a plain speech attempt.
-  async function gradeRecording(sentence: Sentence, audio: Blob) {
+  async function gradeRecording(sentence: Sentence, audio: Blob, take: RecordingInfo) {
     if (isStudyItem(sentence) && study) {
       // A closed activity takes no more graded answers; practice is typed.
       if (closed.has(sentence.sentence_id)) {
@@ -625,11 +626,15 @@ export function SessionConversation() {
           study.sessionId,
           sentence.activity_id,
           audio,
+          take,
           (reqIdRef.current ??= newRequestId()),
         );
         if (seq === attemptSeq.current) onStudyResult(res, sentence, "voice", res.transcription ?? "");
       } catch (e) {
-        if (seq === attemptSeq.current && !recoverStudy(e)) toast.error(copy.retryMessage);
+        if (seq === attemptSeq.current && !recoverStudy(e)) {
+          // Silence / an unreadable take was not graded: say why, record again.
+          toast.error(needsRetake(e) ? speechErrorMessage(e) : copy.retryMessage);
+        }
       } finally {
         setScoring(false);
       }
@@ -643,6 +648,7 @@ export function SessionConversation() {
             await sentenceApi.blankAttempt(sentence.sentence_id, {
               inputMode: "voice",
               audio,
+              take,
               clientRequestId: (reqIdRef.current ??= newRequestId()),
               source: attemptSource,
               reviewSessionId: isReview ? reviewSessionIdRef.current : undefined,
@@ -651,16 +657,17 @@ export function SessionConversation() {
         : await sentenceApi.speechAttempt(
             sentence.sentence_id,
             audio,
-            "attempt.webm",
+            take,
             attemptSource,
             isReview ? reviewSessionIdRef.current : undefined,
           );
       // Ignore a late reply superseded by a mode switch / newer attempt.
       if (seq === attemptSeq.current) record(attempt, sentence, "voice");
-    } catch {
+    } catch (e) {
       // A technical failure is not a wrong answer: keep the item and show a
-      // localized retryable message, never the raw provider error.
-      if (seq === attemptSeq.current) toast.error(copy.retryMessage);
+      // localized retryable message, never the raw provider error. Silence or
+      // an unreadable take gets its own line, so the learner knows to retake.
+      if (seq === attemptSeq.current) toast.error(needsRetake(e) ? speechErrorMessage(e) : copy.retryMessage);
     } finally {
       setScoring(false);
     }

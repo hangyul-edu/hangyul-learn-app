@@ -8,6 +8,7 @@ import { recApi, sentenceApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { useRecordDisplayedItem } from "../hooks/learningActivity";
 import { errorMessage } from "../lib/http";
+import { playOn, unlockedAudio } from "../lib/unlockedAudio";
 import type { RecQuota, Sentence } from "../lib/types";
 
 export function Recommendations() {
@@ -36,9 +37,11 @@ export function Recommendations() {
     }
   }
   async function play(id: string) {
+    // Unlocked inside the tap, before the URL fetch (iOS).
+    const audio = unlockedAudio();
     try {
       const { url } = await sentenceApi.audio(id);
-      await new Audio(url).play();
+      await playOn(audio, url);
     } catch (e) {
       toast.error(errorMessage(e));
     }

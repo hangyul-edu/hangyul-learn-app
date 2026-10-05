@@ -4,6 +4,7 @@ import { sentenceApi } from "../../api/endpoints";
 import { useToast } from "../../hooks/toast";
 import { useVoiceRecorder } from "../../hooks/useVoiceRecorder";
 import { errorMessage } from "../../lib/http";
+import { needsRetake, speechErrorMessage } from "../../lib/recording";
 import { SaveBookmarkButton } from "../SaveBookmarkButton";
 import type { Sentence } from "../../lib/types";
 import { Button } from "../ui/kit";
@@ -11,6 +12,7 @@ import icSpeaker from "../../assets/brand/ic-speaker-pill.svg";
 import icAlert from "../../assets/brand/ic-24-alert.svg";
 import icRetry from "../../assets/brand/ic-24-retry.svg";
 import icChevron from "../../assets/brand/ic-card-chevron.svg";
+import { playOn, unlockedAudio } from "../../lib/unlockedAudio";
 
 export type SpeakingOutcome = "prompt" | "correct" | "wrong";
 
@@ -83,7 +85,7 @@ export function SpeakingCard({
   }, []);
 
   const recorder = useVoiceRecorder({
-    onRecorded: async (audio) => {
+    onRecorded: async (audio, recording) => {
       if (discardRef.current) {
         discardRef.current = false;
         return;
@@ -91,11 +93,12 @@ export function SpeakingCard({
       setScoring(true);
       try {
         const take = sentenceRef.current;
-        const attempt = await sentenceApi.speechAttempt(take.sentence_id, audio, "attempt.webm", "lecture");
+        const attempt = await sentenceApi.speechAttempt(take.sentence_id, audio, recording, "lecture");
         if (take.sentence_id === sentenceRef.current.sentence_id) settle(attempt.correct ? "correct" : "wrong");
       } catch (e) {
-        toast.error(errorMessage(e));
-        settle("wrong");
+        toast.error(speechErrorMessage(e));
+        // Silence or an unreadable take was not graded: let them record again.
+        if (!needsRetake(e)) settle("wrong");
       } finally {
         setScoring(false);
       }
@@ -134,15 +137,16 @@ export function SpeakingCard({
       clearTimer();
       recorderRef.current.stop();
     }
+    // Unlocked inside the tap, before the URL fetch (iOS).
+    const audio = unlockedAudio();
     try {
       const { url } = await sentenceApi.audio(sentence.sentence_id);
       audioRef.current?.pause();
-      const audio = new Audio(url);
       audioRef.current = audio;
       audio.onended = () => {
         if (outcome === "prompt") void listen();
       };
-      await audio.play();
+      await playOn(audio, url);
     } catch (e) {
       toast.error(errorMessage(e));
     }

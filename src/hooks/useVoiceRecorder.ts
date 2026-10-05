@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { MAX_RECORDING_MS, pickRecordingMimeType, recordingFilename, type RecordingInfo } from "../lib/recording";
 
 /**
  * Microphone capture for the speaking screens.
@@ -11,8 +12,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
  *
  * A take ends in exactly one of two ways:
  *
- * * **Finished** — `stop()` was called, so the audio goes to `onRecorded` and
- *   the microphone is released.
+ * * **Finished** — `stop()` was called (or the take reached `maxDurationMs`),
+ *   so the audio goes to `onRecorded` and the microphone is released.
  * * **Abandoned** — the screen unmounted mid-take. The microphone is released
  *   just the same, but `onRecorded` never fires: nobody is left to show the
  *   result, and grading a recording the learner walked away from would credit
@@ -31,15 +32,19 @@ export type VoiceRecorder = {
 };
 
 export type VoiceRecorderOptions = {
-  onRecorded: (audio: Blob) => void | Promise<void>;
+  /**
+   * The finished take. `audio` is labelled with the format the browser really
+   * recorded (WebM, Ogg or Safari's MP4); upload it under `take.filename`.
+   */
+  onRecorded: (audio: Blob, take: RecordingInfo) => void | Promise<void>;
   /**
    * The microphone cannot be used: permission refused, no device, or the
    * recorder failed to start. All three leave the learner unable to record,
    * so they are reported the same way.
    */
   onUnavailable: () => void;
-  /** Defaults to `audio/webm`, which is what the API expects. */
-  mimeType?: string;
+  /** The take stops itself after this long (the server's limit by default). */
+  maxDurationMs?: number;
 };
 
 /** A take in progress, and the one function that ends it. */
@@ -52,7 +57,7 @@ type ActiveTake = {
 export function useVoiceRecorder({
   onRecorded,
   onUnavailable,
-  mimeType = "audio/webm",
+  maxDurationMs = MAX_RECORDING_MS,
 }: VoiceRecorderOptions): VoiceRecorder {
   const [recording, setRecording] = useState(false);
   const takeRef = useRef<ActiveTake | null>(null);
@@ -97,8 +102,10 @@ export function useVoiceRecorder({
 
     const chunks: Blob[] = [];
     let recorder: MediaRecorder;
+    let startedAt = 0;
     try {
-      recorder = new MediaRecorder(stream);
+      const preferred = pickRecordingMimeType();
+      recorder = preferred ? new MediaRecorder(stream, { mimeType: preferred }) : new MediaRecorder(stream);
       recorder.ondataavailable = (event) => {
         if (event.data.size) chunks.push(event.data);
       };
@@ -108,9 +115,17 @@ export function useVoiceRecorder({
         finished?.release();
         if (!mountedRef.current) return; // abandoned — no result to deliver
         setRecording(false);
-        void handlers.current.onRecorded(new Blob(chunks, { type: mimeType }));
+        // The recorder's own type is the truth (Safari records MP4 whatever
+        // was preferred); the chunks' type is the fallback, then WebM.
+        const type = recorder.mimeType || chunks[0]?.type || preferred || "audio/webm";
+        const durationMs = Math.max(0, Math.round(performance.now() - startedAt));
+        void handlers.current.onRecorded(new Blob(chunks, { type }), {
+          filename: recordingFilename(type),
+          durationMs,
+        });
       };
       recorder.start();
+      startedAt = performance.now();
     } catch {
       // Unsupported format, or a device that disappeared between the
       // permission grant and the first byte.
@@ -119,9 +134,13 @@ export function useVoiceRecorder({
       return;
     }
 
+    // A take the learner forgets to stop ends at the server's limit and is
+    // delivered as usual, instead of growing into an upload that is refused.
+    const autoStop = setTimeout(() => stopRecorder(recorder), maxDurationMs);
     takeRef.current = {
       recorder,
       release: releaseOnce(() => {
+        clearTimeout(autoStop);
         recorder.ondataavailable = null;
         recorder.onstop = null;
         stopRecorder(recorder);
@@ -129,7 +148,7 @@ export function useVoiceRecorder({
       }),
     };
     setRecording(true);
-  }, [mimeType]);
+  }, [maxDurationMs]);
 
   const stop = useCallback(() => {
     const take = takeRef.current;

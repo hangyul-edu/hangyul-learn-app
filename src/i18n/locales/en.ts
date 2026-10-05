@@ -1069,6 +1069,13 @@ export const en: Catalog = {
     server: "A temporary server error. Please try again shortly.",
   },
 
+  /** A recording that could not be graded; nothing was counted, so the learner just records again. */
+  speechError: {
+    noSpeech: "We couldn't hear you. Move closer to the microphone and speak a little louder.",
+    unsupportedAudio: "We couldn't read that recording. Please record again.",
+    tooLong: "That recording is too long. Please answer within 15 seconds.",
+  },
+
   /** Password rules shown under the field. */
   validation: {
     passwordLength: "Use between 8 and 64 characters.",

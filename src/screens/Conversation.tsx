@@ -10,6 +10,8 @@ import { useToast } from "../hooks/toast";
 import { useRecordDisplayedItem } from "../hooks/learningActivity";
 import { useVoiceRecorder } from "../hooks/useVoiceRecorder";
 import { errorMessage } from "../lib/http";
+import { speechErrorMessage, type RecordingInfo } from "../lib/recording";
+import { playOn, unlockedAudio } from "../lib/unlockedAudio";
 import type { Page, Sentence, SpeechAttempt } from "../lib/types";
 
 const LEVELS = [1, 2, 3, 4, 5];
@@ -28,9 +30,9 @@ export function Conversation() {
   // always graded against the item the learner was actually reading.
   const recordingForRef = useRef<Sentence | null>(null);
   const recorder = useVoiceRecorder({
-    onRecorded: (audio) => {
+    onRecorded: (audio, take) => {
       const sentence = recordingForRef.current;
-      if (sentence) void gradeRecording(sentence, audio);
+      if (sentence) void gradeRecording(sentence, audio, take);
     },
     onUnavailable: () => toast.error(t("study.micPermission")),
   });
@@ -47,9 +49,11 @@ export function Conversation() {
   useRecordDisplayedItem("conversation", cur?.sentence_id);
 
   async function playAudio(s: Sentence) {
+    // Unlocked inside the tap, before the URL fetch (iOS).
+    const audio = unlockedAudio();
     try {
       const { url } = await sentenceApi.audio(s.sentence_id);
-      await new Audio(url).play();
+      await playOn(audio, url);
     } catch (e) {
       toast.error(errorMessage(e));
     }
@@ -67,14 +71,12 @@ export function Conversation() {
     }
   }
 
-  async function gradeRecording(sentence: Sentence, audio: Blob) {
+  async function gradeRecording(sentence: Sentence, audio: Blob, take: RecordingInfo) {
     setScoring(true);
     try {
-      setResult(
-        await sentenceApi.speechAttempt(sentence.sentence_id, audio, "attempt.webm"),
-      );
+      setResult(await sentenceApi.speechAttempt(sentence.sentence_id, audio, take));
     } catch (e) {
-      toast.error(errorMessage(e));
+      toast.error(speechErrorMessage(e));
     } finally {
       setScoring(false);
     }

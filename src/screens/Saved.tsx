@@ -14,6 +14,7 @@ import svPlay from "../assets/brand/sv-play.svg";
 import icTrash from "../assets/brand/ic-trash.svg";
 import chipRepeat from "../assets/brand/chip-ic-repeat.svg";
 import chipStar from "../assets/brand/chip-ic-star.svg";
+import { playOn, unlockedAudio } from "../lib/unlockedAudio";
 
 /* ------------------------------- config -------------------------------- */
 // Shared with the review sessions so the tab a session must return to cannot
@@ -207,16 +208,17 @@ export function Saved() {
     }
     stopAudio();
     setAudioLoadingId(id);
+    // Unlocked inside the tap, before the URL fetch (iOS).
+    const a = unlockedAudio();
     try {
       const { url } = await sentenceApi.audio(id);
-      const a = new Audio(url);
       audioRef.current = a;
       a.onended = () => setPlayingId(null);
       a.onerror = () => {
         setPlayingId(null);
         toast.error(t("saved.audioError"));
       };
-      await a.play();
+      await playOn(a, url);
       setPlayingId(id);
       void sentenceApi.markViewed(id).catch(() => {});
     } catch {

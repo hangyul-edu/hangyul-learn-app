@@ -34,6 +34,9 @@ function fmt(sec: number) {
 
 /** Playback speeds the speed chip cycles through, shown as "1x", "1.25x"… */
 const SPEEDS = [1, 1.25, 1.5, 2] as const;
+/** At most this many fresh playback URLs per window before giving up on the stream. */
+const STREAM_REFRESH_LIMIT = 3;
+const STREAM_REFRESH_WINDOW_MS = 5 * 60 * 1000;
 
 /**
  * Seconds of playback between progress heartbeats. The server only counts a
@@ -91,6 +94,40 @@ export function Lecture() {
   const lastBeatRef = useRef(0);
   // The end-of-video completion is in flight (onEnded can fire twice).
   const finishingRef = useRef(false);
+  // Where to pick up after the signed URL was swapped for a fresh one, and
+  // when recent swaps happened (a stream that keeps failing is not retried
+  // forever).
+  const reloadRef = useRef<{ at: number; play: boolean } | null>(null);
+  const refreshTimesRef = useRef<number[]>([]);
+
+  /**
+   * The stream stopped mid-watch — usually its signed URL ran out. Ask for a
+   * fresh URL and carry on from the same second; the controls come up if the
+   * stream cannot be saved.
+   */
+  function refreshStream() {
+    const now = Date.now();
+    const recent = refreshTimesRef.current.filter((t) => now - t < STREAM_REFRESH_WINDOW_MS);
+    if (recent.length >= STREAM_REFRESH_LIMIT) {
+      refreshTimesRef.current = recent;
+      controls.show();
+      return;
+    }
+    refreshTimesRef.current = [...recent, now];
+    const v = videoRef.current;
+    reloadRef.current = { at: v?.currentTime ?? lastTimeRef.current, play: !!v && !v.paused };
+    learnApi
+      .lectureVideo(lectureId)
+      .then((r) => setVideoUrl(r.video_url))
+      .catch((e) => {
+        reloadRef.current = null;
+        if (e instanceof ApiError && e.status === 402) {
+          setPremiumLocked(true);
+          setVideoUrl(null);
+        }
+        controls.show();
+      });
+  }
 
   const markStudied = useMarkStudied();
 
@@ -293,6 +330,16 @@ export function Lecture() {
                   const v = e.currentTarget;
                   const total = v.duration || lecture.duration_seconds;
                   setDuration(total);
+                  // A fresh URL replaced one that ran out: same second, same
+                  // playing-or-paused state as before the swap.
+                  const reload = reloadRef.current;
+                  if (reload) {
+                    reloadRef.current = null;
+                    v.currentTime = Math.min(reload.at, total);
+                    lastTimeRef.current = v.currentTime;
+                    if (reload.play) void v.play().catch(() => setPlaying(false));
+                    return;
+                  }
                   // Resume where the learner left off (the scrubber already
                   // shows that position); a finished lecture starts over.
                   const resumeAt = lecture.my_playback?.last_position_seconds ?? 0;
@@ -314,9 +361,13 @@ export function Lecture() {
                   if (!e.currentTarget.ended) void heartbeat(e.currentTarget.currentTime);
                 }}
                 onEnded={() => void finish(lecture)}
-                // A video that cannot load never autoplays; bring the controls
+                // A stream that stopped (its signed URL ran out, or hls.js gave
+                // up) gets a fresh URL; until it plays again the controls stay
                 // up so the learner is not left on a blank screen.
-                onError={() => controls.show()}
+                onStreamError={() => {
+                  controls.show();
+                  refreshStream();
+                }}
               />
             ) : premiumLocked ? (
               <div className="lecp__gate">

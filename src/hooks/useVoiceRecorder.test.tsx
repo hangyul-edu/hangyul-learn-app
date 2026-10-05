@@ -9,6 +9,7 @@
 import { act, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useVoiceRecorder, type VoiceRecorder } from "./useVoiceRecorder";
+import type { RecordingInfo } from "../lib/recording";
 
 /** A microphone track that remembers whether it was handed back. */
 function fakeTrack() {
@@ -27,14 +28,26 @@ class FakeMediaRecorder {
   static instances: FakeMediaRecorder[] = [];
   static failOnConstruct = false;
   static failOnStart = false;
+  /** What this "browser" can record (Chrome's list by default). */
+  static supported = new Set(["audio/webm;codecs=opus", "audio/webm"]);
+  /** Safari ignores the request and records MP4 regardless. */
+  static forcedType: string | null = null;
+  static isTypeSupported(type: string) {
+    return FakeMediaRecorder.supported.has(type);
+  }
 
   ondataavailable: ((event: { data: Blob }) => void) | null = null;
   onstop: (() => void) | null = null;
   state: "inactive" | "recording" = "inactive";
   stopCalls = 0;
+  mimeType: string;
 
-  constructor(public stream: FakeStream) {
+  constructor(
+    public stream: FakeStream,
+    public options?: { mimeType?: string },
+  ) {
     if (FakeMediaRecorder.failOnConstruct) throw new Error("unsupported mimeType");
+    this.mimeType = FakeMediaRecorder.forcedType ?? options?.mimeType ?? "";
     FakeMediaRecorder.instances.push(this);
   }
 
@@ -48,7 +61,7 @@ class FakeMediaRecorder {
     this.stopCalls += 1;
     if (this.state === "inactive") throw new Error("InvalidStateError");
     this.state = "inactive";
-    this.ondataavailable?.({ data: new Blob(["audio"], { type: "audio/webm" }) });
+    this.ondataavailable?.({ data: new Blob(["audio"], { type: this.mimeType }) });
     this.onstop?.();
   }
 
@@ -61,22 +74,25 @@ let openedStreams: FakeStream[];
 let getUserMedia: ReturnType<typeof vi.fn>;
 
 function useRecorderUnderTest(handlers: {
-  onRecorded: (audio: Blob) => void;
+  onRecorded: (audio: Blob, take: RecordingInfo) => void;
   onUnavailable: () => void;
+  maxDurationMs?: number;
 }) {
   return useVoiceRecorder(handlers);
 }
 
 /** Mounts the hook and exposes its API to the test. */
 function mountRecorder(handlers: {
-  onRecorded?: (audio: Blob) => void;
+  onRecorded?: (audio: Blob, take: RecordingInfo) => void;
   onUnavailable?: () => void;
+  maxDurationMs?: number;
 } = {}) {
   const api: { current: VoiceRecorder | null } = { current: null };
   function Screen() {
     api.current = useRecorderUnderTest({
       onRecorded: handlers.onRecorded ?? vi.fn(),
       onUnavailable: handlers.onUnavailable ?? vi.fn(),
+      maxDurationMs: handlers.maxDurationMs,
     });
     return null;
   }
@@ -98,6 +114,8 @@ beforeEach(() => {
   FakeMediaRecorder.instances = [];
   FakeMediaRecorder.failOnConstruct = false;
   FakeMediaRecorder.failOnStart = false;
+  FakeMediaRecorder.supported = new Set(["audio/webm;codecs=opus", "audio/webm"]);
+  FakeMediaRecorder.forcedType = null;
   openedStreams = [];
   getUserMedia = vi.fn().mockImplementation(async () => {
     const stream = fakeStream();
@@ -303,5 +321,94 @@ describe("when the microphone cannot be used", () => {
 
     expect(onUnavailable).toHaveBeenCalledTimes(1);
     expect(onRecorded).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("the recording's format", () => {
+  it("asks Chrome for WebM/Opus and uploads it as .webm", async () => {
+    const onRecorded = vi.fn();
+    const { api } = mountRecorder({ onRecorded });
+
+    await startRecording(api);
+    await act(async () => api.current!.stop());
+
+    expect(FakeMediaRecorder.latest.options?.mimeType).toBe("audio/webm;codecs=opus");
+    const [audio, take] = onRecorded.mock.calls[0] as [Blob, RecordingInfo];
+    expect(audio.type).toBe("audio/webm;codecs=opus");
+    expect(take.filename).toBe("attempt.webm");
+    expect(take.durationMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it("falls back to Ogg/Opus on Firefox", async () => {
+    FakeMediaRecorder.supported = new Set(["audio/ogg;codecs=opus"]);
+    const onRecorded = vi.fn();
+    const { api } = mountRecorder({ onRecorded });
+
+    await startRecording(api);
+    await act(async () => api.current!.stop());
+
+    const [audio, take] = onRecorded.mock.calls[0] as [Blob, RecordingInfo];
+    expect(audio.type).toBe("audio/ogg;codecs=opus");
+    expect(take.filename).toBe("attempt.ogg");
+  });
+
+  it("labels Safari's MP4 as what it is, never .webm", async () => {
+    FakeMediaRecorder.supported = new Set(["audio/mp4"]);
+    FakeMediaRecorder.forcedType = "audio/mp4;codecs=mp4a.40.2";
+    const onRecorded = vi.fn();
+    const { api } = mountRecorder({ onRecorded });
+
+    await startRecording(api);
+    await act(async () => api.current!.stop());
+
+    const [audio, take] = onRecorded.mock.calls[0] as [Blob, RecordingInfo];
+    expect(audio.type).toBe("audio/mp4;codecs=mp4a.40.2");
+    expect(take.filename).toBe("attempt.m4a");
+  });
+});
+
+describe("a take nobody stops", () => {
+  it("ends itself at the limit and is delivered", async () => {
+    vi.useFakeTimers();
+    try {
+      const onRecorded = vi.fn();
+      const { api } = mountRecorder({ onRecorded, maxDurationMs: 15_000 });
+
+      await startRecording(api);
+      await act(async () => {
+        vi.advanceTimersByTime(14_999);
+      });
+      expect(onRecorded).not.toHaveBeenCalled();
+      await act(async () => {
+        vi.advanceTimersByTime(1);
+      });
+
+      expect(onRecorded).toHaveBeenCalledTimes(1);
+      expect(allTracksStopped()).toBe(true);
+      expect(api.current!.recording).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not fire after a take that was stopped by hand", async () => {
+    vi.useFakeTimers();
+    try {
+      const onRecorded = vi.fn();
+      const { api } = mountRecorder({ onRecorded, maxDurationMs: 1_000 });
+
+      await startRecording(api);
+      await act(async () => api.current!.stop());
+      await startRecording(api);
+      await act(async () => {
+        vi.advanceTimersByTime(999);
+      });
+
+      // The first take's timer was cleared; only the second take is running.
+      expect(onRecorded).toHaveBeenCalledTimes(1);
+      expect(api.current!.recording).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

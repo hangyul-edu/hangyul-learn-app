@@ -89,6 +89,8 @@ export function Lecture() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const lastTimeRef = useRef(0);
   const lastBeatRef = useRef(0);
+  // The end-of-video completion is in flight (onEnded can fire twice).
+  const finishingRef = useRef(false);
 
   const markStudied = useMarkStudied();
 
@@ -211,7 +213,12 @@ export function Lecture() {
   }
 
   async function finish(l: Lec) {
-    const end = duration || l.duration_seconds;
+    if (finishingRef.current) return;
+    finishingRef.current = true;
+    // The video ended: report the lesson's full stored length. The element's
+    // own duration, floored to whole seconds, can sit a second short of a
+    // length that was rounded up when it was stored.
+    const end = Math.max(duration || 0, l.duration_seconds);
     await heartbeat(end);
     try {
       const done = await learnApi.completeLecture(lectureId);
@@ -223,6 +230,8 @@ export function Lecture() {
     } catch (e) {
       // 409: skipped through rather than watched — nothing to celebrate.
       if (!(e instanceof ApiError && e.status === 409)) toast.error(errorMessage(e));
+    } finally {
+      finishingRef.current = false;
     }
   }
 
@@ -241,7 +250,15 @@ export function Lecture() {
   }
 
   function requestClose() {
-    if (q.data?.my_playback?.completed || finished || !q.data) {
+    // Just finished: the end-of-video request is on its way and its result
+    // (COU-009, then the reward) appears in a moment — not a "quit?" prompt.
+    if (finishingRef.current) return;
+    // Finished this time: leave the way 계속하기 does, carrying the reward.
+    if (finished) {
+      continueAfterEnd();
+      return;
+    }
+    if (q.data?.my_playback?.completed || !q.data) {
       leave();
       return;
     }

@@ -151,6 +151,38 @@ describe("Lecture player", () => {
     expect(await screen.findByTestId("course")).toHaveTextContent('{"rewardPoints":100}');
   });
 
+  it("reports the lesson's full length at the end even when the video's own length is a fraction short", async () => {
+    // A 299.6 s video stored as 300 s: the floored element duration would
+    // leave the server one second short of "watched in full".
+    lecture.mockResolvedValue(detail(null));
+    const { container } = renderLecture();
+    const video = await loadedVideo(container);
+    Object.defineProperty(video, "duration", { configurable: true, value: 299.6 });
+    fireEvent.ended(video);
+    await waitFor(() => expect(completeLecture).toHaveBeenCalledWith("L1"));
+    expect(progress).toHaveBeenCalledWith("L1", 300);
+  });
+
+  it("reports the end once even if the video says it ended twice", async () => {
+    lecture.mockResolvedValue(detail(null));
+    const { container } = renderLecture();
+    const video = await loadedVideo(container);
+    fireEvent.ended(video);
+    fireEvent.ended(video);
+    expect(await screen.findByText("끝까지 다 봤어요 👏")).toBeInTheDocument();
+    expect(completeLecture).toHaveBeenCalledTimes(1);
+  });
+
+  it("exiting with ✕ after finishing still carries the reward to the series page", async () => {
+    lecture.mockResolvedValue(detail(null));
+    const { container } = renderLecture();
+    const video = await loadedVideo(container);
+    fireEvent.ended(video);
+    await screen.findByText("끝까지 다 봤어요 👏");
+    fireEvent.click(screen.getByRole("button", { name: "닫기", hidden: true }));
+    expect(await screen.findByTestId("course")).toHaveTextContent('{"rewardPoints":100}');
+  });
+
   it("pauses at a checkpoint and opens its question, then resumes after 다음", async () => {
     lecture.mockResolvedValue(
       detail(null, { checkpoints: [{ checkpoint_id: "cp1", interaction_type: "multiple_choice", at_second: 10 }] }),

@@ -97,8 +97,8 @@ describe("LectureHome — courses and their series (COU-001)", () => {
     ]);
     // Each series shows its own key art.
     expect(first.querySelector(".lechome__thumb-img")).toHaveAttribute("src", "http://x/S1.png");
-    // Called without a track filter for the "전체" default.
-    expect(courses).toHaveBeenCalledWith(undefined);
+    // Called without a track filter for the "전체" default, in the app's language.
+    expect(courses).toHaveBeenCalledWith(undefined, "ko");
   });
 
   it("opens a series' lesson list", async () => {
@@ -130,7 +130,7 @@ describe("LectureHome — courses and their series (COU-001)", () => {
     await screen.findByLabelText(/KOREAN SURVIVAL KIT/);
     courses.mockResolvedValue(page([CATALOG.items[1]]));
     await userEvent.click(screen.getByRole("tab", { name: "토픽" }));
-    await waitFor(() => expect(courses).toHaveBeenLastCalledWith("track_topik"));
+    await waitFor(() => expect(courses).toHaveBeenLastCalledWith("track_topik", "ko"));
     expect(await screen.findByLabelText(/TOPIK 듣기/)).toBeInTheDocument();
     expect(screen.queryByLabelText(/KOREAN SURVIVAL KIT/)).toBeNull();
   });

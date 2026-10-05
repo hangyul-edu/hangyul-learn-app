@@ -166,7 +166,7 @@ describe("SeriesPage", () => {
     api.series.mockResolvedValue(series([lesson("L1", "track_conversation")], { lecture_id: "L1", position_seconds: 0 }));
     renderAt("/courses/C1");
     expect(await screen.findByRole("img", { name: "KOREAN SURVIVAL KIT" })).toBeInTheDocument();
-    expect(api.series).toHaveBeenCalledWith("S1");
+    expect(api.series).toHaveBeenCalledWith("S1", "ko");
   });
 
   it("shows the watch-complete reward the player handed back (COU-021)", async () => {

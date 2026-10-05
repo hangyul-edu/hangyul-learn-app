@@ -24,7 +24,7 @@ import { errorMessage } from "../lib/http";
  * first (511:9565).
  */
 export function SpeakPractice() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { lectureId = "" } = useParams();
   const nav = useNavigate();
   const [idx, setIdx] = useState(0);
@@ -32,7 +32,7 @@ export function SpeakPractice() {
   const [quitOpen, setQuitOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
 
-  const lecture = useQuery({ queryKey: ["lecture", lectureId], queryFn: () => learnApi.lecture(lectureId) });
+  const lecture = useQuery({ queryKey: ["lecture", lectureId, language], queryFn: () => learnApi.lecture(lectureId, language) });
   const items = useQuery({ queryKey: ["speak-practice", lectureId], queryFn: () => learnApi.speakPractice(lectureId) });
   const sentenceId = items.data?.items[idx]?.sentence_id;
   const sentence = useQuery({

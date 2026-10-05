@@ -296,6 +296,8 @@ export interface Lecture {
   course_id: string | null;
   /** The series it belongs to — where the player returns after the lesson. */
   series_id?: string | null;
+  /** In the requested app language where the admin wrote one, else Korean. */
+  description?: string;
   title: string;
   /** Always `video`: practice is attached to a lecture as checkpoints. */
   kind: "video";

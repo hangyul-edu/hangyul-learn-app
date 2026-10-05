@@ -239,21 +239,24 @@ export const learnApi = {
    *  points — creates the "학습 완료! +Np 적립" notification. */
   recordSession: (body: { session_type: "sentence" | "review" | "lecture"; duration_seconds: number; category?: "conversation" | "topik"; lecture_id?: string }) =>
     http.post<SessionFinalizeResult>("/learning/sessions", body),
-  course: (courseId: string) => http.get<Course>(`/courses/${courseId}`),
+  // Catalog reads take the app language as `lang`: course, series and lesson
+  // titles/descriptions come back in it where the admin wrote it, else Korean.
+  course: (courseId: string, lang?: string) => http.get<Course>(`/courses/${courseId}`, { lang }),
   /** Courses for the Classes tab (COU-001), each with its series as cards.
    *  The tab shows series, not lessons, so one preview lesson is plenty. */
-  courses: (track?: "track_conversation" | "track_topik") =>
+  courses: (track?: "track_conversation" | "track_topik", lang?: string) =>
     http.get<{ items: Course[]; next_cursor: string | null; has_more: boolean }>("/courses", {
       track,
+      lang,
       limit: 50,
       lessons_per_course: 1,
     }),
   /** One series' lessons and its 바로 학습하기 target (COU-002). */
-  series: (seriesId: string) => http.get<SeriesDetail>(`/series/${seriesId}`),
+  series: (seriesId: string, lang?: string) => http.get<SeriesDetail>(`/series/${seriesId}`, { lang }),
   /** Unified lecture catalog — both tracks; pass `track` to filter. */
-  lectures: (track?: "track_conversation" | "track_topik") =>
-    http.get<{ items: Lecture[] }>("/lectures", { track }),
-  lecture: (lectureId: string) => http.get<LectureDetail>(`/lectures/${lectureId}`),
+  lectures: (track?: "track_conversation" | "track_topik", lang?: string) =>
+    http.get<{ items: Lecture[] }>("/lectures", { track, lang }),
+  lecture: (lectureId: string, lang?: string) => http.get<LectureDetail>(`/lectures/${lectureId}`, { lang }),
   lecturePlay: (lectureId: string) =>
     http.get<{ video: { url: string; duration_seconds: number; captions_url: string | null } }>(`/lectures/${lectureId}/play`),
   /** The full sentence / question behind a checkpoint, fetched when playback reaches it. */

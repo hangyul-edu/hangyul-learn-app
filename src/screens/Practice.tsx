@@ -27,7 +27,7 @@ import type { Quiz } from "../lib/types";
  * question) and 완료. Leaving early asks first (511:9565).
  */
 export function Practice() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { lectureId = "" } = useParams();
   const nav = useNavigate();
   const toast = useToast();
@@ -46,8 +46,8 @@ export function Practice() {
   // COU-018's nav carries the lesson name; the practice payload does not include
   // it, so it comes from the lecture the practice set belongs to.
   const lecture = useQuery({
-    queryKey: ["lecture", lectureId],
-    queryFn: () => learnApi.lecture(lectureId),
+    queryKey: ["lecture", lectureId, language],
+    queryFn: () => learnApi.lecture(lectureId, language),
     enabled: !!lectureId,
   });
 

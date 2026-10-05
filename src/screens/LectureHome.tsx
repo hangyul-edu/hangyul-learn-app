@@ -165,7 +165,7 @@ function CourseSection({ course, isPremium }: { course: Course; isPremium: boole
 
 /* ------------------------------ Screen --------------------------------- */
 export function LectureHome() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const nav = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
   const [filter, setFilter] = useState<TrackFilter>("all");
@@ -182,7 +182,7 @@ export function LectureHome() {
   // sits in a series, so nothing is left out. The track filter is a
   // server-side query param.
   const track = filter === "all" ? undefined : filter;
-  const catalog = useQuery({ queryKey: ["courses", filter], queryFn: () => learnApi.courses(track) });
+  const catalog = useQuery({ queryKey: ["courses", filter, language], queryFn: () => learnApi.courses(track, language) });
   const courses = useMemo(
     () => (catalog.data?.items ?? []).filter((course) => (course.series ?? []).length > 0),
     [catalog.data],

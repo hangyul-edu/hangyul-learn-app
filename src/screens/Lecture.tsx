@@ -57,7 +57,7 @@ export type CourseRewardState = { rewardPoints?: number };
  * 계속하기 returns to the course, which shows the +100P reward (COU-021).
  */
 export function Lecture() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { lectureId = "" } = useParams();
   const nav = useNavigate();
   const toast = useToast();
@@ -92,7 +92,7 @@ export function Lecture() {
 
   const markStudied = useMarkStudied();
 
-  const q = useQuery({ queryKey: ["lecture", lectureId], queryFn: () => learnApi.lecture(lectureId) });
+  const q = useQuery({ queryKey: ["lecture", lectureId, language], queryFn: () => learnApi.lecture(lectureId, language) });
   // Only to pick the quit confirm's wording: "goal already met" vs "a bit left".
   const dashboard = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary, enabled: quitOpen });
 

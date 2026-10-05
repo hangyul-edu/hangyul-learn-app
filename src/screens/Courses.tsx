@@ -71,6 +71,7 @@ function LessonRow({ lesson, onOpen, onPractice }: { lesson: Lecture; onOpen: ()
  */
 export function CourseRedirect() {
   const { courseId = "" } = useParams();
+  // Only the first series' id is used, so no language is needed here.
   const q = useQuery({ queryKey: ["course", courseId], queryFn: () => learnApi.course(courseId), retry: false });
   if (q.isLoading) return <div className="screen cdet" aria-busy="true" />;
   const first = q.data?.series?.[0];
@@ -78,13 +79,17 @@ export function CourseRedirect() {
 }
 
 export function SeriesPage() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { seriesId = "" } = useParams();
   const nav = useNavigate();
   const location = useLocation();
   // Never stale, so it refetches on every visit: coming back from a lesson
   // must move 바로 학습하기 to where the learner just stopped.
-  const q = useQuery({ queryKey: ["series", seriesId], queryFn: () => learnApi.series(seriesId), staleTime: 0 });
+  const q = useQuery({
+    queryKey: ["series", seriesId, language],
+    queryFn: () => learnApi.series(seriesId, language),
+    staleTime: 0,
+  });
   // COU-021: the player hands back the points a just-finished lecture paid.
   const [reward, setReward] = useState(() => (location.state as CourseRewardState | null)?.rewardPoints ?? 0);
 

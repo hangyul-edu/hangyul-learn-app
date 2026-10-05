@@ -2,19 +2,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 /* -------------------------------- mocks --------------------------------- */
-const { banners, summary, lectures, courses } = vi.hoisted(() => ({
+const { banners, summary, courses } = vi.hoisted(() => ({
   banners: vi.fn(),
   summary: vi.fn(),
-  lectures: vi.fn(),
   courses: vi.fn(),
 }));
 vi.mock("../api/endpoints", () => ({
   bannerApi: { list: banners },
   dashboardApi: { summary },
-  learnApi: { lectures, courses },
+  learnApi: { courses },
 }));
 
 import { LectureHome } from "./LectureHome";
@@ -27,116 +26,143 @@ const banner = (id: string) => ({
   action_url: null,
   sort_order: 0,
 });
-const lecture = (
-  id: string,
-  track = "track_conversation",
-  extra: Record<string, unknown> = {},
-) => ({
-  lecture_id: id,
-  track_id: track,
-  course_id: null,
-  title: `Lecture ${id}`,
-  kind: "video",
-  duration_seconds: 300,
-  thumbnail_url: null,
-  topik_question_type: null,
-  completed: false,
+const series = (id: string, extra: Record<string, unknown> = {}) => ({
+  series_id: id,
+  course_id: "C1",
+  title: `Series ${id}`,
+  description: "",
+  thumbnail_url: `http://x/${id}.png`,
+  lesson_count: 3,
+  completed_lesson_count: 0,
   started: false,
-  access: "free",
+  has_free_lesson: true,
   ...extra,
 });
-const feed = (items: unknown[]) => ({ items });
+const course = (id: string, title: string, track: string, items: ReturnType<typeof series>[]) => ({
+  course_id: id,
+  track_id: track,
+  title,
+  description: null,
+  cover_image_url: null,
+  lesson_count: items.reduce((n, s) => n + s.lesson_count, 0),
+  completed_lesson_count: 0,
+  series: items,
+});
+const page = (items: unknown[]) => ({ items, next_cursor: null, has_more: false });
+
+const CATALOG = page([
+  course("C1", "Speak Korean Instantly", "track_conversation", [
+    series("S1", { title: "KOREAN SURVIVAL KIT" }),
+    series("S2", { title: "KOREAN ICEBREAKER KIT" }),
+  ]),
+  course("C2", "TOPIK 1급 입문", "track_topik", [series("S3", { course_id: "C2", title: "TOPIK 듣기" })]),
+]);
+
+function Where() {
+  return <div data-testid="where">{useLocation().pathname}</div>;
+}
 
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <I18nProvider language="ko">
       <QueryClientProvider client={qc}>
-        <MemoryRouter>
-          <LectureHome />
+        <MemoryRouter initialEntries={["/courses"]}>
+          <Routes>
+            <Route path="/courses" element={<LectureHome />} />
+            <Route path="*" element={<Where />} />
+          </Routes>
         </MemoryRouter>
       </QueryClientProvider>
-    </I18nProvider>,);
+    </I18nProvider>,
+  );
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
   summary.mockResolvedValue({ streak_days: 3, studied_today: true, paywall_required: true });
   banners.mockResolvedValue({ banners: [banner("b1"), banner("b2")] });
-  lectures.mockResolvedValue(
-    feed([
-      lecture("conv-1"),
-      lecture("topik-1", "track_topik"),
-    ]),
-  );
-  courses.mockResolvedValue({ items: [], next_cursor: null, has_more: false });
+  courses.mockResolvedValue(CATALOG);
 });
 
-describe("LectureHome series (COU-001)", () => {
-  const course = {
-    course_id: "C1",
-    track_id: "track_conversation",
-    title: "Korean Survival Kit",
-    description: null,
-    cover_image_url: "http://x/c1.png",
-    lesson_count: 2,
-    completed_lesson_count: 1,
-    lessons_preview: [lecture("in-course", "track_conversation", { course_id: "C1" })],
-  };
+describe("LectureHome — courses and their series (COU-001)", () => {
+  it("shows a section per course with its series as a row of cards", async () => {
+    renderPage();
+    const first = await screen.findByRole("region", { name: "Speak Korean Instantly" });
+    expect(screen.getByRole("region", { name: "TOPIK 1급 입문" })).toBeInTheDocument();
+    const cards = first.querySelectorAll(".lechome__row .lechome__card");
+    expect([...cards].map((c) => c.getAttribute("aria-label"))).toEqual([
+      "KOREAN SURVIVAL KIT, 무료 강의",
+      "KOREAN ICEBREAKER KIT, 무료 강의",
+    ]);
+    // Each series shows its own key art.
+    expect(first.querySelector(".lechome__thumb-img")).toHaveAttribute("src", "http://x/S1.png");
+    // Called without a track filter for the "전체" default.
+    expect(courses).toHaveBeenCalledWith(undefined);
+  });
 
-  it("shows each series as a card and keeps unfiled lectures reachable", async () => {
-    courses.mockResolvedValue({ items: [course], next_cursor: null, has_more: false });
-    lectures.mockResolvedValue(
-      feed([lecture("in-course", "track_conversation", { course_id: "C1" }), lecture("loose")]),
+  it("opens a series' lesson list", async () => {
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: /KOREAN ICEBREAKER KIT/ }));
+    expect(await screen.findByTestId("where")).toHaveTextContent("/series/S2");
+  });
+
+  it("names a series without key art on its placeholder", async () => {
+    courses.mockResolvedValue(
+      page([course("C1", "Speak Korean Instantly", "track_conversation", [series("bare", { thumbnail_url: null })])]),
+    );
+    const { container } = renderPage();
+    await screen.findByRole("region", { name: "Speak Korean Instantly" });
+    expect(container.querySelector(".lechome__thumb-ph-title")).toHaveTextContent("Series bare");
+  });
+
+  it("leaves out courses that have no series to show", async () => {
+    courses.mockResolvedValue(
+      page([...CATALOG.items, course("C3", "Empty course", "track_topik", [])]),
     );
     renderPage();
-    expect(await screen.findByText("Korean Survival Kit")).toBeInTheDocument();
-    expect(screen.getByText("Lecture loose")).toBeInTheDocument();
-    // A lecture filed under a series is reached through the series, not twice.
-    expect(screen.queryByText("Lecture in-course")).toBeNull();
-    expect(screen.getByLabelText("Korean Survival Kit, 이어보기, 무료 강의")).toBeInTheDocument();
-  });
-});
-
-describe("LectureHome unified feed", () => {
-  it("shows lectures from BOTH tracks grouped into sections", async () => {
-    renderPage();
-    expect(await screen.findByText("Lecture conv-1")).toBeInTheDocument();
-    expect(screen.getByText("Lecture topik-1")).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "회화 강의" })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "TOPIK 강의" })).toBeInTheDocument();
-    // Called without a track filter for the "전체" default.
-    expect(lectures).toHaveBeenCalledWith(undefined);
+    await screen.findByRole("region", { name: "Speak Korean Instantly" });
+    expect(screen.queryByRole("region", { name: "Empty course" })).toBeNull();
   });
 
   it("track filter chips re-query with the track query param", async () => {
     renderPage();
-    await screen.findByText("Lecture conv-1");
-    lectures.mockResolvedValue(feed([lecture("topik-1", "track_topik")]));
+    await screen.findByLabelText(/KOREAN SURVIVAL KIT/);
+    courses.mockResolvedValue(page([CATALOG.items[1]]));
     await userEvent.click(screen.getByRole("tab", { name: "토픽" }));
-    await waitFor(() =>
-      expect(lectures).toHaveBeenLastCalledWith("track_topik"),
-    );
-    expect(await screen.findByText("Lecture topik-1")).toBeInTheDocument();
+    await waitFor(() => expect(courses).toHaveBeenLastCalledWith("track_topik"));
+    expect(await screen.findByLabelText(/TOPIK 듣기/)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/KOREAN SURVIVAL KIT/)).toBeNull();
   });
 
-  it("shows resume/completed markers from the lightweight flags", async () => {
-    lectures.mockResolvedValue(
-      feed([
-        lecture("fresh"),
-        lecture("resume", "track_conversation", { started: true }),
-        lecture("done", "track_conversation", { started: true, completed: true }),
+  it("shows resume/completed markers from the series' progress", async () => {
+    courses.mockResolvedValue(
+      page([
+        course("C1", "Speak Korean Instantly", "track_conversation", [
+          series("fresh"),
+          series("resume", { started: true }),
+          series("done", { started: true, completed_lesson_count: 3 }),
+        ]),
       ]),
     );
     renderPage();
-    await screen.findByText("Lecture fresh");
-    expect(screen.getByLabelText(/Lecture resume, 이어보기/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Lecture done, 완료/)).toBeInTheDocument();
+    await screen.findByLabelText(/Series fresh/);
+    expect(screen.getByLabelText(/Series resume, 이어보기/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Series done, 완료/)).toBeInTheDocument();
   });
 
-  it("tags free lectures for a member without premium access", async () => {
+  it("tags a series with a free lesson for a member without premium access", async () => {
+    courses.mockResolvedValue(
+      page([
+        course("C1", "Speak Korean Instantly", "track_conversation", [
+          series("free"),
+          series("paid", { has_free_lesson: false }),
+        ]),
+      ]),
+    );
     renderPage();
-    expect(await screen.findByLabelText("Lecture conv-1, 무료 강의")).toBeInTheDocument();
+    expect(await screen.findByLabelText("Series free, 무료 강의")).toBeInTheDocument();
+    expect(screen.getByLabelText("Series paid")).toBeInTheDocument();
   });
 
   it("drops the Free tag for a member with premium access", async () => {
@@ -145,20 +171,22 @@ describe("LectureHome unified feed", () => {
     // as free. The dashboard's paywall_required is the live check.
     summary.mockResolvedValue({ streak_days: 3, studied_today: true, paywall_required: false });
     renderPage();
-    expect(await screen.findByLabelText("Lecture conv-1")).toBeInTheDocument();
+    expect(await screen.findByLabelText("KOREAN SURVIVAL KIT")).toBeInTheDocument();
     expect(screen.queryByLabelText(/무료 강의/)).not.toBeInTheDocument();
   });
+});
 
-  it("empty banners + lectures: banner empty view + lecture sections still render", async () => {
+describe("LectureHome — banners and empty states", () => {
+  it("empty banners + courses: banner empty view + course sections still render", async () => {
     banners.mockResolvedValue({ banners: [] });
     const { container } = renderPage();
     expect(await screen.findByText("표시할 배너가 없어요")).toBeInTheDocument();
-    expect(await screen.findByText("Lecture conv-1")).toBeInTheDocument();
+    expect(await screen.findByLabelText(/KOREAN SURVIVAL KIT/)).toBeInTheDocument();
     expect(container.querySelector(".lechome__banners")).not.toBeInTheDocument();
   });
 
-  it("banners + empty lectures: carousel stays, lecture empty view", async () => {
-    lectures.mockResolvedValue(feed([]));
+  it("banners + no courses: carousel stays, course empty view", async () => {
+    courses.mockResolvedValue(page([]));
     const { container } = renderPage();
     expect(await screen.findByText("아직 등록된 강의가 없어요")).toBeInTheDocument();
     expect(container.querySelector(".lechome__banners")).toBeInTheDocument();
@@ -167,7 +195,7 @@ describe("LectureHome unified feed", () => {
 
   it("both empty: both empty views appear independently", async () => {
     banners.mockResolvedValue({ banners: [] });
-    lectures.mockResolvedValue(feed([]));
+    courses.mockResolvedValue(page([]));
     renderPage();
     expect(await screen.findByText("표시할 배너가 없어요")).toBeInTheDocument();
     expect(await screen.findByText("아직 등록된 강의가 없어요")).toBeInTheDocument();
@@ -176,17 +204,15 @@ describe("LectureHome unified feed", () => {
   it("banner loading does not flash the banner empty copy", async () => {
     banners.mockReturnValue(new Promise(() => {})); // pending
     const { container } = renderPage();
-    await screen.findByText("Lecture conv-1"); // lectures settle
+    await screen.findByLabelText(/KOREAN SURVIVAL KIT/); // courses settle
     expect(container.querySelector(".lechome__banner-skeleton")).toBeInTheDocument();
     expect(screen.queryByText("표시할 배너가 없어요")).not.toBeInTheDocument();
   });
 
-  it("lecture loading does not flash the empty copy", async () => {
-    lectures.mockReturnValue(new Promise(() => {})); // pending
+  it("course loading does not flash the empty copy", async () => {
+    courses.mockReturnValue(new Promise(() => {})); // pending
     const { container } = renderPage();
-    await waitFor(() =>
-      expect(container.querySelector(".lechome__banners")).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(container.querySelector(".lechome__banners")).toBeInTheDocument());
     expect(screen.queryByText("아직 등록된 강의가 없어요")).not.toBeInTheDocument();
     expect(container.querySelector(".lechome__course-empty")).not.toBeInTheDocument();
   });
@@ -194,13 +220,13 @@ describe("LectureHome unified feed", () => {
   it("banner error hides the banner region without showing empty copy", async () => {
     banners.mockRejectedValue(new Error("offline"));
     const { container } = renderPage();
-    expect(await screen.findByText("Lecture conv-1")).toBeInTheDocument();
+    expect(await screen.findByLabelText(/KOREAN SURVIVAL KIT/)).toBeInTheDocument();
     expect(screen.queryByText("표시할 배너가 없어요")).not.toBeInTheDocument();
     expect(container.querySelector(".lechome__banners")).not.toBeInTheDocument();
   });
 
-  it("lecture error shows retry, not the empty copy", async () => {
-    lectures.mockRejectedValue(new Error("offline"));
+  it("course error shows retry, not the empty copy", async () => {
+    courses.mockRejectedValue(new Error("offline"));
     renderPage();
     expect(await screen.findByText("강의를 불러오지 못했어요.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "다시 시도" })).toBeInTheDocument();
@@ -210,18 +236,16 @@ describe("LectureHome unified feed", () => {
   it("a single banner renders no pagination dots (no auto-slide)", async () => {
     banners.mockResolvedValue({ banners: [banner("only")] });
     const { container } = renderPage();
-    await screen.findByText("Lecture conv-1");
+    await screen.findByLabelText(/KOREAN SURVIVAL KIT/);
     expect(container.querySelector(".lechome__banners")).toBeInTheDocument();
     expect(container.querySelector(".lechome__dot")).not.toBeInTheDocument();
   });
 
   it("keeps the floating chatbot button in the empty states", async () => {
     banners.mockResolvedValue({ banners: [] });
-    lectures.mockResolvedValue(feed([]));
+    courses.mockResolvedValue(page([]));
     renderPage();
     await screen.findByText("아직 등록된 강의가 없어요");
-    expect(
-      screen.getByRole("button", { name: "AI 챗봇과 자유롭게 대화하기" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "AI 챗봇과 자유롭게 대화하기" })).toBeInTheDocument();
   });
 });

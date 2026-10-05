@@ -294,6 +294,8 @@ export interface Lecture {
   lecture_id: string;
   track_id: string;
   course_id: string | null;
+  /** The series it belongs to — where the player returns after the lesson. */
+  series_id?: string | null;
   title: string;
   /** Always `video`: practice is attached to a lecture as checkpoints. */
   kind: "video";
@@ -335,6 +337,36 @@ export interface Course {
   /** Cursor for this course's next horizontal lecture page (GET /courses/{id}/lessons). */
   lessons_next_cursor?: string | null;
   lessons?: Lecture[];
+  /** The course's series in order (COU-001's row); series without lessons are left out. */
+  series?: SeriesSummary[];
+}
+
+/** A series card on the course list (COU-001). */
+export interface SeriesSummary {
+  series_id: string;
+  course_id: string;
+  title: string;
+  description: string;
+  /** The series' own key art — the card and the COU-002 header. */
+  thumbnail_url: string | null;
+  lesson_count: number;
+  completed_lesson_count: number;
+  started: boolean;
+  has_free_lesson: boolean;
+}
+
+/** Where 바로 학습하기 opens: the lesson watched most recently, and where it stopped. */
+export interface ResumeTarget {
+  lecture_id: string;
+  position_seconds: number;
+}
+
+/** One series with every lesson (COU-002). */
+export interface SeriesDetail extends SeriesSummary {
+  track_id: string;
+  course_title: string;
+  lessons: Lecture[];
+  resume: ResumeTarget | null;
 }
 
 /** TOPIK part/section — the canonical value used across generation + the

@@ -49,7 +49,7 @@ import { NoticeDetail } from "./screens/NoticeDetail";
 import { AttendanceGate } from "./components/AttendanceGate";
 import { useDeviceTimezoneSync } from "./hooks/useDeviceTimezoneSync";
 import { OfflineGate } from "./components/OfflineScreen";
-import { CourseDetail } from "./screens/Courses";
+import { CourseRedirect, SeriesPage } from "./screens/Courses";
 import { LectureHome } from "./screens/LectureHome";
 import { Lecture } from "./screens/Lecture";
 import { Practice } from "./screens/Practice";
@@ -149,7 +149,9 @@ const router = createBrowserRouter(
         <Route path="/learn/conversation" element={<RequireAuth><Conversation /></RequireAuth>} />
         <Route path="/learn/topik" element={<RequireAuth><Topik /></RequireAuth>} />
         <Route path="/quiz/:quizId" element={<RequireAuth><QuizPlay /></RequireAuth>} />
-        <Route path="/courses/:courseId" element={<RequireAuth><CourseDetail /></RequireAuth>} />
+        <Route path="/series/:seriesId" element={<RequireAuth><SeriesPage /></RequireAuth>} />
+        {/* Older links to a course open its first series. */}
+        <Route path="/courses/:courseId" element={<RequireAuth><CourseRedirect /></RequireAuth>} />
         <Route path="/recommend/sentences" element={<RequireAuth><Recommendations /></RequireAuth>} />
         <Route path="/recommend/settings" element={<RequireAuth><PersonalizedSettings /></RequireAuth>} />
         <Route path="/recommend/settings/:category" element={<RequireAuth><TrackSettings /></RequireAuth>} />

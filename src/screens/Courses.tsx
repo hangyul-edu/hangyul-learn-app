@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "../i18n";
 import { useQuery } from "@tanstack/react-query";
 import { Async, SkeletonList } from "../components/ui/states";
 import { learnApi } from "../api/endpoints";
-import type { Course, Lecture } from "../lib/types";
+import type { Lecture, SeriesDetail } from "../lib/types";
 import coursePlay from "../assets/brand/course-play.svg";
 import courseMic from "../assets/brand/course-mic.png";
 import courseNotebook from "../assets/brand/course-notebook.svg";
@@ -19,11 +19,11 @@ function fmtDur(sec: number) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-// The lecture tab (LectureHome) is the catalog browser; this file keeps only
-// the course-detail screen reachable at /courses/:courseId.
+// The lecture tab (LectureHome) is the catalog browser; this file holds the
+// series screen (/series/:seriesId) and the old course link's redirect.
 
 /**
- * Course detail — Figma COU-002_강의 선택 (2414:27684 / EN 2397:26192).
+ * Series lesson list — Figma COU-002_강의 선택 (2414:27684 / EN 2397:26192).
  *
  * A full-bleed 375x249 cover with the 242x46 "바로 학습하기" straddling its
  * bottom edge, then 77-tall lesson rows on an 87 pitch: a 70px thumbnail
@@ -64,12 +64,27 @@ function LessonRow({ lesson, onOpen, onPractice }: { lesson: Lecture; onOpen: ()
   );
 }
 
-export function CourseDetail() {
-  const { t } = useTranslation();
+/**
+ * The old course link (/courses/:courseId, e.g. from a notification or a
+ * marketing URL). A course is now a group of series, so it opens the
+ * course's first series; with none it falls back to the Classes tab.
+ */
+export function CourseRedirect() {
   const { courseId = "" } = useParams();
+  const q = useQuery({ queryKey: ["course", courseId], queryFn: () => learnApi.course(courseId), retry: false });
+  if (q.isLoading) return <div className="screen cdet" aria-busy="true" />;
+  const first = q.data?.series?.[0];
+  return <Navigate to={first ? `/series/${first.series_id}` : "/courses"} replace />;
+}
+
+export function SeriesPage() {
+  const { t } = useTranslation();
+  const { seriesId = "" } = useParams();
   const nav = useNavigate();
   const location = useLocation();
-  const q = useQuery({ queryKey: ["course", courseId], queryFn: () => learnApi.course(courseId) });
+  // Never stale, so it refetches on every visit: coming back from a lesson
+  // must move 바로 학습하기 to where the learner just stopped.
+  const q = useQuery({ queryKey: ["series", seriesId], queryFn: () => learnApi.series(seriesId), staleTime: 0 });
   // COU-021: the player hands back the points a just-finished lecture paid.
   const [reward, setReward] = useState(() => (location.state as CourseRewardState | null)?.rewardPoints ?? 0);
 
@@ -91,25 +106,24 @@ export function CourseDetail() {
 
       <div className="screen__body screen__body--nav cdet__body">
         <Async loading={q.isLoading} error={q.error} data={q.data} onRetry={() => q.refetch()} skeleton={<SkeletonList rows={4} />}>
-          {(c: Course) => {
-            const lessons = c.lessons ?? c.lessons_preview ?? [];
-            // "바로 학습하기": a returning learner resumes the lesson they were
-            // part-way through; otherwise the first unfinished one (1-1 the
-            // first time), or 1-1 again once the course is done.
-            const next =
-              lessons.find((l) => l.started && !l.completed) ?? lessons.find((l) => !l.completed) ?? lessons[0];
+          {(s: SeriesDetail) => {
+            const lessons = s.lessons;
+            // "바로 학습하기": the lesson of this series the learner watched
+            // most recently, which the player opens at the position they left
+            // it (its saved playback); 1-1 from the start the first time.
+            const resume = s.resume;
             return (
               <>
                 <div className="cdet__hero">
-                  {c.cover_image_url && <img className="cdet__hero-img" src={c.cover_image_url} alt={c.title} />}
-                  {next && (
-                    <button className="cdet__cta" onClick={() => nav(`/lectures/${next.lecture_id}`)}>
+                  {s.thumbnail_url && <img className="cdet__hero-img" src={s.thumbnail_url} alt={s.title} />}
+                  {resume && (
+                    <button className="cdet__cta" onClick={() => nav(`/lectures/${resume.lecture_id}`)}>
                       {t("courses.startNow")}
                     </button>
                   )}
                 </div>
 
-                <ul className="cdet__list" role="list" aria-label={c.title}>
+                <ul className="cdet__list" role="list" aria-label={s.title}>
                   {lessons.map((l) => (
                     <LessonRow
                       key={l.lecture_id}

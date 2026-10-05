@@ -226,16 +226,17 @@ export function Lecture() {
     }
   }
 
+  // Out of a lesson, the learner lands on its series' lesson list (COU-002).
   function leave() {
     const l = q.data;
-    if (l?.course_id) nav(`/courses/${l.course_id}`, { replace: true });
+    if (l?.series_id) nav(`/series/${l.series_id}`, { replace: true });
     else nav(-1);
   }
 
   function continueAfterEnd() {
     const l = q.data;
     const state: CourseRewardState = { rewardPoints: finished?.points ?? 0 };
-    if (l?.course_id) nav(`/courses/${l.course_id}`, { replace: true, state });
+    if (l?.series_id) nav(`/series/${l.series_id}`, { replace: true, state });
     else nav(-1);
   }
 

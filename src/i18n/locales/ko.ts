@@ -1452,7 +1452,6 @@ export const ko = {
     trackConversation: "회화",
     trackTopik: "토픽", // 2407:27021
     trackFilter: "트랙 필터",
-    trackLabel: "{name} 강의",
     freeSuffix: ", 무료 강의",
     loadError: "강의를 불러오지 못했어요.",
     empty: "아직 등록된 강의가 없어요",

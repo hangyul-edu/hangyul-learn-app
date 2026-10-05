@@ -10621,16 +10621,22 @@ textarea.input {
   cursor: pointer;
   text-align: left;
 }
-.lechome__card-title {
-  margin: 7px 2px 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
+/* COU-001's series cards are the key art alone (the name is drawn into it);
+   a series without art yet shows its name on the placeholder instead. */
+.lechome__thumb-ph-title {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 14px;
+  font-size: 14px;
+  font-weight: 700;
   line-height: 1.35;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  color: var(--ink-2, #4b5258);
+  text-align: center;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 /* Track filter chips (전체 / 회화 / TOPIK) above the unified lecture feed. */
 .lechome__filters {

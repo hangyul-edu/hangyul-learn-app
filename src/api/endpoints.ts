@@ -9,6 +9,7 @@ import type {
   TimezoneSync,
   Banner,
   Course,
+  SeriesDetail,
   DailyLearningActivity,
   ChannelTalkIdentity,
   CouponRedemption,
@@ -239,13 +240,16 @@ export const learnApi = {
   recordSession: (body: { session_type: "sentence" | "review" | "lecture"; duration_seconds: number; category?: "conversation" | "topik"; lecture_id?: string }) =>
     http.post<SessionFinalizeResult>("/learning/sessions", body),
   course: (courseId: string) => http.get<Course>(`/courses/${courseId}`),
-  /** Course (series) cards for the Classes tab; each previews its first lessons. */
+  /** Courses for the Classes tab (COU-001), each with its series as cards.
+   *  The tab shows series, not lessons, so one preview lesson is plenty. */
   courses: (track?: "track_conversation" | "track_topik") =>
     http.get<{ items: Course[]; next_cursor: string | null; has_more: boolean }>("/courses", {
       track,
       limit: 50,
-      lessons_per_course: 20,
+      lessons_per_course: 1,
     }),
+  /** One series' lessons and its 바로 학습하기 target (COU-002). */
+  series: (seriesId: string) => http.get<SeriesDetail>(`/series/${seriesId}`),
   /** Unified lecture catalog — both tracks; pass `track` to filter. */
   lectures: (track?: "track_conversation" | "track_topik") =>
     http.get<{ items: Lecture[] }>("/lectures", { track }),

@@ -1,23 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation, type TranslationKey } from "../i18n";
+import { useTranslation } from "../i18n";
 import { useQuery } from "@tanstack/react-query";
 import { DailyLearningSun } from "../components/DailyLearningSun";
 import { SkeletonList } from "../components/ui/states";
 import { ChatbotBottomSheet } from "../components/ChatbotBottomSheet";
 import chatbotFab from "../assets/brand/chatbot-fab.svg";
 import { bannerApi, dashboardApi, learnApi } from "../api/endpoints";
-import type { Banner, Course, Lecture } from "../lib/types";
+import type { Banner, Course, SeriesSummary } from "../lib/types";
 
-// The Classes tab (COU-001) shows the FULL catalog — conversation and TOPIK
-// series together, with an optional track filter chip. Courses carry no
-// level, so nothing is pre-filtered by the user's learning level.
+// The Classes tab (COU-001) shows the FULL catalog — every course, each with
+// its series, conversation and TOPIK together, with an optional track filter
+// chip. Nothing carries a level, so nothing is pre-filtered by the user's
+// learning level.
 type TrackFilter = "all" | "track_conversation" | "track_topik";
-
-const TRACK_LABEL_KEYS: Record<string, TranslationKey> = {
-  track_conversation: "courses.trackConversation",
-  track_topik: "trackSettings.topikTitle",
-};
 
 const prefersReducedMotion = () =>
   typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -109,101 +105,57 @@ function BannerCarousel() {
   );
 }
 
-/* ----------------------------- Lecture card ---------------------------- */
-function LectureCard({ lecture, isPremium }: { lecture: Lecture; isPremium: boolean }) {
-  const { t } = useTranslation();
-  const nav = useNavigate();
-  const showFree = lecture.access === "free" && !isPremium;
-  const marker = lecture.completed ? t("courses.done") : lecture.started ? t("courses.resume") : null;
-  return (
-    <button
-      className="lechome__card"
-      onClick={() => nav(`/lectures/${lecture.lecture_id}`)}
-      aria-label={`${lecture.title}${marker ? `, ${marker}` : ""}${showFree ? t("courses.freeSuffix") : ""}`}
-    >
-      <div className="lechome__thumb">
-        {lecture.thumbnail_url ? (
-          <img className="lechome__thumb-img" src={lecture.thumbnail_url} alt="" loading="lazy" />
-        ) : (
-          <div className="lechome__thumb-ph" aria-hidden="true" />
-        )}
-        {showFree && <span className="lechome__free" aria-hidden="true">Free</span>}
-        {marker && <span className="lechome__level" aria-hidden="true">{marker}</span>}
-      </div>
-      <p className="lechome__card-title">{lecture.title}</p>
-    </button>
-  );
-}
-
 /* ------------------------------ Series card ----------------------------- */
 /**
- * COU-001's series card (2658:26081…): the course's key art with the Free
- * badge, opening the course page (COU-002). The art falls back to the first
- * lesson's thumbnail; the progress marker sits in the badge slot the design
- * gives the level, since courses carry no level.
+ * COU-001's series card (2658:26081…): the series' own key art with the Free
+ * badge, opening its lesson list (COU-002). The progress marker sits in the
+ * badge slot the design gives the level, since series carry no level.
  */
-function CourseCard({ course, isPremium }: { course: Course; isPremium: boolean }) {
+function SeriesCard({ series, isPremium }: { series: SeriesSummary; isPremium: boolean }) {
   const { t } = useTranslation();
   const nav = useNavigate();
-  const lessons = course.lessons_preview ?? [];
-  const art = course.cover_image_url ?? lessons.find((l) => l.thumbnail_url)?.thumbnail_url ?? null;
-  const showFree = !isPremium && lessons.some((l) => l.access === "free");
-  const done = course.lesson_count > 0 && course.completed_lesson_count >= course.lesson_count;
-  const marker = done
-    ? t("courses.done")
-    : course.completed_lesson_count > 0 || lessons.some((l) => l.started)
-      ? t("courses.resume")
-      : null;
+  const showFree = !isPremium && series.has_free_lesson;
+  const done = series.lesson_count > 0 && series.completed_lesson_count >= series.lesson_count;
+  const marker = done ? t("courses.done") : series.started ? t("courses.resume") : null;
   return (
     <button
       className="lechome__card"
-      onClick={() => nav(`/courses/${course.course_id}`)}
-      aria-label={`${course.title}${marker ? `, ${marker}` : ""}${showFree ? t("courses.freeSuffix") : ""}`}
+      onClick={() => nav(`/series/${series.series_id}`)}
+      aria-label={`${series.title}${marker ? `, ${marker}` : ""}${showFree ? t("courses.freeSuffix") : ""}`}
     >
+      {/* Figma's cards are the key art alone — the series' name is drawn
+          into it. The name stays in the button's label, and is printed on
+          the placeholder when a series has no art yet. */}
       <div className="lechome__thumb">
-        {art ? (
-          <img className="lechome__thumb-img" src={art} alt="" loading="lazy" />
+        {series.thumbnail_url ? (
+          <img className="lechome__thumb-img" src={series.thumbnail_url} alt="" loading="lazy" />
         ) : (
-          <div className="lechome__thumb-ph" aria-hidden="true" />
+          <div className="lechome__thumb-ph" aria-hidden="true">
+            <span className="lechome__thumb-ph-title">{series.title}</span>
+          </div>
         )}
         {showFree && <span className="lechome__free" aria-hidden="true">Free</span>}
         {marker && <span className="lechome__level" aria-hidden="true">{marker}</span>}
       </div>
-      <p className="lechome__card-title">{course.title}</p>
     </button>
   );
 }
 
-/* --------------------------- Track section ----------------------------- */
-/** One track's row: its series, then any lecture not filed under a series. */
-function TrackSection({
-  trackId,
-  courses,
-  lectures,
-  isPremium,
-}: {
-  trackId: string;
-  courses: Course[];
-  lectures: Lecture[];
-  isPremium: boolean;
-}) {
-  const { t } = useTranslation();
-  if (courses.length + lectures.length === 0) return null;
-  const title = t("courses.trackLabel", {
-    name: TRACK_LABEL_KEYS[trackId] ? t(TRACK_LABEL_KEYS[trackId]) : trackId,
-  });
+/* --------------------------- Course section ---------------------------- */
+/**
+ * One course (2658:26134 "Speak Korean Instantly"): its title, then its
+ * series as a horizontally scrolling row of cards.
+ */
+function CourseSection({ course, isPremium }: { course: Course; isPremium: boolean }) {
+  const series = course.series ?? [];
+  if (series.length === 0) return null;
   return (
-    <section className="lechome__section" aria-label={title}>
-      <h2 className="lechome__section-title">{title}</h2>
+    <section className="lechome__section" aria-label={course.title}>
+      <h2 className="lechome__section-title">{course.title}</h2>
       <div className="lechome__row" role="list">
-        {courses.map((c) => (
-          <div role="listitem" key={c.course_id}>
-            <CourseCard course={c} isPremium={isPremium} />
-          </div>
-        ))}
-        {lectures.map((l) => (
-          <div role="listitem" key={l.lecture_id}>
-            <LectureCard lecture={l} isPremium={isPremium} />
+        {series.map((s) => (
+          <div role="listitem" key={s.series_id}>
+            <SeriesCard series={s} isPremium={isPremium} />
           </div>
         ))}
       </div>
@@ -226,31 +178,19 @@ export function LectureHome() {
   // (hides Free) rather than falsely tagging paid content as free.
   const entitlementKnown = dash.isSuccess;
 
-  // COU-001 lists series (courses); lectures not filed under one still get a
-  // card so nothing becomes unreachable. The track filter is a server-side
-  // query param on both.
+  // COU-001: a section per course, each a row of its series. Every lesson
+  // sits in a series, so nothing is left out. The track filter is a
+  // server-side query param.
   const track = filter === "all" ? undefined : filter;
-  const series = useQuery({ queryKey: ["courses", filter], queryFn: () => learnApi.courses(track) });
-  const feed = useQuery({ queryKey: ["lectures", filter], queryFn: () => learnApi.lectures(track) });
-
-  const byTrack = useMemo(() => {
-    const groups = new Map<string, { courses: Course[]; lectures: Lecture[] }>();
-    const bucket = (trackId: string) => {
-      const group = groups.get(trackId) ?? { courses: [], lectures: [] };
-      groups.set(trackId, group);
-      return group;
-    };
-    for (const course of series.data?.items ?? []) bucket(course.track_id).courses.push(course);
-    for (const lecture of feed.data?.items ?? []) {
-      if (!lecture.course_id) bucket(lecture.track_id).lectures.push(lecture);
-    }
-    return groups;
-  }, [series.data, feed.data]);
+  const catalog = useQuery({ queryKey: ["courses", filter], queryFn: () => learnApi.courses(track) });
+  const courses = useMemo(
+    () => (catalog.data?.items ?? []).filter((course) => (course.series ?? []).length > 0),
+    [catalog.data],
+  );
 
   const streak = dash.data?.streak_days;
-  const total = [...byTrack.values()].reduce((n, g) => n + g.courses.length + g.lectures.length, 0);
-  const loading = series.isLoading || feed.isLoading;
-  const failed = series.isError || feed.isError;
+  const loading = catalog.isLoading;
+  const failed = catalog.isError;
 
   return (
     <div className="screen lechome">
@@ -303,28 +243,20 @@ export function LectureHome() {
         ) : failed ? (
           <div className="lechome__err">
             <span>{t("courses.loadError")}</span>
-            <button
-              className="lechome__retry"
-              onClick={() => {
-                void series.refetch();
-                void feed.refetch();
-              }}
-            >
+            <button className="lechome__retry" onClick={() => void catalog.refetch()}>
               {t("common.retry")}
             </button>
           </div>
-        ) : total === 0 ? (
+        ) : courses.length === 0 ? (
           <div className="lechome__course-empty">
             <p className="lechome__course-empty-text">{t("courses.empty")}</p>
           </div>
         ) : (
           <div className="lechome__sections">
-            {[...byTrack.entries()].map(([trackId, group]) => (
-              <TrackSection
-                key={trackId}
-                trackId={trackId}
-                courses={group.courses}
-                lectures={group.lectures}
+            {courses.map((course) => (
+              <CourseSection
+                key={course.course_id}
+                course={course}
                 isPremium={entitlementKnown ? isPremium : true}
               />
             ))}

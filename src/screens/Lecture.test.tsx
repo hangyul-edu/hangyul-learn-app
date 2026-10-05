@@ -38,6 +38,7 @@ function detail(
     lecture_id: "L1",
     track_id: "track_conversation",
     course_id: "C1",
+    series_id: "S1",
     title: "Lecture L1",
     kind: "video",
     duration_seconds: 300,
@@ -64,7 +65,7 @@ function renderLecture(qc = new QueryClient({ defaultOptions: { queries: { retry
         <MemoryRouter initialEntries={["/lectures/L1"]}>
           <Routes>
             <Route path="/lectures/:lectureId" element={<Lecture />} />
-            <Route path="/courses/:courseId" element={<CourseProbe />} />
+            <Route path="/series/:seriesId" element={<CourseProbe />} />
           </Routes>
         </MemoryRouter>
       </QueryClientProvider>

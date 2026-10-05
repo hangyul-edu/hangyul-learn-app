@@ -9,6 +9,7 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 const api = vi.hoisted(() => ({
   course: vi.fn(),
+  series: vi.fn(),
   lecture: vi.fn(),
   speakPractice: vi.fn(),
   recordActivity: vi.fn(),
@@ -19,7 +20,13 @@ const api = vi.hoisted(() => ({
   recorder: { options: null as null | { onRecorded: (b: Blob) => Promise<void> | void } },
 }));
 vi.mock("../api/endpoints", () => ({
-  learnApi: { course: api.course, lecture: api.lecture, speakPractice: api.speakPractice, recordActivity: api.recordActivity },
+  learnApi: {
+    course: api.course,
+    series: api.series,
+    lecture: api.lecture,
+    speakPractice: api.speakPractice,
+    recordActivity: api.recordActivity,
+  },
   sentenceApi: { get: api.getSentence, speechAttempt: api.speechAttempt, audio: vi.fn(), bookmark: vi.fn(), unbookmark: vi.fn() },
   practiceApi: { start: api.start },
   quizApi: { attempt: api.attempt, bookmark: vi.fn(), unbookmark: vi.fn(), audio: vi.fn() },
@@ -35,7 +42,7 @@ vi.mock("../hooks/useVoiceRecorder", () => ({
 }));
 
 import { I18nProvider } from "../i18n";
-import { CourseDetail } from "./Courses";
+import { CourseRedirect, SeriesPage } from "./Courses";
 import { SpeakPractice } from "./SpeakPractice";
 import { Practice } from "./Practice";
 
@@ -51,7 +58,8 @@ function renderAt(path: string, state?: unknown) {
       <QueryClientProvider client={qc}>
         <MemoryRouter initialEntries={[{ pathname: path, state }]}>
           <Routes>
-            <Route path="/courses/:courseId" element={<CourseDetail />} />
+            <Route path="/series/:seriesId" element={<SeriesPage />} />
+            <Route path="/courses/:courseId" element={<CourseRedirect />} />
             <Route path="/lectures/:lectureId/speak" element={<SpeakPractice />} />
             <Route path="/lectures/:lectureId/practice" element={<Practice />} />
             <Route path="*" element={<Where />} />
@@ -91,40 +99,79 @@ beforeEach(() => {
   api.lecture.mockResolvedValue(lesson("L1", "track_conversation"));
 });
 
-describe("CourseDetail", () => {
+const series = (lessons: ReturnType<typeof lesson>[], resume: { lecture_id: string; position_seconds: number } | null) => ({
+  series_id: "S1",
+  course_id: "C1",
+  course_title: "Speak Korean Instantly",
+  track_id: "track_conversation",
+  title: "KOREAN SURVIVAL KIT",
+  description: "",
+  thumbnail_url: "https://cdn.example.com/s1.png",
+  lesson_count: lessons.length,
+  completed_lesson_count: 0,
+  started: false,
+  has_free_lesson: true,
+  lessons,
+  resume,
+});
+
+describe("SeriesPage", () => {
+  it("shows the series' own key art over its lessons", async () => {
+    api.series.mockResolvedValue(series([lesson("L1", "track_conversation")], { lecture_id: "L1", position_seconds: 0 }));
+    renderAt("/series/S1");
+    expect(await screen.findByRole("img", { name: "KOREAN SURVIVAL KIT" })).toHaveAttribute(
+      "src",
+      "https://cdn.example.com/s1.png",
+    );
+    expect(screen.getByRole("list", { name: "KOREAN SURVIVAL KIT" })).toBeInTheDocument();
+  });
+
   it("sends the mic to speaking practice and the TOPIK notebook to question practice", async () => {
-    api.course.mockResolvedValue({
-      course_id: "C1",
-      track_id: "track_conversation",
-      title: "코스",
-      lessons: [lesson("L1", "track_conversation"), lesson("T1", "track_topik")],
-    });
+    api.series.mockResolvedValue(
+      series([lesson("L1", "track_conversation"), lesson("T1", "track_topik")], { lecture_id: "L1", position_seconds: 0 }),
+    );
     api.speakPractice.mockResolvedValue({ lecture_id: "L1", items: [] });
-    const first = renderAt("/courses/C1");
+    const first = renderAt("/series/S1");
     fireEvent.click(await screen.findByRole("button", { name: "강의 T1 문제 연습" }));
     expect(await screen.findByText("몇 문제 풀어볼까요?")).toBeInTheDocument();
     first.unmount();
 
-    renderAt("/courses/C1");
+    renderAt("/series/S1");
     fireEvent.click(await screen.findByRole("button", { name: "강의 L1 말하기 연습" }));
     expect(await screen.findByText("이 강의에는 따라 말하기 연습이 없어요")).toBeInTheDocument();
   });
 
-  it("resumes the lesson the learner is part-way through", async () => {
+  it("바로 학습하기 opens the lesson watched most recently, as the server reports it", async () => {
+    // L2 is part-way through, but L1 was watched last: L1 is where to resume.
+    api.series.mockResolvedValue(
+      series(
+        [lesson("L1", "track_conversation", { started: true }), lesson("L2", "track_conversation", { started: true })],
+        { lecture_id: "L1", position_seconds: 52 },
+      ),
+    );
+    renderAt("/series/S1");
+    fireEvent.click(await screen.findByRole("button", { name: "바로 학습하기" }));
+    expect(await screen.findByTestId("where")).toHaveTextContent("/lectures/L1");
+  });
+
+  it("opens an old course link at that course's first series", async () => {
     api.course.mockResolvedValue({
       course_id: "C1",
       track_id: "track_conversation",
       title: "코스",
-      lessons: [lesson("L1", "track_conversation"), lesson("L2", "track_conversation", { started: true })],
+      lesson_count: 1,
+      completed_lesson_count: 0,
+      series: [series([], null), { ...series([], null), series_id: "S2" }],
     });
+    api.series.mockResolvedValue(series([lesson("L1", "track_conversation")], { lecture_id: "L1", position_seconds: 0 }));
     renderAt("/courses/C1");
-    fireEvent.click(await screen.findByRole("button", { name: "바로 학습하기" }));
-    expect(await screen.findByTestId("where")).toHaveTextContent("/lectures/L2");
+    expect(await screen.findByRole("img", { name: "KOREAN SURVIVAL KIT" })).toBeInTheDocument();
+    expect(api.series).toHaveBeenCalledWith("S1");
   });
 
   it("shows the watch-complete reward the player handed back (COU-021)", async () => {
-    api.course.mockResolvedValue({ course_id: "C1", track_id: "track_conversation", title: "코스", lessons: [] });
-    renderAt("/courses/C1", { rewardPoints: 100 });
+    api.series.mockResolvedValue(series([], null));
+    renderAt("/series/S1", { rewardPoints: 100 });
     expect(await screen.findByText("시청 완료!")).toBeInTheDocument();
     expect(screen.getByText("+100P")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "확인" }));

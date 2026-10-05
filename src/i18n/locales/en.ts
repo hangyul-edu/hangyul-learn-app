@@ -1463,7 +1463,6 @@ export const en: Catalog = {
     trackConversation: "Conversation",
     trackTopik: "Topik", // 2397:25965
     trackFilter: "Track filter",
-    trackLabel: "{name} classes",
     freeSuffix: ", free class",
     loadError: "Couldn't load the classes.",
     empty: "No classes added yet", // 2397:25965

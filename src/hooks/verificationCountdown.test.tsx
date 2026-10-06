@@ -15,6 +15,8 @@ import { act, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { countdownLabel, mmss, useVerification } from "./verification";
 import type { VerificationConfirm, VerificationStart } from "../lib/types";
+import { ApiError } from "../lib/http";
+import { resolveMessage } from "../i18n/current";
 
 /* ------------------------------ the rule -------------------------------- */
 
@@ -159,5 +161,24 @@ describe("useVerification", () => {
     act(() => api.current!.reset());
 
     expect(view.getByTestId("countdown").textContent).toBe("");
+  });
+});
+
+describe("useVerification errors", () => {
+  it("explains a number that cannot receive SMS in the learner's language", async () => {
+    const api: { current: ReturnType<typeof useVerification> | null } = { current: null };
+    const start = vi.fn(async (): Promise<VerificationStart> => {
+      throw new ApiError(422, "phone_number_undeliverable", "This phone number cannot receive a verification SMS.");
+    });
+    function Screen() {
+      api.current = useVerification({ start, confirm: vi.fn() });
+      return null;
+    }
+    render(<Screen />);
+    await act(async () => {
+      await api.current!.request();
+    });
+    expect(api.current!.error).toBe(resolveMessage("httpError.phoneUndeliverable"));
+    expect(api.current!.error).not.toContain("cannot receive a verification SMS");
   });
 });

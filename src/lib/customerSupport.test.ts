@@ -1,10 +1,22 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { openCustomerSupportChat } from "./customerSupport";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { openCustomerSupportChat as OpenFn } from "./customerSupport";
 
 afterEach(() => {
   delete (window as unknown as { ChannelIO?: unknown }).ChannelIO;
   delete (window as unknown as { ReactNativeWebView?: unknown }).ReactNativeWebView;
   vi.restoreAllMocks();
+});
+
+// These cases run as a build with NO plugin key (the developer's .env may set
+// one), on a fresh module so no member session leaks in from another test.
+let openCustomerSupportChat: typeof OpenFn;
+beforeEach(async () => {
+  vi.stubEnv("VITE_CHANNEL_TALK_PLUGIN_KEY", "");
+  vi.resetModules();
+  ({ openCustomerSupportChat } = await import("./customerSupport"));
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe("openCustomerSupportChat", () => {
@@ -33,10 +45,9 @@ describe("openCustomerSupportChat", () => {
     const ok = openCustomerSupportChat({ id: "u2", nickname: null, name: "Ann" });
 
     expect(ok).toBe(true);
-    expect(ChannelIO).toHaveBeenCalledWith("updateUser", {
-      memberId: "u2",
-      profile: { name: "Ann" },
-    });
+    // Without a plugin key this build can't re-boot as the member; it never
+    // tries `updateUser({ memberId })`, which the SDK does not support.
+    expect(ChannelIO).not.toHaveBeenCalledWith("updateUser", expect.anything());
     expect(ChannelIO).toHaveBeenLastCalledWith("showMessenger");
   });
 
@@ -65,12 +76,26 @@ describe("openCustomerSupportChat — verified identification", () => {
     vi.resetModules();
   });
 
-  it("re-boots with memberId + memberHash when a hash and plugin key are present", async () => {
+  /** A fake SDK that completes every boot (optionally with an error). */
+  function fakeSdk(bootError: (options: Record<string, unknown>) => unknown = () => null) {
+    return vi.fn((command: string, options?: unknown, callback?: unknown) => {
+      if (command === "boot" && typeof callback === "function") {
+        (callback as (error: unknown) => void)(bootError(options as Record<string, unknown>));
+      }
+    });
+  }
+
+  async function freshModules() {
     vi.stubEnv("VITE_CHANNEL_TALK_PLUGIN_KEY", "test-plugin-key");
     vi.resetModules();
-    const { openCustomerSupportChat: open } = await import("./customerSupport");
+    const support = await import("./customerSupport");
+    const talk = await import("./channelTalk");
+    return { open: support.openCustomerSupportChat, talk };
+  }
 
-    const ChannelIO = vi.fn();
+  it("re-boots with memberId + memberHash, then opens the messenger after the boot", async () => {
+    const { open } = await freshModules();
+    const ChannelIO = fakeSdk();
     (window as unknown as { ChannelIO: unknown }).ChannelIO = ChannelIO;
 
     const ok = open({ id: "u3", nickname: "김", name: "Kim", memberHash: "deadbeef" });
@@ -81,10 +106,86 @@ describe("openCustomerSupportChat — verified identification", () => {
       pluginKey: "test-plugin-key",
       memberId: "u3",
       memberHash: "deadbeef",
+      hideChannelButtonOnBoot: true,
     });
-    // Verified path must NOT fall back to the unverified updateUser.
     expect(ChannelIO).not.toHaveBeenCalledWith("updateUser", expect.anything());
     expect(ChannelIO).toHaveBeenLastCalledWith("showMessenger");
+  });
+
+  it("does not open the messenger before the boot has finished", async () => {
+    const { open } = await freshModules();
+    const ChannelIO = vi.fn(); // never completes a boot
+    (window as unknown as { ChannelIO: unknown }).ChannelIO = ChannelIO;
+
+    open({ id: "u5", memberHash: "abc" });
+
+    expect(ChannelIO).not.toHaveBeenCalledWith("showMessenger");
+  });
+
+  it("does not re-boot for the member it is already booted as", async () => {
+    const { open } = await freshModules();
+    const ChannelIO = fakeSdk();
+    (window as unknown as { ChannelIO: unknown }).ChannelIO = ChannelIO;
+
+    open({ id: "u6", memberHash: "abc" });
+    open({ id: "u6", memberHash: "abc" });
+
+    expect(ChannelIO.mock.calls.filter((c) => c[0] === "boot")).toHaveLength(1);
+    expect(ChannelIO.mock.calls.filter((c) => c[0] === "showMessenger")).toHaveLength(2);
+  });
+
+  it("re-boots when a different member opens support on the same page", async () => {
+    const { open } = await freshModules();
+    const ChannelIO = fakeSdk();
+    (window as unknown as { ChannelIO: unknown }).ChannelIO = ChannelIO;
+
+    open({ id: "first", memberHash: "h1" });
+    open({ id: "second", memberHash: "h2" });
+
+    const boots = ChannelIO.mock.calls.filter((c) => c[0] === "boot").map((c) => c[1]);
+    expect(boots).toEqual([
+      expect.objectContaining({ memberId: "first", memberHash: "h1" }),
+      expect.objectContaining({ memberId: "second", memberHash: "h2" }),
+    ]);
+  });
+
+  it("falls back to an anonymous session when ChannelTalk rejects the member hash", async () => {
+    const { open, talk } = await freshModules();
+    const ChannelIO = fakeSdk((options) => (options.memberHash ? new Error("verification failed") : null));
+    (window as unknown as { ChannelIO: unknown }).ChannelIO = ChannelIO;
+
+    open({ id: "u7", memberHash: "wrong" });
+
+    const boots = ChannelIO.mock.calls.filter((c) => c[0] === "boot").map((c) => c[1]);
+    expect(boots[1]).not.toHaveProperty("memberId");
+    expect(talk.channelTalkBootedAs()).toBeNull();
+    // Support stays reachable.
+    expect(ChannelIO).toHaveBeenLastCalledWith("showMessenger");
+  });
+
+  it("shuts the member session down when a signed-out visitor opens support", async () => {
+    const { open } = await freshModules();
+    const ChannelIO = fakeSdk();
+    (window as unknown as { ChannelIO: unknown }).ChannelIO = ChannelIO;
+
+    open({ id: "u8", memberHash: "abc" });
+    ChannelIO.mockClear();
+    open(null);
+
+    expect(ChannelIO.mock.calls.map((c) => c[0])).toEqual(["shutdown", "boot", "showMessenger"]);
+    expect(ChannelIO.mock.calls[1][1]).not.toHaveProperty("memberId");
+  });
+
+  it("resetChannelTalkUser ends a member session for sign-out", async () => {
+    const { open, talk } = await freshModules();
+    const ChannelIO = fakeSdk();
+    (window as unknown as { ChannelIO: unknown }).ChannelIO = ChannelIO;
+
+    open({ id: "u9", memberHash: "abc" });
+    talk.resetChannelTalkUser();
+
+    expect(ChannelIO).toHaveBeenCalledWith("shutdown");
+    expect(talk.channelTalkBootedAs()).toBeNull();
   });
 
   it("passes memberHash to the native bridge profile", () => {

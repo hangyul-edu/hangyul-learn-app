@@ -565,6 +565,9 @@ export const ko = {
     cancelled: "로그인을 취소했어요.",
     invalidState: "로그인 세션이 만료되었어요. 다시 시도해 주세요.",
     notConfigured: "이 제공자의 로그인이 아직 설정되지 않았어요.",
+    providerUnavailable: "로그인 서비스에 잠시 연결할 수 없어요. 잠시 후 다시 시도해 주세요.",
+    emailRegistered: "이 이메일로 가입한 계정이 이미 있어요. 처음 가입한 방법으로 로그인해 주세요.",
+    accountInactive: "탈퇴했거나 이용이 중지된 계정이에요.",
     loginFailed: "로그인을 완료하지 못했어요. 다시 시도해 주세요.",
   },
 
@@ -1063,6 +1066,8 @@ export const ko = {
     badRequest: "요청을 처리하지 못했어요.",
     notFound: "요청한 정보를 찾을 수 없어요.",
     server: "일시적인 서버 오류예요. 잠시 후 다시 시도해 주세요.",
+    /** 422 phone_number_undeliverable: retrying the same number won't help. */
+    phoneUndeliverable: "이 번호로는 인증 문자를 보낼 수 없어요. 번호를 확인하거나 다른 번호를 입력해 주세요.",
   },
 
   /** A recording that could not be graded; nothing was counted, so the learner just records again. */

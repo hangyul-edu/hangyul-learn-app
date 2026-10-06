@@ -552,6 +552,9 @@ export const en: Catalog = {
     cancelled: "Login was cancelled.",
     invalidState: "Your login session expired. Please try again.",
     notConfigured: "Login with this provider isn't set up yet.",
+    providerUnavailable: "We can't reach the login service right now. Please try again in a moment.",
+    emailRegistered: "An account with this email already exists. Please log in the way you originally signed up.",
+    accountInactive: "This account has been deleted or suspended.",
     loginFailed: "Couldn't complete login. Please try again.",
   },
 
@@ -1067,6 +1070,8 @@ export const en: Catalog = {
     badRequest: "We couldn't process that request.",
     notFound: "We couldn't find what you asked for.",
     server: "A temporary server error. Please try again shortly.",
+    /** 422 phone_number_undeliverable: retrying the same number won't help. */
+    phoneUndeliverable: "We can't send a verification text to this number. Check it or enter a different one.",
   },
 
   /** A recording that could not be graded; nothing was counted, so the learner just records again. */

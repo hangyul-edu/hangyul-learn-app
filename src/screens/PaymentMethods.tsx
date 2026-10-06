@@ -288,6 +288,9 @@ export function PaymentMethods() {
       try {
         await billingApi.retryInvoice(invoiceId);
       } catch (e) {
+        // The previous charge is still being sent to the provider: its
+        // outcome is not known yet, so this is neither a success nor a failure.
+        if (e instanceof ApiError && e.code === "billing.charge_in_progress") return "pending";
         // Already paid (idempotency guard) → verify and treat as recovered.
         if (e instanceof ApiError && e.status === 409) return verifyRetry(invoiceId);
         // Outstanding invoice vanished (resolved elsewhere) → refresh & clear.

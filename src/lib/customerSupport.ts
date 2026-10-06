@@ -14,11 +14,12 @@
  *
  * `window.ChannelIO` is NOT assumed to exist: if neither path is available the
  * wrapper returns `false` so the caller can surface a temporary-error toast
- * and let the user retry. We never (re)boot the SDK here — booting is an
- * app-level concern — so a missing SDK can't spin into an init loop.
+ * and let the user retry. Booting belongs to `channelTalk.ts`: this wrapper
+ * only asks it to (re)identify the member on an explicit tap, and never loads
+ * the SDK, so a missing SDK can't spin into an init loop.
  */
 
-import { identifyChannelTalkUser } from "./channelTalk";
+import { channelTalkBootedAs, identifyChannelTalkUser, resetChannelTalkUser } from "./channelTalk";
 
 type ChannelIO = (command: string, ...args: unknown[]) => void;
 
@@ -70,23 +71,31 @@ export function openCustomerSupportChat(user?: SupportChatUser | null): boolean 
     }
   }
 
-  // 2) ChannelTalk web SDK — only if it has actually been booted.
+  // 2) ChannelTalk web SDK — only if it has actually been installed.
   const channel = typeof window !== "undefined" ? window.ChannelIO : undefined;
   if (typeof channel === "function") {
     try {
-      if (profile?.memberHash) {
-        // Verified identification is a boot parameter — delegate to the
-        // SDK-owner module, which re-boots with memberId + memberHash.
-        identifyChannelTalkUser({
-          memberId: profile.memberId,
-          memberHash: profile.memberHash,
-          name: profile.name,
-        });
-      } else if (profile) {
-        // Unverified fallback (no hash available): attach the id + name only.
-        channel("updateUser", { memberId: profile.memberId, profile: { name: profile.name } });
+      const show = () => channel("showMessenger");
+      if (profile) {
+        // Identity (memberId / memberHash) is a boot option, so the SDK-owner
+        // module re-boots as this member when needed and opens the messenger
+        // once that boot has finished — opening it mid-boot can drop the call.
+        // Without a hash the member is identified unverified, which works only
+        // while the channel does not enforce member verification.
+        const handled = identifyChannelTalkUser(
+          { memberId: profile.memberId, memberHash: profile.memberHash, name: profile.name },
+          show,
+        );
+        // No plugin key in this build (the SDK came from elsewhere): we can't
+        // re-boot, so just open what is there.
+        if (!handled) show();
+      } else if (channelTalkBootedAs()) {
+        // Signed out but the SDK still holds a member session — never show the
+        // previous member's chats to whoever is using the device now.
+        resetChannelTalkUser(show);
+      } else {
+        show();
       }
-      channel("showMessenger");
       return true;
     } catch {
       return false;

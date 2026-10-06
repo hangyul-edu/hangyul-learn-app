@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import type { ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { http, setAuthHandlers, ApiError, NetworkError } from "../lib/http";
+import { resetChannelTalkUser } from "../lib/channelTalk";
 import { clearSession, loadSession, saveSession } from "../lib/storage";
 import type { StoredSession } from "../lib/storage";
 import type { Me, TokenResponse } from "../lib/types";
@@ -98,6 +99,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMeState(null);
     setStatus("signed-out");
     qc.clear();
+    // The support messenger is still booted as this member; on a shared
+    // device the next person would otherwise see their chats.
+    resetChannelTalkUser();
   }
 
   // Server-side revocation only (no local sign-out). Resolves on success and on

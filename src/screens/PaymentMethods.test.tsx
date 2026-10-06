@@ -556,4 +556,19 @@ describe("PaymentMethods recovery flow", () => {
     await userEvent.click(await screen.findByRole("button", { name: "지금 바로 구독료 결제하기" }));
     expect(await screen.findByRole("dialog", { name: "결제 완료" })).toBeInTheDocument();
   });
+
+  it("a charge still in progress (409 charge_in_progress) is pending, never a success", async () => {
+    setMethods(card());
+    setRecovery(RECOVERY);
+    const { ApiError } = await import("../lib/http");
+    billing.retryInvoice.mockRejectedValue(
+      new ApiError(409, "billing.charge_in_progress", "The last payment for this invoice is still being processed."),
+    );
+    billing.invoice.mockResolvedValue({ invoice: { status: "open" }, payments: [] });
+    renderScreen();
+    await userEvent.click(await screen.findByRole("button", { name: "지금 바로 구독료 결제하기" }));
+    expect(await screen.findByText(/결제 결과를 확인하고 있어요/)).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "결제 완료" })).not.toBeInTheDocument();
+    expect(billing.invoice).not.toHaveBeenCalled();
+  });
 });

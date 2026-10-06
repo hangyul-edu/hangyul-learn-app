@@ -38,12 +38,17 @@ export const StreamVideo = forwardRef<HTMLVideoElement, StreamVideoProps>(functi
   useImperativeHandle(ref, () => videoRef.current as HTMLVideoElement);
   const onStreamErrorRef = useRef(onStreamError);
   onStreamErrorRef.current = onStreamError;
+  // While hls.js drives the element it reports failures itself; the element's
+  // own `error` event would then announce the same failure a second time.
+  const hlsActiveRef = useRef(false);
 
   // Native playback (plain files, or HLS without MSE) reports through `error`.
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    const onError = () => onStreamErrorRef.current?.();
+    const onError = () => {
+      if (!hlsActiveRef.current) onStreamErrorRef.current?.();
+    };
     video.addEventListener("error", onError);
     return () => video.removeEventListener("error", onError);
   }, []);
@@ -57,7 +62,7 @@ export const StreamVideo = forwardRef<HTMLVideoElement, StreamVideoProps>(functi
     }
     let destroyed = false;
     let detach: (() => void) | undefined;
-    void import("hls.js").then(({ default: Hls }) => {
+    import("hls.js").then(({ default: Hls }) => {
       if (destroyed) return;
       if (!Hls.isSupported()) {
         // No MSE (iOS Safari): the browser's own HLS player.
@@ -65,8 +70,14 @@ export const StreamVideo = forwardRef<HTMLVideoElement, StreamVideoProps>(functi
         return;
       }
       const hls = new Hls();
+      hlsActiveRef.current = true;
       let networkRetried = false;
       let mediaRetried = false;
+      // A segment arriving again means the last blip is over: the next one
+      // gets its own retry instead of going straight to a new URL.
+      hls.on(Hls.Events.FRAG_LOADED, () => {
+        networkRetried = false;
+      });
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (!data.fatal) return;
         const status = data.response?.code;
@@ -82,12 +93,20 @@ export const StreamVideo = forwardRef<HTMLVideoElement, StreamVideoProps>(functi
           return;
         }
         hls.destroy();
+        hlsActiveRef.current = false;
         detach = undefined;
         onStreamErrorRef.current?.();
       });
       hls.loadSource(src);
       hls.attachMedia(video);
-      detach = () => hls.destroy();
+      detach = () => {
+        hls.destroy();
+        hlsActiveRef.current = false;
+      };
+    }).catch(() => {
+      // The player chunk failed to load (offline, or a deploy replaced it):
+      // let the owner retry rather than leave a blank player.
+      if (!destroyed) onStreamErrorRef.current?.();
     });
     return () => {
       destroyed = true;

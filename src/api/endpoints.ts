@@ -101,11 +101,14 @@ export const authApi = {
     ),
   // Real web login: a full-page navigation to the backend, which redirects to
   // the provider's actual authorization screen. No token is ever handled here.
-  socialStartUrl: (provider: SocialProvider, returnTo = "/") =>
-    `${API_BASE_URL}/auth/social/${provider}/start?return_to=${encodeURIComponent(returnTo)}`,
-  // After the provider callback, the SPA swaps the one-time login_code for tokens.
-  socialExchange: (login_code: string) =>
-    http.post<TokenResponse>("/auth/social/exchange", { login_code }, { auth: false }),
+  // `clientChallenge` binds the login to this browser (see hooks/socialLogin).
+  socialStartUrl: (provider: SocialProvider, clientChallenge: string, returnTo = "/") =>
+    `${API_BASE_URL}/auth/social/${provider}/start?return_to=${encodeURIComponent(returnTo)}` +
+    `&client_challenge=${encodeURIComponent(clientChallenge)}`,
+  // After the provider callback, the SPA swaps the one-time login_code for
+  // tokens, proving it is the browser that started the login.
+  socialExchange: (login_code: string, client_verifier: string) =>
+    http.post<TokenResponse>("/auth/social/exchange", { login_code, client_verifier }, { auth: false }),
   recoverEmail: (verification_token: string, name: string) =>
     http.post<{ email: string }>("/auth/email/recover", { verification_token, name }, { auth: false }),
   resetVerify: (email: string, phone_verification_token: string) =>

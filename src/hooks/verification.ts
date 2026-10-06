@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { secondsUntil } from "../lib/format";
-import { errorMessage } from "../lib/http";
+import { ApiError, errorMessage } from "../lib/http";
+import { resolveMessage } from "../i18n/current";
 import type { VerificationStart, VerificationConfirm } from "../lib/types";
 
 /**
@@ -88,7 +89,13 @@ export function useVerification(opts: {
       setSecondsLeft(secondsUntil(res.expires_at));
       setCooldown(secondsUntil(res.resend_available_at) || 0);
     } catch (e) {
-      setError(errorMessage(e));
+      // A number that can't receive SMS won't work on retry: say so in the
+      // learner's language instead of the server's English wording.
+      setError(
+        e instanceof ApiError && e.code === "phone_number_undeliverable"
+          ? resolveMessage("httpError.phoneUndeliverable")
+          : errorMessage(e),
+      );
     } finally {
       setSending(false);
     }

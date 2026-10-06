@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "../i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../components/ui/kit";
@@ -21,11 +21,7 @@ import playerPlay from "../assets/brand/player-play.svg";
 import playerBack5 from "../assets/brand/player-back5.svg";
 import playerFwd5 from "../assets/brand/player-fwd5.svg";
 import playerKnob from "../assets/brand/player-knob.svg";
-import mascotTangerine from "../assets/brand/ask-mascot-tangerine.svg";
-import mascotDot868 from "../assets/brand/ask-mascot-dot-868.svg";
-import mascotDot878 from "../assets/brand/ask-mascot-dot-878.svg";
-import mascotDot879 from "../assets/brand/ask-mascot-dot-879.svg";
-import mascotDot881 from "../assets/brand/ask-mascot-dot-881.svg";
+import { AskMascot } from "../components/lecture/AskMascot";
 
 /** mm:ss, zero-padded — COU-004 prints both ends of the scrubber that way. */
 function fmt(sec: number) {
@@ -48,6 +44,55 @@ export const HEARTBEAT_SECONDS = 15;
 /** Navigation state the course page reads to show COU-021's reward. */
 export type CourseRewardState = { rewardPoints?: number };
 
+/** Set by the series page when it opens a lesson: the player then returns by
+ * stepping back instead of pushing the series page again. */
+export type LectureEntryState = { fromSeriesId?: string };
+
+const SERIES_REWARD_KEY = "hangyul.seriesReward:";
+
+// The latest position save per lecture (beat, pause or exit). Reopening the
+// lecture waits for it before reading the lecture back, so a quick close and
+// reopen can never read the position from before the save landed.
+const pendingSaves = new Map<string, Promise<unknown>>();
+
+/** Send a position save and track it; never rejects. */
+function saveOnExit(lectureId: string, seconds: number) {
+  const save = learnApi
+    .progress(lectureId, Math.floor(seconds))
+    .catch(() => undefined)
+    .finally(() => {
+      if (pendingSaves.get(lectureId) === save) pendingSaves.delete(lectureId);
+    });
+  pendingSaves.set(lectureId, save);
+}
+
+/** Hand the just-earned points to the series page we are stepping back to
+ * (history.back cannot carry router state). */
+function stashSeriesReward(seriesId: string, points: number) {
+  try {
+    sessionStorage.setItem(SERIES_REWARD_KEY + seriesId, String(points));
+  } catch {
+    // Storage unavailable: the points are paid anyway; only the modal is lost.
+  }
+}
+
+/** The points a lesson handed back to this series page, if any. */
+export function peekSeriesReward(seriesId: string): number {
+  try {
+    return Number(sessionStorage.getItem(SERIES_REWARD_KEY + seriesId)) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+export function clearSeriesReward(seriesId: string) {
+  try {
+    sessionStorage.removeItem(SERIES_REWARD_KEY + seriesId);
+  } catch {
+    // nothing to clear
+  }
+}
+
 /**
  * The lecture player — COU-004 (conversation, 230:7011) and COU-005 (TOPIK,
  * 1135:20041).
@@ -63,6 +108,7 @@ export function Lecture() {
   const { t, language } = useTranslation();
   const { lectureId = "" } = useParams();
   const nav = useNavigate();
+  const entry = useLocation().state as LectureEntryState | null;
   const toast = useToast();
   const qc = useQueryClient();
   const [pos, setPos] = useState(0);
@@ -131,7 +177,21 @@ export function Lecture() {
 
   const markStudied = useMarkStudied();
 
-  const q = useQuery({ queryKey: ["lecture", lectureId, language], queryFn: () => learnApi.lecture(lectureId, language) });
+  // Always read fresh on open — the saved position comes with it — and only
+  // after this lecture's exit save (if one is still in flight) has landed.
+  // The app-wide 15s staleTime used to hand a reopened lecture its cached
+  // position from the previous visit, so it started over from the beginning.
+  const q = useQuery({
+    queryKey: ["lecture", lectureId, language],
+    queryFn: async () => {
+      await pendingSaves.get(lectureId);
+      return learnApi.lecture(lectureId, language);
+    },
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
+  // The video waits for that fresh read (cached data shows the title meanwhile).
+  const fresh = q.isFetchedAfterMount && !!q.data;
   // Only to pick the quit confirm's wording: "goal already met" vs "a bit left".
   const dashboard = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary, enabled: quitOpen });
 
@@ -166,8 +226,12 @@ export function Lecture() {
   }, [showControls]);
 
   // Try to fetch a real playback URL; premium content 402s → show the gate.
+  // Once per visit, after the fresh read: a later refetch (window focus) must
+  // not swap the URL and restart the video mid-play.
+  const playRequestedRef = useRef(false);
   useEffect(() => {
-    if (!q.data) return;
+    if (!fresh || playRequestedRef.current) return;
+    playRequestedRef.current = true;
     learnApi
       .lecturePlay(lectureId)
       .then((r) => setVideoUrl(r.video.url))
@@ -175,7 +239,31 @@ export function Lecture() {
         if (e instanceof ApiError && e.status === 402) setPremiumLocked(true);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q.data]);
+  }, [fresh]);
+
+  // Save the position whenever the learner leaves — the X, the system back,
+  // switching lecture or app — not only on pause: closing mid-play used to
+  // keep only the last 15s beat, or nothing in the first 15 seconds.
+  const finishedRef = useRef(false);
+  finishedRef.current = !!finished;
+  useEffect(() => {
+    const flush = () => {
+      const at = lastTimeRef.current;
+      if (finishedRef.current || at <= 0 || Math.floor(at) === Math.floor(lastBeatRef.current)) return;
+      lastBeatRef.current = at;
+      saveOnExit(lectureId, at);
+    };
+    const onHidden = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    document.addEventListener("visibilitychange", onHidden);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", onHidden);
+      window.removeEventListener("pagehide", flush);
+      flush();
+    };
+  }, [lectureId]);
 
   /** Fraction of the clip already played, as a percentage of the track. */
   function pct(l: Lec) {
@@ -209,8 +297,11 @@ export function Lecture() {
   /** Report the position; quiet, since it runs in the background while watching. */
   async function heartbeat(seconds: number) {
     lastBeatRef.current = seconds;
+    // Tracked like the exit save: the pause that closing triggers sends the
+    // last position here, and a quick reopen must wait for it.
+    saveOnExit(lectureId, seconds);
     try {
-      await learnApi.progress(lectureId, Math.floor(seconds));
+      await pendingSaves.get(lectureId);
       // The catalog's started/done markers come from the progress just written.
       // (This screen's own ["lecture", id] is left alone: refetching it would
       // re-request the playback URL and reload the video mid-play.)
@@ -273,17 +364,29 @@ export function Lecture() {
   }
 
   // Out of a lesson, the learner lands on its series' lesson list (COU-002).
-  function leave() {
+  // Opened from that list, the player steps back to it: replacing the player
+  // with a fresh series entry left the original one behind it in history, so
+  // every lesson watched added one more back press. Opened any other way (a
+  // link, a notification), the player is replaced by the series page.
+  function backToSeries(rewardPoints = 0) {
     const l = q.data;
-    if (l?.series_id) nav(`/series/${l.series_id}`, { replace: true });
-    else nav(-1);
+    if (l?.series_id && entry?.fromSeriesId === l.series_id) {
+      if (rewardPoints > 0) stashSeriesReward(l.series_id, rewardPoints);
+      nav(-1);
+    } else if (l?.series_id) {
+      const state: CourseRewardState = { rewardPoints };
+      nav(`/series/${l.series_id}`, { replace: true, state });
+    } else {
+      nav(-1);
+    }
+  }
+
+  function leave() {
+    backToSeries();
   }
 
   function continueAfterEnd() {
-    const l = q.data;
-    const state: CourseRewardState = { rewardPoints: finished?.points ?? 0 };
-    if (l?.series_id) nav(`/series/${l.series_id}`, { replace: true, state });
-    else nav(-1);
+    backToSeries(finished?.points ?? 0);
   }
 
   function requestClose() {
@@ -426,22 +529,8 @@ export function Lecture() {
                     {t("courses.askBubble")}
                   </span>
                 )}
-                {/* 230:7053 — a white 45px disc with a 3px #FFDC7E ring; the
-                    tangerine (turned 9.31°) and its four highlights are clipped
-                    to the disc, each at its frame offset. */}
-                <span className="lecp__mascot" aria-hidden="true">
-                  <span className="lecp__mascot-art">
-                    <span className="lecp__mascot-body">
-                      <span className="lecp__mascot-turn">
-                        <img src={mascotTangerine} alt="" width={45.284} height={53.099} />
-                      </span>
-                    </span>
-                    <img className="lecp__mascot-dot lecp__mascot-dot--868" src={mascotDot868} alt="" />
-                    <img className="lecp__mascot-dot lecp__mascot-dot--879" src={mascotDot879} alt="" />
-                    <img className="lecp__mascot-dot lecp__mascot-dot--881" src={mascotDot881} alt="" />
-                    <img className="lecp__mascot-dot lecp__mascot-dot--878" src={mascotDot878} alt="" />
-                  </span>
-                </span>
+                {/* 230:7053 — a white 45px disc with a 3px gradient ring. */}
+                <AskMascot />
               </button>
 
             <div className="lecp__controls" {...hoverHold}>

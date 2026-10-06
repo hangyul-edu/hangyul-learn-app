@@ -13883,6 +13883,21 @@ textarea.input {
   width: 2.204px;
   height: 2.204px;
 }
+/* 511:9104 — the practice screens' disc: a solid 3px #FFDC7E stroke drawn on
+   the 45px circle, over the art (the tangerine is clipped to the same 45px
+   mask, so the ring sits on its rim). */
+.lecp__mascot--solid::before {
+  content: none;
+}
+.lecp__mascot--solid::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 3px solid #ffdc7e;
+  border-radius: 50%;
+  pointer-events: none;
+}
 .lecp__controls {
   /* 230:7013 — a 169px block pinned to the foot of the screen, over the
      picture; times at 662.5, track at 682, buttons at 701 and the speed chip
@@ -14068,18 +14083,20 @@ textarea.input {
   background: #ffffff;
 }
 .cdet__nav {
-  /* The cover starts at y=79, so the bar is only 35 tall — the back glyph at
-     (20, 47) hangs its 44px hit area above and below it. */
+  /* The app's top nav (cp_B_01_topNav): 50 tall with the 24px back glyph
+     centred at (20, 13) — the same place as on every other screen (COU-014's
+     nav, the shared topbar). COU-002 draws the glyph 3px under a phone status
+     bar, which on the web put it against the top edge of the screen. */
   position: relative;
-  height: 35px;
+  height: 50px;
   margin-top: var(--safe-top);
   background: #ffffff;
 }
 .cdet__back {
-  /* ic_B_topNav sits at (20, 47) — 3px into the 50px bar. */
+  /* A 44px hit area around the 24px glyph at (20, 13). */
   position: absolute;
-  left: 8px;
-  top: -7px;
+  left: 10px;
+  top: 3px;
   width: 44px;
   height: 44px;
   display: grid;
@@ -14092,7 +14109,7 @@ textarea.input {
   padding: 0 0 calc(var(--nav-total) + 24px);
 }
 .cdet__hero {
-  /* Group 1410118567 — full-bleed 375x249 at y=79 (app 35). */
+  /* Group 1410118567 — full-bleed 375x249, right under the 50px nav. */
   position: relative;
   height: 249px;
   background: #f7e8dc;
@@ -17707,11 +17724,35 @@ textarea.input {
 .screen--practice .topbar {
   background: transparent;
 }
+/* 511:8870 — cp_B_01_topNav over the gradient: the shared 50px bar (24px back
+   glyph, centred title, 24px gap) with a transparent ground and the Heading 8
+   title, SemiBold 18 / 22.25 in Gray 7. A long lesson title is cut with an
+   ellipsis rather than pushing the back button aside. */
+.topnav--practice {
+  background: transparent;
+  gap: 12px;
+}
+.topnav--practice .topnav__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 18px;
+  line-height: 22.25px;
+  text-align: center;
+}
 .screen--practice .pqz-page__mascot {
   padding: 0;
   border: 0;
   background: none;
   cursor: pointer;
+}
+/* 511:9250 — the rail is black at 30% with the brand fill, both r24. */
+.screen--practice .pqz-page__progress {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 24px;
+}
+.screen--practice .pqz-page__progress > span {
+  border-radius: 24px;
 }
 .spk-page__card {
   margin-top: 35px;

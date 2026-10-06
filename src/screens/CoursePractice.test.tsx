@@ -169,6 +169,16 @@ describe("SeriesPage", () => {
     expect(api.series).toHaveBeenCalledWith("S1", "ko");
   });
 
+  it("opens lessons marked as coming from this series, and shows a reward handed back on stepping back", async () => {
+    api.series.mockResolvedValue(series([lesson("L1", "track_conversation")], { lecture_id: "L1", position_seconds: 0 }));
+    sessionStorage.setItem("hangyul.seriesReward:S1", "100");
+    renderAt("/series/S1");
+    // The player stepped back here with the points (no route state).
+    expect(await screen.findByText("+100P")).toBeInTheDocument();
+    // Read once: a later visit does not show it again.
+    expect(sessionStorage.getItem("hangyul.seriesReward:S1")).toBeNull();
+  });
+
   it("shows the watch-complete reward the player handed back (COU-021)", async () => {
     api.series.mockResolvedValue(series([], null));
     renderAt("/series/S1", { rewardPoints: 100 });
@@ -219,6 +229,20 @@ describe("SpeakPractice", () => {
     await screen.findByText("연습 문장 1/2");
     fireEvent.click(screen.getByRole("button", { name: "뒤로 가기" }));
     expect(await screen.findByText("연습을 마칠까요?")).toBeInTheDocument();
+  });
+
+  it("draws COU-014's chrome: the topnav back glyph, the centred title and the ringed mascot", async () => {
+    // Regression: the screen used the generic topbar's tiny "‹" and the
+    // full-body character instead of 511:8870's nav and 511:9103's disc.
+    const { container } = renderAt("/lectures/L1/speak");
+    await screen.findByText("연습 문장 1/2");
+    const back = screen.getByRole("button", { name: "뒤로 가기" });
+    expect(back).toHaveClass("topnav__back");
+    expect(back.querySelector("img")).not.toBeNull();
+    expect(back.textContent).toBe("");
+    expect(container.querySelector(".topnav--practice .topnav__title")).not.toBeNull();
+    const mascot = screen.getByRole("button", { name: /한귤|물어|chatbot|챗봇/i });
+    expect(mascot.querySelector(".lecp__mascot.lecp__mascot--solid")).not.toBeNull();
   });
 
   it("says so when the lecture has no speaking checkpoints", async () => {

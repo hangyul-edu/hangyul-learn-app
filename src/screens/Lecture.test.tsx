@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 
 const { lecture, lecturePlay, lectureVideo, progress, completeLecture, checkpointInteraction, recordActivity, summary } = vi.hoisted(() => ({
   lecture: vi.fn(),
@@ -22,7 +22,7 @@ vi.mock("../api/endpoints", () => ({
 }));
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn(), show: vi.fn() }) }));
 
-import { Lecture } from "./Lecture";
+import { Lecture, peekSeriesReward } from "./Lecture";
 import { I18nProvider } from "../i18n";
 
 const QUESTION = {
@@ -476,5 +476,86 @@ describe("Lecture player", () => {
     expect(await screen.findByText("끝까지 해내면 오늘이 더 뿌듯해질 거예요 😊")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "지금 그만할래요" }));
     expect(await screen.findByTestId("course")).toBeInTheDocument();
+  });
+});
+
+describe("Lecture player — history and saved position", () => {
+  /** Classes tab → series → lesson (opened from the series), as in the app. */
+  function renderFromSeries(qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })) {
+    function SeriesProbe() {
+      const nav = useNavigate();
+      return (
+        <div>
+          <div data-testid="series">{peekSeriesReward("S1")}</div>
+          <button onClick={() => nav(-1)}>series-back</button>
+        </div>
+      );
+    }
+    const utils = render(
+      <I18nProvider language="ko">
+        <QueryClientProvider client={qc}>
+          <MemoryRouter
+            initialEntries={["/courses", "/series/S1", { pathname: "/lectures/L1", state: { fromSeriesId: "S1" } }]}
+            initialIndex={2}
+          >
+            <Routes>
+              <Route path="/courses" element={<div data-testid="classes" />} />
+              <Route path="/series/:seriesId" element={<SeriesProbe />} />
+              <Route path="/lectures/:lectureId" element={<Lecture />} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </I18nProvider>,
+    );
+    return { ...utils, qc };
+  }
+
+  beforeEach(() => sessionStorage.clear());
+
+  it("steps back to the series it was opened from, so one more back reaches the Classes tab", async () => {
+    // Regression: closing replaced the player with a new series entry, leaving
+    // the original one behind it — each lesson watched added a back press.
+    lecture.mockResolvedValue(detail({ last_position_seconds: 120, completed: false }));
+    const { container } = renderFromSeries();
+    await loadedVideo(container);
+    fireEvent.click(screen.getByRole("button", { name: "닫기" }));
+    fireEvent.click(await screen.findByRole("button", { name: "지금 그만할래요" }));
+    await screen.findByTestId("series");
+    fireEvent.click(screen.getByRole("button", { name: "series-back" }));
+    expect(await screen.findByTestId("classes")).toBeInTheDocument();
+  });
+
+  it("hands the reward to the series page it steps back to", async () => {
+    lecture.mockResolvedValue(detail(null));
+    const { container } = renderFromSeries();
+    const video = await loadedVideo(container);
+    fireEvent.ended(video);
+    await screen.findByText("끝까지 다 봤어요 👏");
+    fireEvent.click(screen.getByRole("button", { name: "계속하기" }));
+    expect(await screen.findByTestId("series")).toHaveTextContent("100");
+  });
+
+  it("saves the position when the player closes, even inside the first 15 seconds", async () => {
+    // Regression: only the 15-second beat and pauses saved, so leaving early
+    // (or by the system back, which never pauses) kept nothing.
+    lecture.mockResolvedValue(detail({ last_position_seconds: 0, completed: false }));
+    const { container, unmount } = renderLecture();
+    const video = await loadedVideo(container);
+    playTo(video, 7.4);
+    expect(progress).not.toHaveBeenCalled();
+    unmount();
+    expect(progress).toHaveBeenCalledWith("L1", 7);
+  });
+
+  it("reopens at the position read fresh from the server, not the cached one", async () => {
+    // Regression: the app-wide 15s cache handed a reopened lecture the
+    // position from its previous visit, so it started from the beginning.
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 15_000 } } });
+    qc.setQueryData(["lecture", "L1", "ko"], detail({ last_position_seconds: 0, completed: false }));
+    lecture.mockResolvedValue(detail({ last_position_seconds: 95, completed: false }));
+    const { container } = renderLecture(qc);
+    const video = await loadedVideo(container);
+    expect(lecture).toHaveBeenCalledTimes(1);
+    expect(video.currentTime).toBe(95);
   });
 });

@@ -5,7 +5,8 @@ import { useTranslation } from "../i18n";
 import { Screen } from "../components/layout/Screen";
 import { ConfirmDialog } from "../components/ui/Modal";
 import { EmptyState, LoadingState } from "../components/ui/states";
-import { CharacterArt } from "../components/brand/ProfileAssets";
+import { DetailHeader } from "../components/DetailHeader";
+import { AskMascot } from "../components/lecture/AskMascot";
 import { AskAiSheet } from "../components/AskAiSheet";
 import { SpeakingCard } from "../components/lecture/SpeakingCard";
 import type { SpeakingOutcome } from "../components/lecture/SpeakingCard";
@@ -60,8 +61,9 @@ export function SpeakPractice() {
   ) : (
     <div className="pqz-page">
       <span className="pqz-page__count">{t("courses.sentenceCount", { current: idx + 1, total })}</span>
+      {/* 511:9103 — the 45px mascot disc with its solid #FFDC7E ring. */}
       <button className="pqz-page__mascot" onClick={() => setAskOpen(true)} aria-label={t("courses.chatbotA11y")}>
-        <CharacterArt variant="AVATAR_01" fill="100%" />
+        <AskMascot ring="solid" />
       </button>
       <div className="pqz-page__progress">
         <span style={{ width: `${((idx + 1) / total) * 100}%` }} />
@@ -103,7 +105,16 @@ export function SpeakPractice() {
   );
 
   return (
-    <Screen title={lecture.data?.title} back onBack={() => (total ? setQuitOpen(true) : nav(-1))} className="screen--practice">
+    <Screen
+      className="screen--practice"
+      header={
+        <DetailHeader
+          className="topnav--practice"
+          title={lecture.data?.title ?? ""}
+          onBack={() => (total ? setQuitOpen(true) : nav(-1))}
+        />
+      }
+    >
       {body}
       <ConfirmDialog
         open={quitOpen}

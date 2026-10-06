@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "../i18n";
 import { useQuery } from "@tanstack/react-query";
@@ -9,8 +9,10 @@ import coursePlay from "../assets/brand/course-play.svg";
 import courseMic from "../assets/brand/course-mic.png";
 import courseNotebook from "../assets/brand/course-notebook.svg";
 import { RewardModal } from "../components/ReviewRewardModal";
-import type { CourseRewardState } from "./Lecture";
+import { clearSeriesReward, peekSeriesReward } from "./Lecture";
+import type { CourseRewardState, LectureEntryState } from "./Lecture";
 import icCheck from "../assets/brand/ic-16-check.svg";
+import icBack from "../assets/brand/ic-topnav-back.svg";
 
 /** mm:ss — COU-002 prints every lesson's length as a zero-padded clock. */
 function fmtDur(sec: number) {
@@ -90,8 +92,19 @@ export function SeriesPage() {
     queryFn: () => learnApi.series(seriesId, language),
     staleTime: 0,
   });
-  // COU-021: the player hands back the points a just-finished lecture paid.
-  const [reward, setReward] = useState(() => (location.state as CourseRewardState | null)?.rewardPoints ?? 0);
+  // COU-021: the player hands back the points a just-finished lecture paid —
+  // in the route state when it replaced itself with this page, or in session
+  // storage when it stepped back to the entry it was opened from.
+  const [reward, setReward] = useState(
+    () => (location.state as CourseRewardState | null)?.rewardPoints || peekSeriesReward(seriesId),
+  );
+  // Read once per visit; cleared after the first render so StrictMode's double
+  // initialiser still sees it.
+  useEffect(() => clearSeriesReward(seriesId), [seriesId]);
+
+  // Lessons opened from here step back to this entry when the player closes.
+  const entry: LectureEntryState = { fromSeriesId: seriesId };
+  const openLesson = (path: string) => nav(path, { state: entry });
 
   function closeReward() {
     setReward(0);
@@ -103,9 +116,7 @@ export function SeriesPage() {
     <div className="screen cdet">
       <header className="cdet__nav">
         <button className="cdet__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M15 5l-7 7 7 7" stroke="#262c31" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <img src={icBack} alt="" aria-hidden="true" width={24} height={24} />
         </button>
       </header>
 
@@ -122,7 +133,7 @@ export function SeriesPage() {
                 <div className="cdet__hero">
                   {s.thumbnail_url && <img className="cdet__hero-img" src={s.thumbnail_url} alt={s.title} />}
                   {resume && (
-                    <button className="cdet__cta" onClick={() => nav(`/lectures/${resume.lecture_id}`)}>
+                    <button className="cdet__cta" onClick={() => openLesson(`/lectures/${resume.lecture_id}`)}>
                       {t("courses.startNow")}
                     </button>
                   )}
@@ -133,7 +144,7 @@ export function SeriesPage() {
                     <LessonRow
                       key={l.lecture_id}
                       lesson={l}
-                      onOpen={() => nav(`/lectures/${l.lecture_id}`)}
+                      onOpen={() => openLesson(`/lectures/${l.lecture_id}`)}
                       onPractice={() =>
                         nav(`/lectures/${l.lecture_id}/${l.track_id === "track_topik" ? "practice" : "speak"}`)
                       }

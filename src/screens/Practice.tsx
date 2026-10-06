@@ -5,7 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Screen } from "../components/layout/Screen";
 import { Button } from "../components/ui/kit";
 import { ConfirmDialog } from "../components/ui/Modal";
-import { CharacterArt } from "../components/brand/ProfileAssets";
+import { DetailHeader } from "../components/DetailHeader";
+import { AskMascot } from "../components/lecture/AskMascot";
 import { EmptyState, LoadingState } from "../components/ui/states";
 import { AskAiSheet } from "../components/AskAiSheet";
 import { QuestionCard } from "../components/lecture/QuestionCard";
@@ -129,10 +130,14 @@ export function Practice() {
 
   return (
     <Screen
-      title={lecture.data?.title ?? t("study.reviewTitle")}
-      back
-      onBack={() => setQuitOpen(true)}
       className="screen--practice"
+      header={
+        <DetailHeader
+          className="topnav--practice"
+          title={lecture.data?.title ?? t("study.reviewTitle")}
+          onBack={() => setQuitOpen(true)}
+        />
+      }
     >
       <div className="pqz-page">
         <span className="pqz-page__count">
@@ -146,7 +151,7 @@ export function Practice() {
           </button>
         )}
         <button className="pqz-page__mascot" onClick={() => setAskOpen(true)} aria-label={t("courses.chatbotA11y")}>
-          <CharacterArt variant="AVATAR_01" fill="100%" />
+          <AskMascot ring="solid" />
         </button>
         <div className="pqz-page__progress">
           {/* COU-016/019: the rail is full when the counter reads n/n, so it

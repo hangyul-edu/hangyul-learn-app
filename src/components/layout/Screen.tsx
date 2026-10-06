@@ -37,6 +37,7 @@ export function Screen({
   onBack,
   right,
   topBar = true,
+  header,
   nav,
   className,
   children,
@@ -46,6 +47,8 @@ export function Screen({
   onBack?: () => void;
   right?: ReactNode;
   topBar?: boolean;
+  /** A screen-specific top bar (e.g. DetailHeader) in place of the generic one. */
+  header?: ReactNode;
   /** add bottom padding so content clears the bottom nav */
   nav?: boolean;
   /** Extra class on the screen root, e.g. a screen-specific background. */
@@ -54,7 +57,7 @@ export function Screen({
 }) {
   return (
     <div className={className ? `screen ${className}` : "screen"}>
-      {topBar && <TopBar title={title} back={back} onBack={onBack} right={right} />}
+      {header ?? (topBar && <TopBar title={title} back={back} onBack={onBack} right={right} />)}
       <div className={`screen__body ${nav ? "screen__body--nav" : ""}`}>{children}</div>
     </div>
   );

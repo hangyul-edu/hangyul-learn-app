@@ -89,6 +89,12 @@ export function useVerification(opts: {
       setSecondsLeft(secondsUntil(res.expires_at));
       setCooldown(secondsUntil(res.resend_available_at) || 0);
     } catch (e) {
+      // A code was sent moments ago (another tab, a double tap): the server
+      // says how long to wait, so run the resend countdown from it.
+      const wait = e instanceof ApiError ? e.details?.retry_after_seconds : undefined;
+      if (e instanceof ApiError && e.code === "rate_limited" && typeof wait === "number" && wait > 0) {
+        setCooldown(Math.ceil(wait));
+      }
       // A number that can't receive SMS won't work on retry: say so in the
       // learner's language instead of the server's English wording.
       setError(

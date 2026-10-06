@@ -554,7 +554,7 @@ export const en: Catalog = {
     notConfigured: "Login with this provider isn't set up yet.",
     providerUnavailable: "We can't reach the login service right now. Please try again in a moment.",
     emailRegistered: "An account with this email already exists. Please log in the way you originally signed up.",
-    accountInactive: "This account has been deleted or suspended.",
+    accountInactive: "This account has been deleted or suspended. A deleted account can't be used to sign up again.",
     loginFailed: "Couldn't complete login. Please try again.",
   },
 
@@ -566,6 +566,22 @@ export const en: Catalog = {
     placeholder: "Enter your password", // I3085:29132;3021:65660
     a11y: "Current password",
     empty: "Enter your password.",
+  },
+
+  /**
+   * Withdrawal step for an account created by social login (no password):
+   * confirm by signing in with the linked provider again. app-authored.
+   */
+  withdrawReauth: {
+    title: "Confirm It's You",
+    guide: "You signed up with a social account.\nSign in with it again to confirm deletion.",
+    unavailable: "This account's sign-in method can't be confirmed on the web.\nPlease delete your account in the app.",
+    deleting: "Deleting your account",
+    mismatch: "That social account isn't linked to this account. Sign in with the one you signed up with.",
+    expired: "Your confirmation expired. Please sign in again.",
+    cancelled: "Sign-in was cancelled, so your account was not deleted.",
+    providerUnavailable: "We can't reach the sign-in service right now. Please try again in a moment.",
+    failed: "We couldn't confirm it's you. Please try again.",
   },
 
   /** First-run language chooser — AME-001 (EN 784:53343). */

@@ -567,7 +567,7 @@ export const ko = {
     notConfigured: "이 제공자의 로그인이 아직 설정되지 않았어요.",
     providerUnavailable: "로그인 서비스에 잠시 연결할 수 없어요. 잠시 후 다시 시도해 주세요.",
     emailRegistered: "이 이메일로 가입한 계정이 이미 있어요. 처음 가입한 방법으로 로그인해 주세요.",
-    accountInactive: "탈퇴했거나 이용이 중지된 계정이에요.",
+    accountInactive: "탈퇴했거나 이용이 중지된 계정이에요. 탈퇴한 계정으로는 다시 가입할 수 없어요.",
     loginFailed: "로그인을 완료하지 못했어요. 다시 시도해 주세요.",
   },
 
@@ -579,6 +579,22 @@ export const ko = {
     placeholder: "비밀번호를 입력해주세요", // I3085:27271;3021:65660
     a11y: "현재 비밀번호",
     empty: "비밀번호를 입력해주세요.",
+  },
+
+  /**
+   * Withdrawal step for an account created by social login (no password):
+   * confirm by signing in with the linked provider again. app-authored.
+   */
+  withdrawReauth: {
+    title: "본인 확인",
+    guide: "소셜 계정으로 가입한 회원은 가입한 계정으로\n다시 로그인해 본인임을 확인해 주세요",
+    unavailable: "이 계정의 로그인 방식은 웹에서 본인 확인을 할 수 없어요.\n앱에서 탈퇴를 진행해 주세요.",
+    deleting: "탈퇴 처리 중",
+    mismatch: "이 계정에 연결된 소셜 계정이 아니에요. 가입할 때 사용한 계정으로 로그인해 주세요.",
+    expired: "본인 확인 시간이 지났어요. 다시 로그인해 주세요.",
+    cancelled: "로그인을 취소해서 탈퇴를 진행하지 않았어요.",
+    providerUnavailable: "로그인 서비스에 잠시 연결할 수 없어요. 잠시 후 다시 시도해 주세요.",
+    failed: "본인 확인에 실패했어요. 다시 시도해 주세요.",
   },
 
   /** First-run language chooser — AME-001 (1:12486 / EN 784:53343). */

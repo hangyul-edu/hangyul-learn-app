@@ -3,8 +3,14 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation, type TranslationKey } from "../i18n";
 import { authApi } from "../api/endpoints";
 import { useLoginFlow } from "../hooks/loginFlow";
-import { takeClientVerifier } from "../hooks/socialLogin";
+import {
+  REAUTH_RETURN_TO,
+  savePendingReauth,
+  takeClientVerifier,
+  takeSocialPurpose,
+} from "../hooks/socialLogin";
 import { LoadingState, ErrorState } from "../components/ui/states";
+import type { SocialProvider } from "../lib/types";
 
 /**
  * Landing page for the social-login callback. The backend has already verified
@@ -12,6 +18,10 @@ import { LoadingState, ErrorState } from "../components/ui/states";
  * single-use `login_code` (or a `social_error`). We swap the code — together
  * with the verifier saved when this browser started the login — for the real
  * tokens and route the user onward via the normal login flow.
+ *
+ * A re-authentication (`purpose=reauth`, confirming an account deletion)
+ * lands here too, with a `reauth_code` instead: it is passed — with the
+ * verifier — to the More screen, which completes the deletion.
  */
 const ERROR_TEXT: Record<string, TranslationKey> = {
   cancelled: "authComplete.cancelled",
@@ -36,8 +46,23 @@ export function AuthComplete() {
     ran.current = true;
     const socialError = params.get("social_error");
     const loginCode = params.get("login_code");
+    const reauthCode = params.get("reauth_code");
     // Always consume the verifier, so a stale one never outlives this attempt.
     const verifier = takeClientVerifier();
+    const purpose = takeSocialPurpose();
+    if (purpose === "reauth" || reauthCode) {
+      // A re-authentication to confirm an account deletion: no session is
+      // issued. Hand the outcome to the More screen, which finishes (or
+      // explains) the deletion.
+      const provider = params.get("provider") as SocialProvider | null;
+      if (reauthCode && verifier && provider && !socialError) {
+        savePendingReauth({ provider, reauth_code: reauthCode, client_verifier: verifier });
+      } else {
+        savePendingReauth({ error: socialError || "login_failed" });
+      }
+      nav(REAUTH_RETURN_TO, { replace: true });
+      return;
+    }
     if (socialError) {
       setError(socialError);
       return;

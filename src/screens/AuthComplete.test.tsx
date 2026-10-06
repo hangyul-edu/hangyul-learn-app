@@ -15,7 +15,13 @@ vi.mock("../hooks/loginFlow", () => ({ useLoginFlow: () => completeLogin }));
 
 import { authApi } from "../api/endpoints";
 import { AuthComplete } from "./AuthComplete";
-import { clientChallenge, newClientVerifier, takeClientVerifier, useSocialLogin } from "../hooks/socialLogin";
+import {
+  clientChallenge,
+  newClientVerifier,
+  takeClientVerifier,
+  takePendingReauth,
+  useSocialLogin,
+} from "../hooks/socialLogin";
 
 const exchange = authApi.socialExchange as unknown as ReturnType<typeof vi.fn>;
 
@@ -88,12 +94,57 @@ describe("social login browser binding", () => {
   it.each([
     ["provider_unavailable", "We can't reach the login service right now. Please try again in a moment."],
     ["email_registered", "An account with this email already exists. Please log in the way you originally signed up."],
-    ["account_inactive", "This account has been deleted or suspended."],
+    [
+      "account_inactive",
+      "This account has been deleted or suspended. A deleted account can't be used to sign up again.",
+    ],
     ["something_new", "Couldn't complete login. Please try again."],
   ])("shows a message for social_error=%s and drops the verifier", async (code, text) => {
     window.localStorage.setItem("hg-social-verifier", "v");
     renderAt(`/auth/complete?social_error=${code}`);
     expect(await screen.findByText(text)).toBeInTheDocument();
     expect(window.localStorage.getItem("hg-social-verifier")).toBeNull();
+  });
+});
+
+describe("re-authentication for account deletion", () => {
+  function renderWithMore(url: string) {
+    return render(
+      <I18nProvider language="en">
+        <MemoryRouter initialEntries={[url]}>
+          <Routes>
+            <Route path="/auth/complete" element={<AuthComplete />} />
+            <Route path="/profile" element={<p>more screen</p>} />
+          </Routes>
+        </MemoryRouter>
+      </I18nProvider>,
+    );
+  }
+
+  beforeEach(() => window.sessionStorage.clear());
+
+  it("hands the reauth code and this browser's verifier to the More screen, issuing no session", async () => {
+    window.localStorage.setItem("hg-social-verifier", "my-verifier");
+    window.localStorage.setItem("hg-social-purpose", "reauth");
+    renderWithMore("/auth/complete?reauth_code=rc-1&provider=apple&return_to=%2Fprofile");
+    expect(await screen.findByText("more screen")).toBeInTheDocument();
+    expect(takePendingReauth()).toEqual({ provider: "apple", reauth_code: "rc-1", client_verifier: "my-verifier" });
+    expect(exchange).not.toHaveBeenCalled();
+    expect(completeLogin).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem("hg-social-purpose")).toBeNull();
+  });
+
+  it("returns a failed re-authentication to the More screen as an error", async () => {
+    window.localStorage.setItem("hg-social-verifier", "v");
+    window.localStorage.setItem("hg-social-purpose", "reauth");
+    renderWithMore("/auth/complete?social_error=cancelled&provider=apple");
+    expect(await screen.findByText("more screen")).toBeInTheDocument();
+    expect(takePendingReauth()).toEqual({ error: "cancelled" });
+  });
+
+  it("never forwards a reauth code this browser did not start", async () => {
+    renderWithMore("/auth/complete?reauth_code=someone-elses&provider=apple");
+    expect(await screen.findByText("more screen")).toBeInTheDocument();
+    expect(takePendingReauth()).toEqual({ error: "login_failed" });
   });
 });

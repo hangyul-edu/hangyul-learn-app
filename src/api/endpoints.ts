@@ -63,6 +63,8 @@ import type {
   Sentence,
   SignupResponse,
   SocialProvider,
+  AccountDeletionBody,
+  AccountDeletionMethods,
   SpeechAttempt,
   StatsResp,
   StreakCalendarResp,
@@ -102,9 +104,17 @@ export const authApi = {
   // Real web login: a full-page navigation to the backend, which redirects to
   // the provider's actual authorization screen. No token is ever handled here.
   // `clientChallenge` binds the login to this browser (see hooks/socialLogin).
-  socialStartUrl: (provider: SocialProvider, clientChallenge: string, returnTo = "/") =>
+  // `purpose: "reauth"` re-authenticates a signed-in member (to confirm an
+  // account deletion): the callback hands back a `reauth_code`, no session.
+  socialStartUrl: (
+    provider: SocialProvider,
+    clientChallenge: string,
+    returnTo = "/",
+    purpose: "login" | "reauth" = "login",
+  ) =>
     `${API_BASE_URL}/auth/social/${provider}/start?return_to=${encodeURIComponent(returnTo)}` +
-    `&client_challenge=${encodeURIComponent(clientChallenge)}`,
+    `&client_challenge=${encodeURIComponent(clientChallenge)}` +
+    (purpose === "reauth" ? "&purpose=reauth" : ""),
   // After the provider callback, the SPA swaps the one-time login_code for
   // tokens, proving it is the browser that started the login.
   socialExchange: (login_code: string, client_verifier: string) =>
@@ -128,7 +138,8 @@ export const authApi = {
     http.post<VerificationConfirm>("/auth/email/change/verification/confirm", { verification_id, code }),
   changeEmail: (email: string, email_verification_token: string) =>
     http.post<{ email: string }>("/auth/email/change", { email, email_verification_token }),
-  deleteAccount: (password?: string | null) => http.del<void>("/auth/account", { body: { password } }),
+  deletionMethods: () => http.get<AccountDeletionMethods>("/auth/account/deletion-methods"),
+  deleteAccount: (body: AccountDeletionBody) => http.del<void>("/auth/account", { body }),
 };
 
 /* ------------------------------- User ------------------------------- */

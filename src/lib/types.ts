@@ -30,6 +30,23 @@ export interface VerificationConfirm {
 }
 export type SocialProvider = "google" | "apple" | "kakao" | "facebook" | "line";
 
+/** GET /auth/account/deletion-methods — how this account confirms a deletion. */
+export interface AccountDeletionMethods {
+  has_password: boolean;
+  providers: SocialProvider[];
+  /** Providers the web can re-authenticate through the redirect flow. */
+  web_providers: SocialProvider[];
+}
+
+/**
+ * DELETE /auth/account body: `password` for an account that has one;
+ * otherwise a provider re-authentication — on the web, the single-use
+ * `reauth_code` from the `purpose=reauth` redirect plus this browser's verifier.
+ */
+export type AccountDeletionBody =
+  | { password: string }
+  | { provider: SocialProvider; reauth_code: string; client_verifier: string };
+
 /* ---- Me / profile ---- */
 export type ProfileImageType = "CUSTOM" | "AVATAR" | "NONE";
 export interface Me {

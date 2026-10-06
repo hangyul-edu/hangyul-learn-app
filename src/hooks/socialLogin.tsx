@@ -64,10 +64,75 @@ export function takeClientVerifier(): string | null {
   }
 }
 
+/* ---- Re-authentication (confirming an account deletion) ----
+ *
+ * An account created by social login has no password, so deleting it is
+ * confirmed by signing in with the provider again. On the web that is the
+ * same redirect round trip with `purpose=reauth`: the backend verifies the
+ * identity but issues no session, and `/auth/complete` receives a single-use
+ * `reauth_code`. It hands that code (with this browser's verifier) to the More
+ * screen through sessionStorage, which then calls DELETE /auth/account.
+ */
+
+const PURPOSE_KEY = "hg-social-purpose";
+const PENDING_REAUTH_KEY = "hg-withdraw-reauth";
+/** Where the More screen lives; the round trip returns here. */
+export const REAUTH_RETURN_TO = "/profile";
+
+/** A re-authentication result waiting for the More screen. */
+export type PendingReauth =
+  | { provider: SocialProvider; reauth_code: string; client_verifier: string }
+  | { error: string };
+
+export async function startSocialReauth(provider: SocialProvider): Promise<void> {
+  const verifier = newClientVerifier();
+  storeVerifier(verifier);
+  try {
+    window.localStorage.setItem(PURPOSE_KEY, "reauth");
+  } catch {
+    /* storage unavailable */
+  }
+  const challenge = await clientChallenge(verifier);
+  window.location.assign(authApi.socialStartUrl(provider, challenge, REAUTH_RETURN_TO, "reauth"));
+}
+
+/** Read and forget why this browser last left for the provider. */
+export function takeSocialPurpose(): "login" | "reauth" {
+  try {
+    const value = window.localStorage.getItem(PURPOSE_KEY);
+    window.localStorage.removeItem(PURPOSE_KEY);
+    return value === "reauth" ? "reauth" : "login";
+  } catch {
+    return "login";
+  }
+}
+
+export function savePendingReauth(pending: PendingReauth): void {
+  try {
+    window.sessionStorage.setItem(PENDING_REAUTH_KEY, JSON.stringify(pending));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+/** Read and forget the pending re-authentication (single use). */
+export function takePendingReauth(): PendingReauth | null {
+  try {
+    const raw = window.sessionStorage.getItem(PENDING_REAUTH_KEY);
+    window.sessionStorage.removeItem(PENDING_REAUTH_KEY);
+    if (!raw) return null;
+    const value = JSON.parse(raw) as PendingReauth;
+    return value && typeof value === "object" ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 export function useSocialLogin(): { start: (provider: SocialProvider) => Promise<void> } {
   async function start(provider: SocialProvider) {
     const verifier = newClientVerifier();
     storeVerifier(verifier);
+    takeSocialPurpose(); // a plain login: drop any stale re-auth marker
     const challenge = await clientChallenge(verifier);
     // Leave the SPA and enter the provider's authorization flow. `return_to`
     // is a same-site path the backend validates against open redirects.

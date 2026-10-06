@@ -17719,8 +17719,20 @@ textarea.input {
    title, SemiBold 18 / 22.25 in Gray 7. A long lesson title is cut with an
    ellipsis rather than pushing the back button aside. */
 .topnav--practice {
+  position: relative;
+  /* Over the body's top edge below, so the back button's hit area wins. */
+  z-index: 1;
   background: transparent;
   gap: 12px;
+}
+/* The tutor mascot sits right at the nav's foot (511:9103 at y=94), and its
+   ring is a 3px stroke OUTSIDE the 45px disc — so the scrolling body, which
+   clips at its top edge, cut the top of the ring off. Start the body 8px up,
+   under the transparent nav, with 8px more padding: everything keeps its
+   frame position, and the clip edge moves clear of the ring. */
+.screen--practice > .screen__body {
+  margin-top: -8px;
+  padding-top: 24px;
 }
 .topnav--practice .topnav__title {
   min-width: 0;

@@ -6723,11 +6723,16 @@ textarea.input {
   cursor: pointer;
   padding: 0;
 }
-/* 1555:24976 — a 31-tall #F4F4F5 band, its 335-wide caption 20 in. */
+/* 1555:24976 — a 31-tall #F4F4F5 band, its 335-wide caption 20 in. The band
+   grows with its copy: one line is 8 + 15 + 8 = 31 as drawn, and a longer
+   translation (the English runs to two lines at 375) wraps inside the grey
+   instead of spilling below it. */
 .askai__disclaimer {
   margin: 0;
-  height: 31px;
-  padding: 8px 20px 0;
+  min-height: 31px;
+  padding: 8px 20px;
+  overflow-wrap: anywhere;
+  flex-shrink: 0;
   background: #f4f4f5;
   color: #adb4ba;
   font-size: 12px;
@@ -13882,21 +13887,6 @@ textarea.input {
   top: 23.357px;
   width: 2.204px;
   height: 2.204px;
-}
-/* 511:9104 — the practice screens' disc: a solid 3px #FFDC7E stroke drawn on
-   the 45px circle, over the art (the tangerine is clipped to the same 45px
-   mask, so the ring sits on its rim). */
-.lecp__mascot--solid::before {
-  content: none;
-}
-.lecp__mascot--solid::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  border: 3px solid #ffdc7e;
-  border-radius: 50%;
-  pointer-events: none;
 }
 .lecp__controls {
   /* 230:7013 — a 169px block pinned to the foot of the screen, over the

@@ -151,7 +151,7 @@ export function Practice() {
           </button>
         )}
         <button className="pqz-page__mascot" onClick={() => setAskOpen(true)} aria-label={t("courses.chatbotA11y")}>
-          <AskMascot ring="solid" />
+          <AskMascot />
         </button>
         <div className="pqz-page__progress">
           {/* COU-016/019: the rail is full when the counter reads n/n, so it

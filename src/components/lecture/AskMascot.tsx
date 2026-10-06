@@ -6,18 +6,16 @@ import mascotDot881 from "../../assets/brand/ask-mascot-dot-881.svg";
 
 /**
  * The 45px tutor mascot that opens 물어보기: a white disc with the tangerine
- * (turned 9.31°) and its four highlights clipped to it.
- *
- * - `ring="gradient"` — the lecture player's 230:7053: a 3px outside stroke
- *   running #FFDC7E → #FFAC00 → #FF6700.
- * - `ring="solid"` — the practice screens' 511:9103 (COU-014..019): a solid
- *   3px #FFDC7E stroke.
+ * (turned 9.31°) and its four highlights clipped to it, inside a 3px ring
+ * running #FFDC7E → #FFAC00 → #FF6700 — the same ring as the chatbot button
+ * on the Classes and Personalized tabs (chatbot-fab.svg), so the tutor looks
+ * the same wherever it appears (the player, COU-014..019's practice screens).
  *
  * Decorative: the button that holds it carries the label.
  */
-export function AskMascot({ ring = "gradient" }: { ring?: "gradient" | "solid" }) {
+export function AskMascot() {
   return (
-    <span className={`lecp__mascot${ring === "solid" ? " lecp__mascot--solid" : ""}`} aria-hidden="true">
+    <span className="lecp__mascot" aria-hidden="true">
       <span className="lecp__mascot-art">
         <span className="lecp__mascot-body">
           <span className="lecp__mascot-turn">

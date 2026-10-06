@@ -61,9 +61,9 @@ export function SpeakPractice() {
   ) : (
     <div className="pqz-page">
       <span className="pqz-page__count">{t("courses.sentenceCount", { current: idx + 1, total })}</span>
-      {/* 511:9103 — the 45px mascot disc with its solid #FFDC7E ring. */}
+      {/* 511:9103 — the 45px mascot disc, ringed like every chatbot button. */}
       <button className="pqz-page__mascot" onClick={() => setAskOpen(true)} aria-label={t("courses.chatbotA11y")}>
-        <AskMascot ring="solid" />
+        <AskMascot />
       </button>
       <div className="pqz-page__progress">
         <span style={{ width: `${((idx + 1) / total) * 100}%` }} />

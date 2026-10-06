@@ -242,7 +242,9 @@ describe("SpeakPractice", () => {
     expect(back.textContent).toBe("");
     expect(container.querySelector(".topnav--practice .topnav__title")).not.toBeNull();
     const mascot = screen.getByRole("button", { name: /한귤|물어|chatbot|챗봇/i });
-    expect(mascot.querySelector(".lecp__mascot.lecp__mascot--solid")).not.toBeNull();
+    // The same ringed disc as the player's tutor button — no per-screen variant.
+    expect(mascot.querySelector(".lecp__mascot")).not.toBeNull();
+    expect(mascot.querySelector("[class*='lecp__mascot--']")).toBeNull();
   });
 
   it("says so when the lecture has no speaking checkpoints", async () => {

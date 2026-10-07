@@ -15,7 +15,7 @@
  * the 19:00 study reminder never arrived on anyone's phone.
  */
 import { describe, expect, it } from "vitest";
-import { consentPayload } from "./Signup";
+import { consentPayload } from "../lib/signupAgreements";
 
 const NONE = {
   age: true,

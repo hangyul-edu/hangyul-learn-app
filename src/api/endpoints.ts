@@ -63,6 +63,7 @@ import type {
   SavedSentencesPage,
   Sentence,
   SignupResponse,
+  NextStep,
   SocialProvider,
   AccountDeletionBody,
   AccountDeletionMethods,
@@ -97,6 +98,9 @@ export const authApi = {
     http.post<VerificationConfirm>("/auth/email/verification/confirm", { verification_id, code }, { auth: false }),
   signup: (body: Record<string, unknown>) =>
     http.post<SignupResponse>("/auth/signup/email", body, { auth: false }),
+  /** Social signup's terms step: the same agreements as email signup. */
+  agreeSocialTerms: (body: Record<string, boolean>) =>
+    http.post<{ next_step: NextStep }>("/auth/signup/social/agreements", body),
   login: (email: string, password: string, auto_login: boolean) =>
     http.post<TokenResponse>("/auth/login/email", { email, password, auto_login }, { auth: false }),
   // Native id_token login. `nonce` is the raw value handed to the provider SDK;

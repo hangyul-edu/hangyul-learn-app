@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation, type TranslationKey } from "../i18n";
+import { useTranslation } from "../i18n";
 import { CountrySelect } from "../components/ui/CountrySelect";
 import { Sheet } from "../components/ui/Modal";
 import { PolicyBody } from "./Policy";
@@ -11,46 +11,19 @@ import { useVerification } from "../hooks/verification";
 import { errorMessage } from "../lib/http";
 import { passwordProblem } from "../lib/validation";
 import { NATIONALITIES } from "../lib/format";
-import { policyDoc, TERMS_OF_SERVICE, type PolicyId } from "../lib/policies";
+import { policyDoc, type PolicyId } from "../lib/policies";
+import {
+  AGREEMENTS,
+  NO_AGREEMENTS,
+  REQUIRED_AGREEMENTS,
+  agreementPayload,
+  type AgreeKey,
+  type Agreements,
+} from "../lib/signupAgreements";
 
 function emailValid(e: string) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
 }
-
-type AgreeKey = "age" | "terms" | "privacy" | "third" | "marketing" | "serviceNotice" | "adNotice";
-
-/**
- * The three optional consents, in the field names the signup API accepts.
- *
- * Extracted so the mapping can be tested on its own, because getting it wrong
- * is silent: the API ignores fields it does not declare, so a misnamed consent
- * is dropped without an error and the account is created as if the box were
- * never ticked. That is what happened — these went out as `*_consent`, which
- * the schema has no fields for, while the accepted `*_opt_in` names were
- * hardcoded false. `service_notification_opt_in` seeds the service-notifications
- * toggle the push fan-out gates on, so every account was created unable to
- * receive a push.
- */
-export function consentPayload(agree: Record<AgreeKey, boolean>) {
-  return {
-    marketing_opt_in: agree.marketing,
-    service_notification_opt_in: agree.serviceNotice,
-    ad_notification_opt_in: agree.adNotice,
-  };
-}
-/** The four required consents gate signup; the three optional ones do not.
- *  All seven are listed in Figma AME-004 (215:6769 / 784:55065). */
-const REQUIRED_AGREEMENTS: AgreeKey[] = ["age", "terms", "privacy", "third"];
-const AGREEMENTS: { key: AgreeKey; label: TranslationKey; underline?: boolean; doc?: PolicyId }[] = [
-  { key: "age", label: "signup.agreeAge" },
-  // The same document the Terms & Policies page shows — not a signup-only copy.
-  { key: "terms", label: "signup.agreeTerms", underline: true, doc: TERMS_OF_SERVICE },
-  { key: "privacy", label: "signup.agreePrivacy", doc: "privacy" },
-  { key: "third", label: "signup.agreeThird", doc: "third-party" },
-  { key: "marketing", label: "signup.agreeMarketing" },
-  { key: "serviceNotice", label: "signup.agreeServiceNotice" },
-  { key: "adNotice", label: "signup.agreeAdNotice" },
-];
 
 export function Signup() {
   const { t, language } = useTranslation();
@@ -67,10 +40,7 @@ export function Signup() {
   const [confirm, setConfirm] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const [agree, setAgree] = useState<Record<AgreeKey, boolean>>({
-    age: false, terms: false, privacy: false, third: false,
-    marketing: false, serviceNotice: false, adNotice: false,
-  });
+  const [agree, setAgree] = useState<Agreements>(NO_AGREEMENTS);
   const [policyOpen, setPolicyOpen] = useState<PolicyId | null>(null);
 
   const dial = useMemo(() => NATIONALITIES.find((n) => n.code === country)?.dial ?? "+82", [country]);
@@ -148,11 +118,7 @@ export function Signup() {
         phone_verification_token: phoneV.token,
         email_verification_token: emailV.token,
         nationality: country,
-        age_consent: agree.age,
-        terms_accepted: agree.terms,
-        privacy_accepted: agree.privacy,
-        third_party_accepted: agree.third,
-        ...consentPayload(agree),
+        ...agreementPayload(agree),
       });
       if (res.requires_login) {
         const token = await authApi.login(email.trim(), password, true);

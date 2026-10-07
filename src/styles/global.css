@@ -7036,6 +7036,161 @@ textarea.input {
   cursor: default;
 }
 
+/* ================= Social signup terms (/signup/terms) ================== */
+/* App-authored (no Figma frame): a centred two-line title, an "agree to all"
+   card and a card of agreement rows, with Next pinned at the bottom. */
+.sterms {
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.sterms__top {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  padding: calc(var(--safe-top) + 8px) 12px 0;
+}
+.sterms__close {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+.sterms__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 20px 16px;
+}
+.sterms__title {
+  margin: 32px 0 36px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.4;
+  letter-spacing: -0.3px;
+  text-align: center;
+  white-space: pre-line;
+}
+.sterms__all {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border: none;
+  border-radius: 16px;
+  background: var(--gray-1);
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+}
+.sterms__all-mark {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--gray-3);
+  color: #ffffff;
+  transition: background 0.14s;
+}
+.sterms__all-mark.is-on {
+  background: var(--brand-500);
+}
+.sterms__all-label {
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 24px;
+}
+.sterms__list {
+  margin: 12px 0 0;
+  padding: 8px 12px 8px 20px;
+  list-style: none;
+  border-radius: 16px;
+  background: var(--gray-1);
+}
+.sterms__row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.sterms__item {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border: none;
+  background: none;
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+}
+.sterms__mark {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  color: var(--gray-4);
+  transition: color 0.14s;
+}
+.sterms__mark.is-on {
+  color: var(--brand-500);
+}
+.sterms__label {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 20px;
+  /* Wrap Korean at word boundaries: "(필수)" must not split into "(필 / 수)". */
+  word-break: keep-all;
+}
+.sterms__more {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: none;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+.sterms__foot {
+  flex: none;
+  padding: 12px 20px calc(16px + var(--safe-bottom));
+}
+.sterms__next {
+  width: 100%;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 14px;
+  background: var(--brand-500);
+  color: #ffffff;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.14s, color 0.14s;
+}
+.sterms__next:disabled {
+  background: var(--brand-50);
+  color: var(--ink-4);
+  cursor: default;
+}
+
 /* ============================ More (더보기) ============================ */
 .more {
   /* Figma MOR-001_더보기메인 (1:5552) fills the frame white; the profile card

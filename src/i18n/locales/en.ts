@@ -541,6 +541,12 @@ export const en: Catalog = {
     viewDetailA11y: "View {name} in detail",
   },
 
+  socialTerms: {
+    title: "Please agree to the terms\nto use Hangyul",
+    next: "Next",
+    closeA11y: "Stop signing up",
+  },
+
   /** Find Email — no match. app-authored (no design frame located). */
   findEmailNoMatch: {
     titleLine1: "No matching",

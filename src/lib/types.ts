@@ -1,7 +1,9 @@
 import type { ImageCrop } from "./imageCrop";
 
 /* ---- Auth ---- */
-export type NextStep = "profile_registration" | "onboarding" | "home" | null;
+/** `terms_agreement`: an account a first social login created, whose owner has
+ *  not yet accepted the signup agreements (the social signup's terms step). */
+export type NextStep = "terms_agreement" | "profile_registration" | "onboarding" | "home" | null;
 export interface Membership {
   tier: "free" | "premium";
   is_premium: boolean;
@@ -62,6 +64,8 @@ export interface Me {
   avatar_key: string | null;
   profile_image_url: string | null;
   phone_verified: boolean;
+  /** True until a social-signup account accepts the signup agreements. */
+  terms_agreement_pending?: boolean;
   app_language: string;
   role: "member" | "premium" | "tester" | "admin";
   service_notification_consent: boolean;

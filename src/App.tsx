@@ -72,6 +72,8 @@ import { FindEmailNoMatch } from "./screens/FindEmailNoMatch";
 import { ResetPassword } from "./screens/ResetPassword";
 import { LanguagePicker } from "./screens/LanguagePicker";
 import { loadStoredLanguage } from "./lib/language";
+import { SocialSignupTerms } from "./screens/SocialSignupTerms";
+import { SOCIAL_TERMS_PATH } from "./hooks/loginFlow";
 
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -79,8 +81,13 @@ function RequireAuth({ children }: { children: ReactNode }) {
   const loc = useLocation();
   if (status === "booting") return <Splash />;
   if (status === "signed-out") return <Navigate to="/welcome" replace state={{ from: loc.pathname }} />;
+  // A first social login that has not accepted the signup agreements → the
+  // terms step comes before anything else (the server enforces it too).
+  const onTerms = loc.pathname === SOCIAL_TERMS_PATH;
+  if (me?.terms_agreement_pending && !onTerms) return <Navigate to={SOCIAL_TERMS_PATH} replace />;
+  if (me && !me.terms_agreement_pending && onTerms) return <Navigate to="/home" replace />;
   // Signed in but profile never set up → force profile setup.
-  if (me && !me.nickname && !loc.pathname.startsWith("/setup")) return <Navigate to="/setup/profile" replace />;
+  if (me && !me.nickname && !onTerms && !loc.pathname.startsWith("/setup")) return <Navigate to="/setup/profile" replace />;
   return <>{children}</>;
 }
 
@@ -128,6 +135,9 @@ const router = createBrowserRouter(
 
         {/* Find-email account-not-found result */}
         <Route path="/find-email/no-match" element={<RequireGuest><FindEmailNoMatch /></RequireGuest>} />
+
+        {/* Social signup's terms step: after a first social login, before the profile. */}
+        <Route path={SOCIAL_TERMS_PATH} element={<RequireAuth><SocialSignupTerms /></RequireAuth>} />
 
         {/* Setup (authenticated, outside tab shell) */}
         <Route path="/setup/profile" element={<RequireAuth><SetupProfile /></RequireAuth>} />

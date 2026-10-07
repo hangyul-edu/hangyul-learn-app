@@ -554,6 +554,14 @@ export const ko = {
     viewDetailA11y: "{name} 자세히 보기",
   },
 
+  /** Social signup's terms step (app-authored). The agreement rows reuse the
+      `signup.agree*` wording. */
+  socialTerms: {
+    title: "한귤 이용을 위한\n약관에 동의해 주세요",
+    next: "다음",
+    closeA11y: "가입 그만두기",
+  },
+
   /** Find Email — no match. app-authored (no design frame located). */
   findEmailNoMatch: {
     titleLine1: "일치하는 회원정보가",

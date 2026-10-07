@@ -10438,11 +10438,10 @@ textarea.input {
 .lechome__scroll > * {
   flex-shrink: 0;
 }
-/* Warm cream backdrop behind the header + banner area */
-.lechome__header,
-.lechome__carousel,
-.lechome__banner-skeleton {
-  background: #f9f9fa;
+/* COU-001 (2658:26020): the header sits on the white page; the banner area
+   below it is its own #FFF8F1 band (Rectangle 25767). */
+.lechome__header {
+  background: #ffffff;
 }
 /* Match the Personalized-learning header: centered title, streak pill absolutely
    pinned right and vertically centered on the same row. */
@@ -10482,30 +10481,46 @@ textarea.input {
   bottom: auto;
   transform: none;
   margin: 0;
+  /* On this white header the white pill needs the frame's soft shadow
+     (3096:30004 reads ~10% black under its foot) to keep its shape. */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
-/* --- Banner carousel --- */
+/* --- Banner carousel --- COU-001 (2658:26020) ---
+   Rectangle 25767: a full-width #FFF8F1 band, 208 tall at 375. In it, one
+   335 x 178.667 card (2658:26023) 14 from the band's top and 20 in from each
+   side, with the page dots (2658:26061) laid over the card's foot. Slides are
+   a full screen wide, so exactly one card shows and no neighbour peeks in. */
 .lechome__carousel {
-  padding: 0 0 18px;
+  position: relative;
+  background: #fff8f1;
 }
 .lechome__banners {
   display: flex;
-  gap: 0;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
-  padding: 0 18px;
+  /* 14 above the card and 15.333 below it (208 - 14 - 178.667) — inside the
+     scroller, so the card's shadow is not clipped. */
+  padding: 14px 0 15.333px;
 }
 .lechome__banners::-webkit-scrollbar {
   display: none;
 }
-.lechome__banner {
+.lechome__slide {
   flex: 0 0 100%;
-  scroll-snap-align: center;
-  aspect-ratio: 2.1 / 1;
-  border-radius: 14px;
+  box-sizing: border-box;
+  padding: 0 20px;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+.lechome__banner {
+  /* The card keeps 335:178.667 at any width (178.667 tall at 375). */
+  aspect-ratio: 335 / 178.667;
+  border-radius: 4px;
   overflow: hidden;
   background: #ecedf0;
-  box-shadow: 0 6px 16px rgba(37, 43, 47, 0.1);
+  /* Read from the frame: a soft 2px-down shadow, about 25% black at its core. */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
   border: none;
   padding: 0;
   position: relative;
@@ -10520,42 +10535,53 @@ textarea.input {
   display: block;
 }
 .lechome__banner-skeleton {
-  /* Flush to the header like the loaded carousel, so nothing shifts on load. */
-  margin: 0 18px 18px;
-  aspect-ratio: 2.1 / 1;
-  border-radius: 14px;
-  background: #ecedf0;
+  /* The loaded band's exact box (14 + card + 15.333), so nothing shifts on load. */
+  position: relative;
+  background: #fff8f1;
+  padding: 14px 20px 15.333px;
 }
+.lechome__banner-skeleton::before {
+  content: "";
+  display: block;
+  aspect-ratio: 335 / 178.667;
+  border-radius: 4px;
+  background: #f3e8de;
+}
+/* 2658:26061 — 8px dots 10 apart, the current one #FF6700 and the rest #D9D9D9,
+   centred on the card with their foot 9.667 above the card's (y 266..274 on a
+   card ending at 283.667), i.e. 25px above the band's foot. */
 .lechome__dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 25px;
   display: flex;
   justify-content: center;
-  gap: 6px;
-  margin-top: 12px;
+  gap: 10px;
+  pointer-events: none;
 }
 .lechome__dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: #dbdddf;
-  transition: background 0.15s, width 0.15s;
+  background: #d9d9d9;
+  transition: background 0.15s;
 }
 .lechome__dot.is-active {
   background: #ff6700;
-  width: 18px;
-  border-radius: 4px;
 }
 /* --- Banner empty view --- */
-/* Full-width, light cool-gray region occupying ~the same height as the carousel
-   (banner is aspect 2.1/1 inset 18px each side → ≈44cqw), so the page below does
-   not shift when banners are absent. */
+/* COU-001 empty (2498:26026): the same 208-tall band, #EEF2F3 at 40%, with
+   "표시할 배너가 없어요" centred — so the page below does not shift when banners
+   are absent. 375:208, the loaded band's size at the frame's width. */
 .lechome__banner-empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: clamp(150px, 44cqw, 214px);
-  margin: 0 0 18px;
+  aspect-ratio: 375 / 208;
+  margin: 0;
   padding: 0 24px;
-  background: #f2f4f5;
+  background: rgba(238, 242, 243, 0.4);
 }
 .lechome__banner-empty-text {
   margin: 0;

@@ -74,23 +74,27 @@ function BannerCarousel() {
         onPointerUp={() => (pausedRef.current = false)}
         onPointerLeave={() => (pausedRef.current = false)}
       >
+        {/* Each slide is exactly one screen wide and holds one 335px card with
+            20px either side (2658:26022), so a single banner shows at a time
+            and its neighbours stay fully off-screen until swiped in. */}
         {banners.map((b, i) => (
-          <div
-            key={b.banner_id}
-            className={`lechome__banner ${b.action_url ? "is-link" : ""}`}
-            role={b.action_url ? "button" : "img"}
-            tabIndex={b.action_url ? 0 : -1}
-            aria-label={t("courses.bannerItemA11y", { alt: b.alt_text, i: i + 1, total: banners.length })}
-            onClick={() => open(b)}
-            onKeyDown={(e) => e.key === "Enter" && open(b)}
-          >
-            <img
-              className="lechome__banner-img"
-              src={b.image_url}
-              alt=""
-              loading="lazy"
-              onError={(e) => (e.currentTarget.style.visibility = "hidden")}
-            />
+          <div key={b.banner_id} className="lechome__slide">
+            <div
+              className={`lechome__banner ${b.action_url ? "is-link" : ""}`}
+              role={b.action_url ? "button" : "img"}
+              tabIndex={b.action_url ? 0 : -1}
+              aria-label={t("courses.bannerItemA11y", { alt: b.alt_text, i: i + 1, total: banners.length })}
+              onClick={() => open(b)}
+              onKeyDown={(e) => e.key === "Enter" && open(b)}
+            >
+              <img
+                className="lechome__banner-img"
+                src={b.image_url}
+                alt=""
+                loading={i === 0 ? "eager" : "lazy"}
+                onError={(e) => (e.currentTarget.style.visibility = "hidden")}
+              />
+            </div>
           </div>
         ))}
       </div>

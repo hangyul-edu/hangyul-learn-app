@@ -176,6 +176,22 @@ describe("LectureHome — courses and their series (COU-001)", () => {
   });
 });
 
+describe("LectureHome — banner carousel (COU-001)", () => {
+  it("puts each banner in its own full-width slide, one card per slide, with a dot each", async () => {
+    // Regression: the cards sat edge to edge in one padded track, so the next
+    // banner peeked in beside the current one.
+    const { container } = renderPage();
+    await waitFor(() => expect(container.querySelectorAll(".lechome__banner")).toHaveLength(2));
+    const slides = [...container.querySelectorAll(".lechome__banners > .lechome__slide")];
+    expect(slides).toHaveLength(2);
+    for (const slide of slides) expect(slide.querySelectorAll(".lechome__banner")).toHaveLength(1);
+    // The dots sit over the band (laid on the card's foot), one per banner.
+    const dots = container.querySelectorAll(".lechome__carousel > .lechome__dots .lechome__dot");
+    expect(dots).toHaveLength(2);
+    expect(dots[0]).toHaveClass("is-active");
+  });
+});
+
 describe("LectureHome — banners and empty states", () => {
   it("empty banners + courses: banner empty view + course sections still render", async () => {
     banners.mockResolvedValue({ banners: [] });

@@ -1,3 +1,5 @@
+import type { ImageCrop } from "./imageCrop";
+
 /* ---- Auth ---- */
 export type NextStep = "profile_registration" | "onboarding" | "home" | null;
 export interface Membership {
@@ -395,6 +397,8 @@ export type TopikSection = "listening" | "reading" | "writing";
 export interface Banner {
   banner_id: string;
   image_url: string;
+  /** The part of the image the admin chose to show; null = centred cover. */
+  image_crop?: ImageCrop | null;
   alt_text: string;
   action_url: string | null;
   sort_order: number;

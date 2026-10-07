@@ -8,6 +8,7 @@ import { ChatbotBottomSheet } from "../components/ChatbotBottomSheet";
 import chatbotFab from "../assets/brand/chatbot-fab.svg";
 import { bannerApi, dashboardApi, learnApi } from "../api/endpoints";
 import type { Banner, Course, SeriesSummary } from "../lib/types";
+import { croppedImageStyle } from "../lib/imageCrop";
 
 // The Classes tab (COU-001) shows the FULL catalog — every course, each with
 // its series, conversation and TOPIK together, with an optional track filter
@@ -87,11 +88,14 @@ function BannerCarousel() {
               onClick={() => open(b)}
               onKeyDown={(e) => e.key === "Enter" && open(b)}
             >
+              {/* The part of the image the admin chose; without one, the
+                  image is cover-cropped around its centre. */}
               <img
                 className="lechome__banner-img"
                 src={b.image_url}
                 alt=""
                 loading={i === 0 ? "eager" : "lazy"}
+                style={b.image_crop ? croppedImageStyle(b.image_crop) : undefined}
                 onError={(e) => (e.currentTarget.style.visibility = "hidden")}
               />
             </div>

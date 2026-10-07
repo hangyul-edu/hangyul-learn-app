@@ -1491,7 +1491,7 @@ export const ko = {
     loadError: "강의를 불러오지 못했어요.",
     empty: "아직 등록된 강의가 없어요",
     noBanners: "표시할 배너가 없어요",
-    bannerAria: "광고 배너",
+    bannerAria: "배너",
     bannerItemA11y: "{alt} (배너 {i}/{total})",
     streakCalendarA11y: "연속 학습 {days}일, 달력 열기",
     streakCalendarPlainA11y: "연속 학습, 달력 열기",

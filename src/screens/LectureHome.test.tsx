@@ -177,6 +177,18 @@ describe("LectureHome — courses and their series (COU-001)", () => {
 });
 
 describe("LectureHome — banner carousel (COU-001)", () => {
+  it.each([
+    ["without premium access", true],
+    ["with premium access", false],
+  ])("shows the banners to a member %s — the app has no ad-free tier", async (_who, paywallRequired) => {
+    summary.mockResolvedValue({ streak_days: 3, studied_today: true, paywall_required: paywallRequired });
+    const { container } = renderPage();
+    const carousel = await screen.findByRole("region", { name: "배너" });
+    await waitFor(() => expect(container.querySelectorAll(".lechome__banner")).toHaveLength(2));
+    expect(carousel).toHaveAttribute("aria-roledescription", "carousel");
+    expect(screen.getByLabelText(/배너 b1/)).toBeInTheDocument();
+  });
+
   it("puts each banner in its own full-width slide, one card per slide, with a dot each", async () => {
     // Regression: the cards sat edge to edge in one padded track, so the next
     // banner peeked in beside the current one.

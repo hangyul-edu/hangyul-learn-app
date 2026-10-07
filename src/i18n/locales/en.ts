@@ -1502,7 +1502,7 @@ export const en: Catalog = {
     loadError: "Couldn't load the classes.",
     empty: "No classes added yet", // 2397:25965
     noBanners: "No banner to display", // 2397:25965
-    bannerAria: "Promotional banner",
+    bannerAria: "Banners",
     bannerItemA11y: "{alt} (banner {i}/{total})",
     streakCalendarA11y: "{days}-day streak, open calendar",
     streakCalendarPlainA11y: "Streak, open calendar",

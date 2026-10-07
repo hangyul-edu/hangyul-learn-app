@@ -728,7 +728,7 @@ export function SessionConversation() {
   // Single exit path for both 완료 (modal confirm) and the back chevron. It
   // records the personalized session on the server (source of truth) and the
   // points notification is created. Finishing a session never changes a level —
-  // levels come only from proficiency assessments (/proficiency). Single-flight
+  // levels come only from the server's proficiency assessments. Single-flight
   // so repeated taps never double-record.
   const finalizingRef = useRef(false);
   async function exitSession() {

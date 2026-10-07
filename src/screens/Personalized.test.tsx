@@ -5,8 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 /* -------------------------------- mocks --------------------------------- */
-const { summary, proficiencyMe } = vi.hoisted(() => ({ summary: vi.fn(), proficiencyMe: vi.fn() }));
-vi.mock("../api/endpoints", () => ({ dashboardApi: { summary }, proficiencyApi: { me: proficiencyMe } }));
+const { summary } = vi.hoisted(() => ({ summary: vi.fn() }));
+vi.mock("../api/endpoints", () => ({ dashboardApi: { summary } }));
 
 import { Personalized } from "./Personalized";
 import { I18nProvider } from "../i18n";
@@ -57,11 +57,10 @@ beforeEach(() => {
 });
 
 describe("Personalized — no proficiency entry", () => {
-  it("offers no 내 실력 보기 menu and does not fetch proficiency", async () => {
+  it("offers no 내 실력 보기 menu", async () => {
     renderPage();
     await screen.findByRole("button", { name: "바로 시작하기" });
     expect(screen.queryByText("내 실력 보기")).not.toBeInTheDocument();
-    expect(proficiencyMe).not.toHaveBeenCalled();
   });
 });
 

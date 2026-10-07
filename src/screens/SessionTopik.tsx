@@ -580,8 +580,8 @@ export function SessionTopik() {
 
   // Single exit path for 완료 (modal) and the back chevron. Records the
   // personalized session's study time on the server. Finishing a session never
-  // changes a level — levels come only from proficiency assessments
-  // (/proficiency). Single-flight so repeated taps can't double-record.
+  // changes a level — levels come only from the server's proficiency
+  // assessments. Single-flight so repeated taps can't double-record.
   const finalizingRef = useRef(false);
   async function exitSession() {
     if (finalizingRef.current) return;

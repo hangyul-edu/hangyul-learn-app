@@ -66,9 +66,6 @@ import { PaymentMethods } from "./screens/PaymentMethods";
 import { Billing } from "./screens/Billing";
 import { Streak } from "./screens/Streak";
 import { LearningManagement } from "./screens/LearningManagement";
-import { LevelUp } from "./screens/LevelUp";
-import { ProficiencyScreen } from "./screens/Proficiency";
-import { ProficiencyAssessment } from "./screens/ProficiencyAssessment";
 import { Policy, PolicyList } from "./screens/Policy";
 import { FindEmailResult } from "./screens/FindEmailResult";
 import { FindEmailNoMatch } from "./screens/FindEmailNoMatch";
@@ -161,9 +158,6 @@ const router = createBrowserRouter(
         <Route path="/session/topik" element={<RequireAuth><SessionTopik /></RequireAuth>} />
         <Route path="/review/question/:quizId" element={<RequireAuth><SessionReview /></RequireAuth>} />
         <Route path="/review/sentence/:sentenceId" element={<RequireAuth><SessionConversation /></RequireAuth>} />
-        <Route path="/level-up" element={<RequireAuth><LevelUp /></RequireAuth>} />
-        <Route path="/proficiency/assess/:sessionId" element={<RequireAuth><ProficiencyAssessment /></RequireAuth>} />
-        <Route path="/proficiency/:track" element={<RequireAuth><ProficiencyScreen /></RequireAuth>} />
         <Route path="/lectures/:lectureId" element={<RequireAuth><Lecture /></RequireAuth>} />
         <Route path="/lectures/:lectureId/practice" element={<RequireAuth><Practice /></RequireAuth>} />
         <Route path="/lectures/:lectureId/speak" element={<RequireAuth><SpeakPractice /></RequireAuth>} />

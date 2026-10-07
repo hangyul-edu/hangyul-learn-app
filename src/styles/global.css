@@ -11775,6 +11775,13 @@ textarea.input {
   line-height: 20px;
   color: var(--ink-3, #778088);
 }
+.pm__notice-fail-blocked {
+  /* Why "Pay now" is unavailable right now (retry limits). */
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ink-2, #4b5259);
+}
 .pm__pay-now {
   /* cp_C_01_primaryBtn at a fixed 280x49, centred, 14.21 under the copy. */
   width: 280px;

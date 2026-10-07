@@ -469,7 +469,12 @@ export type PaymentFailureClass =
 /** Consolidated failed-automatic-payment recovery state (GET /billing/recovery). */
 export interface PaymentRecovery {
   recovery_required: boolean;
+  /** True when POST /billing/invoices/{id}/retry would be accepted now. */
   can_retry_immediately: boolean;
+  /** Why not, when false during recovery (see lib/paymentRecovery RetryBlockReason). */
+  retry_blocked_reason?: string | null;
+  /** When a retry is allowed again (cooldown / daily_limit). */
+  retry_available_at?: string | null;
   outstanding_invoice_id?: string | null;
   failure_class?: PaymentFailureClass | string | null;
   failure_code?: string | null;

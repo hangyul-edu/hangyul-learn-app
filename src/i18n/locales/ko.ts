@@ -293,6 +293,14 @@ export const ko = {
     failGenericSub: "다른 카드를 선택하거나 잠시 후 다시 시도해 주세요", // 1542:23037
     today: "오늘 {time}",
     tomorrow: "내일 {time}",
+    /** app-authored: why "지금 바로 결제하기" is unavailable (retry limits). */
+    blockedCooldown: "방금 이 카드로 결제를 시도했어요. {time}부터 다시 시도하거나, 다른 결제수단으로 바로 결제할 수 있어요.",
+    blockedDailyLimit: "오늘 이 결제를 여러 번 다시 시도했어요. {time}부터 다시 시도할 수 있어요.",
+    blockedAttemptCap: "이 결제는 시도할 수 있는 횟수를 모두 사용했어요. 한귤 고객센터에 문의해 주세요.",
+    blockedInProgress: "이전 결제를 처리하고 있어요. 몇 분 뒤에 다시 확인해 주세요.",
+    blockedNeedsMethod: "이 결제수단으로는 결제할 수 없어요. 아래에서 다른 결제수단을 추가하거나 선택해 주세요.",
+    blockedCancelled: "구독이 해지되어 있어요. 구독을 다시 시작한 뒤 결제할 수 있어요.",
+    blockedClosed: "이 결제는 더 이상 다시 시도할 수 없어요.",
     successPlanLine: "{plan} 구독이 정상적으로 결제됐어요",
   },
 

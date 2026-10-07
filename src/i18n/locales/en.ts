@@ -283,6 +283,14 @@ export const en: Catalog = {
     failGenericSub: "Choose another card or try again later", // 1542:23322
     today: "Today at {time}",
     tomorrow: "Tomorrow at {time}",
+    /** app-authored: why "Pay now" is unavailable (retry limits). */
+    blockedCooldown: "Your card was just tried. You can try it again from {time}, or pay now with a different payment method.",
+    blockedDailyLimit: "You've retried this payment several times today. You can try again from {time}.",
+    blockedAttemptCap: "This payment has been tried the maximum number of times. Please contact support.",
+    blockedInProgress: "Your last payment is still being processed. Check back in a few minutes.",
+    blockedNeedsMethod: "This payment method can't be charged. Add or select another payment method below.",
+    blockedCancelled: "Your subscription is cancelled. Resume it to pay now.",
+    blockedClosed: "This payment can no longer be retried.",
     successPlanLine: "Your {plan} subscription was renewed", // 1542:23312
   },
 

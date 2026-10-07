@@ -31,6 +31,61 @@ export function noticeReasonKey(failureClass?: string | null): TranslationKey {
   }
 }
 
+/**
+ * Why a manual retry is refused right now (`retry_blocked_reason` on
+ * GET /billing/recovery, `details.reason` on a refused POST …/retry). Each
+ * charge is a real authorisation at the card company, so retries are spaced,
+ * counted per day and capped per invoice.
+ */
+export type RetryBlockReason =
+  | "paid"
+  | "closed"
+  | "obsolete"
+  | "cancelled"
+  | "in_progress"
+  | "cooldown"
+  | "daily_limit"
+  | "attempt_cap"
+  | "no_payment_method"
+  | "method_unusable";
+
+/** Sentence explaining a refused retry; cooldown/daily_limit take `{time}`. */
+export function retryBlockedKey(reason?: string | null): TranslationKey {
+  switch (reason) {
+    case "cooldown":
+      return "paymentRecovery.blockedCooldown";
+    case "daily_limit":
+      return "paymentRecovery.blockedDailyLimit";
+    case "attempt_cap":
+      return "paymentRecovery.blockedAttemptCap";
+    case "in_progress":
+      return "paymentRecovery.blockedInProgress";
+    case "no_payment_method":
+    case "method_unusable":
+      return "paymentRecovery.blockedNeedsMethod";
+    case "cancelled":
+      return "paymentRecovery.blockedCancelled";
+    default:
+      return "paymentRecovery.blockedClosed";
+  }
+}
+
+/** The refusal of a retry call, when the error is one: its reason and when a retry is allowed again. */
+export function retryRefusal(error: unknown): { reason: string; retryAfter: string | null } | null {
+  if (!error || typeof error !== "object") return null;
+  const e = error as { code?: unknown; details?: Record<string, unknown> };
+  if (
+    e.code !== "billing.retry_limit_reached" &&
+    e.code !== "billing.retry_needs_new_method" &&
+    e.code !== "billing.invoice_not_retryable"
+  ) {
+    return null;
+  }
+  const reason = typeof e.details?.reason === "string" ? e.details.reason : "closed";
+  const retryAfter = typeof e.details?.retry_after === "string" ? e.details.retry_after : null;
+  return { reason, retryAfter };
+}
+
 /** Guidance appended after the failure reason in the notice card. */
 export const NOTICE_GUIDANCE_KEY: TranslationKey = "paymentRecovery.noticeGuidance";
 

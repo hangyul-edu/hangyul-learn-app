@@ -17,6 +17,8 @@ import {
   failureModalKeys,
   formatRetryAt,
   noticeReasonKey,
+  retryBlockedKey,
+  retryRefusal,
 } from "../lib/paymentRecovery";
 import {
   hasReturnParams,
@@ -107,6 +109,9 @@ type Flow = {
 
 /* -------------------------------- screen -------------------------------- */
 type ResultModal = { kind: "success" } | { kind: "failure"; failureClass?: string | null } | null;
+
+/** A retry the server refused (retry limits, a method it cannot charge); `message` is the explanation. */
+class RetryRefusedError extends Error {}
 
 /* Non-dismissable payment-result modal (§8/§9/§10): no outside-tap/back close,
    scroll locked, focus moved to the action button and restored on close. */
@@ -264,11 +269,21 @@ export function PaymentMethods() {
 
   /* --- failed-automatic-payment recovery --- */
   const recovery = recoveryQ.data;
+  // The notice stays up whenever a payment needs fixing; only the button
+  // depends on whether a retry would be accepted now (the retry limits).
   const showNotice =
     !recoveryQ.isLoading &&
     !!recovery?.recovery_required &&
-    !!recovery.can_retry_immediately &&
     !!recovery.outstanding_invoice_id;
+  const canRetryNow = !!recovery?.can_retry_immediately;
+  const retryBlockedText =
+    showNotice && !canRetryNow
+      ? blockedText(recovery?.retry_blocked_reason, recovery?.retry_available_at)
+      : "";
+
+  function blockedText(reason?: string | null, retryAfter?: string | null): string {
+    return t(retryBlockedKey(reason), { time: formatRetryAt(retryAfter, language, t) || "—" });
+  }
   const primaryMethod = methods.find((m) => m.is_default && m.status === "active");
 
   // Determine the authoritative terminal result: the invoice being paid is the
@@ -294,6 +309,14 @@ export function PaymentMethods() {
         // The previous charge is still being sent to the provider: its
         // outcome is not known yet, so this is neither a success nor a failure.
         if (e instanceof ApiError && e.code === "billing.charge_in_progress") return "pending";
+        // Refused by the retry limits (too soon, too many today, attempts
+        // spent) or because this method cannot be charged: explain why,
+        // and re-read the recovery state that drives the button.
+        const refusal = retryRefusal(e);
+        if (refusal) {
+          invalidateRecovery();
+          throw new RetryRefusedError(blockedText(refusal.reason, refusal.retryAfter));
+        }
         // Already paid (idempotency guard) → verify and treat as recovered.
         if (e instanceof ApiError && e.status === 409) return verifyRetry(invoiceId);
         // Outstanding invoice vanished (resolved elsewhere) → refresh & clear.
@@ -325,15 +348,17 @@ export function PaymentMethods() {
       invalidateRecovery();
     },
     onError: (e) => {
-      const msg = e instanceof Error && e.message === "resolved"
-        ? t("paymentMethods.alreadyProcessed")
-        : errorMessage(e);
+      const msg = e instanceof RetryRefusedError
+        ? e.message
+        : e instanceof Error && e.message === "resolved"
+          ? t("paymentMethods.alreadyProcessed")
+          : errorMessage(e);
       toast.error(msg);
     },
   });
 
   function doRetry() {
-    if (!showNotice || !recovery?.outstanding_invoice_id) return;
+    if (!showNotice || !canRetryNow || !recovery?.outstanding_invoice_id) return;
     // Never charge against a stale method id: wait for a pending primary change.
     if (setDefault.isPending || retry.isPending) return;
     if (!primaryMethod) {
@@ -537,11 +562,14 @@ export function PaymentMethods() {
                     })}
                   </p>
                 )}
+                {retryBlockedText && (
+                  <p className="pm__notice-fail-blocked" role="status">{retryBlockedText}</p>
+                )}
                 <button
                   ref={retryBtnRef}
                   className="pm__pay-now"
                   onClick={doRetry}
-                  disabled={retry.isPending || setDefault.isPending}
+                  disabled={!canRetryNow || retry.isPending || setDefault.isPending}
                   aria-label={t("paymentMethods.payNowA11y")}
                   aria-busy={retry.isPending}
                 >

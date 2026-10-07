@@ -452,12 +452,27 @@ describe("PaymentMethods recovery flow", () => {
     expect(screen.queryByRole("alert", { name: "자동 결제 실패 안내" })).not.toBeInTheDocument();
   });
 
-  it("R2b. hides the notice when immediate retry is not allowed", async () => {
+  it("R2b. keeps the notice but disables retry, explaining why, when the limits refuse it", async () => {
     setMethods(card());
-    setRecovery({ ...RECOVERY, can_retry_immediately: false });
+    setRecovery({
+      ...RECOVERY,
+      can_retry_immediately: false,
+      retry_blocked_reason: "cooldown",
+      retry_available_at: "2026-07-16T00:41:00Z",
+    });
     renderScreen();
-    await screen.findByText("Shinhan Card");
-    expect(screen.queryByRole("alert", { name: "자동 결제 실패 안내" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("alert", { name: "자동 결제 실패 안내" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "지금 바로 구독료 결제하기" })).toBeDisabled();
+    expect(screen.getByText(/방금 이 카드로 결제를 시도했어요/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "지금 바로 구독료 결제하기" }));
+    expect(billing.retryInvoice).not.toHaveBeenCalled();
+  });
+
+  it("R2c. asks for another method when the current one cannot be charged", async () => {
+    setMethods(card());
+    setRecovery({ ...RECOVERY, can_retry_immediately: false, retry_blocked_reason: "method_unusable" });
+    renderScreen();
+    expect(await screen.findByText(/다른 결제수단을 추가하거나 선택해 주세요/)).toBeInTheDocument();
   });
 
   it("R3. maps the failure reason to safe Korean copy", async () => {
@@ -617,6 +632,36 @@ describe("PaymentMethods recovery flow", () => {
     await userEvent.click(await screen.findByRole("button", { name: "지금 바로 구독료 결제하기" }));
     expect(await screen.findByText(/결제 결과를 확인하고 있어요/)).toBeInTheDocument();
     expect(screen.queryByRole("dialog", { name: "결제 완료" })).not.toBeInTheDocument();
+    expect(billing.invoice).not.toHaveBeenCalled();
+  });
+
+  it("a retry refused by the daily limit (429) is explained, not read as paid", async () => {
+    setMethods(card());
+    setRecovery(RECOVERY);
+    const { ApiError } = await import("../lib/http");
+    billing.retryInvoice.mockRejectedValue(
+      new ApiError(429, "billing.retry_limit_reached", "too many", {
+        reason: "daily_limit",
+        retry_after: "2026-07-16T00:41:00Z",
+      }),
+    );
+    renderScreen();
+    await userEvent.click(await screen.findByRole("button", { name: "지금 바로 구독료 결제하기" }));
+    expect(await screen.findByText(/오늘 이 결제를 여러 번 다시 시도했어요/)).toBeInTheDocument();
+    expect(billing.invoice).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog", { name: "결제 완료" })).not.toBeInTheDocument();
+  });
+
+  it("a 409 that the method needs replacing is explained, not verified as paid", async () => {
+    setMethods(card());
+    setRecovery(RECOVERY);
+    const { ApiError } = await import("../lib/http");
+    billing.retryInvoice.mockRejectedValue(
+      new ApiError(409, "billing.retry_needs_new_method", "no", { reason: "method_unusable" }),
+    );
+    renderScreen();
+    await userEvent.click(await screen.findByRole("button", { name: "지금 바로 구독료 결제하기" }));
+    expect(await screen.findByText(/다른 결제수단을 추가하거나 선택해 주세요/)).toBeInTheDocument();
     expect(billing.invoice).not.toHaveBeenCalled();
   });
 });

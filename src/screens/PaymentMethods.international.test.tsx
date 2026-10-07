@@ -86,9 +86,13 @@ async function openForm() {
   return screen.findByRole("dialog");
 }
 
-async function fillCard(number = PAN, expiry = "0731") {
+const CONSENT = /매 결제 주기마다 이 카드로 구독 요금이 자동 결제되는 데 동의해요/;
+
+async function fillCard(number = PAN, expiry = "0731", { consent = true } = {}) {
   await userEvent.type(screen.getByLabelText("카드 번호"), number);
   await userEvent.type(screen.getByLabelText("유효기간 (MM/YY)"), expiry);
+  const agree = screen.getByRole("checkbox", { name: CONSENT });
+  if (consent && !(agree as HTMLInputElement).checked) await userEvent.click(agree);
 }
 
 const consoleSpies: ReturnType<typeof vi.spyOn>[] = [];
@@ -271,7 +275,7 @@ describe("international card form", () => {
     await waitFor(() => expect(api.registerInternationalCard).toHaveBeenCalledTimes(1));
     const body = api.registerInternationalCard.mock.calls[0][0];
     expect(Object.keys(body).sort()).toEqual(
-      ["card_number", "client_idempotency_key", "currency", "expiry_month", "expiry_year"],
+      ["card_number", "client_idempotency_key", "currency", "expiry_month", "expiry_year", "recurring_billing_consent"],
     );
     expect(body).toEqual({
       client_idempotency_key: expect.stringMatching(/^.{6,64}$/),
@@ -279,6 +283,7 @@ describe("international card form", () => {
       card_number: PAN,
       expiry_month: 7,
       expiry_year: 2031,
+      recurring_billing_consent: true,
     });
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(await screen.findByText("등록되었어요")).toBeInTheDocument();
@@ -293,6 +298,19 @@ describe("international card form", () => {
     await openForm();
     expect(await screen.findByLabelText("카드 번호")).toHaveValue("");
     expect(screen.getByLabelText("유효기간 (MM/YY)")).toHaveValue("");
+  });
+
+  it("says the card is verified with a cancelled ₩100 charge and needs the recurring-billing agreement", async () => {
+    renderScreen();
+    await openForm();
+    expect(await screen.findByText(/100원.*결제되었다가 바로 취소돼요/)).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole("radio", { name: "달러(USD)" }));
+    await fillCard(PAN, "0731", { consent: false });
+    await userEvent.click(screen.getByRole("button", { name: "등록하기" }));
+    expect(await screen.findByText(/자동 결제에 동의해야 카드를 등록할 수 있어요/)).toBeInTheDocument();
+    expect(api.registerInternationalCard).not.toHaveBeenCalled();
+    // The card is still in the form: agreeing is all that is left.
+    expect(screen.getByLabelText("카드 번호")).not.toHaveValue("");
   });
 
   it("never writes card data to web storage", async () => {

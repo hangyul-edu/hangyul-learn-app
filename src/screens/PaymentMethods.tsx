@@ -20,14 +20,13 @@ import {
 } from "../lib/paymentRecovery";
 import {
   hasReturnParams,
-  naverValuesFromText,
   parseRegistrationReturn,
   savePendingRegistration,
   takePendingRegistration,
 } from "../lib/paymentReturn";
 import {
   isUserCancel,
-  requestBrandpayRegistration,
+  requestEasyPayBillingAuth,
   requestTossBillingAuth,
 } from "../lib/tossPayments";
 import { useTranslation, type TranslationKey } from "../i18n";
@@ -241,13 +240,17 @@ export function PaymentMethods() {
   /* --- deletion / disconnect --- */
   const remove = useMutation({
     mutationFn: async (target: PaymentMethod) => {
-      // Deleting the primary while other methods remain: hand the primary to a
-      // remaining method atomically (server soft-deletes the target). Otherwise
-      // a plain delete — which the backend rejects (409) only when it is the
-      // primary during an active subscription and there is no replacement.
-      const others = methods.filter((m) => m.method_id !== target.method_id);
-      if (target.is_default && others.length > 0) {
-        await payApi.replace(target.method_id, others[0].method_id);
+      // Deleting the primary while another usable method remains: hand the
+      // primary to it atomically (server soft-deletes the target). Only an
+      // active method that can pay the live plan's currency qualifies — the
+      // server refuses a revoked one (404) or another currency's (422).
+      // Otherwise a plain delete, which the backend rejects (409) only when it
+      // is the primary during an active subscription.
+      const replacement = methods.find(
+        (m) => m.method_id !== target.method_id && m.status === "active" && !currencyLocked(m),
+      );
+      if (target.is_default && replacement) {
+        await payApi.replace(target.method_id, replacement.method_id);
       } else {
         await payApi.remove(target.method_id);
       }
@@ -371,18 +374,22 @@ export function PaymentMethods() {
     navigate({ pathname: location.pathname }, { replace: true, state: location.state });
     const pending = takePendingRegistration();
     if (!pending) return;
-    const ret = parseRegistrationReturn(pending.provider, search);
+    const ret = parseRegistrationReturn(pending, search);
     if (!ret) return;
     if (ret.kind === "failed") {
+      // Closing the window is the member's choice, not an error.
+      if (ret.code === "PAY_PROCESS_CANCELED" || ret.code === "USER_CANCEL") return;
       toast.error(ret.message || t("paymentMethods.registerFailed"));
       return;
     }
     setConfirming(true);
-    const confirmed =
-      ret.kind === "toss_card"
-        ? payApi.cardConfirm(pending.intentId, ret.authKey)
-        : payApi.naverpayConfirm(pending.intentId, ret.reserveId, ret.tempReceiptId);
-    confirmed
+    const confirm =
+      pending.provider === "toss_pay"
+        ? payApi.tosspayConfirm
+        : pending.provider === "naver_pay"
+          ? payApi.naverpayConfirm
+          : payApi.cardConfirm;
+    confirm(pending.intentId, { authKey: ret.authKey, customerKey: ret.customerKey })
       .then(() => {
         toast.success(t("paymentMethods.registered"));
         invalidate();
@@ -414,13 +421,18 @@ export function PaymentMethods() {
       const res = await payApi.cardIntent(RETURN_URL());
       if (res.widget.client_key) {
         // Toss opens its window through the SDK and returns to this page.
-        savePendingRegistration({ provider: "toss_card", intentId: res.intent_id });
-        await requestTossBillingAuth({
-          clientKey: res.widget.client_key,
-          customerKey: res.customer_key,
-          successUrl: res.widget.success_url,
-          failUrl: res.widget.fail_url,
-        });
+        savePendingRegistration({ provider: "toss_card", intentId: res.intent_id, customerKey: res.customer_key });
+        try {
+          await requestTossBillingAuth({
+            clientKey: res.widget.client_key,
+            customerKey: res.customer_key,
+            successUrl: res.widget.success_url,
+            failUrl: res.widget.fail_url,
+          });
+        } catch (e) {
+          if (isUserCancel(e)) return null; // the member closed the window
+          throw e;
+        }
         return null;
       }
       // No client key (card billing not configured, e.g. local dev with the
@@ -429,50 +441,45 @@ export function PaymentMethods() {
         title: t("paymentMethods.domesticCardTitle"),
         authorizeUrl: "",
         placeholder: t("paymentMethods.authKeyPlaceholder"),
-        confirm: (t) => payApi.cardConfirm(res.intent_id, t).then(() => undefined),
+        confirm: (key) =>
+          payApi.cardConfirm(res.intent_id, { authKey: key, customerKey: res.customer_key }).then(() => undefined),
       };
     });
-  const startTossPay = () =>
-    start("toss_pay", async () => {
-      const res = await payApi.tosspayIntent(RETURN_URL());
-      if (!res.client_key) throw new Error(t("paymentMethods.registerUnavailable"));
-      // BrandPay runs in place: the SDK's promises resolve once the member has
-      // registered a method and agreed to 자동결제 (our API exchanged the
-      // customer's code meanwhile), then the server links that method.
-      try {
-        await requestBrandpayRegistration({
-          clientKey: res.client_key,
-          customerKey: res.customer_key,
-          redirectUrl: res.redirect_url,
-        });
-      } catch (e) {
-        if (isUserCancel(e)) return null;
-        throw e;
+  /* Toss Pay / Naver Pay: the wallet's own window, opened by Toss's SDK
+     (flowMode DIRECT), returning here like the card window. */
+  const startWallet = (provider: "toss_pay" | "naver_pay") =>
+    start(provider, async () => {
+      const res =
+        provider === "toss_pay" ? await payApi.tosspayIntent(RETURN_URL()) : await payApi.naverpayIntent(RETURN_URL());
+      const confirm = provider === "toss_pay" ? payApi.tosspayConfirm : payApi.naverpayConfirm;
+      if (res.window.client_key) {
+        savePendingRegistration({ provider, intentId: res.intent_id, customerKey: res.customer_key });
+        try {
+          await requestEasyPayBillingAuth({
+            clientKey: res.window.client_key,
+            customerKey: res.customer_key,
+            successUrl: res.window.success_url,
+            failUrl: res.window.fail_url,
+            easyPay: res.window.easy_pay,
+          });
+        } catch (e) {
+          if (isUserCancel(e)) return null;
+          throw e;
+        }
+        return null;
       }
-      await payApi.tosspayConfirm(res.intent_id);
-      toast.success(t("paymentMethods.registered"));
-      invalidate();
-      return null;
-    });
-  const startNaverPay = () =>
-    start("naver_pay", async () => {
-      // The server has already reserved the registration: authorize_url is
-      // Naver's window, which returns here with reserveId + tempReceiptId.
-      const res = await payApi.naverpayIntent(RETURN_URL());
-      savePendingRegistration({ provider: "naver_pay", intentId: res.intent_id });
+      // Not configured on this server (local dev with the fake provider):
+      // only the manual entry remains.
       return {
-        title: t("paymentMethods.naverTitle"),
-        authorizeUrl: res.authorize_url,
-        placeholder: t("paymentMethods.naverPlaceholder"),
-        confirm: (text) => {
-          const values = naverValuesFromText(text);
-          if (!values) return Promise.reject(new Error(t("paymentMethods.naverValuesInvalid")));
-          return payApi
-            .naverpayConfirm(res.intent_id, values.reserveId, values.tempReceiptId)
-            .then(() => undefined);
-        },
+        title: t(provider === "toss_pay" ? "paymentMethods.tossPay" : "paymentMethods.naverPay"),
+        authorizeUrl: "",
+        placeholder: t("paymentMethods.authKeyPlaceholder"),
+        confirm: (key) =>
+          confirm(res.intent_id, { authKey: key, customerKey: res.customer_key }).then(() => undefined),
       };
     });
+  const startTossPay = () => startWallet("toss_pay");
+  const startNaverPay = () => startWallet("naver_pay");
 
   const closeIntl = useCallback(() => setIntlOpen(false), []);
   const intlRegistered = useCallback(() => {

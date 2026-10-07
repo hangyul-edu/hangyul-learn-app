@@ -11674,6 +11674,22 @@ textarea.input {
   line-height: 18px;
   color: var(--ink-2);
 }
+.pm-intl__consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.pm-intl__consent input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--brand-500);
+}
 .pm-intl__error {
   padding: 10px 12px;
   border-radius: 10px;

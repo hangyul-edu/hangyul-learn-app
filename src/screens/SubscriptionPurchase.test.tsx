@@ -98,6 +98,24 @@ describe("SubscriptionPurchase", () => {
     expect(screen.getByRole("radio", { name: /1개월/ })).toHaveAttribute("aria-checked", "false");
   });
 
+  it("prints KRW plans in whole won, not won ÷ 100", async () => {
+    // Regression: every currency was divided by 100, so ₩9,900 showed as ₩99.
+    plans.mockResolvedValue({
+      plans: [
+        {
+          plan_id: "p_month_krw", name: "월간", interval: "month", currency: "KRW",
+          price_cents: 12900, promo_price_cents: 9900,
+          original_total_cents: 12900, current_total_cents: 9900,
+          original_monthly_cents: 12900, current_monthly_cents: 9900, discount_percent: 23,
+        },
+      ],
+    });
+    renderPage();
+    await screen.findByRole("button", { name: "7일 무료 체험 시작하기" });
+    expect(screen.getAllByText("₩9,900").length).toBeGreaterThan(0);
+    expect(screen.queryByText("₩99")).not.toBeInTheDocument();
+  });
+
   it("shows the empty state with a disabled CTA and no fake prices when no plans", async () => {
     plans.mockResolvedValue({ plans: [] });
     renderPage();

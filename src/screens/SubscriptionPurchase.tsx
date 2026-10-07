@@ -12,15 +12,16 @@ import payRibbon from "../assets/brand/pay-ribbon.svg";
 import payRadioOn from "../assets/brand/pay-radio-on.svg";
 import payRadioOff from "../assets/brand/pay-radio-off.svg";
 import { useToast } from "../hooks/toast";
+import { formatMoney } from "../lib/format";
 import { currencyLabel, currencyMismatchText, paymentErrorMessage } from "../lib/paymentErrors";
 import type { MySubscription, PaymentMethod, Plan } from "../lib/types";
 
 type ScreenStatus = "loading" | "ready" | "submitting" | "missing_plans" | "failed";
 
+/** Plan amounts are minor units: cents for USD, whole won for KRW (no minor
+ *  unit) — dividing every currency by 100 showed ₩15,000 as ₩150. */
 function money(cents: number, currency = "USD"): string {
-  const amount = cents / 100;
-  if (currency === "KRW") return `₩${Math.round(amount).toLocaleString()}`;
-  return `$${amount.toFixed(2)}`;
+  return formatMoney(Math.round(cents), currency.toUpperCase());
 }
 /** Displayed amounts. The server sends authoritative presentation values
  *  (original/current totals + monthly-equivalents + discount %); we prefer

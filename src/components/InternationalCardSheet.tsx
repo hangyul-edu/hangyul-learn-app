@@ -78,6 +78,10 @@ export function InternationalCardSheet({
   const [cardNumber, setCardNumber] = useState(""); // digits only
   const [expiry, setExpiry] = useState(""); // "MM/YY"
   const [birthDate, setBirthDate] = useState(""); // "YYMMDD"
+  // The recurring-billing agreement: Toss's own windows take it themselves,
+  // this form is ours, so it must (the server requires it as well).
+  const [consented, setConsented] = useState(false);
+  const [consentError, setConsentError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<CardField, string>>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [cleared, setCleared] = useState(false);
@@ -103,6 +107,8 @@ export function InternationalCardSheet({
     setCleared(false);
     setUnavailable(false);
     setCurrency("");
+    setConsented(false);
+    setConsentError(null);
     retryKeyRef.current = null;
   }, [open]);
 
@@ -146,6 +152,7 @@ export function InternationalCardSheet({
     if (submittingRef.current) return;
     const problems = validateInternationalCard({ currency, cardNumber, expiry, birthDate }, requiresBirthDate);
     const fields = Object.keys(problems) as CardField[];
+    setConsentError(consented ? null : t("paymentMethods.intl.consentRequired"));
     if (fields.length > 0) {
       const next: Partial<Record<CardField, string>> = {};
       for (const f of fields) {
@@ -155,6 +162,7 @@ export function InternationalCardSheet({
       setFieldErrors(next);
       return;
     }
+    if (!consented) return;
     const exp = parseExpiry(expiry)!;
     const key = retryKeyRef.current ?? randomUuid();
     retryKeyRef.current = null;
@@ -164,6 +172,7 @@ export function InternationalCardSheet({
       card_number: cardDigits(cardNumber),
       expiry_month: exp.month,
       expiry_year: exp.year,
+      recurring_billing_consent: true,
     };
     if (requiresBirthDate) body.holder_birth_date = birthDate;
     // The body is the only copy from here on; the form forgets the card now.
@@ -344,6 +353,27 @@ export function InternationalCardSheet({
         )}
 
         <p className="pm-intl__security">{t("paymentMethods.intl.security")}</p>
+        {/* Toss authorises ₩100 (or its equivalent) to check the card when the
+            billing key is issued, and cancels it at once — say so up front. */}
+        <p className="pm-intl__security">{t("paymentMethods.intl.verificationCharge")}</p>
+
+        <label className="pm-intl__consent">
+          <input
+            type="checkbox"
+            checked={consented}
+            onChange={(e) => {
+              setConsented(e.target.checked);
+              if (e.target.checked) setConsentError(null);
+            }}
+            disabled={submitting}
+            aria-invalid={!!consentError}
+            aria-describedby={consentError ? "pm-intl-consent-error" : undefined}
+          />
+          <span>{t("paymentMethods.intl.consent")}</span>
+        </label>
+        {consentError && (
+          <span className="field__error" id="pm-intl-consent-error">⚠ {consentError}</span>
+        )}
 
         <Button type="submit" block loading={submitting} disabled={submitting}>
           {t("paymentMethods.intl.submit")}

@@ -1,17 +1,28 @@
 /**
- * Toss Payments JS SDK (v2) — card-registration window for 자동결제, and
- * BrandPay (Toss Pay) registration (see `requestBrandpayRegistration`).
+ * Toss Payments JS SDK — the registration windows for 자동결제 (billing).
  *
- * Toss has no server-generated registration URL for card billing: the page
- * loads the SDK and calls
- * `TossPayments(clientKey).payment({ customerKey }).requestBillingAuth(...)`.
- * Toss then redirects to `successUrl?customerKey=…&authKey=…` or
- * `failUrl?code=…&message=…`.
- * https://docs.tosspayments.com/guides/v2/billing/integration
- * https://docs.tosspayments.com/sdk/v2/js/payment#paymentrequestbillingauth
+ * Toss has no server-generated registration URL: the page loads the SDK,
+ * opens the window, and Toss redirects back to `successUrl?customerKey=…&
+ * authKey=…` or `failUrl?code=…&message=…`, after which the server exchanges
+ * the `authKey` for a billing key.
+ *
+ * - Korean-issued cards — SDK v2 (`https://js.tosspayments.com/v2/standard`):
+ *   `TossPayments(clientKey).payment({ customerKey }).requestBillingAuth(
+ *   { method: "CARD", successUrl, failUrl })`
+ *   (https://docs.tosspayments.com/guides/v2/billing/integration).
+ * - Toss Pay / Naver Pay — SDK v1 (`https://js.tosspayments.com/v1/payment`),
+ *   the call both wallet guides document
+ *   (docs/payments/Toss Pay Billing.md, Naver Pay Billing.md):
+ *   `TossPayments(clientKey).requestBillingAuth('카드', { customerKey,
+ *   successUrl, failUrl, flowMode: 'DIRECT', easyPay: 'TOSSPAY' | 'NAVERPAY' })`,
+ *   which opens the wallet's own window.
+ *
+ * Both SDKs define the same global `TossPayments`, so each version's factory
+ * is captured right after its own script loads and kept apart from the other.
  */
 
-const SDK_URL = "https://js.tosspayments.com/v2/standard";
+const SDK_V2 = "https://js.tosspayments.com/v2/standard";
+const SDK_V1 = "https://js.tosspayments.com/v1/payment";
 
 type BillingAuthRequest = {
   method: "CARD";
@@ -20,42 +31,53 @@ type BillingAuthRequest = {
   /** `self` navigates this tab (the SDK defaults to an iframe on desktop). */
   windowTarget?: "self" | "iframe";
 };
-type TossPaymentsFactory = (clientKey: string) => {
+type TossPaymentsV2 = (clientKey: string) => {
   payment: (opts: { customerKey: string }) => {
     requestBillingAuth: (req: BillingAuthRequest) => Promise<void>;
   };
-  brandpay: (opts: { customerKey: string; redirectUrl: string }) => {
-    addPaymentMethod: () => Promise<void>;
-    requestBillingAuth: () => Promise<void>;
-  };
+};
+type EasyPayBillingAuthRequest = {
+  customerKey: string;
+  successUrl: string;
+  failUrl: string;
+  flowMode: "DIRECT";
+  easyPay: "TOSSPAY" | "NAVERPAY";
+};
+type TossPaymentsV1 = (clientKey: string) => {
+  requestBillingAuth: (method: "카드", req: EasyPayBillingAuthRequest) => Promise<void>;
 };
 
 declare global {
   interface Window {
-    TossPayments?: TossPaymentsFactory;
+    TossPayments?: unknown;
   }
 }
 
-let loading: Promise<TossPaymentsFactory> | null = null;
+const loading = new Map<string, Promise<unknown>>();
 
-function loadSdk(): Promise<TossPaymentsFactory> {
-  if (window.TossPayments) return Promise.resolve(window.TossPayments);
-  if (loading) return loading;
-  loading = new Promise<TossPaymentsFactory>((resolve, reject) => {
+function loadSdk<T>(src: string): Promise<T> {
+  const cached = loading.get(src);
+  if (cached) return cached as Promise<T>;
+  const promise = new Promise<T>((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = SDK_URL;
+    script.src = src;
     script.async = true;
     // A failed load must not be cached: the next attempt starts over.
     const fail = (message: string) => {
-      loading = null;
+      loading.delete(src);
       reject(new Error(message));
     };
-    script.onload = () =>
-      window.TossPayments ? resolve(window.TossPayments) : fail("Toss SDK unavailable");
+    script.onload = () => {
+      // Read at once: the other SDK version may overwrite the global later.
+      const factory = window.TossPayments;
+      if (typeof factory === "function") resolve(factory as T);
+      else fail("Toss SDK unavailable");
+    };
     script.onerror = () => fail("Toss SDK failed to load");
     document.head.appendChild(script);
   });
-  return loading;
+  loading.set(src, promise);
+  return promise;
 }
 
 /** Open Toss's card-registration window; the page navigates away on success. */
@@ -65,7 +87,7 @@ export async function requestTossBillingAuth(opts: {
   successUrl: string;
   failUrl: string;
 }): Promise<void> {
-  const TossPayments = await loadSdk();
+  const TossPayments = await loadSdk<TossPaymentsV2>(SDK_V2);
   await TossPayments(opts.clientKey)
     .payment({ customerKey: opts.customerKey })
     .requestBillingAuth({
@@ -79,28 +101,30 @@ export async function requestTossBillingAuth(opts: {
 }
 
 /**
- * Register a BrandPay (Toss Pay) method for 자동결제: add a card or account,
- * then take the 자동결제 agreement + password. Both are promises — no page
- * redirect. On the customer's consent the SDK calls `redirectUrl` (our API),
- * which exchanges the authorization code before the SDK continues.
- * https://docs.tosspayments.com/sdk/v2/js/brandpay
- * https://docs.tosspayments.com/reference/brandpay/billing
- *
- * Rejects with the SDK's error (`code === "USER_CANCEL"` when the member
- * closes the window).
+ * Open the Toss Pay or Naver Pay window to register the wallet for 자동결제.
+ * The member picks a card or account (Toss Pay) / card or Naver Pay money
+ * (Naver Pay) there; the page then navigates to `successUrl` / `failUrl`.
  */
-export async function requestBrandpayRegistration(opts: {
+export async function requestEasyPayBillingAuth(opts: {
   clientKey: string;
   customerKey: string;
-  redirectUrl: string;
+  successUrl: string;
+  failUrl: string;
+  easyPay: "TOSSPAY" | "NAVERPAY";
 }): Promise<void> {
-  const TossPayments = await loadSdk();
-  const brandpay = TossPayments(opts.clientKey).brandpay({
+  const TossPayments = await loadSdk<TossPaymentsV1>(SDK_V1);
+  await TossPayments(opts.clientKey).requestBillingAuth("카드", {
     customerKey: opts.customerKey,
-    redirectUrl: opts.redirectUrl,
+    successUrl: opts.successUrl,
+    failUrl: opts.failUrl,
+    flowMode: "DIRECT",
+    easyPay: opts.easyPay,
   });
-  await brandpay.addPaymentMethod();
-  await brandpay.requestBillingAuth();
+}
+
+/** Forget loaded SDKs (tests only). */
+export function resetTossSdkForTests(): void {
+  loading.clear();
 }
 
 /** The member closed a Toss window themselves — not an error to report. */

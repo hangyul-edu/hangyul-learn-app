@@ -418,16 +418,30 @@ export type InternationalCardRegistration = {
   expiry_year: number;
   /** `YYMMDD`; omitted unless the currency requires it or the member gave it. */
   holder_birth_date?: string;
+  /** The form's recurring-billing agreement; the server accepts only `true`. */
+  recurring_billing_consent: true;
 };
-type RedirectIntent = { intent_id: string; authorize_url: string; customer_key: string };
-/** What `TossPayments(client_key).brandpay({customerKey, redirectUrl})` needs;
- *  an empty `client_key` means BrandPay is not configured on the server. */
-type BrandpayIntent = {
+/** What the Toss SDK needs to open the Toss Pay / Naver Pay window
+ *  (`requestBillingAuth('카드', {…, flowMode, easyPay})`); an empty
+ *  `client_key` means that wallet is not configured on the server. */
+export type EasyPayIntent = {
   intent_id: string;
   customer_key: string;
-  client_key: string;
-  redirect_url: string;
+  window: {
+    client_key: string;
+    easy_pay: "TOSSPAY" | "NAVERPAY";
+    flow_mode: "DIRECT";
+    success_url: string;
+    fail_url: string;
+  };
 };
+/** The window's success redirect: `?customerKey=…&authKey=…`. */
+type WindowReturn = { authKey: string; customerKey: string };
+const confirmBody = (intent_id: string, ret: WindowReturn) => ({
+  intent_id,
+  auth_key: ret.authKey,
+  customer_key: ret.customerKey,
+});
 
 export const payApi = {
   methods: () => http.get<{ methods: PaymentMethod[] }>("/payment-methods"),
@@ -444,28 +458,22 @@ export const payApi = {
   /** Card data travels only in this JSON body; never cache, log or persist it. */
   registerInternationalCard: (body: InternationalCardRegistration) =>
     http.post<{ method: PaymentMethod }>("/payment-methods/cards/international", body),
-  cardConfirm: (intent_id: string, auth_key: string) =>
-    http.post<{ method: PaymentMethod }>("/payment-methods/cards/confirm", { intent_id, auth_key }),
+  cardConfirm: (intent_id: string, ret: WindowReturn) =>
+    http.post<{ method: PaymentMethod }>("/payment-methods/cards/confirm", confirmBody(intent_id, ret)),
   tosspayIntent: (return_url: string) =>
-    http.post<BrandpayIntent>("/payment-methods/tosspay/intent", {
+    http.post<EasyPayIntent>("/payment-methods/tosspay/intent", {
       client_idempotency_key: randomUuid(),
       return_url,
     }),
-  /** Once the BrandPay SDK's addPaymentMethod / requestBillingAuth resolved. */
-  tosspayConfirm: (intent_id: string) =>
-    http.post<{ method: PaymentMethod }>("/payment-methods/tosspay/confirm", { intent_id }),
+  tosspayConfirm: (intent_id: string, ret: WindowReturn) =>
+    http.post<{ method: PaymentMethod }>("/payment-methods/tosspay/confirm", confirmBody(intent_id, ret)),
   naverpayIntent: (return_url: string) =>
-    http.post<RedirectIntent>("/payment-methods/naverpay/intent", {
+    http.post<EasyPayIntent>("/payment-methods/naverpay/intent", {
       client_idempotency_key: randomUuid(),
       return_url,
     }),
-  /** `reserveId` + `tempReceiptId` from Naver's registration redirect. */
-  naverpayConfirm: (intent_id: string, reserve_id: string, temp_receipt_id: string) =>
-    http.post<{ method: PaymentMethod }>("/payment-methods/naverpay/confirm", {
-      intent_id,
-      reserve_id,
-      temp_receipt_id,
-    }),
+  naverpayConfirm: (intent_id: string, ret: WindowReturn) =>
+    http.post<{ method: PaymentMethod }>("/payment-methods/naverpay/confirm", confirmBody(intent_id, ret)),
   setDefault: (id: string) => http.post<void>(`/payment-methods/${id}/set-default`, {}),
   replace: (id: string, new_method_id: string) =>
     http.put<void>(`/payment-methods/${id}/replace`, { new_method_id }),

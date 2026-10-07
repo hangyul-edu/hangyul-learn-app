@@ -95,9 +95,6 @@ export function SessionTopik() {
   const navState = loc.state as
     | { from?: string; section?: TopikSection; additionalCount?: number }
     | null;
-  // Source page (Home / Personalized), forwarded to the Level-Up screen so its
-  // button returns the user there.
-  const from = navState?.from ?? "/home";
   // The TOPIK part chosen in the part-selection modal drives the question-type
   // dropdown and generation; it's fixed for the whole session. Fall back to
   // listening only if the screen is reached without a selection (deep link).
@@ -581,10 +578,10 @@ export function SessionTopik() {
     else exitSession();
   }
 
-  // Single exit path for 완료 (modal) and the back chevron. Finalizes the
-  // personalized session on the server; a level-up routes to the Level-Up screen
-  // (after the point-reward modal). Single-flight so repeated taps can't
-  // double-finalize.
+  // Single exit path for 완료 (modal) and the back chevron. Records the
+  // personalized session's study time on the server. Finishing a session never
+  // changes a level — levels come only from proficiency assessments
+  // (/proficiency). Single-flight so repeated taps can't double-record.
   const finalizingRef = useRef(false);
   async function exitSession() {
     if (finalizingRef.current) return;
@@ -603,7 +600,7 @@ export function SessionTopik() {
     finalizingRef.current = true;
     const duration_seconds = Math.max(1, Math.round((Date.now() - startedAt.current) / 1000));
     try {
-      const res = await learnApi.recordSession({
+      await learnApi.recordSession({
         session_type: "sentence",
         category: "topik",
         duration_seconds,
@@ -611,10 +608,6 @@ export function SessionTopik() {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["notif-unread"] });
       qc.invalidateQueries({ queryKey: ["management"] });
-      if (res.leveled_up && res.level_up) {
-        nav("/level-up", { replace: true, state: { levelUp: res.level_up, from } });
-        return;
-      }
     } catch {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
     }

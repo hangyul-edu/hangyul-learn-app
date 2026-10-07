@@ -13,7 +13,7 @@ import icArrowRight from "../assets/brand/ic-16-arrow-right.svg";
 import { useTranslation } from "../i18n";
 import { useQuery } from "@tanstack/react-query";
 import { Async, SkeletonList } from "../components/ui/states";
-import { dashboardApi } from "../api/endpoints";
+import { dashboardApi, proficiencyApi } from "../api/endpoints";
 import { ReviewShortcutArt } from "../components/brand/HomeIcons";
 import { DailyLearningSun } from "../components/DailyLearningSun";
 import { TrackDashboard } from "../components/TrackDashboard";
@@ -25,6 +25,35 @@ import {
 } from "../components/AdditionalLearningCountModal";
 import type { DashboardSummary, DashboardTrack, TopikSection } from "../lib/types";
 import { settingsOrigin } from "../lib/settingsNav";
+
+/**
+ * The way into "My proficiency" for the selected track. It states the
+ * *confirmed* level (or that none is confirmed yet) so it is never mistaken
+ * for the study level on the card above, which is a difficulty setting.
+ */
+function ProficiencyEntry({ track }: { track: "conversation" | "topik" }) {
+  const { t } = useTranslation();
+  const nav = useNavigate();
+  const q = useQuery({ queryKey: ["proficiency"], queryFn: proficiencyApi.me, staleTime: 60_000 });
+  const view = q.data?.tracks.find((x) => x.track === track);
+  let status = "";
+  if (view) {
+    const level = view.track === "topik" ? (view.confirmed_grade ?? view.provisional_grade) : (view.confirmed_level ?? view.provisional_level);
+    status =
+      level != null && (view.status === "confirmed" || view.status === "provisional")
+        ? `${t(`proficiency.status.${view.status}`)} · ${view.track === "topik" ? t("proficiency.gradeLabel", { n: level }) : t("proficiency.levelLabel", { n: level })}`
+        : t(`proficiency.status.${view.status}`);
+  }
+  return (
+    <button className="plearn__prof" onClick={() => nav(`/proficiency/${track}`)}>
+      <span className="plearn__prof-text">
+        <span className="plearn__prof-title">{t("proficiency.entry")}</span>
+        <span className="plearn__prof-hint">{status || t("proficiency.entryHint")}</span>
+      </span>
+      <img className="plearn__prof-arrow" src={icArrowRight} alt="" aria-hidden="true" />
+    </button>
+  );
+}
 
 export function Personalized() {
   const { t } = useTranslation();
@@ -132,6 +161,8 @@ export function Personalized() {
                     }}
                   />
                 )}
+
+                <ProficiencyEntry track={active?.category === "topik" ? "topik" : "conversation"} />
 
                 {/* Review card */}
                 <section className="plearn__review">

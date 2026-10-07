@@ -1008,3 +1008,192 @@ export interface TutorAnswer {
   turns_left: number;
   replayed: boolean;
 }
+
+/* --------------------------- Proficiency ----------------------------- */
+/** Server-provided copy in both app languages. */
+export type Bilingual = { ko: string; en: string };
+
+/** What the Level-Up screen celebrates: an applied proficiency decision. */
+export interface ProficiencyCelebration {
+  track: "conversation" | "topik";
+  from_level: number | null;
+  to_level: number;
+  reward_points: number;
+  capabilities_confirmed: number;
+  from: string;
+}
+export type ProficiencyStatus = "unassessed" | "insufficient_evidence" | "provisional" | "confirmed";
+export type CapabilityStatus = "not_assessed" | "in_progress" | "needs_reconfirmation" | "confirmed";
+
+export interface ProficiencyCapability {
+  capability_id: string;
+  label: Bilingual;
+  success_criteria: Bilingual;
+  status: CapabilityStatus;
+  independent_successes: number;
+  required_successes: number;
+  situations: number;
+  required_situations: number;
+  study_days: number;
+  required_study_days: number;
+  delayed_confirmed: boolean;
+  delayed_check_available_at: string | null;
+  delayed_check_due: boolean;
+  valid_failures: number;
+  latest_valid_outcome: string | null;
+  missing: string[];
+}
+
+export interface ProficiencyGate {
+  gate: string;
+  label: Bilingual;
+  passed: boolean;
+  detail: Record<string, unknown>;
+}
+
+export interface ProficiencyDecision {
+  decision_id: string;
+  kind: string;
+  applied: boolean;
+  rollout_mode: string;
+  from_level: number | null;
+  to_level: number | null;
+  target_level: number | null;
+  policy_version: string;
+  gates: { gate: string; passed: boolean; detail?: { confirmed?: number; total?: number } }[];
+  explanation: Bilingual & { missing_capabilities?: unknown[]; weak_sections?: string[] };
+  reward_points: number;
+  decided_at: string;
+}
+
+export type NextActivityKind =
+  | "placement"
+  | "capability_check"
+  | "delayed_check"
+  | "integrative"
+  | "wait"
+  | "ready"
+  | "maintenance"
+  | "unavailable";
+
+export interface ConversationProficiency {
+  track: "conversation";
+  status: ProficiencyStatus;
+  confirmed_level: number | null;
+  provisional_level: number | null;
+  target_level: number | null;
+  at_maximum: boolean;
+  study_level: number | null;
+  confirmed_can_do?: Bilingual;
+  validation_status: string;
+  assessment_available: boolean;
+  active_session_id: string | null;
+  last_decision: ProficiencyDecision | null;
+  next_level: {
+    level: number;
+    can_do: Bilingual;
+    representative_tasks: string[];
+    capabilities: ProficiencyCapability[];
+    coverage: { confirmed: number; total: number; pct: number; label: Bilingual };
+    checklist: { pct: number; label: Bilingual; items: { item_id: string; done: boolean }[] };
+    gates: ProficiencyGate[];
+    ready: boolean;
+    integrative: { result: string; overall: number | null; reasons: string[] } | null;
+    unseen_tasks_left: number;
+  } | null;
+  next_activity: { kind: NextActivityKind; reason: Bilingual; available_at?: string; capabilities?: string[] };
+}
+
+export interface TopikReadiness {
+  status: string;
+  grade: number | null;
+  basis: string;
+  reasons: string[];
+  weak_sections: string[];
+  latest_section_scores: Record<string, number | null>;
+}
+
+export interface TopikProficiency {
+  track: "topik";
+  status: ProficiencyStatus;
+  confirmed_grade: number | null;
+  provisional_grade: number | null;
+  target_grade: number | null;
+  at_maximum: boolean;
+  basis_label: Bilingual;
+  study_level: number | null;
+  readiness: Record<"I" | "II", TopikReadiness>;
+  grade_descriptors: Record<string, Bilingual>;
+  mock_availability: Record<"I" | "II", {
+    spec_version: string;
+    sections: Record<string, { required: number; available: number }>;
+    full_form: boolean;
+    diagnostic_form: boolean;
+  }> | null;
+  last_decision: ProficiencyDecision | null;
+  active_session_id: string | null;
+  mocks_taken: number;
+}
+
+export interface ProficiencySummary {
+  rollout_mode: "off" | "shadow" | "pilot" | "enabled";
+  decisions_apply: boolean;
+  tracks: [ConversationProficiency, TopikProficiency];
+}
+
+export interface AssessmentTask {
+  task_id: string;
+  position: number;
+  kind: "role_play" | "interview" | "explanation" | "summary";
+  scene: Bilingual;
+  goal: Bilingual;
+  background: string | null;
+  has_listening_material: boolean;
+  turn_count: number;
+  answered_turns: number;
+  partner_text: Record<string, string>;
+  replays: Record<string, number>;
+  replay_allowance: number;
+  my_turns: { index: number; transcript: string }[];
+  status: "awaiting_response" | "pending" | "scored" | "not_assessable";
+  capabilities: { capability_id: string; label: Bilingual }[];
+  result: {
+    dimension_scores: Record<string, number | null>;
+    weighted_score: number | null;
+    feedback: Partial<Bilingual>;
+    counts_as_evidence: boolean;
+    not_counted_reason: string | null;
+  } | null;
+}
+
+export interface MockItem {
+  position: number;
+  section: "listening" | "reading" | "writing";
+  points: number;
+  quiz_id: string | null;
+  payload: Record<string, unknown> & { prompt?: string; choices?: string[]; choice_keys?: string[]; answer_format?: string };
+  answered: boolean;
+  answer: string | null;
+  writing_item: string | null;
+  correct: boolean | null;
+  points_earned: number | null;
+  writing_feedback: Partial<Bilingual> | null;
+}
+
+export interface AssessmentSessionView {
+  session_id: string;
+  track: "conversation" | "topik";
+  mode: string;
+  status: "active" | "completed" | "abandoned" | "expired";
+  target_level?: number;
+  target_can_do?: Bilingual;
+  deadline_at: string | null;
+  voice_required?: boolean;
+  tasks?: AssessmentTask[];
+  exam_level?: "I" | "II";
+  sections?: { section: string; items: number; minutes: number; max_score: number }[];
+  form_complete?: boolean;
+  items?: MockItem[];
+  result: Record<string, unknown> | null;
+  decision?: ProficiencyDecision | null;
+}

@@ -9,25 +9,16 @@ import levelupConfetti from "../assets/brand/levelup-confetti.svg";
 import levelupMedal from "../assets/brand/levelup-medal.svg";
 import { useTranslation } from "../i18n";
 import { useQueryClient } from "@tanstack/react-query";
-import type { SessionLevelUp } from "../lib/types";
+import type { ProficiencyCelebration } from "../lib/types";
 
 /**
- * Level-Up result screen — shown ONLY after a personalized learning session that
- * the server finalized with a level-up, and only after the point-reward summary
- * modal. All values are data-driven from the finalize `level_up` payload passed
- * via navigation state; there is no client-side inference of the level-up.
+ * Level-Up result screen — shown ONLY after the server applied an
+ * evidence-based proficiency decision: a confirmed conversation level or a
+ * confirmed TOPIK readiness grade. Completing items or finishing a session no
+ * longer leads here (that activity-based level-up is retired). All values come
+ * from the decision passed via navigation state; nothing is inferred
+ * client-side.
  */
-
-type TrackName = "conversation" | "topik";
-function trackOf(trackId: string): TrackName {
-  return trackId === "track_topik" ? "topik" : "conversation";
-}
-function fmtDuration(totalSeconds: number): string {
-  const s = Math.max(0, Math.floor(totalSeconds));
-  const hh = Math.floor(s / 3600);
-  const mm = Math.floor((s % 3600) / 60);
-  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
-}
 
 /* ------------------------------- mascot --------------------------------- */
 // Celebratory Hangyul tangerine with confetti and a speech bubble. The two
@@ -87,12 +78,10 @@ export function LevelUp() {
   const nav = useNavigate();
   const loc = useLocation();
   const qc = useQueryClient();
-  const state = loc.state as { levelUp?: SessionLevelUp; from?: string } | null;
-  const levelUp = state?.levelUp ?? null;
-  // The page the session was launched from (Home / Personalized). The button
-  // returns the user here; they decide what to do next (it does NOT auto-start
-  // another session).
-  const from = state?.from ?? "/home";
+  const state = loc.state as { celebration?: ProficiencyCelebration } | null;
+  const levelUp = state?.celebration ?? null;
+  // Where the button returns: the proficiency page, which shows the evidence.
+  const from = levelUp?.from ?? "/home";
 
   // Missing state (direct nav / refresh) → nothing to celebrate; go Home. This
   // also prevents a stale level-up screen from reappearing after a reload.
@@ -103,27 +92,23 @@ export function LevelUp() {
   // Reflect the new level everywhere on entry.
   useEffect(() => {
     qc.invalidateQueries({ queryKey: ["dashboard"] });
-    qc.invalidateQueries({ queryKey: ["management"] });
+    qc.invalidateQueries({ queryKey: ["proficiency"] });
     qc.invalidateQueries({ queryKey: ["points"] });
   }, [qc]);
 
   if (!levelUp) return null;
 
-  const track = trackOf(levelUp.track_id);
-  const isTopik = track === "topik";
-  const prev = levelUp.previous_level;
-  const next = levelUp.current_level;
-  const unit = t(isTopik ? "levelUp.unitQuestion" : "levelUp.unitSentence");
+  const isTopik = levelUp.track === "topik";
+  const prev = levelUp.from_level;
+  const next = levelUp.to_level;
 
-  const headline = t(isTopik ? "levelUp.reachedGrade" : "levelUp.reachedLevel", { n: next });
-  const prevLabel = isTopik ? t("levelUp.gradeLabel", { n: prev }) : `Lv.${prev}`;
-  const nextLabel = isTopik ? t("levelUp.gradeLabel", { n: next }) : `Lv.${next}`;
-  const duration = fmtDuration(levelUp.seconds_studied_at_previous_level);
+  const headline = t(isTopik ? "levelUp.confirmedGrade" : "levelUp.confirmedLevel", { n: next });
+  const label = (n: number) => (isTopik ? t("levelUp.gradeLabel", { n }) : `Lv.${n}`);
+  const prevLabel = prev != null ? label(prev) : "—";
+  const nextLabel = label(next);
 
   function goNextLevel() {
-    // Return to the source page (Home / Personalized) — do NOT auto-start a new
-    // session. `replace` so the level-up screen leaves the back stack and can't
-    // reappear. The user chooses what to do next from that page.
+    // `replace` so the celebration leaves the back stack and can't reappear.
     nav(from, { replace: true });
   }
 
@@ -141,7 +126,7 @@ export function LevelUp() {
         <div className="lvup__card">
           <div
             className="lvup__pill"
-            aria-label={t(isTopik ? "levelUp.fromToGrade" : "levelUp.fromToLevel", { prev, next })}
+            aria-label={t(isTopik ? "levelUp.fromToGrade" : "levelUp.fromToLevel", { prev: prev ?? "—", next })}
           >
             <span className="lvup__pill-prev">{prevLabel}</span>
             <span className="lvup__pill-arrow" aria-hidden="true">→</span>
@@ -150,25 +135,27 @@ export function LevelUp() {
 
           <Medal />
 
-          <div className="lvup__reward" aria-label={t("levelUp.rewardA11y", { points: levelUp.points_awarded })}>
-            +{levelUp.points_awarded}p
+          <div className="lvup__reward" aria-label={t("levelUp.rewardA11y", { points: levelUp.reward_points })}>
+            +{levelUp.reward_points}p
           </div>
 
-          <div className="lvup__stats">
-            <div className="lvup__stat">
-              <span className="lvup__stat-label">{t("levelUp.studyTime")}</span>
-              <span className="lvup__stat-value" aria-label={t("levelUp.studyTimeA11y", { duration })}>{duration}</span>
+          {/* What the decision rested on — assessment evidence, never time or
+              item counts. */}
+          {isTopik ? (
+            <p className="lvup__basis">{t("levelUp.basisTopik")}</p>
+          ) : (
+            <div className="lvup__stats">
+              <div className="lvup__stat">
+                <span className="lvup__stat-label">{t("levelUp.capabilitiesConfirmed")}</span>
+                <span
+                  className="lvup__stat-value"
+                  aria-label={t("levelUp.capabilitiesA11y", { count: levelUp.capabilities_confirmed })}
+                >
+                  {levelUp.capabilities_confirmed}
+                </span>
+              </div>
             </div>
-            <span className="lvup__stat-divider" aria-hidden="true" />
-            <div className="lvup__stat">
-              <span className="lvup__stat-label">
-                {t(isTopik ? "levelUp.studiedQuestions" : "levelUp.studiedSentences")}
-              </span>
-              <span className="lvup__stat-value" aria-label={t("levelUp.itemsA11y", { unit, count: levelUp.items_studied_at_previous_level })}>
-                {levelUp.items_studied_at_previous_level}
-              </span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 

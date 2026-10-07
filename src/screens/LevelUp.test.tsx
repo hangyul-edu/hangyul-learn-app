@@ -3,35 +3,35 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
-import type { SessionLevelUp } from "../lib/types";
+import type { ProficiencyCelebration } from "../lib/types";
 import { LevelUp } from "./LevelUp";
 import { I18nProvider } from "../i18n";
 
-const conv: SessionLevelUp = {
-  track_id: "track_conversation",
-  previous_level: 1,
-  current_level: 2,
-  seconds_studied_at_previous_level: 3600,
-  items_studied_at_previous_level: 10,
-  points_awarded: 100,
+const conv: ProficiencyCelebration = {
+  track: "conversation",
+  from_level: 4,
+  to_level: 5,
+  reward_points: 100,
+  capabilities_confirmed: 6,
+  from: "/proficiency/conversation",
 };
-const topik: SessionLevelUp = {
-  track_id: "track_topik",
-  previous_level: 1,
-  current_level: 2,
-  seconds_studied_at_previous_level: 1500,
-  items_studied_at_previous_level: 5,
-  points_awarded: 100,
+const topik: ProficiencyCelebration = {
+  track: "topik",
+  from_level: null,
+  to_level: 3,
+  reward_points: 100,
+  capabilities_confirmed: 0,
+  from: "/proficiency/topik",
 };
 
-function renderLevelUp(levelUp?: SessionLevelUp, from?: string) {
+function renderLevelUp(celebration?: ProficiencyCelebration) {
   const router = createMemoryRouter(
     [
       { path: "/level-up", element: <LevelUp /> },
       { path: "/home", element: <div>HOME</div> },
-      { path: "/recommend", element: <div>PERSONALIZED</div> },
+      { path: "/proficiency/:track", element: <div>PROFICIENCY</div> },
     ],
-    { initialEntries: [{ pathname: "/level-up", state: levelUp ? { levelUp, from } : undefined }], initialIndex: 0 },
+    { initialEntries: [{ pathname: "/level-up", state: celebration ? { celebration } : undefined }], initialIndex: 0 },
   );
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
@@ -39,53 +39,42 @@ function renderLevelUp(levelUp?: SessionLevelUp, from?: string) {
       <QueryClientProvider client={qc}>
         <RouterProvider router={router} />
       </QueryClientProvider>
-    </I18nProvider>,);
+    </I18nProvider>,
+  );
 }
 
-describe("LevelUp screen", () => {
-  it("renders conversation level-up data-driven (heading, pill, reward, stats)", () => {
+describe("LevelUp screen (evidence-based promotions only)", () => {
+  it("celebrates a confirmed conversation level with what it rested on", () => {
     renderLevelUp(conv);
-    expect(screen.getByText(/레벨 2 달성/)).toBeInTheDocument();
-    expect(screen.getByText("Lv.1")).toBeInTheDocument();
-    expect(screen.getByText("Lv.2")).toBeInTheDocument();
+    expect(screen.getByText("회화 레벨 5 확인!")).toBeInTheDocument();
+    expect(screen.getByText("Lv.4")).toBeInTheDocument();
+    expect(screen.getByText("Lv.5")).toBeInTheDocument();
     expect(screen.getByText("+100p")).toBeInTheDocument();
-    expect(screen.getByText("01:00")).toBeInTheDocument(); // 3600s → HH:mm
-    expect(screen.getByText("학습한 문장")).toBeInTheDocument();
-    expect(screen.getByText("10")).toBeInTheDocument();
+    expect(screen.getByText("확인한 필수 역량")).toBeInTheDocument();
+    expect(screen.getByText("6")).toBeInTheDocument();
+    // The retired rule's statistics are gone: time and item counts never
+    // justified a level.
+    expect(screen.queryByText("공부한 시간")).not.toBeInTheDocument();
+    expect(screen.queryByText("학습한 문장")).not.toBeInTheDocument();
   });
 
-  it("uses TOPIK wording (급 + 학습한 문제)", () => {
+  it("labels TOPIK readiness as app-mock based, never an official grade", () => {
     renderLevelUp(topik);
-    // 572:23250 — the TOPIK frame drops the "토픽" prefix and adds the 🎉.
-    expect(screen.getByText("2급 달성! 🎉")).toBeInTheDocument();
-    expect(screen.getByText("1급")).toBeInTheDocument();
-    expect(screen.getByText("2급")).toBeInTheDocument();
-    expect(screen.getByText("학습한 문제")).toBeInTheDocument();
-    expect(screen.getByText("5")).toBeInTheDocument();
-    expect(screen.getByText("00:25")).toBeInTheDocument(); // 1500s → 00:25
+    expect(screen.getByText("TOPIK 3급 준비도 확인! 🎉")).toBeInTheDocument();
+    expect(screen.getByText("—")).toBeInTheDocument(); // no confirmed grade before
+    expect(screen.getByText("3급")).toBeInTheDocument();
+    expect(screen.getByText(/공식 TOPIK 성적이 아니에요/)).toBeInTheDocument();
   });
 
-  it("button returns to Home when the session was started from Home (no auto-restart)", async () => {
-    renderLevelUp(conv, "/home");
-    await userEvent.click(screen.getByRole("button", { name: "다음 레벨 학습하기" }));
-    expect(await screen.findByText("HOME")).toBeInTheDocument();
-  });
-
-  it("button returns to Personalized when the session was started from there", async () => {
-    renderLevelUp(topik, "/recommend");
-    await userEvent.click(screen.getByRole("button", { name: "다음 레벨 학습하기" }));
-    expect(await screen.findByText("PERSONALIZED")).toBeInTheDocument();
-  });
-
-  it("button falls back to Home when the source is unknown", async () => {
+  it("returns to the proficiency page, which shows the evidence", async () => {
     renderLevelUp(conv);
     await userEvent.click(screen.getByRole("button", { name: "다음 레벨 학습하기" }));
-    expect(await screen.findByText("HOME")).toBeInTheDocument();
+    expect(await screen.findByText("PROFICIENCY")).toBeInTheDocument();
   });
 
-  it("redirects home when there is no level-up state (refresh / direct nav)", async () => {
+  it("redirects home when there is no decision to celebrate (refresh / direct nav)", async () => {
     renderLevelUp(undefined);
     expect(await screen.findByText("HOME")).toBeInTheDocument();
-    expect(screen.queryByText(/달성/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/확인!/)).not.toBeInTheDocument();
   });
 });

@@ -5,8 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 /* -------------------------------- mocks --------------------------------- */
-const { summary } = vi.hoisted(() => ({ summary: vi.fn() }));
-vi.mock("../api/endpoints", () => ({ dashboardApi: { summary } }));
+const { summary, proficiencyMe } = vi.hoisted(() => ({ summary: vi.fn(), proficiencyMe: vi.fn() }));
+vi.mock("../api/endpoints", () => ({ dashboardApi: { summary }, proficiencyApi: { me: proficiencyMe } }));
 
 import { Personalized } from "./Personalized";
 import { I18nProvider } from "../i18n";
@@ -37,6 +37,7 @@ function renderPage() {
             <Route path="/recommend" element={<><Personalized /><Loc /></>} />
             <Route path="/session/topik" element={<><div>TOPIK SESSION</div><Loc /></>} />
             <Route path="/session/conversation" element={<><div>CONVERSATION SESSION</div><Loc /></>} />
+            <Route path="/proficiency/:track" element={<Loc />} />
           </Routes>
         </MemoryRouter>
       </QueryClientProvider>
@@ -53,6 +54,24 @@ beforeEach(() => {
     studied_today: false,
     paywall_required: false,
     tracks: [track("conversation", "회화"), track("topik", "TOPIK")],
+  });
+  proficiencyMe.mockResolvedValue({
+    rollout_mode: "enabled",
+    decisions_apply: true,
+    tracks: [
+      { track: "conversation", status: "confirmed", confirmed_level: 4, provisional_level: null },
+      { track: "topik", status: "unassessed", confirmed_grade: null, provisional_grade: null },
+    ],
+  });
+});
+
+describe("Personalized — proficiency entry", () => {
+  it("names the confirmed level, distinct from the study level on the card", async () => {
+    renderPage();
+    const entry = await screen.findByRole("button", { name: /내 실력 보기/ });
+    expect(await screen.findByText("확인된 레벨 · Lv.4")).toBeInTheDocument();
+    await userEvent.click(entry);
+    await waitFor(() => expect(screen.getByTestId("loc").textContent).toContain("/proficiency/conversation"));
   });
 });
 

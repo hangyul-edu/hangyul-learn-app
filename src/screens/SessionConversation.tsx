@@ -113,10 +113,7 @@ export function SessionConversation() {
   const backToSaved = useSavedReturn("sentence");
   const [rewardOpen, setRewardOpen] = useState(false);
   const attemptSource = isReview ? "review" : "custom";
-  // Where the session was launched from (Home / Personalized), forwarded to the
-  // Level-Up screen so its button returns the user to that source page.
   const navState = loc.state as { from?: string; additionalCount?: number } | null;
-  const from = navState?.from ?? "/home";
   const { remaining, level, ready } = useRemaining();
   // Additional-learning batch size (5/10/15/20), set only when the user opted
   // into extra study after completing today's goal; null for a normal session.
@@ -729,10 +726,10 @@ export function SessionConversation() {
   }
 
   // Single exit path for both 완료 (modal confirm) and the back chevron. It
-  // finalizes the personalized session on the server (source of truth): points
-  // notification is created, and a level-up — if the server says so — routes to
-  // the Level-Up screen (shown AFTER the point-reward modal the user just
-  // confirmed). Single-flight so repeated taps never double-finalize.
+  // records the personalized session on the server (source of truth) and the
+  // points notification is created. Finishing a session never changes a level —
+  // levels come only from proficiency assessments (/proficiency). Single-flight
+  // so repeated taps never double-record.
   const finalizingRef = useRef(false);
   async function exitSession() {
     if (finalizingRef.current) return;
@@ -751,7 +748,7 @@ export function SessionConversation() {
     finalizingRef.current = true;
     const duration_seconds = Math.max(1, Math.round((Date.now() - startedAt.current) / 1000));
     try {
-      const res = await learnApi.recordSession({
+      await learnApi.recordSession({
         session_type: "sentence",
         category: "conversation",
         duration_seconds,
@@ -759,10 +756,6 @@ export function SessionConversation() {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["notif-unread"] });
       qc.invalidateQueries({ queryKey: ["management"] });
-      if (res.leveled_up && res.level_up) {
-        nav("/level-up", { replace: true, state: { levelUp: res.level_up, from } });
-        return;
-      }
     } catch {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
     }

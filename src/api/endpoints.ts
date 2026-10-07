@@ -6,8 +6,12 @@ import { activeLanguage } from "../lib/language";
 import { recordingFilename, type RecordingInfo } from "../lib/recording";
 import type {
   AppSettings,
+  AssessmentSessionView,
+  AssessmentTask,
   AttendanceCheckIn,
   CheckpointInteraction,
+  ProficiencyDecision,
+  ProficiencySummary,
   TimezoneSync,
   Banner,
   Course,
@@ -345,6 +349,48 @@ export const recApi = {
 };
 /** Adaptive study sessions: server-assembled sets from reviewed content, graded
  *  on the server, customizable in natural language, with a grounded tutor. */
+/* ---------------------------- Proficiency ---------------------------- */
+/** Evidence-based levels. Every assessment is created by the server inside
+ * personalized learning; nothing sent here can make an activity count. */
+export const proficiencyApi = {
+  me: () => http.get<ProficiencySummary>("/proficiency/me"),
+  history: (track: "conversation" | "topik") =>
+    http.get<{ items: ProficiencyDecision[] }>(`/proficiency/me/${track}/history`),
+  start: (body: {
+    track: "conversation" | "topik";
+    mode: string;
+    target_level?: number;
+    exam_level?: "I" | "II";
+  }) => http.post<AssessmentSessionView>("/proficiency/assessments", { ...body, client_request_id: randomUuid() }),
+  get: (id: string) => http.get<AssessmentSessionView>(`/proficiency/assessments/${id}`),
+  present: (id: string, taskId: string) =>
+    http.post<AssessmentTask>(`/proficiency/assessments/${id}/tasks/${taskId}/present`, {}),
+  partnerAudio: (id: string, taskId: string, opts: { turn?: number; material?: boolean }) =>
+    http.get<{ url: string; duration_ms: number }>(`/proficiency/assessments/${id}/tasks/${taskId}/audio`, {
+      ...(opts.turn != null ? { turn: opts.turn } : {}),
+      ...(opts.material ? { material: true } : {}),
+    }),
+  support: (id: string, taskId: string, turn: number, kind: "text" | "replay") =>
+    http.post<AssessmentTask>(`/proficiency/assessments/${id}/tasks/${taskId}/support`, { turn, kind }),
+  turn: (id: string, taskId: string, turn: number, answer: { audio: Blob; take: RecordingInfo } | { text: string }) => {
+    const fd = new FormData();
+    fd.append("turn", String(turn));
+    if ("audio" in answer) {
+      fd.append("audio", answer.audio, answer.take.filename);
+      fd.append("duration_ms", String(answer.take.durationMs));
+    } else {
+      fd.append("text", answer.text);
+    }
+    return http.upload<AssessmentTask>(`/proficiency/assessments/${id}/tasks/${taskId}/turns`, fd);
+  },
+  finish: (id: string, taskId: string) =>
+    http.post<AssessmentTask>(`/proficiency/assessments/${id}/tasks/${taskId}/finish`, {}),
+  answer: (id: string, position: number, answer: string) =>
+    http.post<{ position: number; answered: boolean }>(`/proficiency/assessments/${id}/answers`, { position, answer }),
+  complete: (id: string) => http.post<AssessmentSessionView>(`/proficiency/assessments/${id}/complete`, {}),
+  abandon: (id: string) => http.post<{ status: string }>(`/proficiency/assessments/${id}/abandon`, {}),
+};
+
 export const studyApi = {
   /** Start, or resume the active session on the track (same TOPIK scope). */
   start: (body: {

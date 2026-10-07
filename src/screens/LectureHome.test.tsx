@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -189,6 +189,55 @@ describe("LectureHome — banner carousel (COU-001)", () => {
     const dots = container.querySelectorAll(".lechome__carousel > .lechome__dots .lechome__dot");
     expect(dots).toHaveLength(2);
     expect(dots[0]).toHaveClass("is-active");
+  });
+
+  describe("stays on one whole banner (back from the player)", () => {
+    // jsdom has no layout: give the band a width and a scrollTo that moves it.
+    let width = 375;
+    beforeEach(() => {
+      width = 375;
+      Object.defineProperty(HTMLElement.prototype, "clientWidth", {
+        configurable: true,
+        get(this: HTMLElement) {
+          return this.classList.contains("lechome__banners") ? width : 0;
+        },
+      });
+      Element.prototype.scrollTo = function (this: Element, opts?: ScrollToOptions | number) {
+        if (typeof opts === "object" && opts.left !== undefined) this.scrollLeft = opts.left;
+      } as Element["scrollTo"];
+    });
+    afterEach(() => {
+      delete (HTMLElement.prototype as { clientWidth?: number }).clientWidth;
+    });
+
+    async function band() {
+      const { container } = renderPage();
+      await waitFor(() => expect(container.querySelector(".lechome__banners")).toBeInTheDocument());
+      const el = container.querySelector(".lechome__banners") as HTMLDivElement;
+      const dots = () => [...container.querySelectorAll(".lechome__dot")].map((d) => d.classList.contains("is-active"));
+      return { el, dots };
+    }
+
+    it("a scroll that stops between two banners settles exactly on the nearer one", async () => {
+      const { el, dots } = await band();
+      el.scrollLeft = 260; // cut short 70% of the way to banner 2
+      fireEvent.scroll(el);
+      await waitFor(() => expect(el.scrollLeft).toBe(375));
+      expect(dots()).toEqual([false, true]);
+    });
+
+    it("re-aligns on the same banner when the width changes (rotated while the lesson played)", async () => {
+      const { el, dots } = await band();
+      el.scrollLeft = 375;
+      fireEvent.scroll(el);
+      await waitFor(() => expect(dots()).toEqual([false, true]));
+      await new Promise((r) => setTimeout(r, 200)); // the swipe settles
+      // Back in portrait: the old offset now sits between banners on a wider band.
+      width = 430;
+      fireEvent(window, new Event("resize"));
+      expect(el.scrollLeft).toBe(430);
+      expect(dots()).toEqual([false, true]);
+    });
   });
 });
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "../i18n";
 import { useQuery } from "@tanstack/react-query";
@@ -19,33 +19,100 @@ type TrackFilter = "all" | "track_conversation" | "track_topik";
 const prefersReducedMotion = () =>
   typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
+const ROTATE_MS = 5000;
+const SETTLE_MS = 150;
+
 /* --------------------------- Banner carousel --------------------------- */
 function BannerCarousel() {
   const { t } = useTranslation();
   const nav = useNavigate();
   const q = useQuery({ queryKey: ["banners"], queryFn: bannerApi.list, staleTime: 60_000 });
   const banners: Banner[] = q.data?.banners ?? [];
+  const count = banners.length;
   const trackRef = useRef<HTMLDivElement>(null);
-  const pausedRef = useRef(false);
+  // The slide on show is the carousel's source of truth; the scroll position
+  // follows it. Reading it back from scrollLeft is what let the band break:
+  // a width change (the phone rotated while the lesson played, the address
+  // bar resized the column) or a scroll cut short left scrollLeft between two
+  // slides, iOS Safari does not always re-snap it, and every later step was computed from
+  // that off-grid offset — two half cards showing, dots on the wrong banner.
+  const idxRef = useRef(0);
   const [idx, setIdx] = useState(0);
+  const heldRef = useRef(false); // a finger or mouse button is on the band
+  const restUntilRef = useRef(0); // no auto-step before this (after a swipe)
+  const settleRef = useRef<number | undefined>(undefined);
 
-  // Auto-rotation: advance every 5s, loop, pause while dragging / hidden / reduced-motion.
+  const show = useCallback((i: number, behavior: ScrollBehavior = "auto") => {
+    idxRef.current = i;
+    setIdx(i);
+    const el = trackRef.current;
+    const w = el?.clientWidth ?? 0;
+    if (!el || w === 0) return; // not laid out (hidden): realigned on return
+    if (Math.abs(el.scrollLeft - i * w) > 0.5) el.scrollTo({ left: i * w, behavior });
+  }, []);
+
+  // Put the band back on its slide whenever the slide width may have changed
+  // under it or the page comes back into view.
   useEffect(() => {
-    if (banners.length < 2 || prefersReducedMotion()) return;
-    const t = window.setInterval(() => {
-      const el = trackRef.current;
-      if (!el || pausedRef.current || document.hidden) return;
-      const w = el.clientWidth || 1;
-      const next = (Math.round(el.scrollLeft / w) + 1) % banners.length;
-      el.scrollTo({ left: next * w, behavior: "smooth" });
-    }, 5000);
-    return () => window.clearInterval(t);
-  }, [banners.length]);
+    const el = trackRef.current;
+    if (!el || count === 0) return;
+    const realign = () => show(Math.min(idxRef.current, count - 1));
+    realign();
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(realign);
+    ro?.observe(el);
+    const onVisible = () => !document.hidden && realign();
+    window.addEventListener("resize", realign);
+    window.addEventListener("pageshow", realign);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener("resize", realign);
+      window.removeEventListener("pageshow", realign);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.clearTimeout(settleRef.current);
+      settleRef.current = undefined;
+    };
+  }, [count, show]);
 
+  // Auto-rotation: one slide every 5s, looping; held while the band is touched,
+  // scrolling, just swiped, hidden, or under reduced motion.
+  useEffect(() => {
+    if (count < 2 || prefersReducedMotion()) return;
+    const t = window.setInterval(() => {
+      if (heldRef.current || settleRef.current !== undefined || document.hidden) return;
+      if (Date.now() < restUntilRef.current) return;
+      show((idxRef.current + 1) % count, "smooth");
+    }, ROTATE_MS);
+    return () => window.clearInterval(t);
+  }, [count, show]);
+
+  function nearest(el: HTMLDivElement) {
+    return Math.max(0, Math.min(count - 1, Math.round(el.scrollLeft / el.clientWidth)));
+  }
+  // Once scrolling stops, adopt the slide it stopped on and snap exactly onto
+  // it, so the band can never rest between two banners.
+  function settle() {
+    settleRef.current = undefined;
+    const el = trackRef.current;
+    if (!el || el.clientWidth === 0 || heldRef.current) return;
+    show(nearest(el));
+  }
   function onScroll() {
     const el = trackRef.current;
-    if (!el) return;
-    setIdx(Math.round(el.scrollLeft / (el.clientWidth || 1)));
+    if (!el || el.clientWidth === 0) return;
+    setIdx(nearest(el)); // the dots follow the finger
+    window.clearTimeout(settleRef.current);
+    settleRef.current = window.setTimeout(settle, SETTLE_MS);
+  }
+  function hold() {
+    heldRef.current = true;
+  }
+  function release() {
+    if (!heldRef.current) return;
+    heldRef.current = false;
+    restUntilRef.current = Date.now() + ROTATE_MS;
+    window.clearTimeout(settleRef.current);
+    settleRef.current = window.setTimeout(settle, SETTLE_MS);
   }
   function open(b: Banner) {
     if (b.action_url && b.action_url.startsWith("/")) nav(b.action_url);
@@ -71,9 +138,15 @@ function BannerCarousel() {
         className="lechome__banners"
         ref={trackRef}
         onScroll={onScroll}
-        onPointerDown={() => (pausedRef.current = true)}
-        onPointerUp={() => (pausedRef.current = false)}
-        onPointerLeave={() => (pausedRef.current = false)}
+        // Touch is tracked with touch events: a pan fires pointercancel while
+        // the finger is still down.
+        onTouchStart={hold}
+        onTouchEnd={release}
+        onTouchCancel={release}
+        onPointerDown={(e) => e.pointerType === "mouse" && hold()}
+        onPointerUp={(e) => e.pointerType === "mouse" && release()}
+        onPointerLeave={(e) => e.pointerType === "mouse" && release()}
+        onWheel={() => (restUntilRef.current = Date.now() + ROTATE_MS)}
       >
         {/* Each slide is exactly one screen wide and holds one 335px card with
             20px either side (2658:26022), so a single banner shows at a time

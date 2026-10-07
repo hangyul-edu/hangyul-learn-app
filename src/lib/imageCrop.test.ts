@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CARD_ASPECT, cropAt, croppedImageStyle, zoomAndCenterOf } from "./imageCrop";
+import { CARD_ASPECT, cropAt, croppedImageStyle, resizeCropFromCorner, zoomAndCenterOf } from "./imageCrop";
 
 describe("cropAt", () => {
   it("at zoom 1 takes the largest 15:8 area, centred — the old cover crop", () => {
@@ -50,5 +50,34 @@ describe("croppedImageStyle", () => {
     expect(style.left).toBe("-50%");
     expect(style.top).toBe("-12.5%");
     expect(style.position).toBe("absolute");
+  });
+});
+
+describe("resizeCropFromCorner", () => {
+  const natural = { width: 1600, height: 900 };
+  const pxRatio = (c: { width: number; height: number }) => (c.width * natural.width) / (c.height * natural.height);
+
+  it("keeps the opposite corner fixed and the area 15:8", () => {
+    const start = cropAt(natural, 2, { x: 0.5, y: 0.5 });
+    const grown = resizeCropFromCorner(natural, start, "se", { x: start.x + start.width + 0.1, y: start.y + start.height }, 4);
+    expect(grown.x).toBeCloseTo(start.x, 4);
+    expect(grown.y).toBeCloseTo(start.y, 4);
+    expect(grown.width).toBeCloseTo(start.width + 0.1, 4);
+    expect(pxRatio(grown)).toBeCloseTo(CARD_ASPECT, 3);
+
+    const shrunk = resizeCropFromCorner(natural, start, "nw", { x: start.x + 0.05, y: start.y }, 4);
+    expect(shrunk.x + shrunk.width).toBeCloseTo(start.x + start.width, 4);
+    expect(shrunk.y + shrunk.height).toBeCloseTo(start.y + start.height, 4);
+    expect(shrunk.width).toBeCloseTo(start.width - 0.05, 4);
+  });
+
+  it("stops at the image's edge, at the zoom-1 size and at the largest zoom", () => {
+    const start = cropAt(natural, 2, { x: 0.5, y: 0.5 });
+    const big = resizeCropFromCorner(natural, start, "se", { x: 5, y: 5 }, 4);
+    expect(big.x + big.width).toBeLessThanOrEqual(1.0001);
+    expect(big.y + big.height).toBeLessThanOrEqual(1.0001);
+    expect(big.width).toBeLessThanOrEqual(cropAt(natural, 1, { x: 0.5, y: 0.5 }).width + 1e-4);
+    const tiny = resizeCropFromCorner(natural, start, "se", { x: start.x, y: start.y }, 4);
+    expect(tiny.width).toBeCloseTo(cropAt(natural, 1, { x: 0.5, y: 0.5 }).width / 4, 4);
   });
 });

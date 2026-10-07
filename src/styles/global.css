@@ -13718,7 +13718,7 @@ textarea.input {
   overflow: hidden;
 }
 .lecp__video,
-.lecp__poster {
+.lecp__blank {
   /* The full frame, letterboxed on black — never cropped or stretched. */
   display: block;
   width: 100%;

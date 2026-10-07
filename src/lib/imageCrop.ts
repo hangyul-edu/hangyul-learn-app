@@ -66,6 +66,45 @@ export function zoomAndCenterOf(natural: { width: number; height: number }, crop
   };
 }
 
+export type CropCorner = "nw" | "ne" | "sw" | "se";
+
+/**
+ * `crop` with one corner dragged to `pointer` (fractions of the image): the
+ * opposite corner stays put, the area stays 15:8, inside the image, and
+ * between the zoom-1 size and `maxZoom`.
+ */
+export function resizeCropFromCorner(
+  natural: { width: number; height: number },
+  crop: ImageCrop,
+  corner: CropCorner,
+  pointer: { x: number; y: number },
+  maxZoom: number,
+): ImageCrop {
+  // Height (a fraction of the image's height) per unit of width, for 15:8 in pixels.
+  const heightPerWidth = natural.width / natural.height / CARD_ASPECT;
+  const east = corner === "ne" || corner === "se";
+  const south = corner === "sw" || corner === "se";
+  const anchorX = east ? crop.x : crop.x + crop.width;
+  const anchorY = south ? crop.y : crop.y + crop.height;
+  const fullW = cropAt(natural, 1, { x: 0.5, y: 0.5 }).width;
+  const roomW = east ? 1 - anchorX : anchorX;
+  const roomH = south ? 1 - anchorY : anchorY;
+  const maxW = Math.min(fullW, roomW, roomH / heightPerWidth);
+  const minW = Math.min(fullW / maxZoom, maxW);
+  // Follow whichever way the pointer moved the corner more.
+  const byX = east ? pointer.x - anchorX : anchorX - pointer.x;
+  const byY = (south ? pointer.y - anchorY : anchorY - pointer.y) / heightPerWidth;
+  const wanted = Math.abs(byX - crop.width) >= Math.abs(byY - crop.width) ? byX : byY;
+  const width = clamp(wanted, minW, maxW);
+  const height = width * heightPerWidth;
+  return {
+    x: round(east ? anchorX : anchorX - width),
+    y: round(south ? anchorY : anchorY - height),
+    width: round(width),
+    height: round(height),
+  };
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), Math.max(min, max));
 }

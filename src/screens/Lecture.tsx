@@ -427,7 +427,6 @@ export function Lecture() {
                 ref={videoRef}
                 className="lecp__video"
                 src={videoUrl}
-                poster={lecture.thumbnail_url ?? undefined}
                 playsInline
                 onLoadedMetadata={(e) => {
                   const v = e.currentTarget;
@@ -479,7 +478,9 @@ export function Lecture() {
                 <Button size="sm" onClick={() => nav("/subscription")}>{t("study.upgrade")}</Button>
               </div>
             ) : (
-              <img className="lecp__poster" src={lecture.thumbnail_url ?? undefined} alt="" />
+              // While the playback URL loads the stage stays black: the video
+              // itself is the first picture, never the lesson's thumbnail.
+              <div className="lecp__blank" aria-hidden="true" />
             )
           }
         </Async>

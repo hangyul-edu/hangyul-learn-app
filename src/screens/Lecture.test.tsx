@@ -435,6 +435,20 @@ describe("Lecture player", () => {
     expect((container.querySelector(".lecp") as HTMLElement).dataset.controls).toBe("shown");
   });
 
+  it("never shows the lesson's thumbnail: the stage is black until the video's own picture", async () => {
+    // Regression: the thumbnail filled the screen before the video started.
+    lecture.mockResolvedValue(detail(null, { thumbnail_url: "http://x/thumb.png" }));
+    let startPlay: (v: unknown) => void = () => {};
+    lecturePlay.mockReturnValue(new Promise((r) => (startPlay = r)));
+    const { container } = renderLecture();
+    await waitFor(() => expect(container.querySelector(".lecp__blank")).toBeInTheDocument());
+    expect(container.querySelector('img[src="http://x/thumb.png"]')).not.toBeInTheDocument();
+    await act(async () => startPlay({ video: { url: "http://x/v.mp4", duration_seconds: 300, captions_url: null } }));
+    const video = await loadedVideo(container);
+    expect(video).not.toHaveAttribute("poster");
+    expect(container.querySelector('img[src="http://x/thumb.png"]')).not.toBeInTheDocument();
+  });
+
   it("keeps the controls up while one of the player's dialogs is open", async () => {
     lecture.mockResolvedValue(detail({ last_position_seconds: 5, completed: false }));
     const { container } = renderLecture();

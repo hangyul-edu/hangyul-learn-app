@@ -50,6 +50,12 @@ export function loadStoredLanguage(): AppLanguage | null {
   }
 }
 
+/** The language the app is shown in right now (the chosen one, else the
+ * device's) — what server-sent messages (verification SMS / email) use. */
+export function activeLanguage(): AppLanguage {
+  return loadStoredLanguage() ?? detectLanguage();
+}
+
 export function saveStoredLanguage(language: AppLanguage): void {
   try {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, language);

@@ -2,6 +2,7 @@ import { http } from "../lib/http";
 import { API_BASE_URL } from "../lib/config";
 import { randomUuid } from "../lib/uuid";
 import { deviceTimeZone } from "../lib/timezone";
+import { activeLanguage } from "../lib/language";
 import { recordingFilename, type RecordingInfo } from "../lib/recording";
 import type {
   AppSettings,
@@ -81,12 +82,17 @@ import type {
 
 /* ------------------------------- Auth ------------------------------- */
 export const authApi = {
+  // `language`: the SMS / email is written in the app's current language.
   startPhone: (phone: string, purpose: string) =>
-    http.post<VerificationStart>("/auth/phone/verification", { phone, purpose }, { auth: false }),
+    http.post<VerificationStart>(
+      "/auth/phone/verification",
+      { phone, purpose, language: activeLanguage() },
+      { auth: false },
+    ),
   confirmPhone: (verification_id: string, code: string) =>
     http.post<VerificationConfirm>("/auth/phone/verification/confirm", { verification_id, code }, { auth: false }),
   startEmail: (email: string) =>
-    http.post<VerificationStart>("/auth/email/verification", { email }, { auth: false }),
+    http.post<VerificationStart>("/auth/email/verification", { email, language: activeLanguage() }, { auth: false }),
   confirmEmail: (verification_id: string, code: string) =>
     http.post<VerificationConfirm>("/auth/email/verification/confirm", { verification_id, code }, { auth: false }),
   signup: (body: Record<string, unknown>) =>
@@ -133,7 +139,8 @@ export const authApi = {
     http.post<void>("/auth/password/change", { current_password, new_password, confirm_new_password }),
   changePhone: (phone: string, phone_verification_token: string, nationality?: string) =>
     http.post<{ phone: string }>("/auth/phone/change", { phone, phone_verification_token, nationality }),
-  startEmailChange: (email: string) => http.post<VerificationStart>("/auth/email/change/verification", { email }),
+  startEmailChange: (email: string) =>
+    http.post<VerificationStart>("/auth/email/change/verification", { email, language: activeLanguage() }),
   confirmEmailChange: (verification_id: string, code: string) =>
     http.post<VerificationConfirm>("/auth/email/change/verification/confirm", { verification_id, code }),
   changeEmail: (email: string, email_verification_token: string) =>

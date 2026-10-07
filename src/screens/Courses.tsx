@@ -9,7 +9,7 @@ import coursePlay from "../assets/brand/course-play.svg";
 import courseMic from "../assets/brand/course-mic.png";
 import courseNotebook from "../assets/brand/course-notebook.svg";
 import { RewardModal } from "../components/ReviewRewardModal";
-import { clearSeriesReward, peekSeriesReward } from "./Lecture";
+import { clearSeriesReward, peekSeriesReward, progressSavesSettled } from "./Lecture";
 import type { CourseRewardState, LectureEntryState } from "./Lecture";
 import icCheck from "../assets/brand/ic-16-check.svg";
 import icBack from "../assets/brand/ic-topnav-back.svg";
@@ -86,10 +86,16 @@ export function SeriesPage() {
   const nav = useNavigate();
   const location = useLocation();
   // Never stale, so it refetches on every visit: coming back from a lesson
-  // must move 바로 학습하기 to where the learner just stopped.
+  // must move 바로 학습하기 to where the learner just stopped. The read waits
+  // for the closed lesson's position save: sent as the player closes, it can
+  // still be in flight when this page mounts, and a read that beat it kept
+  // pointing 바로 학습하기 at the lesson watched before.
   const q = useQuery({
     queryKey: ["series", seriesId, language],
-    queryFn: () => learnApi.series(seriesId, language),
+    queryFn: async () => {
+      await progressSavesSettled();
+      return learnApi.series(seriesId, language);
+    },
     staleTime: 0,
   });
   // COU-021: the player hands back the points a just-finished lecture paid —

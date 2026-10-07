@@ -58,6 +58,13 @@ const SERIES_REWARD_KEY = "hangyul.seriesReward:";
 // reopen can never read the position from before the save landed.
 const pendingSaves = new Map<string, Promise<unknown>>();
 
+/** Every position save still in flight has landed (or failed). Pages that
+ * read watch history — the series page's 바로 학습하기 — wait for this, or a
+ * lesson just closed would not be the one most recently watched yet. */
+export function progressSavesSettled(): Promise<unknown> {
+  return Promise.all([...pendingSaves.values()]);
+}
+
 /** Send a position save and track it; never rejects. */
 function saveOnExit(lectureId: string, seconds: number) {
   const save = learnApi

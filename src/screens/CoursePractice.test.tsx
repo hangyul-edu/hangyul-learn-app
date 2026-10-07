@@ -18,6 +18,8 @@ const api = vi.hoisted(() => ({
   start: vi.fn(),
   attempt: vi.fn(),
   recorder: { options: null as null | { onRecorded: (b: Blob) => Promise<void> | void } },
+  // Each time a card starts listening.
+  listen: vi.fn(() => Promise.resolve()),
 }));
 vi.mock("../api/endpoints", () => ({
   learnApi: {
@@ -37,7 +39,7 @@ vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: v
 vi.mock("../hooks/useVoiceRecorder", () => ({
   useVoiceRecorder: (options: typeof api.recorder.options) => {
     api.recorder.options = options;
-    return { recording: false, start: () => Promise.resolve(), stop: vi.fn() };
+    return { recording: false, start: api.listen, stop: vi.fn() };
   },
 }));
 
@@ -222,6 +224,56 @@ describe("SpeakPractice", () => {
     expect(screen.getByText("완벽해요!")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "다시 시작" }));
     expect(await screen.findByText("연습 문장 1/2")).toBeInTheDocument();
+  });
+
+  it("다시 시작 restarts a one-checkpoint practice at once — no second tap", async () => {
+    // Regression: with one checkpoint the practice was already on sentence 1,
+    // so 다시 시작 changed nothing but hid the bar; the card kept its graded
+    // "try again" state and its own 다시하기 had to be tapped as well.
+    api.speakPractice.mockResolvedValue({
+      lecture_id: "L1",
+      items: [{ checkpoint_id: "c1", at_second: 10, sentence_id: "s1" }],
+    });
+    api.speechAttempt.mockResolvedValue({ correct: false });
+    renderAt("/lectures/L1/speak");
+    expect(await screen.findByText("연습 문장 1/1")).toBeInTheDocument();
+    await waitFor(() => expect(api.recorder.options).not.toBeNull());
+    await waitFor(() => expect(api.listen).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      await api.recorder.options!.onRecorded(new Blob(["x"]));
+    });
+    expect(screen.getByText("다시 한 번 말해보세요!")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "다시 시작" }));
+
+    // One tap: the card is back to its prompt and already listening again.
+    expect(await screen.findByText("따라해보세요!")).toBeInTheDocument();
+    expect(screen.queryByText("다시 한 번 말해보세요!")).toBeNull();
+    await waitFor(() => expect(api.listen).toHaveBeenCalledTimes(2));
+    // …and the new take is graded like the first.
+    await act(async () => {
+      await api.recorder.options!.onRecorded(new Blob(["y"]));
+    });
+    expect(api.speechAttempt).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole("button", { name: "다시 시작" })).toBeInTheDocument();
+  });
+
+  it("다시 시작 on the last of several sentences starts the first one listening", async () => {
+    api.speechAttempt.mockResolvedValue({ correct: false });
+    renderAt("/lectures/L1/speak");
+    await screen.findByText("반갑습니다");
+    fireEvent.click(screen.getByRole("button", { name: "다음 문장" }));
+    expect(await screen.findByText("감사합니다")).toBeInTheDocument();
+    await waitFor(() => expect(api.recorder.options).not.toBeNull());
+    await act(async () => {
+      await api.recorder.options!.onRecorded(new Blob(["x"]));
+    });
+    const before = api.listen.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "다시 시작" }));
+    expect(await screen.findByText("반갑습니다")).toBeInTheDocument();
+    expect(screen.getByText("연습 문장 1/2")).toBeInTheDocument();
+    expect(screen.getByText("따라해보세요!")).toBeInTheDocument();
+    await waitFor(() => expect(api.listen.mock.calls.length).toBeGreaterThan(before));
   });
 
   it("asks before leaving mid-practice", async () => {

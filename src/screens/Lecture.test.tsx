@@ -3,7 +3,8 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 
-const { lecture, lecturePlay, lectureVideo, progress, completeLecture, checkpointInteraction, recordActivity, summary } = vi.hoisted(() => ({
+const { lecture, lecturePlay, lectureVideo, progress, completeLecture, checkpointInteraction, recordActivity, summary, series } = vi.hoisted(() => ({
+  series: vi.fn(),
   lecture: vi.fn(),
   lecturePlay: vi.fn(),
   lectureVideo: vi.fn(),
@@ -14,7 +15,7 @@ const { lecture, lecturePlay, lectureVideo, progress, completeLecture, checkpoin
   summary: vi.fn(),
 }));
 vi.mock("../api/endpoints", () => ({
-  learnApi: { lecture, lecturePlay, lectureVideo, progress, completeLecture, checkpointInteraction, recordActivity },
+  learnApi: { lecture, lecturePlay, lectureVideo, progress, completeLecture, checkpointInteraction, recordActivity, series },
   dashboardApi: { summary },
   aiApi: {},
   quizApi: { attempt: vi.fn(), bookmark: vi.fn(), unbookmark: vi.fn() },
@@ -23,6 +24,7 @@ vi.mock("../api/endpoints", () => ({
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn(), show: vi.fn() }) }));
 
 import { Lecture, peekSeriesReward } from "./Lecture";
+import { SeriesPage } from "./Courses";
 import { I18nProvider } from "../i18n";
 
 const QUESTION = {
@@ -628,5 +630,79 @@ describe("Lecture player — history and saved position", () => {
     const video = await loadedVideo(container);
     expect(lecture).toHaveBeenCalledTimes(1);
     expect(video.currentTime).toBe(95);
+  });
+});
+
+describe("바로 학습하기 after watching a lesson", () => {
+  it("opens the lesson just watched, at its saved position, even while that save is still landing", async () => {
+    // Regression: the player saves the position as it closes, and the series
+    // page read its list before that save landed (any real network), so
+    // 바로 학습하기 kept opening the lesson watched before.
+    let saved = false;
+    let landSave: () => void = () => {};
+    progress.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          landSave = () => {
+            saved = true;
+            resolve({ position_seconds: 7, max_watched_seconds: 7, completed: false });
+          };
+        }),
+    );
+    const lesson = (id: string) => ({ ...detail(null), lecture_id: id, title: `Lecture ${id}`, started: true });
+    // The server's answer: L1 was the last one watched until L2's save lands.
+    series.mockImplementation(() =>
+      Promise.resolve({
+        series_id: "S1",
+        course_id: "C1",
+        course_title: "Course",
+        track_id: "track_conversation",
+        title: "Series",
+        description: "",
+        thumbnail_url: null,
+        lesson_count: 2,
+        completed_lesson_count: 0,
+        started: true,
+        has_free_lesson: true,
+        lessons: [lesson("L1"), lesson("L2")],
+        resume: saved ? { lecture_id: "L2", position_seconds: 7 } : { lecture_id: "L1", position_seconds: 40 },
+      }),
+    );
+    lecture.mockImplementation((id: string) =>
+      Promise.resolve({
+        ...detail(id === "L2" && saved ? { last_position_seconds: 7, completed: false } : null),
+        lecture_id: id,
+        title: `Lecture ${id}`,
+      }),
+    );
+    const { container } = render(
+      <I18nProvider language="ko">
+        <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+          <MemoryRouter initialEntries={["/series/S1"]}>
+            <Routes>
+              <Route path="/series/:seriesId" element={<SeriesPage />} />
+              <Route path="/lectures/:lectureId" element={<Lecture />} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </I18nProvider>,
+    );
+
+    // Watch L2 for a few seconds from its row, then close it.
+    fireEvent.click((await screen.findAllByRole("button", { name: "Lecture L2" }))[0]);
+    const watching = await loadedVideo(container);
+    playTo(watching, 7.4);
+    fireEvent.click(screen.getByRole("button", { name: "닫기" }));
+    fireEvent.click(await screen.findByRole("button", { name: "지금 그만할래요" }));
+    await waitFor(() => expect(progress).toHaveBeenCalledWith("L2", 7));
+
+    // Back on the list while the save is still in flight; then it lands.
+    await screen.findByRole("list", { name: "Series" }).catch(() => undefined);
+    await act(async () => landSave());
+
+    fireEvent.click(await screen.findByRole("button", { name: "바로 학습하기" }));
+    const resumed = await loadedVideo(container);
+    await waitFor(() => expect(lecture).toHaveBeenLastCalledWith("L2", "ko"));
+    expect(resumed.currentTime).toBe(7);
   });
 });

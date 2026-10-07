@@ -29,6 +29,11 @@ export function SpeakPractice() {
   const { lectureId = "" } = useParams();
   const nav = useNavigate();
   const [idx, setIdx] = useState(0);
+  // Bumped by 다시 시작 so the card starts over — prompt state, listening —
+  // even when the practice is already on its first sentence (a lesson with
+  // one checkpoint), where moving to sentence 1 changed nothing and only
+  // hid the bar, leaving the card's own 다시하기 to be tapped as well.
+  const [round, setRound] = useState(0);
   const [outcome, setOutcome] = useState<SpeakingOutcome>("prompt");
   const [quitOpen, setQuitOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
@@ -52,6 +57,11 @@ export function SpeakPractice() {
     setIdx(next);
   }
 
+  function restart() {
+    setRound((r) => r + 1);
+    go(0);
+  }
+
   const body = items.isPending ? (
     <LoadingState />
   ) : items.isError ? (
@@ -71,6 +81,7 @@ export function SpeakPractice() {
       <div className="spk-page__card">
         {sentence.data ? (
           <SpeakingCard
+            key={`${round}-${sentence.data.sentence_id}`}
             sentence={sentence.data}
             onOutcome={setOutcome}
             onMicDeclined={() => nav(-1)}
@@ -84,7 +95,7 @@ export function SpeakPractice() {
 
       {last && outcome !== "prompt" && (
         <div className="spk-page__bar">
-          <button className="spk-page__tile" onClick={() => go(0)}>
+          <button className="spk-page__tile" onClick={restart}>
             {t("courses.restart")}
           </button>
           <button className="spk-page__tile spk-page__tile--done" onClick={() => nav(-1)}>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dueCheckpoint, isExcluded } from "./lectureCheckpoints";
+import { checkpointAtResume, dueCheckpoint, isExcluded } from "./lectureCheckpoints";
 import type { LectureCheckpoint } from "./types";
 
 const CPS: LectureCheckpoint[] = [
@@ -46,5 +46,21 @@ describe("isExcluded", () => {
     expect(isExcluded("short_answer", "track_topik", true)).toBe(true);
     expect(isExcluded("speaking_exercise", "track_topik", true)).toBe(false);
     expect(isExcluded("speaking_exercise", "track_conversation", false)).toBe(false);
+  });
+});
+
+describe("checkpointAtResume", () => {
+  const at = (s: number) => [{ checkpoint_id: "c", interaction_type: "speaking_exercise" as const, at_second: s }];
+
+  it("finds the checkpoint inside the second the saved position was rounded down from", () => {
+    expect(checkpointAtResume(at(48.4), 48, keep)?.checkpoint_id).toBe("c");
+    expect(checkpointAtResume(at(48), 48, keep)?.checkpoint_id).toBe("c");
+  });
+
+  it("ignores checkpoints a second or more away, a start from 0, and excluded ones", () => {
+    expect(checkpointAtResume(at(49), 48, keep)).toBeNull();
+    expect(checkpointAtResume(at(47.9), 48, keep)).toBeNull();
+    expect(checkpointAtResume(at(0.4), 0, keep)).toBeNull();
+    expect(checkpointAtResume(at(48.4), 48, () => true)).toBeNull();
   });
 });

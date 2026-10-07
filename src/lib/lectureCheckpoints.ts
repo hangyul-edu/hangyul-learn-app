@@ -47,3 +47,21 @@ export function dueCheckpoint(
   }
   return null;
 }
+
+/**
+ * The checkpoint a learner left the lecture on, if the saved position points
+ * at one.
+ *
+ * Positions are saved in whole seconds, so leaving on a checkpoint's card
+ * (at 48.4s, say) stores the second before it (48). Resuming there would play
+ * the stub up to the checkpoint and stop again at once for the same card; the
+ * player opens on that card instead, over the paused frame.
+ */
+export function checkpointAtResume(
+  checkpoints: LectureCheckpoint[],
+  resumeAt: number,
+  skip: (checkpoint: LectureCheckpoint) => boolean,
+): LectureCheckpoint | null {
+  if (resumeAt <= 0) return null;
+  return checkpoints.find((c) => c.at_second >= resumeAt && c.at_second < resumeAt + 1 && !skip(c)) ?? null;
+}

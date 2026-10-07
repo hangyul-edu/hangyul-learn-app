@@ -207,6 +207,47 @@ describe("Lecture player", () => {
     expect(checkpointInteraction).toHaveBeenCalledWith("L1", "cp1");
   });
 
+  it("reopens on the checkpoint card the learner left on, without playing up to it first", async () => {
+    // Regression: leaving on the card at 10.4s saved 10 (whole seconds), so
+    // reopening played 0.4s of video and then stopped for the same card.
+    lecture.mockResolvedValue(
+      detail(
+        { last_position_seconds: 10, completed: false },
+        { checkpoints: [{ checkpoint_id: "cp1", interaction_type: "multiple_choice", at_second: 10.4 }] },
+      ),
+    );
+    checkpointInteraction.mockResolvedValue({
+      checkpoint_id: "cp1",
+      lecture_id: "L1",
+      interaction_type: "multiple_choice",
+      at_second: 10.4,
+      sentence: null,
+      question: QUESTION,
+    });
+    const { container } = renderLecture();
+    const video = await loadedVideo(container);
+    expect(video.play).not.toHaveBeenCalled();
+    expect(video.currentTime).toBe(10.4);
+    expect(await screen.findByText("알맞은 것을 고르십시오.")).toBeInTheDocument();
+    // Playing on from the card does not stop for the same checkpoint again.
+    playTo(video, 10.6);
+    expect(video.pause).not.toHaveBeenCalled();
+  });
+
+  it("resumes normally when the next checkpoint is further on", async () => {
+    lecture.mockResolvedValue(
+      detail(
+        { last_position_seconds: 10, completed: false },
+        { checkpoints: [{ checkpoint_id: "cp1", interaction_type: "multiple_choice", at_second: 12 }] },
+      ),
+    );
+    const { container } = renderLecture();
+    const video = await loadedVideo(container);
+    expect(video.currentTime).toBe(10);
+    expect(video.play).toHaveBeenCalled();
+    expect(checkpointInteraction).not.toHaveBeenCalled();
+  });
+
   it("skips speaking checkpoints when 말하기 제외 is on", async () => {
     lecture.mockResolvedValue(
       detail(null, { checkpoints: [{ checkpoint_id: "cp1", interaction_type: "speaking_exercise", at_second: 10 }] }),

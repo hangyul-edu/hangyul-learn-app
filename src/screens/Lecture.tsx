@@ -14,7 +14,7 @@ import { useToast } from "../hooks/toast";
 import { useMarkStudied } from "../hooks/learningActivity";
 import { useAutoHideControls } from "../hooks/useAutoHideControls";
 import { ApiError, errorMessage } from "../lib/http";
-import { dueCheckpoint, isExcluded } from "../lib/lectureCheckpoints";
+import { checkpointAtResume, dueCheckpoint, isExcluded } from "../lib/lectureCheckpoints";
 import type { LectureCheckpoint, LectureDetail as Lec } from "../lib/types";
 import icClose from "../assets/brand/ic-24-close-white.svg";
 import playerPlay from "../assets/brand/player-play.svg";
@@ -446,7 +446,22 @@ export function Lecture() {
                   // shows that position); a finished lecture starts over.
                   const resumeAt = lecture.my_playback?.last_position_seconds ?? 0;
                   const start = !lecture.my_playback?.completed && resumeAt > 0 && resumeAt < total ? resumeAt : 0;
-                  v.currentTime = start;
+                  // Left on a checkpoint's card: reopen on that card, the
+                  // video paused at its second, instead of playing the
+                  // fraction of a second up to it and stopping again.
+                  const leftOn = checkpointAtResume(checkpoints, start, (c) =>
+                    isExcluded(c.interaction_type, lecture.track_id, exclude),
+                  );
+                  if (leftOn) {
+                    v.currentTime = leftOn.at_second;
+                    lastTimeRef.current = leftOn.at_second;
+                    lastBeatRef.current = leftOn.at_second;
+                    setPos(leftOn.at_second);
+                    setActive(leftOn);
+                    return;
+                  }
+                  // Seeking to 0 is a no-op that only delays the first frame.
+                  if (start > 0) v.currentTime = start;
                   lastTimeRef.current = start;
                   lastBeatRef.current = start;
                   // Opening a lecture starts it. If the browser refuses to

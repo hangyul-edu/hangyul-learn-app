@@ -40,6 +40,9 @@ const STREAM_REFRESH_WINDOW_MS = 5 * 60 * 1000;
  * completion depends on these arriving while the video plays.
  */
 export const HEARTBEAT_SECONDS = 15;
+/** A saved position this close to the end means the video was watched to the
+ * end (finishing saves the full length): the next visit starts over. */
+const RESTART_NEAR_END_SECONDS = 3;
 
 /** Navigation state the course page reads to show COU-021's reward. */
 export type CourseRewardState = { rewardPoints?: number };
@@ -443,9 +446,13 @@ export function Lecture() {
                     return;
                   }
                   // Resume where the learner left off (the scrubber already
-                  // shows that position); a finished lecture starts over.
+                  // shows that position). Only a video watched to its end
+                  // starts over. Being completed is not that: it is permanent,
+                  // and re-watching a completed lesson used to restart it on
+                  // every visit.
                   const resumeAt = lecture.my_playback?.last_position_seconds ?? 0;
-                  const start = !lecture.my_playback?.completed && resumeAt > 0 && resumeAt < total ? resumeAt : 0;
+                  const start = resumeAt > 0 && resumeAt < total - RESTART_NEAR_END_SECONDS ? resumeAt : 0;
+                  if (start !== resumeAt) setPos(start);
                   // Left on a checkpoint's card: reopen on that card, the
                   // video paused at its second, instead of playing the
                   // fraction of a second up to it and stopping again.

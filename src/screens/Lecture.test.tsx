@@ -123,6 +123,22 @@ describe("Lecture player", () => {
     expect(video.currentTime).toBe(0);
   });
 
+  it("resumes a completed lecture the learner is re-watching", async () => {
+    // Regression: completed is permanent, so once a lesson was finished every
+    // later visit started from 0:00 wherever the learner had left it.
+    lecture.mockResolvedValue(detail({ last_position_seconds: 120, completed: true }));
+    const { container } = renderLecture();
+    const video = await loadedVideo(container);
+    expect(video.currentTime).toBe(120);
+  });
+
+  it("starts over when the video was left in its last seconds", async () => {
+    lecture.mockResolvedValue(detail({ last_position_seconds: 298, completed: false }));
+    const { container } = renderLecture();
+    const video = await loadedVideo(container);
+    expect(video.currentTime).toBe(0);
+  });
+
   it("reports progress while playing, so the server counts the lecture as watched", async () => {
     // Regression: progress was only sent on a scrub and at the very end, and
     // the server only advances the watched frontier in steps of ≤60s, so no

@@ -180,11 +180,15 @@ export function League() {
   const { t } = useTranslation();
   const nav = useNavigate();
   // Optional deep-link, e.g. `/league?tab=points` (used by the /points route).
-  const [params] = useSearchParams();
-  const initialTab = params.get("tab");
-  const [tab, setTab] = useState<Tab>(
-    initialTab === "friend" || initialTab === "points" ? initialTab : "regular",
-  );
+  // The URL is the tab's only state, so coming back from 친구 관리 (/social)
+  // or any other screen reopens the tab the user left — local state reset to
+  // 정규 리그 on every return. Replace, not push: switching tabs is not a
+  // step the back button should walk through.
+  const [params, setParams] = useSearchParams();
+  const urlTab = params.get("tab");
+  const tab: Tab = urlTab === "friend" || urlTab === "points" ? urlTab : "regular";
+  const setTab = (next: Tab) =>
+    setParams(next === "regular" ? {} : { tab: next }, { replace: true });
   const [info, setInfo] = useState(false);
   const [nowTick, setNowTick] = useState(Date.now());
 

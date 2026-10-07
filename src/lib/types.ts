@@ -531,7 +531,8 @@ export interface RankingEntry {
   profile_image_type?: ProfileImageType;
   avatar_key?: string | null;
   profile_image_url?: string | null;
-  tier?: string;
+  // null on a friend-league row for someone never seated in a league.
+  tier?: string | null;
   group_id?: string;
   points: number;
   outcome?: string | null;

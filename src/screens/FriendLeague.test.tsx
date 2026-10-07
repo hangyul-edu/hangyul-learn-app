@@ -76,27 +76,59 @@ beforeEach(() => {
 });
 
 describe("Friend League screen", () => {
-  it("renders the top-3 podium in 2 / 1 / 3 order with rank 1 tallest and centered", async () => {
+  it("puts each of the top three on their own block with their name and rank", async () => {
     renderFriend();
     await screen.findByLabelText("친구 리그 순위");
-    const cols = document.querySelectorAll(".fl__podiums .fl__col");
-    expect(cols).toHaveLength(3);
-    // DOM order is left→center→right = rank 2, 1, 3.
-    expect(cols[0].querySelector(".fl__block-rank")?.textContent).toBe("2");
-    expect(cols[1].querySelector(".fl__block-rank")?.textContent).toBe("1");
-    expect(cols[2].querySelector(".fl__block-rank")?.textContent).toBe("3");
-    // Rank 1 block is the tallest tier class, and only rank 1 has the champion avatar.
-    expect(cols[1].querySelector(".fl__block--r1")).toBeInTheDocument();
-    expect(cols[1].querySelector(".fl__champion")).toBeInTheDocument();
-    expect(cols[0].querySelector(".fl__champion")).not.toBeInTheDocument();
+    const place = (rank: number) => document.querySelector(`.fl__place--r${rank}`) as HTMLElement;
+    expect(within(place(1)).getByText("Hai")).toBeInTheDocument();
+    expect(within(place(2)).getByText("Hoa")).toBeInTheDocument();
+    expect(within(place(3)).getByText("Beam")).toBeInTheDocument();
+    for (const rank of [1, 2, 3]) {
+      expect(place(rank).querySelector(`.fl__block--r${rank} .fl__block-rank`)?.textContent).toBe(String(rank));
+      // The darker right-hand face from the LEG-010 export.
+      expect(place(rank).querySelector(".fl__strip")).toBeInTheDocument();
+    }
+    // Each place is announced with its rank, name and points.
+    expect(place(2)).toHaveAttribute("aria-label", expect.stringContaining("Hoa"));
   });
 
-  it("renders decorative placeholder avatars and the base platform", async () => {
+  it("shows the 2nd and 3rd friends' own avatars (60px) beside the champion's (80px)", async () => {
+    api.friendRankings.mockResolvedValue({
+      ...full,
+      entries: [
+        { ...full.entries[0], profile_image_type: "AVATAR", avatar_key: "AVATAR_02" },
+        { ...full.entries[1], profile_image_type: "AVATAR", avatar_key: "AVATAR_01" },
+        full.entries[2],
+        ...full.entries.slice(3),
+      ],
+    });
     renderFriend();
     await screen.findByLabelText("친구 리그 순위");
-    expect(document.querySelector(".fl__decor--left")).toBeInTheDocument();
-    expect(document.querySelector(".fl__decor--right")).toBeInTheDocument();
+    const avatar = (rank: number) =>
+      document.querySelector(`.fl__podium-avatar--r${rank} .rank-avatar-char`) as HTMLElement;
+    expect(avatar(1).style.width).toBe("80px");
+    expect(avatar(2).style.width).toBe("60px");
+    expect(avatar(3).style.width).toBe("60px");
+    // A real character for those who chose one; the no-image disc otherwise —
+    // never the old decorative placeholders.
+    expect(avatar(2).querySelector("img")?.getAttribute("src")).not.toBe(
+      avatar(3).querySelector("img")?.getAttribute("src"),
+    );
+    expect(document.querySelector(".fl__decor")).toBeNull();
+    expect(document.querySelectorAll(".fl__drop")).toHaveLength(4);
     expect(document.querySelector(".fl__platform")).toBeInTheDocument();
+  });
+
+  it('writes "-" for a friend who has never been in a league', async () => {
+    api.friendRankings.mockResolvedValue({
+      ...full,
+      entries: [...full.entries, { ...entry(6, "u6", "Maria", "", 0), tier: null }],
+    });
+    renderFriend();
+    const list = await screen.findByRole("list", { name: "친구 리그 순위" });
+    const rows = within(list).getAllByRole("listitem");
+    expect(within(rows[5]).getByText("-")).toBeInTheDocument();
+    expect(within(rows[5]).queryByText(/리그/)).toBeNull();
   });
 
   it("renders the full ranking list with league subtitle and points-as-P", async () => {
@@ -151,7 +183,7 @@ describe("Friend League screen", () => {
     expect(plus).toBeInTheDocument();
     expect(add.querySelector("svg")).toBeNull();
     // No podium in the empty state.
-    expect(document.querySelector(".fl__podiums")).not.toBeInTheDocument();
+    expect(document.querySelector(".fl__hero")).not.toBeInTheDocument();
   });
 
   it("친구 추가 opens the Add Friend bottom sheet in place (no navigation)", async () => {
@@ -183,11 +215,12 @@ describe("Friend League screen", () => {
     api.friendRankings.mockResolvedValue({ ...full, entries: full.entries.slice(0, 2), me: full.entries[1] });
     renderFriend();
     await screen.findByLabelText("친구 리그 순위");
-    const cols = document.querySelectorAll(".fl__podiums .fl__col");
-    expect(cols[1].querySelector(".fl__block-rank")?.textContent).toBe("1");
-    expect(cols[0].querySelector(".fl__block-rank")?.textContent).toBe("2");
-    // Rank-3 slot is an empty placeholder block.
-    expect(cols[2].querySelector(".fl__block.is-empty")).toBeInTheDocument();
+    expect(document.querySelector(".fl__place--r1 .fl__block-rank")?.textContent).toBe("1");
+    expect(document.querySelector(".fl__place--r2 .fl__block-rank")?.textContent).toBe("2");
+    // The 3rd block stands empty: no place, no avatar.
+    expect(document.querySelector(".fl__place--r3")).toBeNull();
+    expect(document.querySelector(".fl__block--r3.is-empty")).toBeInTheDocument();
+    expect(document.querySelectorAll(".fl__podium-avatar")).toHaveLength(2);
   });
 
   it("does not flash the empty state while loading", async () => {

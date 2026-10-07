@@ -14915,131 +14915,200 @@ textarea.input {
   display: flex;
   flex-direction: column;
 }
+/* LEG-010 hero: the 270px of white band under the tab row (frame y 92..362).
+   Its pieces overlap, so they keep the frame's coordinates on a 375-wide
+   stage centred on the screen (see FriendLeagueHero). */
 .fl__hero {
   position: relative;
-  padding-top: 14px;
-  margin-bottom: 6px;
+  height: 270px;
 }
-.fl__podiums {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 10px;
+.fl__stage {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 375px;
+  height: 270px;
+  margin-left: -187.5px;
 }
-.fl__col {
-  flex: 0 1 100px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
+/* No z-index, so each place's block and avatar join the stage's stacking
+   order: 2nd < 3rd < 1st block < base < avatars < drops < champion. */
+.fl__place {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 .fl__block {
-  position: relative;
-  width: 100%;
-  max-width: 104px;
-  border-radius: 16px 16px 0 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 14px 6px 12px;
-  color: #fff;
-  box-shadow: inset 0 -12px 0 rgba(0, 0, 0, 0.08);
-}
-.fl__block--r1 {
-  height: 124px;
-  background: linear-gradient(#ffa64a, #ff8f2c);
+  position: absolute;
+  overflow: hidden;
+  border-radius: 15px;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
 }
 .fl__block--r2 {
+  left: 72px;
+  top: 165px;
+  width: 86px;
   height: 98px;
-  background: linear-gradient(#ffd76b, #ffd04a);
+  background: #ffd166;
+  z-index: 1;
 }
 .fl__block--r3 {
-  height: 82px;
-  background: linear-gradient(#9fd9e4, #7ec8d6);
+  left: 213px;
+  top: 186px;
+  width: 90px;
+  height: 77px;
+  background: #a8dadc;
+  z-index: 2;
+}
+.fl__block--r1 {
+  left: 150px;
+  top: 118px;
+  width: 76px;
+  height: 145px;
+  background: #ff9900;
+  z-index: 3;
 }
 .fl__block.is-empty {
   background: #ecedf0;
-  box-shadow: none;
+}
+/* The darker right-hand face ("Intersect"), placed as exported. */
+.fl__strip {
+  position: absolute;
+  display: block;
+  max-width: none;
+}
+.fl__block--r1 .fl__strip {
+  left: 55px;
+  top: 0;
+  width: 21px;
+  height: 132.642px;
+}
+.fl__block--r2 .fl__strip {
+  left: 57px;
+  top: 0.26px;
+  width: 21px;
+  height: 87.113px;
+}
+.fl__block--r3 .fl__strip {
+  left: 69px;
+  top: 0.21px;
+  width: 21px;
+  height: 66.776px;
+}
+/* Rank: white ExtraBold 30/35; name: SemiBold 14/20 — both centred on the
+   x the frame gives them (not quite the block's centre). */
+.fl__block-rank,
+.fl__block-name {
+  position: absolute;
+  transform: translateX(-50%);
+  text-align: center;
+  white-space: nowrap;
 }
 .fl__block-rank {
-  font-family: var(--font-display);
   font-size: 30px;
+  line-height: 35px;
   font-weight: 800;
-  line-height: 1;
+  color: #ffffff;
 }
 .fl__block-name {
-  margin-top: 5px;
-  max-width: 100%;
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
+  max-width: 63px;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: #1f2937;
 }
-.fl__champion {
-  position: relative;
-  width: 72px;
-  height: 72px;
-  margin-bottom: 8px;
+.fl__block--r1 .fl__block-rank {
+  left: 37.5px;
+  top: 16px;
 }
-.fl__champion-avatar {
-  position: relative;
-  z-index: 2;
-  width: 72px;
-  height: 72px;
-  border-radius: var(--r-full);
-  background: #fff7e0;
-  box-shadow: 0 7px 14px rgba(180, 83, 9, 0.24);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.fl__block--r1 .fl__block-name {
+  left: 37.5px;
+  top: 48px;
+  color: #000000;
 }
-.fl__confetti {
-  position: absolute;
-  top: -20px;
-  left: 50%;
-  width: 122px;
-  height: 92px;
-  transform: translateX(-50%);
-  z-index: 1;
-  overflow: visible;
+.fl__block--r2 .fl__block-rank {
+  left: 42.5px;
+  top: 8px;
 }
-.fl__decor {
-  position: absolute;
-  bottom: 28px;
-  z-index: 1;
-  width: 42px;
-  height: 42px;
-  border-radius: var(--r-full);
-  background: #ecedf0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 3px 8px rgba(43, 32, 25, 0.1);
+.fl__block--r2 .fl__block-name {
+  left: 42.5px;
+  top: 39px;
 }
-.fl__decor--left {
-  left: 10px;
+.fl__block--r3 .fl__block-rank {
+  left: 47.5px;
+  top: 5px;
 }
-.fl__decor--right {
-  right: 10px;
+.fl__block--r3 .fl__block-name {
+  left: 47.5px;
+  top: 34px;
 }
 .fl__platform {
+  position: absolute;
+  left: 57px;
+  top: 253px;
+  width: 261px;
+  height: 17px;
+  border-radius: 10px;
+  background: #d9d9d9;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+  z-index: 4;
+}
+.fl__podium-avatar {
+  position: absolute;
+  display: flex;
+  z-index: 5;
+}
+.fl__podium-avatar--r1 {
+  left: 148px;
+  top: 30px;
+  z-index: 7;
+}
+.fl__podium-avatar--r2 {
+  left: 84px;
+  top: 98px;
+}
+.fl__podium-avatar--r3 {
+  left: 231px;
+  top: 118px;
+}
+/* 2nd/3rd carry btn_profileimg's drop-shadow; the champion's has none. */
+.fl__podium-avatar--r2 > *,
+.fl__podium-avatar--r3 > * {
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+}
+.fl__drops {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+.fl__drop {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fl__drop-turn {
   position: relative;
-  z-index: 2;
-  height: 14px;
-  margin: -1px 6px 0;
-  border-radius: 9px;
-  background: #e6e8eb;
-  box-shadow: 0 7px 16px rgba(43, 32, 25, 0.1);
+  flex: none;
+}
+.fl__drop-fit {
+  position: absolute;
+}
+.fl__drop-fit img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
 }
 /* Frame 1410118260 (437:7895) — a 363-wide column at x=6 starting at y=375,
    with flat 50-tall rows 74 apart. */
 .fl__ranks {
   list-style: none;
-  /* The list is 363 wide at x=6, i.e. 14px outside the page's 20px gutters. */
-  margin: 2px -14px 0;
+  /* The list is 363 wide at x=6, i.e. 14px outside the page's 20px gutters,
+     and its first row starts 13px below the white band (y 375 vs 362). */
+  margin: 13px -14px 0;
   padding: 0;
   display: flex;
   flex-direction: column;

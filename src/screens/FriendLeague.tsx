@@ -9,11 +9,18 @@ import { useTranslation } from "../i18n";
 import type { RankingEntry } from "../lib/types";
 import { useAuthOptional } from "../hooks/auth";
 import { PlusIcon } from "../components/PlusIcon";
+import drop1232 from "../assets/brand/fl-podium-drop1232.svg";
+import drop1233 from "../assets/brand/fl-podium-drop1233.svg";
+import drop1235 from "../assets/brand/fl-podium-drop1235.svg";
+import drop1236 from "../assets/brand/fl-podium-drop1236.svg";
+import strip1 from "../assets/brand/fl-podium-strip1.svg";
+import strip2 from "../assets/brand/fl-podium-strip2.svg";
+import strip3 from "../assets/brand/fl-podium-strip3.svg";
 
 /** "Green League" / "Green 리그" — the suffix differs per language. */
 const useTierLabel = () => {
   const { t } = useTranslation();
-  return (tier?: string) => {
+  return (tier?: string | null) => {
     const meta = tier ? TIER_META[tier as LeagueTier] : undefined;
     return meta ? t("league.tierLabel", { tier: meta.name }) : undefined;
   };
@@ -53,57 +60,71 @@ function FriendLeagueEmptyState({ onAdd }: { onAdd: () => void }) {
   );
 }
 
-/* ------------------------------- decor ---------------------------------- */
-/** Pale gray default-friend placeholder — purely decorative balance. */
-function PlaceholderAvatar({ className }: { className: string }) {
+/* ------------------------------ podium ---------------------------------- */
+/* LEG-010 (KO 1:4259 / EN 798:77164). The hero is the 375x270 white band
+   under the tab row (393:17092), drawn on a fixed 375-wide stage centred on
+   the screen so every piece keeps the frame's coordinates (frame y minus the
+   92px status bar + tab row):
+   - the three blocks overlap, 1st on top — 2nd 86x98 #FFD166 at (72,165),
+     1st 76x145 #FF9900 at (150,118), 3rd 90x77 #A8DADC at (213,186) — each
+     with its darker right-hand strip (the Figma "Intersect" exports), on a
+     261x17 #D9D9D9 base at (57,253);
+   - the champion's 80px avatar at (148,30) with the four orange drops;
+   - the 2nd and 3rd friends' own 60px avatars standing on their blocks at
+     (84,98) and (231,118). The EN frame shows them with each friend's
+     character; the KO frame's grey discs are the same avatar with no picture
+     (DefaultProfile), not decoration. */
+const DROPS = [
+  // node, src, wrapper box, inner box + transform, img inset — as exported.
+  { id: "1233", src: drop1233, box: [228, 20, 21.422, 22.577], inner: [18.236, 19.666, "scaleY(-1) rotate(-169.83deg)"], inset: "-1.18% -15.57% -9.7% -1.28%" },
+  { id: "1232", src: drop1232, box: [126, 35, 13.964, 15.36], inner: null, inset: "-1.51% -20.33% -12.42% -1.67%" },
+  { id: "1236", src: drop1236, box: [126.3, 65.95, 13.805, 13.264], inner: [10.418, 11.236, "rotate(-72.88deg)"], inset: "-2.06% -27.25% -16.99% -2.24%" },
+  { id: "1235", src: drop1235, box: [226, 96, 21.443, 20.462], inner: [16.774, 18.089, "scaleY(-1) rotate(-76.79deg)"], inset: "-1.28% -16.93% -10.55% -1.39%" },
+] as const;
+
+function Drop({ drop }: { drop: (typeof DROPS)[number] }) {
+  const [left, top, width, height] = drop.box;
+  // The export pads each vector for its blur filter; the inset lets that
+  // padding spill out of the node box exactly as Figma lays it out.
+  const img = (
+    <span className="fl__drop-fit" style={{ inset: drop.inset }}>
+      <img src={drop.src} alt="" />
+    </span>
+  );
   return (
-    <span className={`fl__decor ${className}`} aria-hidden="true">
-      <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
-        <circle cx="16" cy="12" r="5.5" fill="#c3cad2" />
-        <path d="M6 27c1.5-6 18.5-6 20 0z" fill="#c3cad2" />
-      </svg>
+    <span className="fl__drop" style={{ left, top, width, height }}>
+      {drop.inner ? (
+        <span className="fl__drop-turn" style={{ width: drop.inner[0], height: drop.inner[1], transform: drop.inner[2] }}>
+          {img}
+        </span>
+      ) : (
+        img
+      )}
     </span>
   );
 }
 
-/** A few subtle orange confetti splashes around the champion avatar. */
-function Confetti() {
-  return (
-    <svg className="fl__confetti" viewBox="0 0 120 90" aria-hidden="true">
-      <circle cx="14" cy="30" r="4" fill="#ff8f2c" />
-      <circle cx="104" cy="26" r="5" fill="#ffa94d" />
-      <rect x="24" y="8" width="7" height="7" rx="2" transform="rotate(20 24 8)" fill="#ffb765" />
-      <rect x="92" y="52" width="6" height="6" rx="2" transform="rotate(35 92 52)" fill="#ff8f2c" />
-      <path d="M60 4l2.2 4.5 4.8.7-3.5 3.4.8 4.8-4.3-2.3-4.3 2.3.8-4.8-3.5-3.4 4.8-.7z" fill="#ffc27a" />
-      <circle cx="46" cy="16" r="2.5" fill="#ff8f2c" />
-      <circle cx="78" cy="14" r="3" fill="#ffb765" />
-    </svg>
-  );
-}
+const STRIPS = { 1: strip1, 2: strip2, 3: strip3 } as const;
 
-/* ------------------------------ podium ---------------------------------- */
-function PodiumColumn({ entry, rank }: { entry: RankingEntry | undefined; rank: 1 | 2 | 3 }) {
+function PodiumPlace({ entry, rank }: { entry: RankingEntry | undefined; rank: 1 | 2 | 3 }) {
   // The user's own avatar comes from /users/me, not from the standings row.
   const me = useAuthOptional()?.me ?? null;
   const { t } = useTranslation();
   if (!entry) {
-    return <div className={`fl__col fl__col--r${rank}`} aria-hidden="true"><div className={`fl__block fl__block--r${rank} is-empty`} /></div>;
+    // Only two of you so far: the 3rd block stands empty.
+    return <span className={`fl__block fl__block--r${rank} is-empty`} aria-hidden="true" />;
   }
   const name = displayName(entry, t("home.defaultNickname"));
   return (
-    <div className={`fl__col fl__col--r${rank}`} aria-label={t("friendLeague.podiumA11y", { rank, name, points: entry.points })}>
-      {rank === 1 && (
-        <div className="fl__champion">
-          <Confetti />
-          <span className="fl__champion-avatar">
-            <RankAvatar entry={withSelfProfile(entry, me)} size={62} />
-          </span>
-        </div>
-      )}
-      <div className={`fl__block fl__block--r${rank}`}>
+    <div className={`fl__place fl__place--r${rank}`} aria-label={t("friendLeague.podiumA11y", { rank, name, points: entry.points })}>
+      <span className={`fl__block fl__block--r${rank}`} aria-hidden="true">
+        <img className="fl__strip" src={STRIPS[rank]} alt="" />
         <span className="fl__block-rank">{rank}</span>
         <span className="fl__block-name">{name}</span>
-      </div>
+      </span>
+      <span className={`fl__podium-avatar fl__podium-avatar--r${rank}`} aria-hidden="true">
+        <RankAvatar entry={withSelfProfile(entry, me)} size={rank === 1 ? 80 : 60} />
+      </span>
     </div>
   );
 }
@@ -111,14 +132,18 @@ function PodiumColumn({ entry, rank }: { entry: RankingEntry | undefined; rank: 
 function FriendLeagueHero({ top3 }: { top3: RankingEntry[] }) {
   return (
     <div className="fl__hero">
-      <PlaceholderAvatar className="fl__decor--left" />
-      <PlaceholderAvatar className="fl__decor--right" />
-      <div className="fl__podiums">
-        <PodiumColumn entry={top3[1]} rank={2} />
-        <PodiumColumn entry={top3[0]} rank={1} />
-        <PodiumColumn entry={top3[2]} rank={3} />
+      <div className="fl__stage">
+        {/* Figma order: 2nd and 3rd under the 1st, then the base, then the avatars. */}
+        <PodiumPlace entry={top3[1]} rank={2} />
+        <PodiumPlace entry={top3[2]} rank={3} />
+        <PodiumPlace entry={top3[0]} rank={1} />
+        <span className="fl__platform" aria-hidden="true" />
+        <span className="fl__drops" aria-hidden="true">
+          {DROPS.map((drop) => (
+            <Drop key={drop.id} drop={drop} />
+          ))}
+        </span>
       </div>
-      <div className="fl__platform" aria-hidden="true" />
     </div>
   );
 }

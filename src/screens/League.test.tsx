@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { ToastProvider } from "../hooks/toast";
 import type { LeaguePosition, LeagueSeason, RankingResponse } from "../lib/types";
 
@@ -67,6 +67,12 @@ const rankings: RankingResponse = {
   me: { rank: 3, user_id: "me", nickname: "나야", points: 2000, profile_image_type: "CUSTOM", profile_image_url: "https://img/me.png" },
 };
 
+/** 친구 관리's destination, with the app bar's back button. */
+function SocialStub() {
+  const nav = useNavigate();
+  return <button onClick={() => nav(-1)}>SOCIAL_BACK</button>;
+}
+
 function renderScreen() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -78,6 +84,7 @@ function renderScreen() {
               <Route path="/league" element={<League />} />
               <Route path="/points" element={<div>POINTS_SCREEN</div>} />
               <Route path="/league/history" element={<div>HISTORY_SCREEN</div>} />
+              <Route path="/social" element={<SocialStub />} />
             </Routes>
           </MemoryRouter>
         </ToastProvider>
@@ -254,6 +261,16 @@ describe("League screen", () => {
     await waitFor(() => expect(api.friendRankings).toHaveBeenCalled());
     // The regular-league carousel is gone and the right button becomes 친구 관리.
     expect(screen.queryByLabelText("리그 진행 상황")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "친구 관리" })).toBeInTheDocument();
+  });
+
+  it("returns to the 친구 리그 tab after 친구 관리 and back", async () => {
+    renderScreen();
+    await screen.findByText("Yellow 리그");
+    await userEvent.click(screen.getByRole("tab", { name: "친구 리그" }));
+    await userEvent.click(screen.getByRole("button", { name: "친구 관리" }));
+    await userEvent.click(await screen.findByRole("button", { name: "SOCIAL_BACK" }));
+    expect(await screen.findByRole("tab", { name: "친구 리그" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("button", { name: "친구 관리" })).toBeInTheDocument();
   });
 

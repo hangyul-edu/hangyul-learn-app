@@ -1802,8 +1802,6 @@ export const ko = {
       per-decision text arrives from the server in both languages. */
   proficiency: {
     title: "내 실력",
-    entry: "내 실력 보기",
-    entryHint: "확인된 레벨과 다음 레벨까지 남은 조건",
     tabConversation: "실전 회화",
     tabTopik: "TOPIK",
     status: {

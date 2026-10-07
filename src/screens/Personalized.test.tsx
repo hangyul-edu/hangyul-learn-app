@@ -37,7 +37,6 @@ function renderPage() {
             <Route path="/recommend" element={<><Personalized /><Loc /></>} />
             <Route path="/session/topik" element={<><div>TOPIK SESSION</div><Loc /></>} />
             <Route path="/session/conversation" element={<><div>CONVERSATION SESSION</div><Loc /></>} />
-            <Route path="/proficiency/:track" element={<Loc />} />
           </Routes>
         </MemoryRouter>
       </QueryClientProvider>
@@ -55,23 +54,14 @@ beforeEach(() => {
     paywall_required: false,
     tracks: [track("conversation", "회화"), track("topik", "TOPIK")],
   });
-  proficiencyMe.mockResolvedValue({
-    rollout_mode: "enabled",
-    decisions_apply: true,
-    tracks: [
-      { track: "conversation", status: "confirmed", confirmed_level: 4, provisional_level: null },
-      { track: "topik", status: "unassessed", confirmed_grade: null, provisional_grade: null },
-    ],
-  });
 });
 
-describe("Personalized — proficiency entry", () => {
-  it("names the confirmed level, distinct from the study level on the card", async () => {
+describe("Personalized — no proficiency entry", () => {
+  it("offers no 내 실력 보기 menu and does not fetch proficiency", async () => {
     renderPage();
-    const entry = await screen.findByRole("button", { name: /내 실력 보기/ });
-    expect(await screen.findByText("확인된 레벨 · Lv.4")).toBeInTheDocument();
-    await userEvent.click(entry);
-    await waitFor(() => expect(screen.getByTestId("loc").textContent).toContain("/proficiency/conversation"));
+    await screen.findByRole("button", { name: "바로 시작하기" });
+    expect(screen.queryByText("내 실력 보기")).not.toBeInTheDocument();
+    expect(proficiencyMe).not.toHaveBeenCalled();
   });
 });
 

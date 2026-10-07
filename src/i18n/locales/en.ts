@@ -1784,8 +1784,6 @@ export const en: Catalog = {
 
   proficiency: {
     title: "My proficiency",
-    entry: "See my proficiency",
-    entryHint: "Your confirmed level and what's left for the next one",
     tabConversation: "Conversation",
     tabTopik: "TOPIK",
     status: {

@@ -14691,7 +14691,9 @@ textarea.input {
 /* ===================== League lifecycle modals ========================== */
 .llc {
   position: fixed;
-  inset: 0;
+  /* Below the League screen's 48px tab row: the lifecycle is the 정규 리그
+     tab's state, and 친구 리그 / My 포인트 / 히스토리 stay reachable. */
+  inset: calc(var(--safe-top) + 48px) 0 0;
   z-index: 200;
   display: flex;
   align-items: center;
@@ -14706,12 +14708,14 @@ textarea.input {
 }
 /* 380:6282 (KO) / 893:30887 (EN): a 335x172 r16 card. Its centre sits 36.5px
    above the frame's content centre, so the whole overlay is nudged up rather
-   than pinned to a viewport offset that would drift on other heights. */
+   than pinned to a viewport offset that would drift on other heights. The
+   scrim starts below the tab row, which moves its centre down by half of
+   that row; the extra lift puts the card back where the frame has it. */
 .llc__card {
   width: 335px;
   flex-shrink: 0;
   min-height: 172px;
-  transform: translateY(-36.5px);
+  transform: translateY(calc(-36.5px - 24px - var(--safe-top) / 2));
   background: #fff;
   border-radius: 16px;
   box-shadow: var(--shadow-lg);

@@ -319,7 +319,12 @@ export function League() {
       </div>
 
       {info && <LeagueGuideSheet onClose={() => setInfo(false)} />}
-      {lifecycle.data && <LeagueLifecycleModal lifecycle={lifecycle.data} />}
+      {/* The lifecycle is the regular league's state — no seat yet, a result
+          to see, the gap between weeks. It must not stand between the member
+          and 친구 리그, My 포인트 or 히스토리, which work with or without a
+          regular league, so it shows on the 정규 리그 tab only and leaves the
+          tab row (and its 히스토리 button) uncovered. */}
+      {tab === "regular" && lifecycle.data && <LeagueLifecycleModal lifecycle={lifecycle.data} />}
     </div>
   );
 }

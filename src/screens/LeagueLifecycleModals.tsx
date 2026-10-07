@@ -71,11 +71,15 @@ function HourglassIcon() {
 
 /* ------------------------------ modal shell ----------------------------- */
 /**
- * Full-screen dimmed overlay + centered white card. Blocks background gestures
- * (backdrop swallows clicks), traps focus, and restores focus on close. None of
- * the lifecycle modals dismiss on backdrop/Escape — the only way out is their
- * own button, which either advances the state (join, see result) or leaves for
- * Home when there is nothing the member can do about the wait.
+ * Dimmed overlay + centered white card over the 정규 리그 tab. The scrim stops
+ * at the League tab row: the regular league's state must not lock the member
+ * out of 친구 리그, My 포인트 or 히스토리, so those stay visible, clickable and
+ * reachable by keyboard and screen reader — hence no aria-modal and no Tab
+ * trap. Everything else under the scrim is blocked (backdrop swallows clicks),
+ * focus moves into the card on open and is restored on close. None of the
+ * lifecycle modals dismiss on backdrop/Escape — on this tab the only way out
+ * is their own button, which either advances the state (join, see result) or
+ * leaves for Home when there is nothing the member can do about the wait.
  */
 function LifecycleModalShell({
   labelledBy,
@@ -106,24 +110,6 @@ function LifecycleModalShell({
         // Lifecycle modals are not Escape-dismissible.
         event.stopPropagation();
         event.preventDefault();
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const nodes = cardRef.current?.querySelectorAll<HTMLElement>(
-        'button, [href], input, [tabindex]:not([tabindex="-1"])',
-      );
-      if (!nodes || nodes.length === 0) {
-        event.preventDefault();
-        return;
-      }
-      const first = nodes[0];
-      const last = nodes[nodes.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
       }
     };
     document.addEventListener("keydown", onKeyDown, true);
@@ -139,7 +125,6 @@ function LifecycleModalShell({
       <div
         className={`llc__card ${variant ? `llc__card--${variant}` : ""}`}
         role="dialog"
-        aria-modal="true"
         aria-labelledby={labelledBy}
         aria-describedby={describedBy}
         ref={cardRef}

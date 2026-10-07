@@ -16,6 +16,13 @@ vi.mock("../api/endpoints", () => ({
     leagueLifecycle: vi.fn(),
     joinCurrentLeague: vi.fn(),
     ackLeagueResult: vi.fn(),
+    points: vi.fn(),
+    pointsHistory: vi.fn(),
+  },
+  // The 친구 리그 tab mounts the Add Friend sheet.
+  friendApi: {
+    recommendations: vi.fn().mockResolvedValue({ recommendations: [] }),
+    createInvitation: vi.fn().mockResolvedValue({ token: "tok" }),
   },
 }));
 
@@ -71,16 +78,17 @@ const position = { season_id: "2026-W28", tier: "lime", tier_label: "Lime 리그
 const seasonInfo = { season_id: "2026-W28", starts_at: "2026-07-13T04:00:00Z", ends_at: "2026-07-19T21:00:00Z", is_current: true };
 const rankings = { season_id: "2026-W28", group_id: "g", entries: [{ rank: 1, user_id: "u1", nickname: "가", points: 200, profile_image_type: "NONE" }], me: { rank: 1, user_id: "u1", nickname: "가", points: 200, profile_image_type: "NONE" } };
 
-function renderLeague() {
+function renderLeague(path = "/league") {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <I18nProvider language="ko">
       <QueryClientProvider client={qc}>
         <ToastProvider>
-          <MemoryRouter initialEntries={["/league"]}>
+          <MemoryRouter initialEntries={[path]}>
             <Routes>
               <Route path="/league" element={<League />} />
               <Route path="/league/result" element={<div>RESULT_SCREEN</div>} />
+              <Route path="/league/history" element={<div>HISTORY_SCREEN</div>} />
               <Route path="/home" element={<div>HOME_SCREEN</div>} />
               <Route path="/points" element={<div>POINTS</div>} />
             </Routes>
@@ -100,6 +108,65 @@ beforeEach(() => {
   api.currentRankings.mockResolvedValue(rankings);
   api.friendRankings.mockResolvedValue(rankings);
   api.leagueLifecycle.mockResolvedValue(active);
+  api.points.mockResolvedValue({ user_id: "u1", season_points: 120 });
+  api.pointsHistory.mockResolvedValue({ items: [], next_cursor: null });
+});
+
+/* Every state in which the member has no regular league to play in. The
+   lifecycle modal is that league's business; 친구 리그, My 포인트 and 히스토리
+   work without one and must stay reachable. */
+const noRegularLeague: [string, LeagueLifecycleResponse][] = [
+  ["new league not joined", newLeague],
+  ["result unviewed", resultUnviewed],
+  ["between weeks", waiting],
+  ["waiting for allocation", unallocated],
+];
+
+describe.each(noRegularLeague)("with no regular league (%s)", (_label, state) => {
+  beforeEach(() => {
+    api.leagueLifecycle.mockResolvedValue(state);
+    // The caller and one friend — enough for the podium and list.
+    api.friendRankings.mockResolvedValue({
+      ...rankings,
+      league_kind: "friend",
+      entries: [...rankings.entries, { rank: 2, user_id: "u2", nickname: "나", points: 50, profile_image_type: "NONE", tier: null }],
+    });
+  });
+
+  it("the tabs stay usable: 친구 리그 and My 포인트 open without the modal", async () => {
+    renderLeague();
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("tab", { name: "친구 리그" }));
+    await waitFor(() => expect(api.friendRankings).toHaveBeenCalled());
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(await screen.findByRole("list", { name: "친구 리그 순위" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("tab", { name: "My 포인트" }));
+    await waitFor(() => expect(api.points).toHaveBeenCalled());
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    // Back on 정규 리그 the regular league's state is shown again.
+    await userEvent.click(screen.getByRole("tab", { name: "정규 리그" }));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("히스토리 opens from the 정규 리그 tab while the modal is up", async () => {
+    renderLeague();
+    await screen.findByRole("dialog");
+    await userEvent.click(screen.getByRole("button", { name: "리그 히스토리 보기" }));
+    expect(await screen.findByText("HISTORY_SCREEN")).toBeInTheDocument();
+  });
+
+  it("deep links to 친구 리그 and My 포인트 open straight in", async () => {
+    const { unmount } = renderLeague("/league?tab=friend");
+    expect(await screen.findByRole("list", { name: "친구 리그 순위" })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    unmount();
+    renderLeague("/league?tab=points");
+    await waitFor(() => expect(api.points).toHaveBeenCalled());
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
 });
 
 describe("League lifecycle gate", () => {

@@ -12522,8 +12522,17 @@ textarea.input {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 0;
-  position: relative;
+  /* Pinned to the top of the scrolling body so 정규 리그 / 친구 리그 / My 포인트
+     / 히스토리 stay in reach on a long ranking. The row reaches up over the
+     body's safe-area padding and out over its 20px gutters, so the white
+     backing covers the status-bar strip and the full width while content
+     scrolls beneath; its layout position is unchanged. */
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: calc(-1 * var(--safe-top)) -20px 0;
+  padding: var(--safe-top) 20px 0;
+  background: #ffffff;
 }
 /* LEG-002 rules a full-bleed 1px #ECEDF0 line under the 48px tab row (sampled
    at y=91 across x=2..373, broken only where the active tab's orange underline
@@ -12532,8 +12541,8 @@ textarea.input {
 .lg__tabs::before {
   content: "";
   position: absolute;
-  left: -20px;
-  right: -20px;
+  left: 0;
+  right: 0;
   bottom: 0;
   height: 1px;
   background: #ecedf0;
@@ -12577,8 +12586,9 @@ textarea.input {
      page's 20px inset; as a plain flex item the row overflowed and it drifted to
      369.7 instead of 361. Same escape the full-bleed rule under the tabs uses. */
   position: absolute;
-  right: -6px;
-  top: 6px;
+  /* 14 from the frame edge; .lg__tabs now spans the full width (see above). */
+  right: 14px;
+  top: calc(var(--safe-top) + 6px);
   flex-shrink: 0;
   padding: 7px 16px;
   border: 1px solid var(--border-strong);
@@ -14691,9 +14701,10 @@ textarea.input {
 /* ===================== League lifecycle modals ========================== */
 .llc {
   position: fixed;
-  /* Below the League screen's 48px tab row: the lifecycle is the 정규 리그
-     tab's state, and 친구 리그 / My 포인트 / 히스토리 stay reachable. */
-  inset: calc(var(--safe-top) + 48px) 0 0;
+  /* Between the League screen's 48px tab row and the bottom nav: the
+     lifecycle is the 정규 리그 tab's state, so 친구 리그 / My 포인트 / 히스토리
+     and every bottom-nav destination stay reachable. */
+  inset: calc(var(--safe-top) + 48px) 0 var(--nav-total);
   z-index: 200;
   display: flex;
   align-items: center;
@@ -14715,7 +14726,9 @@ textarea.input {
   width: 335px;
   flex-shrink: 0;
   min-height: 172px;
-  transform: translateY(calc(-36.5px - 24px - var(--safe-top) / 2));
+  /* The scrim ends at the bottom nav, which lifts its centre by half the nav;
+     adding that half back keeps the card where the frame has it. */
+  transform: translateY(calc(-36.5px - 24px - var(--safe-top) / 2 + var(--nav-total) / 2));
   background: #fff;
   border-radius: 16px;
   box-shadow: var(--shadow-lg);

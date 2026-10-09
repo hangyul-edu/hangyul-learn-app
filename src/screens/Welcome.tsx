@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "../i18n";
+import { useTranslation, type TranslationKey } from "../i18n";
 import {
   HangyulLogo,
   AuthDecor,
@@ -10,6 +10,20 @@ import {
   LineIcon,
 } from "../components/brand/AuthBrand";
 import { useSocialLogin } from "../hooks/socialLogin";
+import { isSocialLaunched } from "../lib/launch";
+import type { SocialProvider } from "../lib/types";
+
+/** The circular social buttons, in their reference order. */
+const CIRCLE_PROVIDERS: {
+  provider: SocialProvider;
+  className: string;
+  labelKey: TranslationKey;
+  Icon: (props: { size?: number }) => JSX.Element;
+}[] = [
+  { provider: "facebook", className: "auth__circle--fb", labelKey: "welcome.facebook", Icon: FacebookIcon },
+  { provider: "kakao", className: "auth__circle--kakao", labelKey: "welcome.kakao", Icon: KakaoIcon },
+  { provider: "line", className: "auth__circle--line", labelKey: "welcome.line", Icon: LineIcon },
+];
 
 /**
  * Single-screen authentication landing — the first screen an unauthenticated
@@ -67,28 +81,19 @@ export function Welcome() {
           </button>
         </div>
 
+        {/* Circular providers. Facebook is implemented but not launched
+            (lib/launch.ts), so the row currently holds Kakao and LINE. */}
         <div className="auth__socials">
-          <button
-            className="auth__circle auth__circle--fb"
-            onClick={() => social.start("facebook")}
-            aria-label={t("welcome.facebook")}
-          >
-            <FacebookIcon />
-          </button>
-          <button
-            className="auth__circle auth__circle--kakao"
-            onClick={() => social.start("kakao")}
-            aria-label={t("welcome.kakao")}
-          >
-            <KakaoIcon />
-          </button>
-          <button
-            className="auth__circle auth__circle--line"
-            onClick={() => social.start("line")}
-            aria-label={t("welcome.line")}
-          >
-            <LineIcon />
-          </button>
+          {CIRCLE_PROVIDERS.filter((p) => isSocialLaunched(p.provider)).map(({ provider, className, labelKey, Icon }) => (
+            <button
+              key={provider}
+              className={`auth__circle ${className}`}
+              onClick={() => social.start(provider)}
+              aria-label={t(labelKey)}
+            >
+              <Icon />
+            </button>
+          ))}
         </div>
 
         <div className="auth__grow auth__grow--bottom" />

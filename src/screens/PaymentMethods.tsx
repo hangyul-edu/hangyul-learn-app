@@ -33,6 +33,7 @@ import {
 } from "../lib/tossPayments";
 import { useTranslation, type TranslationKey } from "../i18n";
 import type { MethodProvider, PaymentMethod, Plan } from "../lib/types";
+import { isPayLaunched } from "../lib/launch";
 import cardArt from "../assets/brand/pm-card-art.svg";
 import trashIcon from "../assets/brand/ic-trash.svg";
 import successIcon from "../assets/brand/ic-modal-success.svg";
@@ -659,7 +660,11 @@ export function PaymentMethods() {
             <section className="pm__section" aria-label={t("paymentMethods.easyPaySection")}>
               <h2 className="pm__section-title">{t("paymentMethods.easyPaySection")}</h2>
               <ul className="pm__list pm__list--ez" role="list">
-                {EASY_PAY.map(({ provider, labelKey, Logo }) => {
+                {EASY_PAY.filter(
+                  // Not-launched wallets (lib/launch.ts) are never offered; one
+                  // already on file still shows, so it can be seen and removed.
+                  ({ provider }) => isPayLaunched(provider) || methods.some((m) => m.provider === provider),
+                ).map(({ provider, labelKey, Logo }) => {
                   const connected = methods.find((m) => m.provider === provider);
                   const connect = provider === "toss_pay" ? startTossPay : startNaverPay;
                   return (

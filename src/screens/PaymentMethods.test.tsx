@@ -48,6 +48,17 @@ vi.mock("../lib/tossPayments", () => ({
 
 const PENDING_KEY = "hangyul.pm-registration.v2";
 
+// Toss Pay is implemented but not launched. Its flow tests switch it on to
+// keep that (unchanged) implementation covered; the rest see the app as shipped.
+const launch = vi.hoisted(() => ({ tossPay: false }));
+vi.mock("../lib/launch", async () => {
+  const actual = await vi.importActual<typeof import("../lib/launch")>("../lib/launch");
+  return {
+    ...actual,
+    isPayLaunched: (p: string) => (p === "toss_pay" ? launch.tossPay : actual.isPayLaunched(p as never)),
+  };
+});
+
 import { billingApi, payApi } from "../api/endpoints";
 import { PaymentMethods } from "./PaymentMethods";
 
@@ -113,6 +124,7 @@ function renderScreen(
 
 beforeEach(() => {
   vi.clearAllMocks();
+  launch.tossPay = false; // not launched, as in the app (lib/launch.ts)
   sessionStorage.clear();
   // jsdom doesn't implement scrollIntoView; the screen scrolls its card list
   // after mutations. Stub it so those calls don't throw (matches League.test).
@@ -123,15 +135,23 @@ beforeEach(() => {
 
 /* -------------------------------- tests --------------------------------- */
 describe("PaymentMethods screen", () => {
-  it("1. renders the empty state: add rows + both connect buttons + notice, no cards", async () => {
+  it("1. renders the empty state: add rows + the Naver Pay connect button + notice, no cards", async () => {
     setMethods();
     renderScreen();
     expect(await screen.findByLabelText("국내 카드 추가")).toBeInTheDocument();
     expect(screen.getByLabelText("해외 카드 추가")).toBeInTheDocument();
-    expect(screen.getByLabelText("토스페이 연결하기")).toBeInTheDocument();
+    // Toss Pay is implemented but not launched: never offered.
+    expect(screen.queryByLabelText("토스페이 연결하기")).not.toBeInTheDocument();
     expect(screen.getByLabelText("네이버페이 연결하기")).toBeInTheDocument();
     expect(screen.getByText("유의사항")).toBeInTheDocument();
     expect(screen.queryByText(/Shinhan/)).not.toBeInTheDocument();
+  });
+
+  it("still shows a Toss Pay method already on file, so it can be managed", async () => {
+    setMethods(tossPay());
+    renderScreen();
+    expect(await screen.findByLabelText("토스페이 연결 해제")).toBeInTheDocument();
+    expect(screen.queryByLabelText("토스페이 연결하기")).not.toBeInTheDocument();
   });
 
   it("does not flash the empty layout before the initial fetch resolves", async () => {
@@ -230,6 +250,7 @@ describe("PaymentMethods screen", () => {
   ] as const)(
     "10. opens the %s window through Toss's SDK (flowMode DIRECT) and remembers the registration",
     async (name, intent, provider, easyPay) => {
+      launch.tossPay = true; // exercises the kept Toss Pay flow
       setMethods();
       api[intent].mockResolvedValue({ intent_id: "pmi_w", customer_key: "cus_w", window: walletWindow(easyPay) });
       requestEasyPayBillingAuth.mockResolvedValue(undefined);
@@ -256,6 +277,7 @@ describe("PaymentMethods screen", () => {
   );
 
   it("10b. a member closing the wallet window links nothing and shows no error", async () => {
+    launch.tossPay = true; // exercises the kept Toss Pay flow
     setMethods();
     api.tosspayIntent.mockResolvedValue({ intent_id: "pmi_1", customer_key: "cus_1", window: walletWindow("TOSSPAY") });
     requestEasyPayBillingAuth.mockRejectedValue({ code: "USER_CANCEL" });
@@ -371,6 +393,7 @@ describe("PaymentMethods screen", () => {
   });
 
   it("14e. a window the member cancelled returns quietly", async () => {
+    launch.tossPay = true; // exercises the kept Toss Pay flow
     setMethods();
     sessionStorage.setItem(PENDING_KEY, JSON.stringify({ provider: "toss_pay", intentId: "pmi_t", customerKey: "cus_1" }));
     renderScreen("/account/payment?code=PAY_PROCESS_CANCELED&message=%EC%B7%A8%EC%86%8C%EB%90%A8");

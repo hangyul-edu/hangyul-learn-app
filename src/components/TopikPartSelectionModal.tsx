@@ -10,6 +10,16 @@ const OPTIONS: { value: TopikSection; label: TranslationKey }[] = [
   { value: "writing", label: "session.partWriting" },
 ];
 
+/** TOPIK I (grades 1–2) has no writing section; writing starts with TOPIK II (grade 3). */
+export const TOPIK_WRITING_MIN_GRADE = 3;
+
+/** The parts a learner at TOPIK `grade` can pick. Unknown grade → all parts. */
+export function topikSectionsFor(grade: number | null | undefined): TopikSection[] {
+  return OPTIONS.map((o) => o.value).filter(
+    (v) => v !== "writing" || grade == null || grade >= TOPIK_WRITING_MIN_GRADE,
+  );
+}
+
 /**
  * Mandatory TOPIK part-selection modal, shown before a TOPIK personalized
  * session starts. The user picks 듣기 / 읽기 / 쓰기 (listening / reading / writing);
@@ -18,17 +28,24 @@ const OPTIONS: { value: TopikSection; label: TranslationKey }[] = [
  *
  * Selection defaults to Listening and resets to it every time the modal opens.
  * The conversation flow never renders this — it's TOPIK-only.
+ *
+ * `level` is the learner's TOPIK grade (the dashboard's TOPIK track level):
+ * at grades 1–2 (TOPIK I) 쓰기 is not offered, since that exam has no writing.
  */
 export function TopikPartSelectionModal({
   open,
+  level,
   onClose,
   onStart,
 }: {
   open: boolean;
+  level?: number | null;
   onClose: () => void;
   onStart: (part: TopikSection) => void;
 }) {
   const { t } = useTranslation();
+  const allowed = topikSectionsFor(level);
+  const options = OPTIONS.filter((o) => allowed.includes(o.value));
   const [selected, setSelected] = useState<TopikSection>("listening");
   const dialogRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
@@ -95,7 +112,7 @@ export function TopikPartSelectionModal({
         <h2 className="tpart__title" id="tpart-title">{t("session.partSubtitle")}</h2>
 
         <div className="tpart__options" role="radiogroup" aria-labelledby="tpart-title">
-          {OPTIONS.map((o) => {
+          {options.map((o) => {
             const active = o.value === selected;
             return (
               <button

@@ -77,10 +77,12 @@ describe("Home — TOPIK part-selection gating", () => {
     expect(await screen.findByText("학습할 파트를 선택하세요")).toBeInTheDocument();
     expect(screen.getByTestId("loc")).toHaveTextContent("/home"); // no nav yet
 
-    await userEvent.click(screen.getByRole("radio", { name: "쓰기" }));
+    // The TOPIK track is at grade 1 (TOPIK I): no writing section to offer.
+    expect(screen.queryByRole("radio", { name: "쓰기" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("radio", { name: "읽기" }));
     await userEvent.click(screen.getByRole("button", { name: /시작할게요/ }));
     await waitFor(() => expect(screen.getByText("TOPIK SESSION")).toBeInTheDocument());
-    expect(screen.getByTestId("loc")).toHaveTextContent('"section":"writing"');
+    expect(screen.getByTestId("loc")).toHaveTextContent('"section":"reading"');
   });
 });
 

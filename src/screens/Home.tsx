@@ -185,6 +185,7 @@ export function Home() {
 
       <TopikPartSelectionModal
         open={topikPartOpen}
+        level={q.data?.tracks.find((tr) => tr.category === "topik")?.level}
         onClose={() => setTopikPartOpen(false)}
         onStart={(part) => {
           setTopikPartOpen(false);

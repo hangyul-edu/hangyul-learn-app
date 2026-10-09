@@ -21,6 +21,20 @@ describe("TopikPartSelectionModal", () => {
     expect(screen.getByRole("button", { name: /시작할게요/ })).toBeInTheDocument();
   });
 
+  it.each([1, 2])("offers no writing (쓰기) at TOPIK grade %i, which has none", (level) => {
+    setup({ level });
+    expect(screen.getAllByRole("radio")).toHaveLength(2);
+    expect(screen.getByRole("radio", { name: "듣기" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "읽기" })).toBeInTheDocument();
+    expect(screen.queryByRole("radio", { name: "쓰기" })).not.toBeInTheDocument();
+  });
+
+  it.each([3, 6])("offers writing (쓰기) from TOPIK grade 3 (grade %i)", (level) => {
+    setup({ level });
+    expect(screen.getAllByRole("radio")).toHaveLength(3);
+    expect(screen.getByRole("radio", { name: "쓰기" })).toBeInTheDocument();
+  });
+
   it("selects Listening (듣기) by default", () => {
     setup();
     expect(screen.getByRole("radio", { name: "듣기" })).toHaveAttribute("aria-checked", "true");

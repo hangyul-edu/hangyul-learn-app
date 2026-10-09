@@ -2011,6 +2011,10 @@ textarea.input {
   -webkit-overflow-scrolling: touch;
 }
 .signup__inner {
+  /* The containing block for the absolutely positioned back button: inside the
+     scrolling content, so the chevron scrolls away with the form instead of
+     staying pinned to the screen while everything else moves. */
+  position: relative;
   display: flex;
   flex-direction: column;
   /* AME-004 gutters are a flat 20 (the 335-wide field column runs x20..355).
@@ -14309,10 +14313,11 @@ textarea.input {
   word-break: keep-all;
 }
 .lh__season-name {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
+  /* A plain centred text block: the chevron rides inline at the end of its
+     last line (see .lh__chevron), so it follows the name however long it is
+     or however it wraps. */
+  display: block;
+  text-align: center;
 }
 /* 393:16612 — placed from the RENDER, not the node. get_metadata puts
    ic_16_arrow at (343, 212) 20x20, but the drawn glyph sits at x 326..339 /
@@ -14324,17 +14329,22 @@ textarea.input {
    means a 23px box at left 100%+5 and top 41.5. 23 rather than 20 because the
    frame's glyph inks 14x9 where a 20px box inks 12x8. */
 .lh__chevron {
-  position: absolute;
-  /* Anchored to the title box's right edge and its LAST line, so it follows the
-     box as the copy changes width or wraps to another line instead of sitting
-     at a hardcoded 375-only offset. The glyph inks 14 wide inside its 23px box,
-     so +6 puts the ink on the frame's 326 with the KO box ending at 315.6;
-     bottom 6 centres the box on a 35px line. */
-  left: calc(100% + 6px);
-  bottom: 6px;
+  /* Inline, right after the last word of the season name, so the gap between
+     name and chevron is the same 6px whatever the name's length or wrapping.
+     It used to hang off the title BOX's right edge, and the box is as wide as
+     its widest line — so a wrapped name ("여름 시즌 / 리그", "Spring / League")
+     left the chevron far from the short last line.
+
+     The negative right margin cancels the chevron's 6 + 23 in the line's
+     width, so the text stays centred exactly as before and the chevron hangs
+     to its right (the anchor's 29px margin keeps room for it). Zero net width
+     also means it never pushes a word onto a new line. vertical-align centres
+     the 23px box on the 35px line, as the old bottom: 6 did. */
+  display: inline-block;
   width: 23px;
   height: 23px;
-  flex-shrink: 0;
+  margin: 0 -29px 0 6px;
+  vertical-align: -3px;
   transition: transform 0.18s ease;
 }
 .lh__chevron.is-open {

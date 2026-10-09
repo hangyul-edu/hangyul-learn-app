@@ -6,7 +6,10 @@ import {
   CharacterAvatar,
   CameraIcon,
   AVATAR_KEYS,
+  avatarBg,
   avatarLabelKey,
+  characterArtSrc,
+  characterArtStyle,
   type AvatarKey,
 } from "../components/brand/ProfileAssets";
 import { userApi } from "../api/endpoints";
@@ -72,8 +75,11 @@ export function SetupProfile() {
   }
 
   function selectCharacter(key: AvatarKey) {
+    // Choosing a character replaces an uploaded photo: it is dropped, not just
+    // hidden, so the character is what shows and what gets saved.
     setAvatarKey(key);
     setImageType("AVATAR");
+    setCustomUrl(null);
   }
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -116,6 +122,7 @@ export function SetupProfile() {
   }
 
   const showCustom = imageType === "CUSTOM" && !!customUrl;
+  const showChar = !showCustom && imageType === "AVATAR";
 
   return (
     <div className="screen setupp">
@@ -127,8 +134,35 @@ export function SetupProfile() {
           {/* Profile image */}
           <div className="setupp__label">{t("profileSetup.imageLabel")}</div>
           <div className="setupp__preview">
-            <div className="setupp__preview-circle" role="img" aria-label={t("profileSetup.previewA11y")}>
-              {showCustom ? <img src={customUrl!} alt="" className="setupp__preview-img" /> : <ProfilePlaceholder />}
+            {/* The preview always shows what will be saved: the uploaded photo,
+                or the selected character on its own tint (same placement as
+                Edit Profile's preview). */}
+            <div
+              className="setupp__preview-circle"
+              style={showChar ? { background: avatarBg(avatarKey) } : undefined}
+              role="img"
+              aria-label={
+                showCustom
+                  ? t("profileSetup.imageUploadedA11y")
+                  : showChar
+                    ? t("profileSetup.imageCharacterA11y", { name: t(avatarLabelKey(avatarKey)) })
+                    : t("profileSetup.previewA11y")
+              }
+            >
+              {showCustom ? (
+                <img src={customUrl!} alt="" className="setupp__preview-img" />
+              ) : showChar ? (
+                <span className="setupp__preview-char">
+                  <img
+                    src={characterArtSrc(avatarKey)}
+                    alt=""
+                    aria-hidden="true"
+                    style={characterArtStyle(avatarKey, 120)}
+                  />
+                </span>
+              ) : (
+                <ProfilePlaceholder />
+              )}
             </div>
           </div>
           <div className="setupp__photo-wrap">

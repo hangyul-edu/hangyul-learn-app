@@ -70,7 +70,7 @@ describe("TrackSettings — saved modal", () => {
 
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByRole("heading", { name: "학습 설정이 저장됐습니다" })).toBeInTheDocument();
-    expect(within(dialog).getByText("변경하신 레벨과 하루 목표로 학습이 진행 돼요")).toBeInTheDocument();
+    expect(within(dialog).getByText("변경하신 레벨과 하루 목표로 학습이 진행돼요")).toBeInTheDocument();
     expect(dialog).toHaveAccessibleName("학습 설정이 저장됐습니다");
     expect(screen.getByTestId("path")).toHaveTextContent("/recommend/settings/conversation"); // waits for 확인
 

@@ -1229,7 +1229,7 @@ export const ko = {
     save: "저장하기",
     // Post-save modal — Figma cp_G_01_modals (2677:26018), verbatim.
     savedModalTitle: "학습 설정이 저장됐습니다",
-    savedModalDesc: "변경하신 레벨과 하루 목표로 학습이 진행 돼요",
+    savedModalDesc: "변경하신 레벨과 하루 목표로 학습이 진행돼요",
     savedModalConfirm: "확인",
     loadError: "설정을 불러오지 못했어요.",
     conversationTrack: "실전 회화",
@@ -1287,8 +1287,6 @@ export const ko = {
     monthLabel: "{y}년 {m}월",
     dayA11y: "{y}년 {m}월 {d}일",
     dayDoneA11y: "{y}년 {m}월 {d}일, 학습 완료",
-    // Streak, daily goals and attendance share this boundary.
-    dayBoundaryNote: "하루는 현재 기기 시간대 기준 자정에 바뀌어요.",
     sun: "일",
     mon: "월",
     tue: "화",

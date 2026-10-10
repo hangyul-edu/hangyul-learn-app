@@ -225,10 +225,6 @@ export function Streak() {
             })}
           </div>
 
-          {/* Days — streak, goals and attendance alike — end at the member's
-              local midnight in the device timezone the app syncs. */}
-          <p className="strk__day-note muted">{t("streak.dayBoundaryNote")}</p>
-
           {q.isError && (
             <div className="strk__error">
               <p className="muted">{t("streak.loadError")}</p>

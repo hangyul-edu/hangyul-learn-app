@@ -1294,7 +1294,6 @@ export const en: Catalog = {
     monthLabel: "{m}/{y}",
     dayA11y: "{m}/{d}/{y}",
     dayDoneA11y: "{m}/{d}/{y}, studied",
-    dayBoundaryNote: "Each day ends at midnight in your device's time zone.",
     sun: "S",
     mon: "M",
     tue: "T",

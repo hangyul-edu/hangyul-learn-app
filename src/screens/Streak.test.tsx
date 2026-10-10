@@ -142,6 +142,16 @@ describe("Streak calendar — completed-day markers", () => {
     expect(screen.queryAllByText("완료")).toHaveLength(0);
   });
 
+  it("ends at the grid, with no note about when the day changes", async () => {
+    // Days still roll over at local midnight in the device timezone; the
+    // calendar just no longer explains it.
+    streakCalendar.mockResolvedValue(mkCal(Y, M, []));
+    renderStreak();
+    await screen.findByLabelText(`${Y}년 ${M}월 1일`);
+    expect(screen.queryByText(/자정에 바뀌어요/)).not.toBeInTheDocument();
+    expect(document.querySelector(".strk__day-note")).toBeNull();
+  });
+
   it("marks several learning days in the same month, each with its own pill", async () => {
     streakCalendar.mockResolvedValue(mkCal(Y, M, [2, 3, 10]));
     renderStreak();

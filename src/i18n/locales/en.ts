@@ -567,7 +567,7 @@ export const en: Catalog = {
     notConfigured: "Login with this provider isn't set up yet.",
     providerUnavailable: "We can't reach the login service right now. Please try again in a moment.",
     emailRegistered: "An account with this email already exists. Please log in the way you originally signed up.",
-    accountInactive: "This account has been deleted or suspended. A deleted account can't be used to sign up again.",
+    accountInactive: "This account has been deleted or suspended.",
     loginFailed: "Couldn't complete login. Please try again.",
   },
 
@@ -1725,7 +1725,7 @@ export const en: Catalog = {
     subtitle: "Please read the info below,\nthen tap Delete.",
     noticeTitle: "Before you go", // 893:33234
     /** 893:33235 — same three bullets; the last is Negative-coloured. */
-    notice1: "You cannot re-register with this account.",
+    notice1: "If you sign up again, you'll start over with a new account. Nothing carries over from this one.",
     notice2:
       "Study & course history cannot be recovered, and all login-required features will be disabled.",
     notice3: "Deleting your account cancels all subscriptions with no refund.",

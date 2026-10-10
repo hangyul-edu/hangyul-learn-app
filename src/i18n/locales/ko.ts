@@ -582,7 +582,7 @@ export const ko = {
     notConfigured: "이 제공자의 로그인이 아직 설정되지 않았어요.",
     providerUnavailable: "로그인 서비스에 잠시 연결할 수 없어요. 잠시 후 다시 시도해 주세요.",
     emailRegistered: "이 이메일로 가입한 계정이 이미 있어요. 처음 가입한 방법으로 로그인해 주세요.",
-    accountInactive: "탈퇴했거나 이용이 중지된 계정이에요. 탈퇴한 계정으로는 다시 가입할 수 없어요.",
+    accountInactive: "탈퇴했거나 이용이 중지된 계정이에요.",
     loginFailed: "로그인을 완료하지 못했어요. 다시 시도해 주세요.",
   },
 
@@ -1739,7 +1739,7 @@ export const ko = {
     subtitle: "아래의 안내 사항을 확인 후\n맨 아래의 탈퇴 신청 버튼을 눌러주세요",
     noticeTitle: "서비스 탈퇴 안내 사항", // 3085:26786
     /** 3085:26787 — a three-bullet list; the last bullet is Negative-coloured. */
-    notice1: "탈퇴 이후에는 해당 계정으로 다시 가입할 수 없습니다.",
+    notice1: "탈퇴 후 다시 가입하면 새 계정으로 시작하며, 이전 계정의 기록은 이어지지 않습니다.",
     notice2:
       "탈퇴 이후 '학습 기록, 코스 기록 등'에 대한 복구는 불가능하며 로그인이 필요한 모든 서비스를 이용하실 수 없습니다.",
     notice3:

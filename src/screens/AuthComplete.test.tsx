@@ -96,7 +96,7 @@ describe("social login browser binding", () => {
     ["email_registered", "An account with this email already exists. Please log in the way you originally signed up."],
     [
       "account_inactive",
-      "This account has been deleted or suspended. A deleted account can't be used to sign up again.",
+      "This account has been deleted or suspended.",
     ],
     ["something_new", "Couldn't complete login. Please try again."],
   ])("shows a message for social_error=%s and drops the verifier", async (code, text) => {

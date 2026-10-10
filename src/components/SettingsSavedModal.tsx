@@ -1,18 +1,20 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import doneBadge from "../assets/brand/ic-modal-done.svg";
 
 /**
- * Post-save success modal for Language Settings. Shown ONLY after the backend
- * confirms the language was persisted; it performs no API call.
+ * Post-save success modal for settings screens — Figma `cp_G_01_modals`
+ * (image + title + description + one button). Shown ONLY after the backend
+ * confirms the save; it performs no API call. Used by Language Settings and the
+ * per-track learning settings (level / daily goal).
  *
  * Reuses the shared success-modal design system (`.wdd*` — pale-mint circle +
  * turquoise check, dark title, muted copy, orange CTA) but, unlike the terminal
- * withdrawal/logout `SuccessModal`, has no top-right X: the single orange 확인
- * closes it and returns to the previous screen. Backdrop is non-dismissable;
- * 확인 / Escape confirm. Focus is trapped and restored to the prior element on
- * close.
+ * withdrawal/logout `SuccessModal`, has no top-right X: the single orange button
+ * closes it and the caller then returns to the previous screen. Backdrop is
+ * non-dismissable; the button / Escape confirm. Focus is trapped and restored to
+ * the prior element on close.
  */
-export function LanguageSavedModal({
+export function SettingsSavedModal({
   open,
   title,
   description,
@@ -25,6 +27,9 @@ export function LanguageSavedModal({
   confirmLabel: string;
   onConfirm: () => void;
 }) {
+  const id = useId();
+  const titleId = `${id}-title`;
+  const descId = `${id}-desc`;
   const titleRef = useRef<HTMLHeadingElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
@@ -65,17 +70,17 @@ export function LanguageSavedModal({
         className="wdd lsm"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="lang-saved-title"
-        aria-describedby="lang-saved-desc"
+        aria-labelledby={titleId}
+        aria-describedby={descId}
       >
         <div className="wdd__icon" aria-hidden="true">
           <img src={doneBadge} alt="" />
         </div>
 
-        <h2 className="wdd__title" id="lang-saved-title" tabIndex={-1} ref={titleRef}>
+        <h2 className="wdd__title" id={titleId} tabIndex={-1} ref={titleRef}>
           {title}
         </h2>
-        <p className="wdd__copy" id="lang-saved-desc">{description}</p>
+        <p className="wdd__copy" id={descId}>{description}</p>
 
         <button ref={btnRef} className="wdd__btn" onClick={onConfirm}>
           {confirmLabel}

@@ -1231,7 +1231,10 @@ export const en: Catalog = {
     levelSection: "Choose Level",
     goalSection: "Daily Target",
     save: "Save",
-    saved: "Saved",
+    // Post-save modal — Figma cp_G_01_modals (2678:26321), verbatim.
+    savedModalTitle: "Practice Settings Saved",
+    savedModalDesc: "Your level and daily goal have been updated",
+    savedModalConfirm: "OK",
     loadError: "Couldn't load your settings.",
     conversationTrack: "Real Conversation",
     topikTitle: "TOPIK",

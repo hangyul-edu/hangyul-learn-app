@@ -3,7 +3,7 @@ import { useBlocker, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../components/ui/kit";
 import { UnsavedChangesModal } from "../components/UnsavedChangesModal";
-import { LanguageSavedModal } from "../components/LanguageSavedModal";
+import { SettingsSavedModal } from "../components/SettingsSavedModal";
 import { LoadingState } from "../components/ui/states";
 import { settingsApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
@@ -157,7 +157,7 @@ export function LanguageSettings() {
         }}
       />
 
-      <LanguageSavedModal
+      <SettingsSavedModal
         open={savedOpen}
         title={t("languageSettings.savedModalTitle")}
         description={t("languageSettings.savedModalDesc")}

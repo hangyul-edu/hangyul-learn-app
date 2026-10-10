@@ -1227,7 +1227,10 @@ export const ko = {
     levelSection: "레벨 선택",
     goalSection: "하루 목표",
     save: "저장하기",
-    saved: "저장했어요",
+    // Post-save modal — Figma cp_G_01_modals (2677:26018), verbatim.
+    savedModalTitle: "학습 설정이 저장됐습니다",
+    savedModalDesc: "변경하신 레벨과 하루 목표로 학습이 진행 돼요",
+    savedModalConfirm: "확인",
     loadError: "설정을 불러오지 못했어요.",
     conversationTrack: "실전 회화",
     topikTitle: "TOPIK",

@@ -4,6 +4,7 @@ import { useSettingsBack } from "../lib/settingsNav";
 import { useTranslation, type TranslationKey } from "../i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SkeletonList } from "../components/ui/states";
+import { SettingsSavedModal } from "../components/SettingsSavedModal";
 import { UnsavedChangesModal } from "../components/UnsavedChangesModal";
 import { settingsApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
@@ -59,6 +60,7 @@ export function TrackSettings() {
   const [draftGoal, setDraftGoal] = useState<number | null>(null);
   const origRef = useRef<{ level: number; goal: number } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [savedOpen, setSavedOpen] = useState(false);
   const leavingRef = useRef(false); // set when we intentionally leave (save / leave)
   const seqRef = useRef(0);
 
@@ -112,8 +114,9 @@ export function TrackSettings() {
       qc.invalidateQueries({ queryKey: ["dashboard"] }); // Home + Custom Learning
       origRef.current = { level: draftLevel, goal: draftGoal }; // clear dirty
       leavingRef.current = true; // deliberate exit — don't trip the blocker
-      toast.success(t("trackSettings.saved"));
-      goBack();
+      // Success feedback is the cp_G_01_modals dialog; returning to the list
+      // waits for its 확인.
+      setSavedOpen(true);
     } catch (e) {
       if (mySeq !== seqRef.current) return;
       toast.error(errorMessage(e)); // stay, keep draft + dirty for retry
@@ -235,6 +238,17 @@ export function TrackSettings() {
           {saving ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("trackSettings.save")}
         </button>
       </div>
+
+      <SettingsSavedModal
+        open={savedOpen}
+        title={t("trackSettings.savedModalTitle")}
+        description={t("trackSettings.savedModalDesc")}
+        confirmLabel={t("trackSettings.savedModalConfirm")}
+        onConfirm={() => {
+          setSavedOpen(false);
+          goBack();
+        }}
+      />
 
       <UnsavedChangesModal
         open={blocker.state === "blocked"}

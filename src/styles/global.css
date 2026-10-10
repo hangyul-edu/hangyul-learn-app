@@ -8437,6 +8437,13 @@ textarea.input {
   color: #000;
   font: var(--t-h8);
 }
+/* The saved modals focus their title (tabindex -1) so screen readers announce
+   the result; it is not a control, so it never draws a focus ring — the design
+   has none, and the browser would otherwise paint one when the modal opens
+   without a pointer interaction. */
+.wdd__title:focus {
+  outline: none;
+}
 .wdd__copy {
   /* 3085:27768 — Medium 13 / 22.3, Gray 5. 11.2 clears the copy's last line
      to put the CTA back on MOR-007's 203.5 (modal height 281). */

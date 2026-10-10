@@ -769,9 +769,12 @@ export interface MySubscription {
   plan_id?: string | null;
   current_period_end?: string | null;
   cancel_at_period_end?: boolean;
-  /** Server-authoritative one-time-trial flag: true once the account has ever
-   *  started the free trial. Free-trial eligibility = !trial_started. */
+  /** True once this account has ever started the free trial. */
   trial_started?: boolean;
+  /** Server-authoritative free-trial eligibility: one trial per person, so it
+   *  is false when the person trialled on an account they withdrew before
+   *  signing up again, even though this account's trial_started is false. */
+  trial_available?: boolean;
   in_trial?: boolean;
   /** Currency of the plan in force ("KRW" / "USD"); null without a plan. */
   plan_currency?: string | null;

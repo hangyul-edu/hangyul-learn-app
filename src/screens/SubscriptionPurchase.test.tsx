@@ -66,7 +66,7 @@ function renderPage() {
 beforeEach(() => {
   vi.clearAllMocks();
   plans.mockResolvedValue({ plans: PLANS });
-  mine.mockResolvedValue({ status: "expired", trial_started: false });
+  mine.mockResolvedValue({ status: "expired", trial_started: false, trial_available: true });
   paymentMethods.mockResolvedValue({ methods: [METHOD] });
   startTrial.mockResolvedValue({});
   subscribe.mockResolvedValue({});
@@ -80,10 +80,19 @@ describe("SubscriptionPurchase", () => {
   });
 
   it("ineligible account shows the paid variant, no trial messaging", async () => {
-    mine.mockResolvedValue({ status: "expired", trial_started: true });
+    mine.mockResolvedValue({ status: "expired", trial_started: true, trial_available: false });
     renderPage();
     expect(await screen.findByRole("button", { name: "지금 바로 시작하기" })).toBeInTheDocument();
     expect(screen.queryByText("일주일 무료로 먼저 체험해보세요.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "7일 무료 체험 시작하기" })).not.toBeInTheDocument();
+  });
+
+  it("a person who trialled on a withdrawn account gets the paid variant on the new one", async () => {
+    // This account never started a trial, but its person did before
+    // withdrawing and signing up again: one trial per person.
+    mine.mockResolvedValue({ status: "expired", trial_started: false, trial_available: false });
+    renderPage();
+    expect(await screen.findByRole("button", { name: "지금 바로 시작하기" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "7일 무료 체험 시작하기" })).not.toBeInTheDocument();
   });
 
@@ -178,7 +187,7 @@ describe("SubscriptionPurchase", () => {
   });
 
   it("paid CTA (ineligible) calls the paid endpoint, never the trial one", async () => {
-    mine.mockResolvedValue({ status: "expired", trial_started: true });
+    mine.mockResolvedValue({ status: "expired", trial_started: true, trial_available: false });
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: "지금 바로 시작하기" }));
     await waitFor(() => expect(subscribe).toHaveBeenCalledWith("p_year"));
@@ -187,7 +196,7 @@ describe("SubscriptionPurchase", () => {
   });
 
   it("a first charge still being confirmed says so instead of claiming access", async () => {
-    mine.mockResolvedValue({ status: "expired", trial_started: true });
+    mine.mockResolvedValue({ status: "expired", trial_started: true, trial_available: false });
     subscribe.mockResolvedValue({ subscription: { status: "payment_pending" } });
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: "지금 바로 시작하기" }));
@@ -328,7 +337,7 @@ describe("SubscriptionPurchase currency pre-check", () => {
   const USD_CARD = { ...METHOD, method_id: "pm_usd", is_default: false, provider: "toss_intl_card", card_region: "international", billing_currency: "USD" };
 
   it("explains a KRW default method vs a USD plan and never calls subscribe", async () => {
-    mine.mockResolvedValue({ status: "expired", trial_started: true });
+    mine.mockResolvedValue({ status: "expired", trial_started: true, trial_available: false });
     paymentMethods.mockResolvedValue({ methods: [KRW_CARD] });
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: "지금 바로 시작하기" }));
@@ -357,7 +366,7 @@ describe("SubscriptionPurchase currency pre-check", () => {
   });
 
   it("proceeds when the default method's currency matches the plan", async () => {
-    mine.mockResolvedValue({ status: "expired", trial_started: true });
+    mine.mockResolvedValue({ status: "expired", trial_started: true, trial_available: false });
     paymentMethods.mockResolvedValue({ methods: [{ ...USD_CARD, is_default: true }] });
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: "지금 바로 시작하기" }));
@@ -367,7 +376,7 @@ describe("SubscriptionPurchase currency pre-check", () => {
 
   it("still maps a server subscription.currency_mismatch as a fallback", async () => {
     const { ApiError } = await import("../lib/http");
-    mine.mockResolvedValue({ status: "expired", trial_started: true });
+    mine.mockResolvedValue({ status: "expired", trial_started: true, trial_available: false });
     subscribe.mockRejectedValue(
       new ApiError(422, "subscription.currency_mismatch", "raw", { card_currency: "KRW", plan_currency: "USD" }),
     );

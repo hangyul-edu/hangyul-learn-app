@@ -142,7 +142,7 @@ function PlanCard({ plan, selected, onSelect }: { plan: Plan; selected: boolean;
 
 /**
  * Server-driven subscription purchase screen. One component, two variants:
- * - free-trial-eligible account (`!trial_started`) → the 7-day trial version.
+ * - free-trial-eligible account (`trial_available`) → the 7-day trial version.
  * - ineligible account → the direct-paid version.
  * Eligibility, plans, and payment-method status all come from the backend, which
  * is the source of truth (the client can never grant itself a trial). Starting a
@@ -177,8 +177,10 @@ export function SubscriptionPurchase() {
   const active = methods.filter((m) => m.status === "active");
   const chargeMethod = active.find((m) => m.is_default) ?? active[0];
   const [currencyBlock, setCurrencyBlock] = useState<{ plan: Plan; card: string; hasMatching: boolean } | null>(null);
-  // Free-trial eligibility is server-authoritative (never local): !trial_started.
-  const eligible = mine ? !mine.trial_started : undefined;
+  // Free-trial eligibility is server-authoritative (never local): one trial
+  // per person, across accounts they withdrew and signed up again. An API
+  // that predates `trial_available` answers per account.
+  const eligible = mine ? (mine.trial_available ?? !mine.trial_started) : undefined;
   const entryMode: "free_trial" | "direct_paid" = eligible ? "free_trial" : "direct_paid";
 
   // Default selection: recommended → annual → first active plan. (No recommended

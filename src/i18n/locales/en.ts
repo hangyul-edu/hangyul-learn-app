@@ -231,17 +231,9 @@ export const en: Catalog = {
     noBilling: "No payment records yet",
     loadMore: "Load more",
     planFallback: "Premium",
-    planSheetTitle: "Choose a plan",
-    noPlansAvailable: "No plans are available right now.",
-    startTrial: "Start trial",
-    subscribeShort: "Subscribe",
-    perYear: "yr",
-    perMonth: "mo",
     voucherType: "Subscription code applied",
     voucherScheduled: "Your {plan} subscription is scheduled",
     voucherApplied: "Your {plan} subscription is active",
-    trialStarted: "Your free trial has started! 🎉",
-    subStarted: "Your subscription has started! 🎉",
     subPending: "We're confirming your payment. You'll get access as soon as it goes through.",
     cancelScheduled: "Cancellation scheduled",
     resumed: "Your subscription has resumed",
@@ -255,7 +247,6 @@ export const en: Catalog = {
     /** 893:33760 reads "Cancle Plan" — a typo in the frame, corrected here. */
     cancelConfirmGo: "Cancel Plan",
     register: "Redeem", // 784:62109 — the English frame says "Redeem"
-    trialDaysFree: " · {n} days free",
     invalidCode: "That code is invalid or already used",
     invalidCodeSub: "Check the code and try again",
     invoiceA11y: "{date}, {plan}, covering {from} to {to}, charged {amount}",
@@ -634,7 +625,6 @@ export const en: Catalog = {
     planYear: "12 months",
     planMonth: "1 month",
     selectedSuffix: ", selected",
-    launchDiscount: "Launch special",
     perMonth: "/mo",
     /** `<s>` marks the cream-highlighted run in the CTA. */
     // 784:50762 splits this as white "Start " + #FCEEC1 "7-day free trial";

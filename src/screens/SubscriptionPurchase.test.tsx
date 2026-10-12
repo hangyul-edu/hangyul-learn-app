@@ -14,8 +14,19 @@ const { plans, mine, paymentMethods, startTrial, subscribe, toastShow, toastErro
   toastShow: vi.fn(),
   toastError: vi.fn(),
 }));
+// The screen reads one call, GET /subscriptions/offers. The tests set its two
+// halves separately: the plans offered (`plans`) and the member's trial
+// eligibility (`mine`, as /subscriptions/me reports it).
 vi.mock("../api/endpoints", () => ({
-  subApi: { plans, mine, paymentMethods, startTrial, subscribe },
+  subApi: {
+    offers: async () => {
+      const [p, m] = await Promise.all([plans(), mine()]);
+      return { plans: p.plans, new_member: false, trial: { available: !!m.trial_available, days: 7 } };
+    },
+    paymentMethods,
+    startTrial,
+    subscribe,
+  },
 }));
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: toastError, success: vi.fn(), show: toastShow }) }));
 
@@ -36,6 +47,7 @@ const PLANS = [
     price_cents: 15588, promo_price_cents: 7188,
     original_total_cents: 15588, current_total_cents: 7188,
     original_monthly_cents: 1299, current_monthly_cents: 599, discount_percent: 54,
+    badge: { ko: "런칭 기념 특별 할인", en: "Launch special" },
   },
   {
     plan_id: "p_month", name: "Monthly", interval: "month", currency: "USD",
@@ -252,6 +264,35 @@ describe("SubscriptionPurchase — plan cards", () => {
     expect(ribbon).toHaveClass("plan__ribbon-text");
     expect(ribbon.closest(".plan__ribbon")).not.toBeNull();
     expect(within(monthly).queryByText("런칭 기념 특별 할인")).not.toBeInTheDocument();
+  });
+
+  it("draws the ribbon the admin published, on whichever card, in the app language", async () => {
+    plans.mockResolvedValue({
+      plans: [
+        { ...PLANS[0], badge: null },
+        { ...PLANS[1], badge: { ko: "첫 달 특가", en: "First month deal" } },
+      ],
+    });
+    const { annual, monthly } = await cards();
+    expect(within(monthly).getByText("첫 달 특가")).toHaveClass("plan__ribbon-text");
+    expect(annual.querySelector(".plan__ribbon")).toBeNull();
+  });
+
+  it("shows no discount pill or struck price for a plan without a promo", async () => {
+    plans.mockResolvedValue({
+      plans: PLANS.map((p) => ({
+        ...p,
+        promo_price_cents: null,
+        current_total_cents: p.price_cents,
+        current_monthly_cents: p.original_monthly_cents,
+        discount_percent: 0,
+      })),
+    });
+    const { annual, monthly } = await cards();
+    expect(annual.querySelector("s")).toBeNull();
+    expect(monthly.querySelector("s")).toBeNull();
+    expect(screen.queryByText(/0% 할인/)).not.toBeInTheDocument();
+    expect(within(monthly).getByText("$12.99")).toBeInTheDocument();
   });
 
   it("annual right column stacks purple badge, one struck original, then final price", async () => {

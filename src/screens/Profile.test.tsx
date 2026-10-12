@@ -3,14 +3,13 @@ import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 
-const { mine, plans, streak, unread } = vi.hoisted(() => ({
+const { mine, streak, unread } = vi.hoisted(() => ({
   mine: vi.fn(),
-  plans: vi.fn(),
   streak: vi.fn(),
   unread: vi.fn(),
 }));
 vi.mock("../api/endpoints", () => ({
-  subApi: { mine, plans },
+  subApi: { mine },
   dashboardApi: { streak },
   authApi: { deleteAccount: vi.fn() },
 }));
@@ -42,10 +41,11 @@ function renderPage() {
   );
 }
 
-/** GET /subscriptions/me as the server sends it — no premium flag, no name. */
+/** GET /subscriptions/me as the server sends it — no premium flag. */
 const sub = (status: string, over: Record<string, unknown> = {}) => ({
   subscription_id: "s1",
   plan_id: "p_year",
+  plan_name: "Annual",
   status,
   current_period_end: null,
   cancel_at_period_end: false,
@@ -57,7 +57,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   streak.mockResolvedValue({ current: 1, best: 2, freeze_tokens: 0, last_study_date: null, total_days: 3 });
   unread.mockResolvedValue({ has_unread: false });
-  plans.mockResolvedValue({ plans: [{ plan_id: "p_year", name: "Annual" }] });
 });
 
 describe("More — plan card", () => {
@@ -69,7 +68,7 @@ describe("More — plan card", () => {
     expect(await screen.findByText("무료체험중")).toBeInTheDocument();
   });
 
-  it("shows a paid plan, named from the plan list, without the ribbon", async () => {
+  it("shows a paid plan, by the name the subscription carries, without the ribbon", async () => {
     // Regression: the card read `is_premium` / `plan_name`, which the server
     // never sends, so a paying member saw the no-subscription CTA.
     mine.mockResolvedValue(sub("active"));

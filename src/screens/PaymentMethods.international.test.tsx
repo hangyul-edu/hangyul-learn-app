@@ -25,7 +25,7 @@ vi.mock("../api/endpoints", () => ({
     remove: vi.fn(),
   },
   billingApi: { recovery: vi.fn(), invoice: vi.fn(), retryInvoice: vi.fn() },
-  subApi: { mine: vi.fn(), plans: vi.fn() },
+  subApi: { mine: vi.fn(), offers: vi.fn() },
 }));
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ bootstrapMe: vi.fn() }) }));
 const requestTossBillingAuth = vi.fn();
@@ -105,7 +105,7 @@ beforeEach(() => {
   api.internationalCardOptions.mockResolvedValue(OPTIONS);
   billing.recovery.mockResolvedValue({ recovery_required: false, can_retry_immediately: false });
   subs.mine.mockResolvedValue({ status: "none" });
-  subs.plans.mockResolvedValue({ plans: [] });
+  subs.offers.mockResolvedValue({ plans: [], new_member: false, trial: { available: false, days: 7 } });
   for (const m of ["log", "info", "warn", "error", "debug"] as const) {
     consoleSpies.push(vi.spyOn(console, m).mockImplementation(() => {}));
   }
@@ -179,11 +179,15 @@ describe("international card form", () => {
     await openForm();
     await waitFor(() => expect(screen.getByRole("radio", { name: "달러(USD)" })).toHaveAttribute("aria-checked", "true"));
     expect(screen.getByText(/이용 중인 요금제가 달러\(USD\)로 결제돼서/)).toBeInTheDocument();
-    expect(subs.plans).not.toHaveBeenCalled();
+    expect(subs.offers).not.toHaveBeenCalled();
   });
 
   it("preselects the plan being bought when arriving from the purchase screen", async () => {
-    subs.plans.mockResolvedValue({ plans: [{ plan_id: "plan_usd", name: "P", price_cents: 1, currency: "USD", interval: "month" }] });
+    subs.offers.mockResolvedValue({
+      plans: [{ plan_id: "plan_usd", name: "P", price_cents: 1, currency: "USD", interval: "month" }],
+      new_member: true,
+      trial: { available: true, days: 7 },
+    });
     renderScreen({ selectedPlanId: "plan_usd" });
     await openForm();
     await waitFor(() => expect(screen.getByRole("radio", { name: "달러(USD)" })).toHaveAttribute("aria-checked", "true"));

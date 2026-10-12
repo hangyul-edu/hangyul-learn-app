@@ -1,4 +1,4 @@
-import type { MySubscription, Plan } from "./types";
+import type { MySubscription } from "./types";
 
 /**
  * Effective statuses (GET /subscriptions/me) in which the subscription is in
@@ -22,11 +22,4 @@ export function isTrialStatus(status: string | null | undefined): boolean {
 /** Whether the member has a subscription (paid, trial or coupon) in force. */
 export function hasLiveSubscription(sub: MySubscription | null | undefined): boolean {
   return !!sub && (LIVE_STATUSES.has(sub.status) || !!sub.coupon_backed);
-}
-
-/** The display name of the plan in force, looked up by `plan_id` — the
- *  subscription itself carries no name. Null when it cannot be resolved. */
-export function planNameOf(sub: MySubscription | null | undefined, plans: Plan[] | undefined): string | null {
-  if (!sub?.plan_id || !plans) return null;
-  return plans.find((p) => p.plan_id === sub.plan_id)?.name ?? null;
 }

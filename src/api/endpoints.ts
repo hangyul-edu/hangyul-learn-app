@@ -48,8 +48,8 @@ import type {
   NotificationItem,
   NotificationSection,
   Page,
+  Offers,
   PaymentMethod,
-  Plan,
   PointsBalance,
   PointsHistoryResponse,
   ChatMessage,
@@ -585,7 +585,8 @@ export const notifApi = {
 
 /* --------------------------- Subscription --------------------------- */
 export const subApi = {
-  plans: () => http.get<{ plans?: Plan[]; items?: Plan[] }>("/subscriptions/plans", undefined, { auth: false }),
+  /** The purchase screen's plans and free trial for the signed-in member. */
+  offers: () => http.get<Offers>("/subscriptions/offers"),
   mine: () => http.get<MySubscription>("/subscriptions/me"),
   startTrial: (plan_id: string) => http.post<unknown>("/subscriptions/trial", { plan_id }),
   // 201 = paid and active; 202 = the first charge is still undecided

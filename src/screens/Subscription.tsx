@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useTranslation, type TranslationKey } from "../i18n";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sheet, ConfirmDialog } from "../components/ui/Modal";
-import { Button } from "../components/ui/kit";
+import { ConfirmDialog } from "../components/ui/Modal";
 import { SkeletonList } from "../components/ui/states";
 import { VoucherModal } from "../components/VoucherModal";
 import { VoucherSuccessModal, type VoucherSuccess } from "../components/VoucherSuccessModal";
@@ -11,10 +10,9 @@ import { FailModal } from "../components/FailModal";
 import { subApi, billingApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { ApiError, errorMessage } from "../lib/http";
-import { paymentErrorMessage } from "../lib/paymentErrors";
 import { formatMoney, formatLongDate } from "../lib/format";
-import { hasLiveSubscription, planNameOf } from "../lib/subscription";
-import type { CouponRedemption, Invoice, Plan } from "../lib/types";
+import { hasLiveSubscription } from "../lib/subscription";
+import type { CouponRedemption, Invoice } from "../lib/types";
 import { CancelReasonModal } from "../components/CancelReasonModal";
 import { DetailHeader } from "../components/DetailHeader";
 
@@ -62,14 +60,11 @@ function buildSuccess(
 export function Subscription() {
   const { t, language } = useTranslation();
   const nav = useNavigate();
-  const loc = useLocation();
   const toast = useToast();
   const qc = useQueryClient();
   /** Bound to the active language so dates re-render when it changes. */
   const longDate = (iso?: string | null) => formatLongDate(iso, language);
 
-  // Arriving from the More card's 구독하기 CTA opens plan selection straight away.
-  const [planOpen, setPlanOpen] = useState(() => !!(loc.state as { openPlans?: boolean } | null)?.openPlans);
   const [voucherOpen, setVoucherOpen] = useState(false);
   const [voucherCode, setVoucherCode] = useState(""); // controlled; survives the fail-modal swap
   const [voucherError, setVoucherError] = useState<string | null>(null);
@@ -83,10 +78,6 @@ export function Subscription() {
   const m = mine.data;
   // A cancelled subscription still shows (with 해지 취소) until it lapses.
   const hasSub = hasLiveSubscription(m) || m?.status === "cancelled";
-  // Plans feed the plan sheet and the current plan's name — /subscriptions/me
-  // carries only its id.
-  const plans = useQuery({ queryKey: ["sub-plans"], queryFn: subApi.plans, enabled: planOpen || hasSub });
-  const planList: Plan[] = plans.data?.plans ?? plans.data?.items ?? [];
 
   // Payment history — cursor-based infinite scroll (billingApi.invoices → next_cursor).
   const inv = useInfiniteQuery({
@@ -126,28 +117,6 @@ export function Subscription() {
     qc.invalidateQueries({ queryKey: ["sub-me"] });
     qc.invalidateQueries({ queryKey: ["dashboard"] });
     qc.invalidateQueries({ queryKey: ["invoices-inf"] });
-  }
-
-  async function subscribe(p: Plan, trial: boolean) {
-    if (busy) return;
-    setBusy(true);
-    try {
-      if (trial) {
-        await subApi.startTrial(p.plan_id);
-        toast.success(t("subscription.trialStarted"));
-      } else {
-        const res = await subApi.subscribe(p.plan_id);
-        if (res?.subscription?.status === "payment_pending") toast.show(t("subscription.subPending"));
-        else toast.success(t("subscription.subStarted"));
-      }
-      setPlanOpen(false);
-      refresh();
-    } catch (e) {
-      // subscription.currency_mismatch: the card is charged in another currency.
-      toast.error(paymentErrorMessage(e));
-    } finally {
-      setBusy(false);
-    }
   }
 
   // Redemption is server-authoritative: one POST validates and applies (active
@@ -218,7 +187,7 @@ export function Subscription() {
   // --- Subscription state mapping (authoritative from /subscriptions/me) ---
   const status = m?.status ?? "";
   const scheduledCancel = !!m?.cancel_at_period_end;
-  const planName = planNameOf(m, planList) ?? t("subscription.planFallback");
+  const planName = m?.plan_name || t("subscription.planFallback");
   const endIso = m?.current_period_end;
   const endDate = longDate(endIso);
 
@@ -372,32 +341,6 @@ export function Subscription() {
           )}
         </div>
       </div>
-
-      {/* Plan selection (reuses subApi.subscribe / startTrial) */}
-      <Sheet open={planOpen} onClose={() => !busy && setPlanOpen(false)} title={t("subscription.planSheetTitle")}>
-        {plans.isLoading ? (
-          <SkeletonList rows={2} height={72} />
-        ) : planList.length === 0 ? (
-          <p className="subm__empty-pay">{t("subscription.noPlansAvailable")}</p>
-        ) : (
-          <div className="stack" style={{ gap: 10 }}>
-            {planList.map((p) => (
-              <div key={p.plan_id} className="subm__plan">
-                <div style={{ flex: 1 }}>
-                  <div className="subm__plan-name">{p.name}</div>
-                  <div className="subm__plan-sub">
-                    {formatMoney(p.price_cents, p.currency || "KRW")} / {t(p.interval === "year" ? "subscription.perYear" : "subscription.perMonth")}
-                    {p.trial_days ? t("subscription.trialDaysFree", { n: p.trial_days }) : ""}
-                  </div>
-                </div>
-                <Button size="sm" loading={busy} onClick={() => subscribe(p, !!p.trial_days)}>
-                  {t(p.trial_days ? "subscription.startTrial" : "subscription.subscribeShort")}
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-      </Sheet>
 
       {/* Voucher / course-code registration (subApi.redeemCoupon) */}
       <VoucherModal

@@ -5,14 +5,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { ApiError } from "../lib/http";
 
-const { mine, plans, invoices, redeemCoupon } = vi.hoisted(() => ({
+const { mine, invoices, redeemCoupon } = vi.hoisted(() => ({
   mine: vi.fn(),
-  plans: vi.fn(),
   invoices: vi.fn(),
   redeemCoupon: vi.fn(),
 }));
 vi.mock("../api/endpoints", () => ({
-  subApi: { mine, plans, redeemCoupon },
+  subApi: { mine, redeemCoupon },
   billingApi: { invoices },
 }));
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn(), show: vi.fn() }) }));
@@ -33,10 +32,11 @@ function renderPage() {
   );
 }
 
-/** GET /subscriptions/me as the server sends it — no premium flag, no name. */
+/** GET /subscriptions/me as the server sends it — no premium flag. */
 const sub = (status: string, over: Record<string, unknown> = {}) => ({
   subscription_id: "s1",
   plan_id: "p_year",
+  plan_name: "Annual",
   status,
   current_period_end: "2026-10-10T00:00:00Z",
   cancel_at_period_end: false,
@@ -48,7 +48,6 @@ const NO_SUB = sub("expired", { subscription_id: null, plan_id: null, current_pe
 beforeEach(() => {
   vi.clearAllMocks();
   invoices.mockResolvedValue({ invoices: [], next_cursor: null });
-  plans.mockResolvedValue({ plans: [{ plan_id: "p_year", name: "Annual" }] });
 });
 
 describe("Subscription — my plan", () => {
@@ -60,17 +59,19 @@ describe("Subscription — my plan", () => {
     expect(await screen.findByRole("button", { name: "해지하기" })).toBeInTheDocument();
   });
 
-  it("names the plan from the plan list", async () => {
-    // /subscriptions/me carries only plan_id; `plan_name` was never sent.
-    mine.mockResolvedValue(sub("active"));
+  it("names the plan in force, new-member plans included", async () => {
+    // The name comes with /subscriptions/me: a new-member plan is not in the
+    // public plan list, so looking it up there showed the fallback.
+    mine.mockResolvedValue(sub("active", { plan_id: "plan_monthly_new_user", plan_name: "Monthly — New member" }));
     renderPage();
-    expect(await screen.findByText("Annual")).toBeInTheDocument();
+    expect(await screen.findByText("Monthly — New member")).toBeInTheDocument();
   });
 
   it("shows a coupon-backed pass as a plan, not as no subscription", async () => {
-    mine.mockResolvedValue(sub("expired", { coupon_backed: true }));
+    // A coupon period has no plan behind it.
+    mine.mockResolvedValue(sub("expired", { coupon_backed: true, plan_id: null, plan_name: null }));
     renderPage();
-    expect(await screen.findByText("Annual")).toBeInTheDocument();
+    expect(await screen.findByText("프리미엄")).toBeInTheDocument();
   });
 
   it("hides 해지하기 once a cancellation is already scheduled", async () => {

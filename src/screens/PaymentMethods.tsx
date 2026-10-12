@@ -185,8 +185,8 @@ export function PaymentMethods() {
   // request to open the overseas-card form straight away).
   const navState = location.state as { selectedPlanId?: string; addCard?: string } | null;
   const buyingPlanId = navState?.selectedPlanId;
-  const plansQ = useQuery({ queryKey: ["sub-plans"], queryFn: subApi.plans, enabled: !!buyingPlanId });
-  const plans: Plan[] = plansQ.data?.plans ?? plansQ.data?.items ?? [];
+  const offersQ = useQuery({ queryKey: ["sub-offers"], queryFn: subApi.offers, enabled: !!buyingPlanId });
+  const plans: Plan[] = offersQ.data?.plans ?? [];
   const buyingCurrency = plans.find((p) => p.plan_id === buyingPlanId)?.currency?.toUpperCase() ?? null;
   const preferredCurrency = liveCurrency ?? buyingCurrency;
   const currencyLocked = (m: PaymentMethod) =>

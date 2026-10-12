@@ -722,7 +722,6 @@ export interface NotificationSection {
 export interface Plan {
   plan_id: string;
   name: string;
-  description?: string | null;
   /** List (original) price for the billing interval, in cents. */
   price_cents: number;
   /** Discounted (current) price for the billing interval, in cents. Null = no
@@ -730,8 +729,9 @@ export interface Plan {
   promo_price_cents?: number | null;
   currency?: string;
   interval: "month" | "year";
-  trial_days?: number;
-  features?: string[];
+  /** The promotional ribbon on the card, by app language, written and
+   *  published in the admin console; null when none is published. */
+  badge?: { ko: string; en: string } | null;
 
   // Server-computed presentation values (see SubscriptionPlan on the backend).
   // Preferred over client-side derivation when present.
@@ -759,14 +759,23 @@ export interface CouponRedemption {
   effective_start_at: string;
   effective_end_at: string;
 }
-/** GET /subscriptions/me. It carries no premium flag and no plan name: derive
- *  a live subscription from `status` (lib/subscription) and the name from the
- *  plan list by `plan_id`. Premium *gating* is the dashboard's
- *  `paywall_required`, which also covers tester/admin roles. */
+/** GET /subscriptions/offers — what the purchase screen offers this member:
+ *  one plan per interval (the new-member price where it applies) and the
+ *  member's one free trial, the same length on every plan. */
+export interface Offers {
+  plans: Plan[];
+  new_member: boolean;
+  trial: { available: boolean; days: number };
+}
+/** GET /subscriptions/me. It carries no premium flag: derive a live
+ *  subscription from `status` (lib/subscription). Premium *gating* is the
+ *  dashboard's `paywall_required`, which also covers tester/admin roles. */
 export interface MySubscription {
   /** Effective status, incl. the derived `trial_ending` (a trial's last 72h). */
   status: string;
   plan_id?: string | null;
+  /** Display name of the plan in force; null without a plan. */
+  plan_name?: string | null;
   current_period_end?: string | null;
   cancel_at_period_end?: boolean;
   /** True once this account has ever started the free trial. */

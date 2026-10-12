@@ -9802,25 +9802,6 @@ textarea.input {
   cursor: pointer;
   text-decoration: underline;
 }
-/* Plan sheet rows */
-.subm__plan {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--surface-2, #f4f6f6);
-  border-radius: 14px;
-}
-.subm__plan-name {
-  font-weight: 800;
-  color: #262c31;
-}
-.subm__plan-sub {
-  margin-top: 2px;
-  color: #778088;
-  font-size: 13px;
-}
-
 /* ---- Course-access code registration modal (수강권 코드 등록) ---- */
 .vou {
   /* MOR-017 (1215:21452) — cp_G_01_modals at 320x327: r10, 30/20/20 padding,

@@ -238,17 +238,9 @@ export const ko = {
     noBilling: "결제 내역이 없습니다",
     loadMore: "다시 불러오기",
     planFallback: "프리미엄",
-    planSheetTitle: "구독 플랜 선택",
-    noPlansAvailable: "이용 가능한 플랜이 없어요.",
-    startTrial: "체험 시작",
-    subscribeShort: "구독",
-    perYear: "년",
-    perMonth: "월",
     voucherType: "구독권 쿠폰 적용", // MOR-018 — 수강권 was the same slip already fixed on voucherLabel
     voucherScheduled: "{plan} 구독이 예약되었어요",
     voucherApplied: "{plan} 구독이 적용되었어요",
-    trialStarted: "무료 체험을 시작했어요! 🎉",
-    subStarted: "구독을 시작했어요! 🎉",
     subPending: "결제를 확인하고 있어요. 완료되면 바로 이용할 수 있어요.",
     cancelScheduled: "해지 예약되었어요",
     resumed: "구독을 다시 시작했어요",
@@ -261,7 +253,6 @@ export const ko = {
     cancelConfirmKeep: "취소", // 624:10161
     cancelConfirmGo: "해지", // 624:10162 — shorter than the 해지하기 link
     register: "등록하기",
-    trialDaysFree: " · {n}일 무료",
     invalidCode: "유효하지 않거나 이미 사용된 코드예요",
     invalidCodeSub: "코드를 확인하고 다시 시도해 주세요",
     invoiceA11y:
@@ -648,7 +639,6 @@ export const ko = {
     planYear: "12개월",
     planMonth: "1개월",
     selectedSuffix: ", 선택됨",
-    launchDiscount: "런칭 기념 특별 할인",
     perMonth: "/월",
     /** `<s>` marks the cream-highlighted run in the CTA (Figma I1:4089). */
     startTrial: "<s>7일 무료 체험</s>  시작하기",

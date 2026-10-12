@@ -25,7 +25,7 @@ import { useAuth } from "../hooks/auth";
 import type { Me, SocialProvider } from "../lib/types";
 import { useTranslation, type TranslationKey } from "../i18n";
 import { formatLongDate } from "../lib/format";
-import { hasLiveSubscription, isTrialStatus, planNameOf } from "../lib/subscription";
+import { hasLiveSubscription, isTrialStatus } from "../lib/subscription";
 
 /**
  * More menu — Figma MOR-005, English frame 893:33108.
@@ -308,9 +308,7 @@ export function Profile() {
     : hasLiveSubscription(s)
       ? "paid"
       : "none";
-  // /subscriptions/me carries only the plan id; the name comes from the plans.
-  const plans = useQuery({ queryKey: ["sub-plans"], queryFn: subApi.plans, enabled: subState !== "none" });
-  const planName = planNameOf(s, plans.data?.plans ?? plans.data?.items) ?? t("more.planFallback");
+  const planName = s?.plan_name || t("more.planFallback");
   // MOR-001 prints the date in the app language, not always in Korean.
   const nextBilling = formatLongDate(s?.current_period_end, language);
   // While loading or on error the state is unknown — render a neutral (paid-style)

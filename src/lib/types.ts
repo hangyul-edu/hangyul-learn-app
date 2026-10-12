@@ -788,7 +788,6 @@ export interface AppSettings {
   sound_effects: boolean;
   vibration: boolean;
   autoplay_audio: boolean;
-  show_romanization: boolean;
 }
 export interface CategoryPref {
   category: string;

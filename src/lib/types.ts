@@ -799,6 +799,8 @@ export interface CategoryPref {
 }
 export interface LearningPreferences {
   categories: CategoryPref[];
+  /** Highest daily_goal the caller may pick; null = unlimited (premium/trial/tester/admin). */
+  daily_goal_limit?: number | null;
 }
 
 /* ---- Learning session finalize (POST /learning/sessions) ---- */

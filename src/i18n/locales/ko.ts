@@ -1231,6 +1231,9 @@ export const ko = {
     savedModalTitle: "학습 설정이 저장됐습니다",
     savedModalDesc: "변경하신 레벨과 하루 목표로 학습이 진행돼요",
     savedModalConfirm: "확인",
+    // Goal-limit notice — Figma cp_G_03_toast (744:46726), verbatim.
+    goalLimitConversation: "하루 목표는 최대 {n}개까지 설정할 수 있어요\n프리미엄에서는 무제한 이용이 가능해요 ✨",
+    goalLimitTopik: "하루 목표는 최대 {n}개까지 설정할 수 있어요\n프리미엄에서는 무제한 이용이 가능해요 ✨",
     loadError: "설정을 불러오지 못했어요.",
     conversationTrack: "실전 회화",
     topikTitle: "TOPIK",

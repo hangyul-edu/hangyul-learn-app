@@ -18,6 +18,7 @@ const CFG = {
     cols: 5,
     levelLabelKey: "trackSettings.levelLabelConversation" as TranslationKey,
     srLevelKey: "trackSettings.conversationLevelA11y" as TranslationKey,
+    goalLimitKey: "trackSettings.goalLimitConversation" as TranslationKey,
   },
   topik: {
     titleKey: "trackSettings.topikTitle" as TranslationKey,
@@ -25,6 +26,7 @@ const CFG = {
     cols: 3,
     levelLabelKey: "trackSettings.gradeLabel" as TranslationKey,
     srLevelKey: "trackSettings.topikLevelA11y" as TranslationKey,
+    goalLimitKey: "trackSettings.goalLimitTopik" as TranslationKey,
   },
 } as const;
 
@@ -55,6 +57,8 @@ export function TrackSettings() {
   const q = useQuery({ queryKey: ["learning-prefs"], queryFn: settingsApi.learning });
   const pref = q.data?.categories.find((c) => c.category === category);
   const maxLevel = pref?.max_level ?? cfg.maxLevel;
+  // null for premium/trial/tester/admin — they choose any goal, no notice.
+  const goalLimit = q.data?.daily_goal_limit ?? null;
 
   const [draftLevel, setDraftLevel] = useState<number | null>(null);
   const [draftGoal, setDraftGoal] = useState<number | null>(null);
@@ -200,7 +204,16 @@ export function TrackSettings() {
                           aria-checked={sel}
                           aria-label={`${t("trackSettings.goalA11y", { n: g.n, mode: t(g.mode) })}${sel ? t("trackSettings.selectedSuffix") : ""}`}
                           className={`trkset__goal ${sel ? "is-sel" : ""}`}
-                          onClick={() => setDraftGoal(g.n)}
+                          onClick={() => {
+                            // A capped member picking above the cap: explain it
+                            // (cp_G_03_toast) and keep the draft, since the API
+                            // would reject the save anyway.
+                            if (goalLimit != null && g.n > goalLimit) {
+                              toast.show(t(cfg.goalLimitKey, { n: goalLimit }), "notice");
+                              return;
+                            }
+                            setDraftGoal(g.n);
+                          }}
                         >
                           <span className="trkset__goal-count">{t("session.countUnit", { n: g.n })}</span>
                           <span className={`trkset__pill ${g.mint ? "trkset__pill--mint" : ""}`}>

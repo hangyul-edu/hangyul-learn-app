@@ -3,7 +3,8 @@ import type { ReactNode } from "react";
 
 import { errorMessage } from "../lib/http";
 
-type ToastKind = "default" | "success" | "error";
+/** `notice`: Figma cp_G_03_toast — icon-less, centred, may span two lines. */
+type ToastKind = "default" | "success" | "error" | "notice";
 interface ToastOptions {
   /** Show the leading status icon (default true; pass false for a clean message). */
   icon?: boolean;
@@ -53,7 +54,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const show = useCallback(
     (message: string, kind: ToastKind = "default", opts?: ToastOptions) => {
       const duration = opts?.duration ?? DEFAULT_DURATION;
-      const icon = opts?.icon ?? true;
+      const icon = opts?.icon ?? kind !== "notice";
       setToasts((list) => {
         const existing = list.find((x) => x.message === message && x.kind === kind);
         if (existing) {

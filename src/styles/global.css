@@ -640,6 +640,28 @@ textarea.input {
   font-weight: 600;
   line-height: 1.4;
 }
+/* Figma cp_G_03_toast (744:46726 KO / 784:63104 EN) — e.g. the daily-goal
+   limit notice. A fixed 300×57 box holding exactly two centred lines: the
+   message's own newline is the only break (`pre`), so neither line wraps.
+   Figma's nominal 50px side padding overflows its text (237 KO / 253 EN in a
+   300 frame), so the side padding here is just a floor. */
+.hg-toast--notice {
+  justify-content: center;
+  text-align: center;
+  white-space: pre;
+  box-sizing: border-box;
+  width: 300px;
+  max-width: 100%;
+  min-height: 57px;
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 9px;
+  padding: 8px 12px 9px;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+}
 .hg-toast__icon {
   font-size: 16px;
 }

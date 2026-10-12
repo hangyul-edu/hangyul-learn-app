@@ -1235,6 +1235,10 @@ export const en: Catalog = {
     savedModalTitle: "Practice Settings Saved",
     savedModalDesc: "Your level and daily goal have been updated",
     savedModalConfirm: "OK",
+    // Goal-limit notice — Figma cp_G_03_toast (784:63104). Figma's copy says
+    // "sentences"; the TOPIK screen counts questions.
+    goalLimitConversation: "Daily goal can be set up to {n} sentences\nGo Premium for unlimited ✨",
+    goalLimitTopik: "Daily goal can be set up to {n} questions\nGo Premium for unlimited ✨",
     loadError: "Couldn't load your settings.",
     conversationTrack: "Real Conversation",
     topikTitle: "TOPIK",

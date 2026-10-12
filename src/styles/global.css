@@ -17691,20 +17691,22 @@ textarea.input {
 .lspk__arrow--prev img {
   transform: scaleX(-1);
 }
-/* Body3 — Regular 16 / 2.33 in Gray 4. */
+/* Body3 — Regular 16 / 2.33 in Gray 4 (1:2669, 511:8941). The 2.33 line box
+   (37.28px) is what spaces the reading from the Korean and the meaning, but
+   once a long sentence's reading wraps it would also put 37px between its own
+   lines. So the line is 24px and the remaining 13.28px of the design's box is
+   padding: one line sits exactly where Figma puts it, wrapped lines stay
+   together. */
 .lspk__roman {
   margin: 0;
+  padding: 6.64px 0;
   font-size: 16px;
-  line-height: 2.33;
+  font-weight: 400;
+  line-height: 24px;
   letter-spacing: -0.16px;
   color: var(--gray-4);
   text-align: center;
   overflow-wrap: break-word;
-}
-/* Once the romanization wraps, 2.33 spreads its lines far apart. */
-.lspk__sentence-row:has(.lspk__korean--sm, .lspk__korean--xs) + .lspk__roman {
-  line-height: 1.6;
-  margin-top: 6px;
 }
 .lspk__trans {
   margin: 4px 0 0;

@@ -7,10 +7,9 @@ import {
   RouterProvider,
   useLocation,
 } from "react-router-dom";
-import { useEffect } from "react";
 import type { ReactNode } from "react";
 import { useAuth } from "./hooks/auth";
-import { useI18n } from "./i18n";
+import { useAccountLanguage } from "./hooks/useAccountLanguage";
 import { AppShell } from "./components/layout/AppShell";
 
 import { Splash } from "./screens/Splash";
@@ -204,17 +203,9 @@ const router = createBrowserRouter(
   ),
 );
 
-/**
- * Adopts `app_language` from the signed-in profile so the choice follows the
- * user across devices. The provider ignores it once a local choice exists, so
- * a profile refetch can never override what the user picked here.
- */
+/** Keeps the app in the signed-in account's language (hooks/useAccountLanguage). */
 function LanguageSync() {
-  const { me } = useAuth();
-  const { adoptProfileLanguage } = useI18n();
-  useEffect(() => {
-    adoptProfileLanguage(me?.app_language);
-  }, [me?.app_language, adoptProfileLanguage]);
+  useAccountLanguage();
   return null;
 }
 

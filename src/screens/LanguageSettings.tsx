@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useBlocker, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../components/ui/kit";
@@ -25,20 +25,23 @@ export function LanguageSettings() {
 
   // Authoritative current language from the backend, seeded from the
   // authenticated-user cache so the correct card shows immediately (no flash of
-  // a wrong default). Unsupported values clamp to the default (en).
+  // a wrong default) and re-checked on every visit (the seed counts as stale),
+  // so a change made elsewhere shows up. Unsupported values clamp to the
+  // default (en).
   const langQ = useQuery({
     queryKey: ["settings-language"],
     queryFn: settingsApi.language,
     initialData: me?.app_language ? { app_language: me.app_language } : undefined,
+    initialDataUpdatedAt: 0,
   });
   const persisted: AppLanguage | null = langQ.data ? normalizeLanguage(langQ.data.app_language) : null;
 
-  // Pending selection — applied only on Save; initialized once the persisted
-  // value is known and never auto-changes the global app language.
+  // The card the user tapped, applied only on Save; null until they tap one.
+  // The selected card is derived, never copied once: until the user picks,
+  // it follows the saved language, so a value that arrives or changes after
+  // the page opened is shown as it is rather than an earlier stale one.
   const [pending, setPending] = useState<AppLanguage | null>(null);
-  useEffect(() => {
-    if (pending === null && persisted !== null) setPending(persisted);
-  }, [pending, persisted]);
+  const selected: AppLanguage | null = pending ?? persisted;
 
   // Shown only after the backend confirms the save; gates the return navigation
   // on the user tapping 확인.
@@ -58,6 +61,7 @@ export function LanguageSettings() {
       // language until this point, matching the design's post-save modal.
       setLanguage(applied);
       qc.setQueryData(["settings-language"], { app_language: applied });
+      setPending(null); // the saved value is now what the cards follow
       setSavedOpen(true); // success feedback; navigation waits for 확인
     },
     onError: (e) => {
@@ -69,8 +73,8 @@ export function LanguageSettings() {
   });
 
   function onSave() {
-    if (pending === null || save.isPending) return; // single-flight, no partial state
-    save.mutate(pending); // idempotent server-side, so a no-change save is a safe no-op
+    if (selected === null || save.isPending) return; // single-flight, no partial state
+    save.mutate(selected); // idempotent server-side, so a no-change save is a safe no-op
   }
 
   // Unsaved-change guard. Dirty = the pending selection differs from the
@@ -96,7 +100,7 @@ export function LanguageSettings() {
     ),
   );
 
-  const loading = persisted === null || pending === null;
+  const loading = selected === null;
 
   // Leave to the parent (More) page via an explicit in-app route rather than a
   // history pop. A route navigation is always same-document, so the router's
@@ -116,15 +120,15 @@ export function LanguageSettings() {
         ) : (
           <div className="lang__list" role="radiogroup" aria-label={t("languageSettings.title")}>
             {SUPPORTED_LANGUAGES.map(({ code, nativeLabel }) => {
-              const selected = pending === code;
+              const isSelected = selected === code;
               return (
                 <button
                   key={code}
                   type="button"
                   role="radio"
-                  aria-checked={selected}
-                  aria-label={selected ? `${nativeLabel}, ${t("languageSettings.selected")}` : nativeLabel}
-                  className={`lang__card ${selected ? "is-selected" : ""}`}
+                  aria-checked={isSelected}
+                  aria-label={isSelected ? `${nativeLabel}, ${t("languageSettings.selected")}` : nativeLabel}
+                  className={`lang__card ${isSelected ? "is-selected" : ""}`}
                   disabled={save.isPending}
                   onClick={() => setPending(code)}
                 >

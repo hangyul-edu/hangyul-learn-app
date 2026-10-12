@@ -81,6 +81,26 @@ describe("LanguageSettings screen", () => {
     expect(screen.getByRole("heading", { name: "언어 설정" })).toBeInTheDocument();
   });
 
+  it("re-checks the server and shows its value over a stale cached one", async () => {
+    // The profile cache still says 한국어; the account is English now.
+    mockMe = { app_language: "ko" };
+    api.language.mockResolvedValue({ app_language: "en" });
+    renderScreen("en");
+    await waitFor(() => expect(card("English")).toHaveAttribute("aria-checked", "true"));
+    expect(card("한국어")).toHaveAttribute("aria-checked", "false");
+    expect(api.language).toHaveBeenCalled();
+  });
+
+  it("never lets a late server value override a card the user tapped", async () => {
+    let resolve: (v: { app_language: string }) => void = () => {};
+    api.language.mockReturnValue(new Promise((r) => (resolve = r)));
+    renderScreen();
+    await userEvent.click(card("한국어"));
+    resolve({ app_language: "en" });
+    await waitFor(() => expect(api.language).toHaveBeenCalled());
+    expect(card("한국어")).toHaveAttribute("aria-checked", "true");
+  });
+
   it("English selected uses the selected style; exactly one is selected", async () => {
     renderScreen();
     await screen.findByText("English");

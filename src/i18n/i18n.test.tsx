@@ -90,13 +90,12 @@ describe("normalizeLanguage", () => {
 });
 
 function Probe() {
-  const { language, setLanguage, adoptProfileLanguage } = useI18n();
+  const { language, setLanguage } = useI18n();
   return (
     <div>
       <span data-testid="lang">{language}</span>
       <T k="home.greeting" vars={{ name: "Ana" }} />
       <button onClick={() => setLanguage("ko")}>choose ko</button>
-      <button onClick={() => adoptProfileLanguage("ko")}>profile ko</button>
     </div>
   );
 }
@@ -126,26 +125,17 @@ describe("I18nProvider", () => {
     expect(document.documentElement.lang).toBe("ko");
   });
 
-  it("seeds from the profile when the user has not chosen one", () => {
+  it("starts in the language stored on the device", () => {
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, "ko");
     render(
       <I18nProvider>
         <Probe />
       </I18nProvider>,
     );
-    act(() => screen.getByText("profile ko").click());
     expect(screen.getByTestId("lang")).toHaveTextContent("ko");
   });
 
-  it("never lets a profile refetch override an explicit choice", () => {
-    localStorage.setItem(LANGUAGE_STORAGE_KEY, "en");
-    render(
-      <I18nProvider>
-        <Probe />
-      </I18nProvider>,
-    );
-    act(() => screen.getByText("profile ko").click());
-    expect(screen.getByTestId("lang")).toHaveTextContent("en");
-  });
+  // Following the signed-in account's language: hooks/useAccountLanguage.test.
 
   it("detects a supported browser language", () => {
     expect(["ko", "en"]).toContain(detectLanguage());

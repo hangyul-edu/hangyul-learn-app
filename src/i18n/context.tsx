@@ -1,23 +1,22 @@
 /**
  * React binding for the translation layer.
  *
- * Resolution order for the active language, strongest first:
- *   1. an explicit in-session choice (Language Settings)
- *   2. the value persisted in localStorage
- *   3. `app_language` on the signed-in profile, so the choice follows the user
- *      across devices
- *   4. the browser's preferred language
- *   5. `DEFAULT_LANGUAGE`
+ * Where the active language comes from:
+ *   - signed in: the account's `app_language`, always — it is what Language
+ *     Settings shows as selected, so the screen and the app can never
+ *     disagree (see hooks/useAccountLanguage);
+ *   - signed out: the device's choice (first-run picker, or the last
+ *     account's language) from localStorage, else the browser's preferred
+ *     language, else `DEFAULT_LANGUAGE`.
  *
- * The profile only *seeds* the language: once someone chooses in-session, a
- * later profile refetch must not yank the UI back. `chosenRef` records that.
+ * Every applied language is also stored on the device, so a reload or the
+ * signed-out screens open in it straight away.
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import {
   detectLanguage,
   loadStoredLanguage,
-  normalizeLanguage,
   saveStoredLanguage,
   type AppLanguage,
 } from "../lib/language";
@@ -27,13 +26,8 @@ import type { MessageVars } from "./types";
 
 interface I18nCtx {
   language: AppLanguage;
-  /** Persist and apply a language chosen by the user. */
+  /** Apply a language and store it on the device. */
   setLanguage: (language: AppLanguage) => void;
-  /**
-   * Adopt a language from the server profile — only if the user has not chosen
-   * one in this session or persisted one locally.
-   */
-  adoptProfileLanguage: (value: string | null | undefined) => void;
   /** Translate a key, substituting `{placeholder}` vars. Emphasis markers are stripped. */
   t: (key: TranslationKey, vars?: MessageVars) => string;
 }
@@ -53,23 +47,14 @@ export function I18nProvider({
   language?: AppLanguage;
 }) {
   const [language, setLanguageState] = useState<AppLanguage>(() => forced ?? initialLanguage());
-  // True once the language is user-owned (chosen in-session or previously
-  // persisted), which makes it immune to the profile seeding below.
-  const chosenRef = useRef(forced !== undefined || loadStoredLanguage() !== null);
 
   useEffect(() => {
     if (forced !== undefined) setLanguageState(forced);
   }, [forced]);
 
   const setLanguage = useCallback((next: AppLanguage) => {
-    chosenRef.current = true;
     saveStoredLanguage(next);
     setLanguageState(next);
-  }, []);
-
-  const adoptProfileLanguage = useCallback((value: string | null | undefined) => {
-    if (chosenRef.current || value == null) return;
-    setLanguageState(normalizeLanguage(value));
   }, []);
 
   // Keep the document in sync: `lang` drives font fallback, hyphenation and
@@ -87,8 +72,8 @@ export function I18nProvider({
   );
 
   const value = useMemo<I18nCtx>(
-    () => ({ language, setLanguage, adoptProfileLanguage, t }),
-    [language, setLanguage, adoptProfileLanguage, t],
+    () => ({ language, setLanguage, t }),
+    [language, setLanguage, t],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

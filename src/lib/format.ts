@@ -1,5 +1,6 @@
 import type { TranslationKey } from "../i18n";
 import type { AppLanguage } from "./language";
+import { formatPhoneForDisplay } from "./phone";
 import { deviceTimeZone } from "./timezone";
 
 type Translate = (key: TranslationKey, vars?: Record<string, string | number>) => string;
@@ -100,43 +101,12 @@ export function formatMoney(cents: number, currency = "KRW"): string {
 }
 
 /**
- * Display formatter for a stored (canonical, often E.164) phone number. Korean
- * numbers render as 010-1234-5678; other/unknown formats fall back to the raw
- * value so nothing is fabricated. The canonical value stays untouched.
+ * Display formatter for a stored (canonical E.164) phone number: Korean
+ * numbers as 010-1234-5678, every other country internationally
+ * (+1 201 555 0123). Anything unparseable is shown as stored, so nothing is
+ * fabricated; the canonical value stays untouched.
  */
 export function formatPhone(p?: string | null): string {
   if (!p) return "-";
-  const digits = p.replace(/[^\d+]/g, "");
-  let national = digits;
-  if (digits.startsWith("+82")) national = "0" + digits.slice(3);
-  else if (digits.startsWith("+")) return digits; // non-KR: keep readable E.164
-  national = national.replace(/\D/g, "");
-  if (national.length === 11) return national.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
-  if (national.length === 10) return national.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3");
-  return national || (p ?? "-");
+  return formatPhoneForDisplay(p);
 }
-
-/**
- * Supported phone-prefix countries.
- *
- * This table carries ONLY locale-independent data — ISO code, dial code, flag —
- * and points at a catalog key for the display name. Every name resolves through
- * `t()`, from one source, in both locales.
- */
-export const NATIONALITIES: {
-  code: string;
-  /** Catalog key — resolve with `t()`; never render this directly. */
-  labelKey: TranslationKey;
-  dial: string;
-  flag: string;
-}[] = [
-  { code: "KR", labelKey: "ui.countries.KR", dial: "+82", flag: "🇰🇷" },
-  { code: "US", labelKey: "ui.countries.US", dial: "+1", flag: "🇺🇸" },
-  { code: "JP", labelKey: "ui.countries.JP", dial: "+81", flag: "🇯🇵" },
-  { code: "CN", labelKey: "ui.countries.CN", dial: "+86", flag: "🇨🇳" },
-  { code: "VN", labelKey: "ui.countries.VN", dial: "+84", flag: "🇻🇳" },
-  { code: "TH", labelKey: "ui.countries.TH", dial: "+66", flag: "🇹🇭" },
-  { code: "ID", labelKey: "ui.countries.ID", dial: "+62", flag: "🇮🇩" },
-  { code: "FR", labelKey: "ui.countries.FR", dial: "+33", flag: "🇫🇷" },
-  { code: "DE", labelKey: "ui.countries.DE", dial: "+49", flag: "🇩🇪" },
-];

@@ -10,7 +10,8 @@ import { useToast } from "../hooks/toast";
 import { useVerification } from "../hooks/verification";
 import { errorMessage } from "../lib/http";
 import { passwordProblem } from "../lib/validation";
-import { NATIONALITIES } from "../lib/format";
+import { applyPhoneInput, checkPhone } from "../lib/phone";
+import { usePhoneProblemMessage } from "../hooks/phoneProblem";
 import { policyDoc, type PolicyId } from "../lib/policies";
 import {
   AGREEMENTS,
@@ -43,8 +44,9 @@ export function Signup() {
   const [agree, setAgree] = useState<Agreements>(NO_AGREEMENTS);
   const [policyOpen, setPolicyOpen] = useState<PolicyId | null>(null);
 
-  const dial = useMemo(() => NATIONALITIES.find((n) => n.code === country)?.dial ?? "+82", [country]);
-  const e164 = useMemo(() => `${dial}${localPhone.replace(/^0+/, "").replace(/\D/g, "")}`, [dial, localPhone]);
+  const phoneMessage = usePhoneProblemMessage();
+  const phone = useMemo(() => checkPhone(country, localPhone), [country, localPhone]);
+  const e164 = phone.ok ? phone.e164 : "";
 
   const phoneV = useVerification({
     start: () => authApi.startPhone(e164, "signup"),
@@ -72,8 +74,8 @@ export function Signup() {
   const everyAgreed = AGREEMENTS.every((a) => agree[a.key]);
 
   function requestPhone() {
-    if (localPhone.replace(/\D/g, "").length < 7) {
-      setErrors((x) => ({ ...x, phone: t("findEmail.phoneInvalid") }));
+    if (!phone.ok) {
+      setErrors((x) => ({ ...x, phone: phoneMessage(country, phone.problem) }));
       return;
     }
     setErrors((x) => ({ ...x, phone: "" }));
@@ -181,13 +183,18 @@ export function Signup() {
               <input
                 id="su-phone"
                 className={`signup__input signup__input--flex ${errors.phone ? "is-error" : ""}`}
-                inputMode="numeric"
+                type="tel"
+                inputMode="tel"
                 autoComplete="tel"
                 placeholder={t("findEmail.phonePlaceholder")}
                 aria-label={t("findEmail.phoneA11y")}
                 value={localPhone}
                 onChange={(e) => {
-                  setLocalPhone(e.target.value.replace(/\D/g, ""));
+                  // A pasted "+44 …" moves the picker to that country.
+                  const next = applyPhoneInput(country, e.target.value);
+                  setCountry(next.country);
+                  setLocalPhone(next.input);
+                  setErrors((x) => ({ ...x, phone: "" }));
                   resetPhoneVerification();
                 }}
                 disabled={phoneV.verified}

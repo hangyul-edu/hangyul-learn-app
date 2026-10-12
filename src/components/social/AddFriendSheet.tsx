@@ -17,8 +17,7 @@ import { RankAvatar } from "../brand/RankBits";
 import { friendApi } from "../../api/endpoints";
 import { useToast } from "../../hooks/toast";
 import { errorMessage } from "../../lib/http";
-import { NATIONALITIES } from "../../lib/format";
-import { hashPhone, isLikelyPhone } from "../../lib/phone";
+import { DEFAULT_PHONE_COUNTRY, applyPhoneInput, hashPhone, isLikelyPhone } from "../../lib/phone";
 import { getContactPhoneHashes } from "../../lib/contacts";
 import type { RecommendedUser } from "../../lib/types";
 
@@ -133,10 +132,9 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
   const qc = useQueryClient();
   const refreshSocial = useSocialRefresh();
 
-  // Selected country as an ISO code (flag+chevron picker); the dial code used for
-  // E.164 normalization/hashing is derived from it.
-  const [country, setCountry] = useState("KR");
-  const dial = NATIONALITIES.find((n) => n.code === country)?.dial ?? "+82";
+  // Selected country as an ISO code (flag+chevron picker); E.164
+  // normalization/hashing reads the country's rules from it.
+  const [country, setCountry] = useState<string>(DEFAULT_PHONE_COUNTRY);
   const [phone, setPhone] = useState("");
   const [searchState, setSearchState] = useState<"idle" | "searching" | "error">("idle");
   const [result, setResult] = useState<RecommendedUser | "none" | null>(null);
@@ -189,7 +187,7 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
     setSearchState("searching");
     setResult(null);
     try {
-      const res = await friendApi.searchPhone(await hashPhone(dial, phone));
+      const res = await friendApi.searchPhone(await hashPhone(country, phone));
       setResult(res.user ?? "none");
       setSearchState("idle");
     } catch (e) {
@@ -253,7 +251,12 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
             aria-label={copy.searchAria}
             placeholder={copy.searchPlaceholder}
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => {
+              // A pasted "+44 …" moves the picker to that country.
+              const next = applyPhoneInput(country, e.target.value);
+              setCountry(next.country);
+              setPhone(next.input);
+            }}
             onKeyDown={(e) => e.key === "Enter" && runSearch()}
           />
           <button

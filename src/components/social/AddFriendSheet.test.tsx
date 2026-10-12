@@ -65,8 +65,9 @@ describe("AddFriendSheet", () => {
     expect(screen.getByLabelText("전화번호로 친구 찾기")).toBeInTheDocument();
     // 2382:25195 is the field LABEL and 2382:25225 the placeholder — the app
     // had been using the label text as the placeholder and drawing no label.
+    // The placeholder is shortened from Figma's so it fits a 320px screen.
     expect(screen.getByText("전화번호로 찾기")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("'-'를 제외하고 입력하세요")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("'-' 없이 입력")).toBeInTheDocument();
   });
 
   it("closes via the X button", async () => {

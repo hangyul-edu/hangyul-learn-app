@@ -6,7 +6,8 @@ import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
 import { countdownLabel } from "../hooks/verification";
 import { errorMessage } from "../lib/http";
-import { NATIONALITIES } from "../lib/format";
+import { DEFAULT_PHONE_COUNTRY, applyPhoneInput, checkPhone, isPhoneCountry } from "../lib/phone";
+import { usePhoneProblemMessage } from "../hooks/phoneProblem";
 import { passwordProblem } from "../lib/validation";
 import { CountrySelect } from "../components/ui/CountrySelect";
 
@@ -149,7 +150,11 @@ export function ChangePhone() {
   const toast = useToast();
   const { me, setMe } = useAuth();
 
-  const [country, setCountry] = useState(me?.nationality ?? "KR");
+  const [country, setCountry] = useState<string>(
+    isPhoneCountry(me?.nationality) ? me.nationality : DEFAULT_PHONE_COUNTRY,
+  );
+  const [phoneErr, setPhoneErr] = useState<string | null>(null);
+  const phoneMessage = usePhoneProblemMessage();
   const [localPhone, setLocalPhone] = useState("");
   const [vid, setVid] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
@@ -162,12 +167,10 @@ export function ChangePhone() {
   const [saving, setSaving] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
-  const cn = useMemo(() => NATIONALITIES.find((n) => n.code === country) ?? NATIONALITIES[0], [country]);
-  const digits = localPhone.replace(/\D/g, "");
-  // Canonical (E.164-ish) value: dial + national digits without leading zeros.
-  const e164 = `${cn.dial}${digits.replace(/^0+/, "")}`;
-  const phoneValid = country === "KR" ? /^01\d{8,9}$/.test(digits) : digits.length >= 7;
-  const sameAsCurrent = !!me?.phone && e164 === me.phone;
+  const phone = useMemo(() => checkPhone(country, localPhone), [country, localPhone]);
+  const e164 = phone.ok ? phone.e164 : "";
+  const phoneValid = phone.ok;
+  const sameAsCurrent = phone.ok && !!me?.phone && e164 === me.phone;
 
   const verified = !!token && verifiedFor === e164;
 
@@ -195,7 +198,11 @@ export function ChangePhone() {
   }
 
   async function send() {
-    if (!phoneValid || sending || (vid && resendIn > 0)) return;
+    if (sending || (vid && resendIn > 0)) return;
+    if (!phone.ok) {
+      setPhoneErr(phoneMessage(country, phone.problem));
+      return;
+    }
     if (sameAsCurrent) {
       toast.error(t("accountChanges.phoneSame"));
       return;
@@ -289,20 +296,27 @@ export function ChangePhone() {
               value={country}
               onChange={(c) => {
                 setCountry(c);
+                setPhoneErr(null);
                 resetVerification();
               }}
               className="pchg__country"
             />
             <input
-              className="pchg__phone"
-              inputMode="numeric"
+              className={`pchg__phone ${phoneErr ? "is-error" : ""}`}
+              type="tel"
+              inputMode="tel"
               autoComplete="tel"
               placeholder="01012345678"
               aria-labelledby="pchg-phone-label"
+              aria-invalid={!!phoneErr}
+              aria-describedby={phoneErr ? "pchg-phone-err" : undefined}
               value={localPhone}
-              maxLength={13}
               onChange={(e) => {
-                setLocalPhone(e.target.value.replace(/\D/g, ""));
+                // A pasted "+44 …" moves the picker to that country.
+                const next = applyPhoneInput(country, e.target.value);
+                setCountry(next.country);
+                setLocalPhone(next.input);
+                setPhoneErr(null);
                 resetVerification();
               }}
             />
@@ -310,7 +324,9 @@ export function ChangePhone() {
               type="button"
               className="pchg__resend"
               onClick={send}
-              disabled={!phoneValid || sending || (!!vid && resendIn > 0)}
+              // Enabled once anything is typed, so a wrong number gets a
+              // reason (below) instead of a silently dead button.
+              disabled={!localPhone || sending || (!!vid && resendIn > 0)}
               aria-label={
                 !vid
                   ? t("accountChanges.requestCodeA11y")
@@ -322,6 +338,11 @@ export function ChangePhone() {
               {resendLabel}
             </button>
           </div>
+          {phoneErr && (
+            <p className="findemail__err" id="pchg-phone-err" role="alert">
+              {phoneErr}
+            </p>
+          )}
 
           {/* Verification code — rendered ONLY once a code has actually been
               requested. `vid` is set from the server's verification_id inside

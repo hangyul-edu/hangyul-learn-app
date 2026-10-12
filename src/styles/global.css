@@ -2189,22 +2189,47 @@ textarea.input {
   flex: 0 0 auto;
   display: flex;
 }
-.country-select__list {
+/* The anchored panel: a search field over the scrolling list. */
+.country-select__panel {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
   z-index: 60;
-  min-width: 220px;
-  margin: 0;
-  padding: 4px 0;
-  list-style: none;
+  width: 260px;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  flex-direction: column;
   /* Figma Dropdown (node 540:12114) */
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-xs);
   box-shadow: 0 0 4px rgba(89, 89, 89, 0.18);
+  overflow: hidden;
+}
+.country-select__search {
+  margin: 8px 8px 4px;
+  padding: 9px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #262c31;
+  background: #fff;
+  outline: none;
+}
+.country-select__search:focus {
+  border-color: #ff6700;
+}
+.country-select__list {
+  margin: 0;
+  padding: 0 0 4px;
+  list-style: none;
   max-height: 300px;
   overflow-y: auto;
+}
+.country-select__empty {
+  padding: 14px 16px;
+  font-size: 13px;
+  color: #8a929a;
 }
 .country-select__item {
   width: 100%;
@@ -2232,6 +2257,7 @@ textarea.input {
   color: #262c31;
 }
 .country-select__dial {
+  flex: 0 0 auto;
   font-size: 13px;
   color: #8a929a;
 }
@@ -7844,6 +7870,9 @@ textarea.input {
 }
 .pchg__phone::placeholder {
   color: var(--ink-4);
+}
+.pchg__phone.is-error {
+  border-color: var(--danger);
 }
 .pchg__phone:focus {
   outline: none;

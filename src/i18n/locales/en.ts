@@ -912,7 +912,9 @@ export const en: Catalog = {
     infoVisibility: "You'll see each other's league and profile",
     /* The field LABEL; the placeholder is a separate node. */
     searchLabel: "Search by phone number",
-    searchPlaceholder: "Numbers only, no dashes",
+    // The full "Numbers only, no dashes" (173px) was cut off on 320px screens
+    // (154px field); shortened like findEmail.phonePlaceholder.
+    searchPlaceholder: "No dashes",
     searchAria: "Find a friend by phone number",
     search: "Search",
     suggested: "Suggested",
@@ -1075,20 +1077,18 @@ export const en: Catalog = {
     errorBody: "An error occurred.",
     countrySelect: "Select country",
     countrySelectA11y: "Select country, currently {name}",
-    /* Country names for the phone-prefix selector. Every entry goes through
-       the catalog — the table in lib/format.ts holds only ISO codes, dial
-       codes and flags, so no country name is hardcoded outside i18n. */
-    countries: {
-      KR: "South Korea",
-      US: "United States",
-      JP: "Japan",
-      CN: "China",
-      VN: "Vietnam",
-      TH: "Thailand",
-      ID: "Indonesia",
-      FR: "France",
-      DE: "Germany",
-    },
+    /* Country names come from Intl.DisplayNames in the app language — the
+       picker lists every country and territory (lib/phone.ts). */
+    countrySearch: "Search country or code",
+    countryNoMatch: "No matching country",
+  },
+
+  /** Phone-number field validation, shared by every phone-entry screen. */
+  phoneInput: {
+    empty: "Enter your phone number.",
+    tooShort: "This number is too short for {country} ({dial}).",
+    tooLong: "This number is too long for {country} ({dial}).",
+    invalid: "This isn't a valid {country} ({dial}) mobile number. Check the country and the number.",
   },
 
   /** Network / API error messages surfaced by the http layer. */
@@ -1645,7 +1645,10 @@ export const en: Catalog = {
     nameLabel: "Name", // I888:22601;3021:65594
     namePlaceholder: "Enter your name", // I888:22601;3021:65597
     phoneLabel: "Phone", // 888:22611
-    phonePlaceholder: "Numbers only, no dashes", // 1234:22573
+    // Figma 1234:22573 reads "Numbers only, no dashes" (173px), but the field
+    // beside the country picker and the Verify pill is 83–150px wide (320–375
+    // screens), so it was cut off. Same instruction, 73px.
+    phonePlaceholder: "No dashes",
     verify: "Verify", // I1234:22574;3021:65406
     verified: "Verified",
     codeLabel: "Enter code", // 784:50292
@@ -1655,7 +1658,6 @@ export const en: Catalog = {
     submit: "Find email", // I784:50298;3034:65139;3021:65367
     /* app-authored validation / a11y (no Figma node). */
     nameRequired: "Enter your name.",
-    phoneInvalid: "Enter a valid phone number.",
     phoneA11y: "Phone number",
     requestCodeA11y: "Request verification code",
     codeA11y: "Verification code",

@@ -6,7 +6,8 @@ import { authApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { useVerification } from "../hooks/verification";
 import { ApiError, errorMessage } from "../lib/http";
-import { NATIONALITIES } from "../lib/format";
+import { applyPhoneInput, checkPhone } from "../lib/phone";
+import { usePhoneProblemMessage } from "../hooks/phoneProblem";
 
 /**
  * "이메일 찾기" — recover the account email from the name + a phone number
@@ -28,8 +29,9 @@ export function FindEmail() {
   const [phoneErr, setPhoneErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const dial = useMemo(() => NATIONALITIES.find((n) => n.code === country)?.dial ?? "+82", [country]);
-  const e164 = useMemo(() => `${dial}${localPhone.replace(/^0+/, "").replace(/\D/g, "")}`, [dial, localPhone]);
+  const phoneMessage = usePhoneProblemMessage();
+  const phone = useMemo(() => checkPhone(country, localPhone), [country, localPhone]);
+  const e164 = phone.ok ? phone.e164 : "";
 
   const phoneV = useVerification({
     start: () => authApi.startPhone(e164, "recover_email"),
@@ -63,8 +65,8 @@ export function FindEmail() {
       setNameErr(t("findEmail.nameRequired"));
       return;
     }
-    if (localPhone.replace(/\D/g, "").length < 7) {
-      setPhoneErr(t("findEmail.phoneInvalid"));
+    if (!phone.ok) {
+      setPhoneErr(phoneMessage(country, phone.problem));
       return;
     }
     setNameErr(null);
@@ -141,6 +143,7 @@ export function FindEmail() {
                 value={country}
                 onChange={(c) => {
                   setCountry(c);
+                  setPhoneErr(null);
                   invalidateOnChange();
                 }}
                 className="findemail__country"
@@ -148,13 +151,17 @@ export function FindEmail() {
               <input
                 id="fe-phone"
                 className={`findemail__input findemail__input--flex ${phoneErr ? "is-error" : ""}`}
-                inputMode="numeric"
+                type="tel"
+                inputMode="tel"
                 autoComplete="tel"
                 placeholder={t("findEmail.phonePlaceholder")}
                 aria-label={t("findEmail.phoneA11y")}
                 value={localPhone}
                 onChange={(e) => {
-                  setLocalPhone(e.target.value.replace(/\D/g, ""));
+                  // A pasted "+44 …" moves the picker to that country.
+                  const next = applyPhoneInput(country, e.target.value);
+                  setCountry(next.country);
+                  setLocalPhone(next.input);
                   setPhoneErr(null);
                   invalidateOnChange();
                 }}

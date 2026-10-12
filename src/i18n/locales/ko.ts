@@ -918,7 +918,9 @@ export const ko = {
     /* 2382:25195 is the field LABEL; 2382:25225 is the placeholder. The app had
        been using the label text as the placeholder and drawing no label. */
     searchLabel: "전화번호로 찾기",
-    searchPlaceholder: "'-'를 제외하고 입력하세요",
+    // Shortened like findEmail.phonePlaceholder so every phone field reads the
+    // same and fits on a 320px screen.
+    searchPlaceholder: "'-' 없이 입력",
     searchAria: "전화번호로 친구 찾기",
     search: "검색",
     suggested: "추천 친구",
@@ -1073,20 +1075,18 @@ export const ko = {
     errorBody: "오류가 발생했어요.",
     countrySelect: "국가 선택",
     countrySelectA11y: "국가 선택, 현재 {name}",
-    /* Country names for the phone-prefix selector. Every entry goes through
-       the catalog — the table in lib/format.ts holds only ISO codes, dial
-       codes and flags, so no country name is hardcoded outside i18n. */
-    countries: {
-      KR: "대한민국",
-      US: "미국",
-      JP: "일본",
-      CN: "중국",
-      VN: "베트남",
-      TH: "태국",
-      ID: "인도네시아",
-      FR: "프랑스",
-      DE: "독일",
-    },
+    /* Country names come from Intl.DisplayNames in the app language — the
+       picker lists every country and territory (lib/phone.ts). */
+    countrySearch: "국가명 또는 국가번호 검색",
+    countryNoMatch: "검색 결과가 없어요",
+  },
+
+  /** Phone-number field validation, shared by every phone-entry screen. */
+  phoneInput: {
+    empty: "휴대폰 번호를 입력해 주세요.",
+    tooShort: "번호가 너무 짧아요. {country}({dial}) 번호를 확인해 주세요.",
+    tooLong: "번호가 너무 길어요. {country}({dial}) 번호를 확인해 주세요.",
+    invalid: "{country}({dial})의 올바른 휴대폰 번호가 아니에요. 선택한 국가와 번호를 확인해 주세요.",
   },
 
   /** Network / API error messages surfaced by the http layer. */
@@ -1645,7 +1645,10 @@ export const ko = {
     nameLabel: "이름", // I1:3302;3021:65594
     namePlaceholder: "이름을 입력하세요", // I1:3302;3021:65597
     phoneLabel: "휴대폰번호", // 1:3305
-    phonePlaceholder: "'-'를 제외하고 입력하세요", // 1234:22678
+    // Figma 1234:22678 reads "'-'를 제외하고 입력하세요" (150px), but the field
+    // beside the country picker and the 인증하기 pill is 83–142px wide (320–375
+    // screens), so it was cut off. Same instruction, 72px.
+    phonePlaceholder: "'-' 없이 입력",
     verify: "인증하기", // I1234:22679;3021:65406
     verified: "인증완료",
     codeLabel: "인증번호 입력", // 1:3312
@@ -1655,7 +1658,6 @@ export const ko = {
     submit: "이메일 찾기", // I1:3318;3034:65139;3021:65367
     /* app-authored validation / a11y (no Figma node). */
     nameRequired: "이름을 입력해 주세요.",
-    phoneInvalid: "휴대폰 번호를 정확히 입력해 주세요.",
     phoneA11y: "휴대폰 번호",
     requestCodeA11y: "휴대폰 인증번호 요청",
     codeA11y: "인증번호",

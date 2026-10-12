@@ -59,12 +59,12 @@ describe("Subscription — my plan", () => {
     expect(await screen.findByRole("button", { name: "해지하기" })).toBeInTheDocument();
   });
 
-  it("names the plan in force, new-member plans included", async () => {
-    // The name comes with /subscriptions/me: a new-member plan is not in the
-    // public plan list, so looking it up there showed the fallback.
-    mine.mockResolvedValue(sub("active", { plan_id: "plan_monthly_new_user", plan_name: "Monthly — New member" }));
+  it("names the plan in force, older plans included", async () => {
+    // The name comes with /subscriptions/me: an older plan that only renews
+    // is not in the public plan list, so looking it up there showed the fallback.
+    mine.mockResolvedValue(sub("active", { plan_id: "plan_monthly_2025", plan_name: "Monthly (2025)" }));
     renderPage();
-    expect(await screen.findByText("Monthly — New member")).toBeInTheDocument();
+    expect(await screen.findByText("Monthly (2025)")).toBeInTheDocument();
   });
 
   it("shows a coupon-backed pass as a plan, not as no subscription", async () => {

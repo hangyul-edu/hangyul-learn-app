@@ -32,8 +32,8 @@ import { hasLiveSubscription, isTrialStatus } from "../lib/subscription";
  *
  * The English frame is the current one: its eight entries and their order match
  * the routes the app ships. The Korean frame (1:5697) is stale, listing nine
- * entries including 오프라인 동영상 학습 and 1:1 문의하기 for features that do not
- * exist, so it is not used for structure.
+ * entries including ones for features the app does not have, so it is not
+ * used for structure.
  *
  * Rendered as plain Body 6 rows with a 34px gap and no chevron or divider.
  */

@@ -1670,9 +1670,8 @@ export const ko = {
    *
    * The menu follows the ENGLISH frame (893:33108), which lists the eight
    * entries the app actually ships. The Korean frame (1:5697) is stale — it
-   * still shows a nine-item list including 오프라인 동영상 학습 and 1:1 문의하기,
-   * features that do not exist — so its wording is reused only for the entries
-   * common to both.
+   * still shows a nine-item list including features the app does not have —
+   * so its wording is reused only for the entries common to both.
    */
   more: {
     account: "계정 관리",

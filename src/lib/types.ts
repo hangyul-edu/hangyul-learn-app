@@ -727,6 +727,10 @@ export interface Plan {
   /** Discounted (current) price for the billing interval, in cents. Null = no
    *  discount (current === original). */
   promo_price_cents?: number | null;
+  /** What new members pay instead, in cents; null = the regular price. */
+  new_member_price_cents?: number | null;
+  /** True when the current values below are this member's new-member price. */
+  new_member_price?: boolean;
   currency?: string;
   interval: "month" | "year";
   /** The promotional ribbon on the card, by app language, written and

@@ -119,6 +119,28 @@ describe("SubscriptionPurchase", () => {
     expect(screen.getByRole("radio", { name: /1개월/ })).toHaveAttribute("aria-checked", "false");
   });
 
+  it("shows a new member's price from the same plan, against its list price", async () => {
+    // The server prices the plan for the caller: the yearly plan's new-member
+    // price ($47.88 = $3.99/mo, 69% off the $155.88 list price).
+    plans.mockResolvedValue({
+      plans: [
+        {
+          ...PLANS[0],
+          new_member_price_cents: 4788, new_member_price: true,
+          current_total_cents: 4788, current_monthly_cents: 399, discount_percent: 69,
+        },
+        PLANS[1],
+      ],
+    });
+    renderPage();
+    await screen.findByRole("button", { name: "7일 무료 체험 시작하기" });
+    const year = screen.getByRole("radio", { name: /12개월/ });
+    expect(within(year).getByText("$3.99")).toBeInTheDocument();
+    expect(within(year).getByText("($47.88)")).toBeInTheDocument();
+    expect(within(year).getByText("최대 69%할인")).toBeInTheDocument();
+    expect(within(year).getByText("$12.99/월 ($155.88)")).toBeInTheDocument();
+  });
+
   it("prints KRW plans in whole won, not won ÷ 100", async () => {
     // Regression: every currency was divided by 100, so ₩9,900 showed as ₩99.
     plans.mockResolvedValue({

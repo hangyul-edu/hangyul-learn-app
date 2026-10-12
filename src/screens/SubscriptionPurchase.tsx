@@ -173,8 +173,9 @@ export function SubscriptionPurchase() {
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
 
-  // What this member is offered: one plan per interval (the new-member price
-  // where it applies) and their one free trial — both decided by the server.
+  // What this member is offered: one plan per interval, priced for them (the
+  // plan's new-member price where it applies), and their one free trial —
+  // both decided by the server.
   const offersQ = useQuery({ queryKey: ["sub-offers"], queryFn: subApi.offers });
   const methodsQ = useQuery({ queryKey: ["payment-methods"], queryFn: subApi.paymentMethods });
 
@@ -195,7 +196,7 @@ export function SubscriptionPurchase() {
 
   // Default selection: recommended → annual → first active plan. (No recommended
   // flag on the plan today, so annual is the effective recommendation.)
-  // A selection that is no longer offered (the member stopped being new while
+  // A selection that is no longer offered (taken off sale while the member was
   // away registering a card) falls back the same way.
   useEffect(() => {
     if (plans.length === 0 || plans.some((p) => p.plan_id === selectedId)) return;

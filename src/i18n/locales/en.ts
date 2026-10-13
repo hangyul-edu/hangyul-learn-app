@@ -129,8 +129,6 @@ export const en: Catalog = {
     phoneTitle: "Change Phone Number",
     phoneLabel: "Phone",
     phoneSame: "That's already your current number",
-    codeSentSms: "We sent a verification code by text",
-    verifiedToast: "Verification complete",
     phoneChanged: "Your phone number has been changed",
     phoneBlockedA11y: "Verify your number to change it",
     emailTitle: "Change Email",

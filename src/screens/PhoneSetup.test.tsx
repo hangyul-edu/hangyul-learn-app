@@ -84,7 +84,8 @@ describe("ChangePhone in setup mode", () => {
     renderStep();
     await verifyAndSave("01012345678");
     await waitFor(() => expect(screen.getByTestId("loc")).toHaveTextContent("/setup/profile"));
-    expect(api.startPhone).toHaveBeenCalledWith("+821012345678", "change_phone");
+    // A first number: the SMS speaks of registering one, not changing it.
+    expect(api.startPhone).toHaveBeenCalledWith("+821012345678", "add_phone");
     expect(api.changePhone).toHaveBeenCalledWith("+821012345678", "tok", "KR");
     expect(auth.bootstrapMe).toHaveBeenCalled();
   });

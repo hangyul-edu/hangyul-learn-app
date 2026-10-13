@@ -135,8 +135,6 @@ export const ko = {
     phoneTitle: "휴대폰번호 변경",
     phoneLabel: "휴대폰번호",
     phoneSame: "현재 사용 중인 번호와 같아요",
-    codeSentSms: "인증번호를 문자로 보냈어요",
-    verifiedToast: "인증이 완료되었어요",
     phoneChanged: "휴대폰 번호를 변경했어요",
     phoneBlockedA11y: "인증을 완료하면 번호를 변경할 수 있어요",
     emailTitle: "이메일 변경",

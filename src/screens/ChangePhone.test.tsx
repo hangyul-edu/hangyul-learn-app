@@ -13,8 +13,8 @@ import { MemoryRouter } from "react-router-dom";
 const { me } = vi.hoisted(() => ({ me: { current: null as null | { phone: string; nationality: string | null } } }));
 vi.mock("../api/endpoints", () => ({ authApi: { startPhone: vi.fn(), confirmPhone: vi.fn(), changePhone: vi.fn() } }));
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: me.current, setMe: vi.fn() }) }));
-const toastError = vi.fn();
-vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: toastError, success: vi.fn(), show: vi.fn() }) }));
+const { toastError, toastSuccess } = vi.hoisted(() => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
+vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: toastError, success: toastSuccess, show: vi.fn() }) }));
 
 import { authApi } from "../api/endpoints";
 import { ChangePhone } from "./AccountChanges";
@@ -78,8 +78,41 @@ describe("ChangePhone", () => {
     renderScreen();
     await user.type(phoneField(), "010-9999-8888");
     await user.click(requestCode());
-    expect(toastError).toHaveBeenCalledWith("That's already your current number");
+    expect(await screen.findByRole("alert")).toHaveTextContent("That's already your current number");
+    expect(toastError).not.toHaveBeenCalled();
     expect(api.startPhone).not.toHaveBeenCalled();
+  });
+
+  it("reports sending and checking the code on screen, never by toast", async () => {
+    api.confirmPhone
+      .mockRejectedValueOnce(new Error("The verification code is incorrect."))
+      .mockResolvedValueOnce({ verification_token: "tok" });
+    const user = userEvent.setup();
+    renderScreen();
+    await user.type(phoneField(), "010-1234-5678");
+    await user.click(requestCode());
+    const codeField = await waitFor(() => document.querySelector<HTMLInputElement>(".pchg__code")!);
+    await user.type(codeField, "111111");
+    await user.click(document.querySelector<HTMLButtonElement>(".pchg__confirm")!);
+    expect(await screen.findByText("The verification code is incorrect.")).toHaveClass("pchg__msg", "is-err");
+    // Typing again clears the refusal.
+    await user.type(codeField, "1");
+    expect(screen.queryByText("The verification code is incorrect.")).not.toBeInTheDocument();
+    await user.type(codeField, "23456");
+    await user.click(document.querySelector<HTMLButtonElement>(".pchg__confirm")!);
+    await waitFor(() => expect(document.querySelector(".pchg__msg")).toHaveClass("is-ok"));
+    expect(toastError).not.toHaveBeenCalled();
+    expect(toastSuccess).not.toHaveBeenCalled();
+  });
+
+  it("shows a refused send under the number", async () => {
+    api.startPhone.mockRejectedValueOnce(new Error("Too many requests. Try again later."));
+    const user = userEvent.setup();
+    renderScreen();
+    await user.type(phoneField(), "010-1234-5678");
+    await user.click(requestCode());
+    expect(await screen.findByRole("alert")).toHaveTextContent("Too many requests. Try again later.");
+    expect(toastError).not.toHaveBeenCalled();
   });
 
   it("drops the billing data read for the old number once the change is saved", async () => {

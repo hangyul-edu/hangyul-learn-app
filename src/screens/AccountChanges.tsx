@@ -141,8 +141,9 @@ export function ChangePassword() {
 /* ------------------------- Phone ------------------------- */
 /**
  * Phone-number change — single screen matching the reference. Reuses the
- * authenticated OTP APIs (startPhone("change_phone") → confirmPhone →
- * changePhone). The number never becomes authoritative until confirmPhone
+ * authenticated OTP APIs (startPhone("change_phone"), or "add_phone" for an
+ * account's first number → confirmPhone → changePhone). Sending and checking
+ * the code report inline (the code field, the line under it), never by toast. The number never becomes authoritative until confirmPhone
  * yields a verification_token AND changePhone succeeds. Any edit to the number
  * or country invalidates a prior verification proof. The countdown is derived
  * from the server `expires_at` timestamp (survives re-renders/backgrounding).
@@ -167,6 +168,8 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" }) 
     isPhoneCountry(me?.nationality) ? me.nationality : DEFAULT_PHONE_COUNTRY,
   );
   const [phoneErr, setPhoneErr] = useState<string | null>(null);
+  // A refused code, shown under the code field until the member types again.
+  const [codeErr, setCodeErr] = useState<string | null>(null);
   const phoneMessage = usePhoneProblemMessage();
   const [localPhone, setLocalPhone] = useState("");
   const [vid, setVid] = useState<string | null>(null);
@@ -208,6 +211,7 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" }) 
     setCode("");
     setToken(null);
     setVerifiedFor(null);
+    setCodeErr(null);
   }
 
   async function send() {
@@ -217,21 +221,22 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" }) 
       return;
     }
     if (sameAsCurrent) {
-      toast.error(t("accountChanges.phoneSame"));
+      setPhoneErr(t("accountChanges.phoneSame"));
       return;
     }
     setSending(true);
     try {
-      const res = await authApi.startPhone(e164, "change_phone");
+      // A first number is registered, not changed: the SMS says so.
+      const res = await authApi.startPhone(e164, me?.phone ? "change_phone" : "add_phone");
       setVid(res.verification_id);
       setExpiresAt(res.expires_at);
       setResendAt(res.resend_available_at);
       setCode("");
       setToken(null);
       setVerifiedFor(null);
-      toast.success(t("accountChanges.codeSentSms"));
+      setCodeErr(null);
     } catch (e) {
-      toast.error(errorMessage(e));
+      setPhoneErr(errorMessage(e));
     } finally {
       setSending(false);
     }
@@ -246,9 +251,8 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" }) 
       const res = await authApi.confirmPhone(vid!, code);
       setToken(res.verification_token);
       setVerifiedFor(e164); // bind proof to this exact number
-      toast.success(t("accountChanges.verifiedToast"));
     } catch (e) {
-      toast.error(errorMessage(e));
+      setCodeErr(errorMessage(e));
       setCode("");
     } finally {
       setConfirming(false);
@@ -312,7 +316,9 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" }) 
     ? { ok: true, text: t("accountChanges.verifiedWithPeriod") }
     : expired
       ? { ok: false, text: t("accountChanges.codeExpired") }
-      : null;
+      : codeErr
+        ? { ok: false, text: codeErr }
+        : null;
 
   return (
     <div className="screen acct pchg">
@@ -408,7 +414,10 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" }) 
                 value={code}
                 maxLength={6}
                 disabled={!vid || !!token}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                onChange={(e) => {
+                  setCode(e.target.value.replace(/\D/g, "").slice(0, 6));
+                  setCodeErr(null);
+                }}
               />
               {countdown && (
                 <span

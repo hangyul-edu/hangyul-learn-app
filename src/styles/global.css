@@ -9090,12 +9090,16 @@ textarea.input {
   line-height: 20px;
   white-space: pre-line;
 }
-/* SET-030 EN (784:50692) sets the bottom block a little tighter than ko:
-   "Cancel anytime." 8px under the CTA (784:50738 at y 629), and the note one
-   paragraph in a 324px box straight under it (1421:21525), so its third line
-   ends where the refund link (1421:21526, y 710) begins. */
-:root:lang(en) .subp__cancel {
+/* EN sets the note as one paragraph in a 324px box straight under "Cancel
+   anytime." (SET-030 1421:21525, SET-032 1421:21533), wrapping where the box
+   ends; the refund link follows on the next line. On the trial screen
+   (SET-030, 784:50738 at y 629) "Cancel anytime." also sits 8px under the CTA
+   rather than 11 — SET-032 (898:19830 at y 605) keeps the 11. */
+:root:lang(en) .subp__body--trial .subp__cancel {
   margin-top: 8px;
+}
+:root:lang(en) .subp__refund {
+  margin-top: 0; /* SET-032 1421:21534 at y 666: the line right after the note */
 }
 :root:lang(en) .subp__note {
   max-width: 324px;

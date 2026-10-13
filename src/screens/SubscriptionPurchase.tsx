@@ -20,9 +20,10 @@ type ScreenStatus = "loading" | "ready" | "submitting" | "missing_plans" | "fail
 
 /** Plan amounts are minor units: cents for USD, whole won for KRW (no minor
  *  unit) — dividing every currency by 100 showed ₩15,000 as ₩150. */
-function money(cents: number, currency = "USD"): string {
-  // SET-030 / SET-032 draw the plan prices with a bare "$" ("$5.99/mo").
-  return formatMoney(Math.round(cents), currency.toUpperCase(), { narrow: true });
+function money(cents: number, currency = "USD", language?: string): string {
+  // SET-030 / SET-032 draw the plan prices with a bare "$" ("$5.99/mo") and,
+  // in Korean, won after the number ("9,900원/월").
+  return formatMoney(Math.round(cents), currency.toUpperCase(), { narrow: true, language });
 }
 /** Displayed amounts: the server's presentation values (original/current
  *  totals, monthly equivalents, discount %). GET /subscriptions/offers computes
@@ -58,7 +59,7 @@ function pricing(p: Plan) {
  */
 function PlanCard({ plan, selected, onSelect }: { plan: Plan; selected: boolean; onSelect: () => void }) {
   const { t, language } = useTranslation();
-  const c = plan.currency;
+  const price = (cents: number) => money(cents, plan.currency, language);
   const { isYear, original, current, origMonthly, curMonthly, discountPct } = pricing(plan);
   const discounted = discountPct > 0;
   const ribbon = plan.badge ? plan.badge[language] || plan.badge.en : "";
@@ -67,10 +68,10 @@ function PlanCard({ plan, selected, onSelect }: { plan: Plan; selected: boolean;
   const label = isYear
     ? t("purchase.planYearA11y", {
         selected: sel,
-        monthly: money(curMonthly, c),
-        total: money(current, c),
+        monthly: price(curMonthly),
+        total: price(current),
       })
-    : t("purchase.planMonthA11y", { selected: sel, monthly: money(curMonthly, c) });
+    : t("purchase.planMonthA11y", { selected: sel, monthly: price(curMonthly) });
   return (
     <button
       type="button"
@@ -108,14 +109,14 @@ function PlanCard({ plan, selected, onSelect }: { plan: Plan; selected: boolean;
                 )}
               </span>
               <span className="plan__orig-line">
-                <s>{t("purchase.perMonthPriceWithTotal", { price: money(origMonthly, c), total: money(original, c) })}</s>
+                <s>{t("purchase.perMonthPriceWithTotal", { price: price(origMonthly), total: price(original) })}</s>
               </span>
             </>
           )}
           <span className="plan__final">
-            <span className="plan__final-main">{money(curMonthly, c)}</span>
+            <span className="plan__final-main">{price(curMonthly)}</span>
             <span className="plan__final-per">{t("purchase.perMonth")}</span>
-            <span className="plan__final-total">({money(current, c)})</span>
+            <span className="plan__final-total">({price(current)})</span>
           </span>
         </>
       ) : (
@@ -130,14 +131,14 @@ function PlanCard({ plan, selected, onSelect }: { plan: Plan; selected: boolean;
               </span>
               <span className="plan__orig-month">
                 <s>
-                  {money(origMonthly, c)}
+                  {price(origMonthly)}
                   {t("purchase.perMonth")}
                 </s>
               </span>
             </span>
           )}
           <span className="plan__month-cur">
-            <span className="plan__final-main">{money(curMonthly, c)}</span>
+            <span className="plan__final-main">{price(curMonthly)}</span>
             <span className="plan__final-per">{t("purchase.perMonth")}</span>
           </span>
         </>

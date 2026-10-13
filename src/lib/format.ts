@@ -90,8 +90,14 @@ const UNAMBIGUOUS_SYMBOL: Record<string, string> = { KRW: "₩", USD: "US$" };
 const NARROW_SYMBOL: Record<string, string> = { KRW: "₩", USD: "$" };
 
 /** Format a server `*_cents` amount (the currency's minor unit) for display:
- *  "₩9,900", "US$5.99" — or "$5.99" with `narrow`. Same in every app language. */
-export function formatMoney(cents: number, currency = "KRW", { narrow = false } = {}): string {
+ *  "₩9,900", "US$5.99" in every app language. With `narrow` — the purchase
+ *  screen's plan cards — "$5.99", and won the way Korean copy writes it,
+ *  "9,900원", when `language` is ko (SET-032 KO 3610:30084). */
+export function formatMoney(
+  cents: number,
+  currency = "KRW",
+  { narrow = false, language }: { narrow?: boolean; language?: string } = {},
+): string {
   const code = currency.toUpperCase();
   const zeroDecimal = ZERO_DECIMAL.has(code);
   const amount = zeroDecimal ? cents : cents / 100;
@@ -102,7 +108,9 @@ export function formatMoney(cents: number, currency = "KRW", { narrow = false } 
       minimumFractionDigits: digits,
       maximumFractionDigits: digits,
     }).format(Math.abs(amount));
-    return `${amount < 0 ? "-" : ""}${symbol}${number}`;
+    const sign = amount < 0 ? "-" : "";
+    if (narrow && code === "KRW" && language === "ko") return `${sign}${number}원`;
+    return `${sign}${symbol}${number}`;
   }
   try {
     return new Intl.NumberFormat("ko-KR", {

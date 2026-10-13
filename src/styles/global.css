@@ -8929,21 +8929,14 @@ textarea.input {
   top: 17.85px;
   display: flex;
   align-items: center;
-  /* The 5px the KO frame leaves between the badge and the price next to it. */
-  gap: 5px;
-}
-/* EN (784:50760 / 3161:31621): 4px, and the struck price in ExtraBold. */
-:root:lang(en) .plan__month-row {
+  /* The 4px both SET-032 frames leave between the badge and the price. */
   gap: 4px;
 }
-:root:lang(en) .plan__orig-month {
-  font-weight: 800;
-}
 .plan__orig-month {
-  /* Laid out by .plan__month-row. */
+  /* Laid out by .plan__month-row. ExtraBold 12 (3610:30148 / 3161:31623). */
   color: #000;
   font-family: var(--font-body);
-  font-weight: 700;
+  font-weight: 800;
   font-size: 12px;
   line-height: 22.3px;
   white-space: nowrap;

@@ -22,5 +22,13 @@ describe("formatMoney", () => {
     expect(formatMoney(599, "USD", { narrow: true })).toBe("$5.99");
     expect(formatMoney(15588, "USD", { narrow: true })).toBe("$155.88");
     expect(formatMoney(69000, "KRW", { narrow: true })).toBe("₩69,000");
+    expect(formatMoney(69000, "KRW", { narrow: true, language: "en" })).toBe("₩69,000");
+  });
+
+  it("writes won after the number in Korean copy (narrow, ko)", () => {
+    expect(formatMoney(9900, "KRW", { narrow: true, language: "ko" })).toBe("9,900원");
+    expect(formatMoney(118800, "KRW", { narrow: true, language: "ko" })).toBe("118,800원");
+    expect(formatMoney(599, "USD", { narrow: true, language: "ko" })).toBe("$5.99");
+    expect(formatMoney(9900, "KRW", { language: "ko" })).toBe("₩9,900"); // not narrow: unchanged
   });
 });

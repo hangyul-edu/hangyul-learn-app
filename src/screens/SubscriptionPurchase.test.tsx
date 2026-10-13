@@ -175,8 +175,9 @@ describe("SubscriptionPurchase", () => {
     });
     renderPage();
     await screen.findByRole("button", { name: "7일 무료 체험 시작하기" });
-    expect(screen.getAllByText("₩9,900").length).toBeGreaterThan(0);
-    expect(screen.queryByText("₩99")).not.toBeInTheDocument();
+    // Korean copy writes won after the number, as SET-032 KO draws it.
+    expect(screen.getAllByText("9,900원").length).toBeGreaterThan(0);
+    expect(screen.queryByText("99원")).not.toBeInTheDocument();
   });
 
   it("shows the empty state with a disabled CTA and no fake prices when no plans", async () => {
@@ -542,8 +543,8 @@ describe("SubscriptionPurchase — currency and what is charged", () => {
     plans.mockResolvedValue({ plans: KR_PLANS });
     paymentMethods.mockResolvedValue({ methods: [{ ...METHOD, billing_currency: "KRW" }] });
     renderPage();
-    expect(await screen.findByText("₩5,750")).toBeInTheDocument();
-    expect(screen.getByText("(₩69,000)")).toBeInTheDocument();
+    expect(await screen.findByText("5,750원")).toBeInTheDocument();
+    expect(screen.getByText("(69,000원)")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "7일 무료 체험 시작하기" }));
     await waitFor(() =>
       expect(startTrial).toHaveBeenCalledWith("p_year", { currency: "KRW", quoted_amount_cents: 69000 }),

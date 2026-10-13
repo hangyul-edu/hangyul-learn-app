@@ -556,6 +556,19 @@ export const ko = {
     closeA11y: "가입 그만두기",
   },
 
+  /**
+   * Social signup's phone step (/setup/phone) — app-authored, on the phone
+   * change screen's layout. For a member whose provider gave no phone number.
+   */
+  phoneSetup: {
+    title: "휴대폰 번호 인증",
+    intro: "한귤을 시작하려면 휴대폰 번호를 인증해 주세요.\n번호에 따라 결제 통화가 정해지고, 계정을 찾을 때도 이 번호를 사용해요.",
+    submit: "다음",
+    saved: "휴대폰 번호를 등록했어요",
+    blockedA11y: "인증을 완료하면 다음으로 넘어갈 수 있어요",
+    quitA11y: "가입 그만두기",
+  },
+
   /** Find Email — no match. app-authored (no design frame located). */
   findEmailNoMatch: {
     titleLine1: "일치하는 회원정보가",

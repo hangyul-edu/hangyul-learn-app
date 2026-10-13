@@ -91,6 +91,14 @@ describe("SocialSignupTerms", () => {
     expect(setMe).toHaveBeenCalled();
   });
 
+  it("goes on to the phone step when the provider gave no phone number", async () => {
+    agreeSocialTerms.mockResolvedValue({ next_step: "phone_verification" });
+    renderScreen();
+    for (const label of REQUIRED) await userEvent.click(screen.getByRole("checkbox", { name: label }));
+    await userEvent.click(screen.getByRole("button", { name: ko.socialTerms.next }));
+    await waitFor(() => expect(screen.getByTestId("loc")).toHaveTextContent("/setup/phone"));
+  });
+
   it("agree-to-all ticks and unticks every row", async () => {
     renderScreen();
     const all = screen.getByRole("checkbox", { name: ko.signup.agreeAll });

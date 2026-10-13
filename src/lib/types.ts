@@ -2,8 +2,16 @@ import type { ImageCrop } from "./imageCrop";
 
 /* ---- Auth ---- */
 /** `terms_agreement`: an account a first social login created, whose owner has
- *  not yet accepted the signup agreements (the social signup's terms step). */
-export type NextStep = "terms_agreement" | "profile_registration" | "onboarding" | "home" | null;
+ *  not yet accepted the signup agreements (the social signup's terms step).
+ *  `phone_verification`: a social account with no phone number, which verifies
+ *  one by SMS next (the number sets the billing currency). */
+export type NextStep =
+  | "terms_agreement"
+  | "phone_verification"
+  | "profile_registration"
+  | "onboarding"
+  | "home"
+  | null;
 export interface Membership {
   tier: "free" | "trial" | "premium";
   is_premium: boolean;
@@ -68,6 +76,9 @@ export interface Me {
   phone_verified: boolean;
   /** True until a social-signup account accepts the signup agreements. */
   terms_agreement_pending?: boolean;
+  /** True while a social-signup account has no phone number: it verifies one
+   *  by SMS (after the terms) before using the app. */
+  phone_verification_pending?: boolean;
   app_language: string;
   role: "member" | "premium" | "tester" | "admin";
   service_notification_consent: boolean;

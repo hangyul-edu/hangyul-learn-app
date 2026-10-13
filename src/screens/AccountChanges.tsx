@@ -5,6 +5,7 @@ import { useTranslation } from "../i18n";
 import { authApi } from "../api/endpoints";
 import { INTL_OPTIONS_QK } from "../components/InternationalCardSheet";
 import { useAuth } from "../hooks/auth";
+import { nextSetupPath } from "../hooks/loginFlow";
 import { useToast } from "../hooks/toast";
 import { countdownLabel } from "../hooks/verification";
 import { errorMessage } from "../lib/http";
@@ -145,13 +146,22 @@ export function ChangePassword() {
  * yields a verification_token AND changePhone succeeds. Any edit to the number
  * or country invalidates a prior verification proof. The countdown is derived
  * from the server `expires_at` timestamp (survives re-renders/backgrounding).
+ *
+ * `mode="setup"` is social signup's phone step (/setup/phone): a member who
+ * signed in with a provider that gave no phone number verifies one before
+ * using the app. Same SMS flow and API; the copy explains why (the number sets
+ * the billing currency and recovers the account), X signs out like the terms
+ * step, and saving continues to the next signup step instead of going back.
  */
-export function ChangePhone() {
+export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" }) {
   const { t } = useTranslation();
   const nav = useNavigate();
   const qc = useQueryClient();
   const toast = useToast();
-  const { me, setMe } = useAuth();
+  const { me, setMe, bootstrapMe, revokeSession, hardSignOut } = useAuth();
+  // Setup: social signup's phone step (/setup/phone) — the account has no
+  // number yet, the step cannot be skipped, and saving continues the signup.
+  const setup = mode === "setup";
 
   const [country, setCountry] = useState<string>(
     isPhoneCountry(me?.nationality) ? me.nationality : DEFAULT_PHONE_COUNTRY,
@@ -173,7 +183,7 @@ export function ChangePhone() {
   const phone = useMemo(() => checkPhone(country, localPhone), [country, localPhone]);
   const e164 = phone.ok ? phone.e164 : "";
   const phoneValid = phone.ok;
-  const sameAsCurrent = phone.ok && !!me?.phone && e164 === me.phone;
+  const sameAsCurrent = !setup && phone.ok && !!me?.phone && e164 === me.phone;
 
   const verified = !!token && verifiedFor === e164;
 
@@ -258,6 +268,14 @@ export function ChangePhone() {
       for (const key of [["payment-methods"], ["sub-offers"], INTL_OPTIONS_QK]) {
         void qc.invalidateQueries({ queryKey: key });
       }
+      if (setup) {
+        toast.success(t("phoneSetup.saved"));
+        // The server now reports the step done; continue the signup from the
+        // refreshed profile (profile registration, onboarding or home).
+        const fresh = await bootstrapMe();
+        nav(nextSetupPath(fresh), { replace: true });
+        return;
+      }
       toast.success(t("accountChanges.phoneChanged"));
       nav(-1);
     } catch (e) {
@@ -265,6 +283,18 @@ export function ChangePhone() {
     } finally {
       setSaving(false);
     }
+  }
+
+  // Leaving the phone step signs out, as leaving the terms step does: the
+  // app cannot be used without a number, and the next login comes back here.
+  async function quitSetup() {
+    try {
+      await revokeSession();
+    } catch {
+      /* a transient failure still signs out locally */
+    }
+    hardSignOut();
+    nav("/welcome", { replace: true });
   }
 
   /* MOR-003 keeps this button at a constant 재전송 (a hug-content 83 against the
@@ -289,13 +319,22 @@ export function ChangePhone() {
       <div className="acct__scroll">
         <div className="acct__inner">
           <header className="acct__header">
-            <button className="acct__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
-              <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-            <h1 className="acct__title">{t("accountChanges.phoneTitle")}</h1>
+            {setup ? (
+              <button className="acct__back" onClick={quitSetup} aria-label={t("phoneSetup.quitA11y")}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                </svg>
+              </button>
+            ) : (
+              <button className="acct__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
+                <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            )}
+            <h1 className="acct__title">{t(setup ? "phoneSetup.title" : "accountChanges.phoneTitle")}</h1>
           </header>
+          {setup && <p className="pchg__intro">{t("phoneSetup.intro")}</p>}
 
           {/* Phone number */}
           <div className="acct__label" id="pchg-phone-label">{t("accountChanges.phoneLabel")}</div>
@@ -406,9 +445,17 @@ export function ChangePhone() {
             onClick={save}
             disabled={!canSave}
             aria-disabled={!canSave}
-            aria-label={t(canSave ? "accountChanges.change" : "accountChanges.phoneBlockedA11y")}
+            aria-label={t(
+              canSave
+                ? setup ? "phoneSetup.submit" : "accountChanges.change"
+                : setup ? "phoneSetup.blockedA11y" : "accountChanges.phoneBlockedA11y",
+            )}
           >
-            {saving ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("accountChanges.change")}
+            {saving ? (
+              <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} />
+            ) : (
+              t(setup ? "phoneSetup.submit" : "accountChanges.change")
+            )}
           </button>
         </div>
       </div>

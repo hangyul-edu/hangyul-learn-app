@@ -539,6 +539,16 @@ export const en: Catalog = {
     closeA11y: "Stop signing up",
   },
 
+  phoneSetup: {
+    title: "Verify your phone number",
+    intro:
+      "Verify your phone number to start using Hangyul.\nYour number sets the currency you're billed in, and it's how you recover your account.",
+    submit: "Next",
+    saved: "Phone number saved",
+    blockedA11y: "Finish verification to continue",
+    quitA11y: "Stop signing up",
+  },
+
   /** Find Email — no match. app-authored (no design frame located). */
   findEmailNoMatch: {
     titleLine1: "No matching",

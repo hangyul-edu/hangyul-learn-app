@@ -1,7 +1,8 @@
 /**
  * After any login (email, or a social login via /auth/complete) the client
  * routes by the server's next_step. A first social login goes to the terms
- * step; an existing account goes straight on, never through it.
+ * step, then — without a phone number — the phone step; an existing account
+ * goes straight on, never through them.
  */
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
@@ -11,7 +12,7 @@ import type { Me, NextStep, TokenResponse } from "../lib/types";
 const { bootstrapMe } = vi.hoisted(() => ({ bootstrapMe: vi.fn() }));
 vi.mock("./auth", () => ({ useAuth: () => ({ applyTokens: vi.fn(), bootstrapMe }) }));
 
-import { useLoginFlow } from "./loginFlow";
+import { nextSetupPath, pathForStep, useLoginFlow } from "./loginFlow";
 
 function token(next_step: NextStep, is_new_user = false): TokenResponse {
   return {
@@ -55,6 +56,22 @@ describe("useLoginFlow", () => {
       .toBe("/signup/terms");
   });
 
+  it("sends a social account without a phone to the phone step", async () => {
+    expect(
+      await routeFor(token("phone_verification"), {
+        nickname: null, terms_agreement_pending: false, phone_verification_pending: true,
+      }),
+    ).toBe("/setup/phone");
+  });
+
+  it("keeps the phone step ahead of the profile whatever next_step says", async () => {
+    expect(
+      await routeFor(token("profile_registration"), {
+        nickname: null, terms_agreement_pending: false, phone_verification_pending: true,
+      }),
+    ).toBe("/setup/phone");
+  });
+
   it("takes an agreed account on to profile registration and onboarding", async () => {
     expect(await routeFor(token("profile_registration"), { nickname: null, terms_agreement_pending: false }))
       .toBe("/setup/profile");
@@ -62,5 +79,26 @@ describe("useLoginFlow", () => {
 
   it("logs an existing account straight in", async () => {
     expect(await routeFor(token("home"), { nickname: "me", terms_agreement_pending: false })).toBe("/home");
+  });
+});
+
+describe("signup step paths", () => {
+  it("maps every next_step to its screen", () => {
+    expect(pathForStep("terms_agreement")).toBe("/signup/terms");
+    expect(pathForStep("phone_verification")).toBe("/setup/phone");
+    expect(pathForStep("profile_registration")).toBe("/setup/profile");
+    expect(pathForStep("onboarding")).toBe("/setup/onboarding");
+    expect(pathForStep("home")).toBe("/home");
+  });
+
+  it("continues setup from the profile in journey order", () => {
+    const me = (over: Partial<Me>) =>
+      ({ nickname: null, terms_agreement_pending: false, phone_verification_pending: false,
+        onboarding_completed: false, ...over }) as Me;
+    expect(nextSetupPath(me({ terms_agreement_pending: true, phone_verification_pending: true }))).toBe("/signup/terms");
+    expect(nextSetupPath(me({ phone_verification_pending: true }))).toBe("/setup/phone");
+    expect(nextSetupPath(me({}))).toBe("/setup/profile");
+    expect(nextSetupPath(me({ nickname: "me" }))).toBe("/setup/onboarding");
+    expect(nextSetupPath(me({ nickname: "me", onboarding_completed: true }))).toBe("/home");
   });
 });

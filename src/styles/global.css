@@ -8018,6 +8018,16 @@ textarea.input {
 .pchg__msg.is-err {
   color: var(--danger);
 }
+/* Social signup's phone step: why the number is asked for, under the nav. */
+.pchg__intro {
+  margin: 12px 0 0;
+  color: var(--ink-3);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-line;
+}
 .pchg__spacer {
   /* Figma pins the CTA to the bottom bar; the spacer eats the slack. */
   flex: 1 1 auto;

@@ -5,6 +5,7 @@ import { Sheet } from "../components/ui/Modal";
 import { PolicyBody } from "./Policy";
 import { authApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
+import { pathForStep } from "../hooks/loginFlow";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import { policyDoc, type PolicyId } from "../lib/policies";
@@ -22,7 +23,8 @@ import {
  * server routes them here (`next_step = terms_agreement`) and refuses profile
  * registration until they do. The agreements and their wording are email
  * signup's — social signup is email signup without the email and password.
- * Next → profile registration → onboarding, as for every new member.
+ * Next → phone verification (only when the provider gave no phone number) →
+ * profile registration → onboarding, as for every new member.
  */
 export function SocialSignupTerms() {
   const { t, language } = useTranslation();
@@ -47,7 +49,8 @@ export function SocialSignupTerms() {
     try {
       const { next_step } = await authApi.agreeSocialTerms(agreementPayload(agree));
       setMe((prev) => ({ ...prev!, terms_agreement_pending: false }));
-      nav(next_step === "onboarding" ? "/setup/onboarding" : next_step === "home" ? "/home" : "/setup/profile", {
+      // Normally the phone step (no phone from the provider) or the profile.
+      nav(pathForStep(next_step === "terms_agreement" ? "profile_registration" : next_step), {
         replace: true,
       });
     } catch (e) {

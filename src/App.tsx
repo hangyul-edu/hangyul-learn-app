@@ -72,7 +72,7 @@ import { ResetPassword } from "./screens/ResetPassword";
 import { LanguagePicker } from "./screens/LanguagePicker";
 import { loadStoredLanguage } from "./lib/language";
 import { SocialSignupTerms } from "./screens/SocialSignupTerms";
-import { SOCIAL_TERMS_PATH } from "./hooks/loginFlow";
+import { SOCIAL_PHONE_PATH, SOCIAL_TERMS_PATH, nextSetupPath } from "./hooks/loginFlow";
 
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -85,6 +85,12 @@ function RequireAuth({ children }: { children: ReactNode }) {
   const onTerms = loc.pathname === SOCIAL_TERMS_PATH;
   if (me?.terms_agreement_pending && !onTerms) return <Navigate to={SOCIAL_TERMS_PATH} replace />;
   if (me && !me.terms_agreement_pending && onTerms) return <Navigate to="/home" replace />;
+  // A social account without a phone number verifies one next — before the
+  // profile, since the number sets the billing currency (the server reports
+  // the step until a number is saved).
+  const onPhone = loc.pathname === SOCIAL_PHONE_PATH;
+  if (me?.phone_verification_pending && !onTerms && !onPhone) return <Navigate to={SOCIAL_PHONE_PATH} replace />;
+  if (me && !me.phone_verification_pending && onPhone) return <Navigate to={nextSetupPath(me)} replace />;
   // Signed in but profile never set up → force profile setup.
   if (me && !me.nickname && !onTerms && !loc.pathname.startsWith("/setup")) return <Navigate to="/setup/profile" replace />;
   return <>{children}</>;
@@ -139,6 +145,7 @@ const router = createBrowserRouter(
         <Route path={SOCIAL_TERMS_PATH} element={<RequireAuth><SocialSignupTerms /></RequireAuth>} />
 
         {/* Setup (authenticated, outside tab shell) */}
+        <Route path={SOCIAL_PHONE_PATH} element={<RequireAuth><ChangePhone mode="setup" /></RequireAuth>} />
         <Route path="/setup/profile" element={<RequireAuth><SetupProfile /></RequireAuth>} />
         <Route path="/setup/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
 

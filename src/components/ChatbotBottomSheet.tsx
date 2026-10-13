@@ -15,7 +15,8 @@ import type { ChatMessage } from "../lib/types";
  * Personalized Learning conversation never mix. Reopening within the same
  * mount restores the conversation (state is kept while mounted).
  */
-/** Built per render so the greeting follows the active language. */
+/** The local opening line (not a server message), in the language active
+ *  when the sheet mounts. */
 function greeting(text: string): ChatMessage {
   return { message_id: "__greeting__", role: "assistant", content: text, created_at: "" };
 }
@@ -27,7 +28,7 @@ export function ChatbotBottomSheet({
   onClose,
 }: {
   open: boolean;
-  /** Which page opened the sheet — keeps the two conversations distinct. */
+  /** Which page opened the sheet; marked on the sheet as `data-source`. */
   source: "lecture" | "personalized_learning";
   /** Optional structured context (e.g. { kind: "lecture", lecture_id }). */
   context?: Record<string, unknown>;

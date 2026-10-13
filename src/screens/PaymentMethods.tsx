@@ -32,7 +32,7 @@ import {
   requestTossBillingAuth,
 } from "../lib/tossPayments";
 import { useTranslation, type TranslationKey } from "../i18n";
-import type { MethodProvider, PaymentMethod, PaymentMethodList, Plan } from "../lib/types";
+import type { MethodProvider, PaymentMethod, PaymentMethodList } from "../lib/types";
 import { isPayLaunched } from "../lib/launch";
 import cardArt from "../assets/brand/pm-card-art.svg";
 import trashIcon from "../assets/brand/ic-trash.svg";
@@ -188,16 +188,9 @@ export function PaymentMethods() {
   const subQ = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
   const sub = subQ.data;
   const liveCurrency = sub && RENEWING.has(sub.status) ? sub.plan_currency?.toUpperCase() ?? null : null;
-  // Arriving from the purchase screen: the plan being bought (and maybe a
-  // request to open the overseas-card form straight away).
-  const navState = location.state as { selectedPlanId?: string; addCard?: string } | null;
-  const buyingPlanId = navState?.selectedPlanId;
-  const offersQ = useQuery({ queryKey: ["sub-offers"], queryFn: subApi.offers, enabled: !!buyingPlanId });
-  const plans: Plan[] = offersQ.data?.plans ?? [];
-  // Every offered plan is priced in the member's billing currency.
-  const buyingCurrency =
-    (plans.find((p) => p.plan_id === buyingPlanId)?.currency ?? offersQ.data?.currency)?.toUpperCase() ?? null;
-  const preferredCurrency = registration?.currency ?? liveCurrency ?? buyingCurrency;
+  // Arriving from the purchase screen: maybe a request to open the
+  // overseas-card form straight away.
+  const navState = location.state as { addCard?: string } | null;
   const currencyLocked = (m: PaymentMethod) =>
     !!liveCurrency && !!m.billing_currency && m.billing_currency.toUpperCase() !== liveCurrency;
   const methodTag = (m: PaymentMethod): string | null => {
@@ -757,7 +750,6 @@ export function PaymentMethods() {
       <InternationalCardSheet
         open={intlOpen && registerRegion === "international"}
         onClose={closeIntl}
-        preferredCurrency={preferredCurrency}
         onRegistered={intlRegistered}
       />
 

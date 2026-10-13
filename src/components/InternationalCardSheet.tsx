@@ -57,13 +57,10 @@ const PROBLEM_KEY: Record<CardField, Partial<Record<CardFieldProblem, Translatio
 export function InternationalCardSheet({
   open,
   onClose,
-  preferredCurrency,
   onRegistered,
 }: {
   open: boolean;
   onClose: () => void;
-  /** Currency of the plan the member is on / buying; preselected when offered. */
-  preferredCurrency?: string | null;
   onRegistered: (method: PaymentMethod) => void;
 }) {
   const { t } = useTranslation();
@@ -113,20 +110,19 @@ export function InternationalCardSheet({
   }, [open]);
 
   const listed = optionsQ.data?.available ? optionsQ.data.currencies : [];
-  // A live subscription binds the card to its plan's currency: offer only that.
+  // The member's one registrable currency (their live subscription's, else
+  // the one their phone number bills in): offer only that.
   const required = optionsQ.data?.required_currency?.toUpperCase() ?? null;
   const offered = required ? listed.filter((o) => o.currency === required) : listed;
   const requiredMissing = !!required && listed.length > 0 && offered.length === 0;
-  const preferred = required ?? preferredCurrency?.toUpperCase() ?? null;
 
   // Pick a currency once the options arrive (or when the current one vanished).
   useEffect(() => {
     if (!open || offered.length === 0) return;
     if (offered.some((o) => o.currency === currency)) return;
-    const pick = offered.find((o) => o.currency === preferred) ?? offered[0];
-    setCurrency(pick.currency);
+    setCurrency(offered[0].currency);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, optionsQ.data, preferred]);
+  }, [open, optionsQ.data]);
 
   const option = offered.find((o) => o.currency === currency);
   const requiresBirthDate = !!option?.requires_holder_birth_date;
@@ -263,10 +259,8 @@ export function InternationalCardSheet({
           ) : currency ? (
             <span className="field__hint">
               {t("paymentMethods.intl.currencyHint", { currency: currencyLabel(currency, t) })}
-              {required ? (
+              {required && (
                 <> {t("paymentMethods.intl.currencyRequired", { currency: currencyLabel(currency, t) })}</>
-              ) : preferred === currency && (
-                <> {t("paymentMethods.intl.currencyPreselected", { currency: currencyLabel(currency, t) })}</>
               )}
             </span>
           ) : null}

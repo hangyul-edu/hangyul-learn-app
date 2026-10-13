@@ -218,29 +218,11 @@ describe("international card form", () => {
     expect(expiry).toHaveAttribute("inputmode", "numeric");
   });
 
-  it("preselects the live subscription's plan_currency without joining plans", async () => {
-    subs.mine.mockResolvedValue({ status: "active", plan_id: "plan_usd", plan_currency: "USD" });
-    renderScreen();
-    await openForm();
-    await waitFor(() => expect(screen.getByRole("radio", { name: "미국 달러(USD)" })).toHaveAttribute("aria-checked", "true"));
-    expect(screen.getByText(/이용 중인 요금제가 미국 달러\(USD\)로 결제돼서/)).toBeInTheDocument();
-    expect(subs.offers).not.toHaveBeenCalled();
-  });
-
-  it("preselects the plan being bought when arriving from the purchase screen", async () => {
-    subs.offers.mockResolvedValue({
-      plans: [{ plan_id: "plan_usd", name: "P", price_cents: 1, currency: "USD", interval: "month" }],
-      new_member: true,
-      trial: { available: true, days: 7 },
-    });
-    renderScreen({ selectedPlanId: "plan_usd" });
-    await openForm();
-    await waitFor(() => expect(screen.getByRole("radio", { name: "미국 달러(USD)" })).toHaveAttribute("aria-checked", "true"));
-  });
-
   it("locks the currency to required_currency and explains why", async () => {
     api.internationalCardOptions.mockResolvedValue({ ...OPTIONS, required_currency: "USD" });
-    renderScreen();
+    // Even on the way from the purchase screen: the server's currency decides,
+    // so the plans are never fetched to guess it.
+    renderScreen({ from: "/subscription/start", selectedPlanId: "plan_usd" });
     await openForm();
     const radios = await screen.findAllByRole("radio");
     expect(radios.map((r) => r.textContent)).toEqual(["미국 달러(USD)"]);
@@ -248,6 +230,7 @@ describe("international card form", () => {
     expect(radios[0]).toBeDisabled();
     // required_currency is the member's billing currency, subscription or not.
     expect(screen.getByText(/회원님은 미국 달러\(USD\)로 결제되어 미국 달러\(USD\)로만 등록할 수 있어요/)).toBeInTheDocument();
+    expect(subs.offers).not.toHaveBeenCalled();
   });
 
   it("shows 'not available' when the required currency isn't offered", async () => {

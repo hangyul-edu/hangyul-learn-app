@@ -58,15 +58,18 @@ export function Settings() {
 
   const q = useQuery({ queryKey: ["notif-settings"], queryFn: notifApi.settings });
   const settings = q.data as Record<string, boolean> | undefined;
-  const [pending, setPending] = useState<Set<PushKey>>(new Set());
+  // One save at a time, across both switches: each save PUTs the whole object,
+  // so two in flight could land out of order (reverting the other switch), and
+  // one's rollback would undo the other's flip.
+  const [saving, setSaving] = useState(false);
 
   async function toggle(key: PushKey) {
-    if (!settings || pending.has(key)) return; // block rapid repeat taps per switch
+    if (!settings || saving) return;
     const previous = settings;
     const next = { ...settings, [key]: !settings[key] };
     // Optimistic: flip immediately, keeping the other toggle untouched.
     qc.setQueryData(["notif-settings"], next);
-    setPending((p) => new Set(p).add(key));
+    setSaving(true);
     try {
       const saved = await notifApi.updateSettings(next);
       qc.setQueryData(["notif-settings"], saved);
@@ -74,11 +77,7 @@ export function Settings() {
       qc.setQueryData(["notif-settings"], previous); // roll back to the server value
       toast.error(t("notificationSettings.error"));
     } finally {
-      setPending((p) => {
-        const n = new Set(p);
-        n.delete(key);
-        return n;
-      });
+      setSaving(false);
     }
   }
 
@@ -101,7 +100,7 @@ export function Settings() {
                 <span className="nset__label">{t("notificationSettings.service")}</span>
                 <Switch
                   on={!!current.service_notifications}
-                  disabled={pending.has("service_notifications")}
+                  disabled={saving}
                   label={t("notificationSettings.service")}
                   onToggle={() => toggle("service_notifications")}
                 />
@@ -110,7 +109,7 @@ export function Settings() {
                 <span className="nset__label">{t("notificationSettings.marketing")}</span>
                 <Switch
                   on={!!current.marketing}
-                  disabled={pending.has("marketing")}
+                  disabled={saving}
                   label={t("notificationSettings.marketing")}
                   onToggle={() => toggle("marketing")}
                 />

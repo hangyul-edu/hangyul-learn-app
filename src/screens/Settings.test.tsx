@@ -120,4 +120,23 @@ describe("Notification Settings (알림 설정)", () => {
     expect(service).toBeDisabled();
     resolve();
   });
+
+  it("saves one switch at a time, so the other's change is never lost", async () => {
+    // Each save PUTs the whole object: a second one in flight could land
+    // first and be overwritten by the first's stale copy of it.
+    let resolve!: () => void;
+    api.updateSettings.mockReturnValueOnce(new Promise((r) => { resolve = () => r(settings({ service_notifications: false })); }));
+    renderSettings();
+    const service = await screen.findByRole("switch", { name: "서비스 알림" });
+    const marketing = screen.getByRole("switch", { name: "광고성 알림" });
+    await userEvent.click(service);
+    expect(marketing).toBeDisabled();
+    await userEvent.click(marketing); // ignored while the first save runs
+    expect(api.updateSettings).toHaveBeenCalledTimes(1);
+    resolve();
+    await waitFor(() => expect(marketing).toBeEnabled());
+    await userEvent.click(marketing);
+    await waitFor(() => expect(api.updateSettings).toHaveBeenCalledTimes(2));
+    expect(api.updateSettings).toHaveBeenLastCalledWith(settings({ service_notifications: false, marketing: true }));
+  });
 });

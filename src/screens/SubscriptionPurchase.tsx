@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { parts, translate, useTranslation } from "../i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { subApi } from "../api/endpoints";
+import { payApi, subApi } from "../api/endpoints";
 import payLetterG from "../assets/brand/pay-letter-g.svg";
 import payLetterR from "../assets/brand/pay-letter-r.svg";
 import payLetterB from "../assets/brand/pay-letter-b.svg";
@@ -14,7 +14,7 @@ import { useToast } from "../hooks/toast";
 import { formatMoney } from "../lib/format";
 import { ApiError } from "../lib/http";
 import { currencyLabel, currencyMismatchText, paymentErrorMessage } from "../lib/paymentErrors";
-import type { PaymentMethod, Plan } from "../lib/types";
+import type { Plan } from "../lib/types";
 
 type ScreenStatus = "loading" | "ready" | "submitting" | "missing_plans" | "failed";
 
@@ -23,22 +23,18 @@ type ScreenStatus = "loading" | "ready" | "submitting" | "missing_plans" | "fail
 function money(cents: number, currency = "USD"): string {
   return formatMoney(Math.round(cents), currency.toUpperCase());
 }
-/** Displayed amounts. The server sends authoritative presentation values
- *  (original/current totals + monthly-equivalents + discount %); we prefer
- *  those and fall back to deriving from the two price tiers for older payloads. */
+/** Displayed amounts: the server's presentation values (original/current
+ *  totals, monthly equivalents, discount %). GET /subscriptions/offers computes
+ *  them on every plan, the member's new-member price included, so nothing is
+ *  derived here. */
 function pricing(p: Plan) {
-  const isYear = p.interval === "year";
-  const original = p.original_total_cents ?? p.price_cents;
-  const current = p.current_total_cents ?? p.promo_price_cents ?? p.price_cents;
   return {
-    isYear,
-    original,
-    current,
-    origMonthly: p.original_monthly_cents ?? (isYear ? original / 12 : original),
-    curMonthly: p.current_monthly_cents ?? (isYear ? current / 12 : current),
-    discountPct:
-      p.discount_percent ??
-      (original > 0 && current < original ? Math.round((1 - current / original) * 100) : 0),
+    isYear: p.interval === "year",
+    original: p.original_total_cents!,
+    current: p.current_total_cents!,
+    origMonthly: p.original_monthly_cents!,
+    curMonthly: p.current_monthly_cents!,
+    discountPct: p.discount_percent!,
   };
 }
 
@@ -176,10 +172,10 @@ export function SubscriptionPurchase() {
   // plan's new-member price where it applies), and their one free trial —
   // both decided by the server.
   const offersQ = useQuery({ queryKey: ["sub-offers"], queryFn: subApi.offers });
-  const methodsQ = useQuery({ queryKey: ["payment-methods"], queryFn: subApi.paymentMethods });
+  const methodsQ = useQuery({ queryKey: ["payment-methods"], queryFn: payApi.methods });
 
   const plans: Plan[] = offersQ.data?.plans ?? [];
-  const methods = (methodsQ.data?.methods ?? methodsQ.data?.items ?? []) as PaymentMethod[];
+  const methods = methodsQ.data?.methods ?? [];
   // Proceed as long as ANY usable method (card or quick-pay) is registered — the
   // registration popup is only for users with no payment method at all. Being
   // the default is not required (the server resolves the method to charge).
@@ -202,10 +198,12 @@ export function SubscriptionPurchase() {
     setSelectedId((annual ?? plans[0]).plan_id);
   }, [plans, selectedId]);
 
+  // The methods decide what the CTA does (register one first, or explain a
+  // currency mismatch), so the screen waits for them as for the offers.
   const status: ScreenStatus =
-    offersQ.isLoading
+    offersQ.isLoading || methodsQ.isLoading
       ? "loading"
-      : offersQ.isError
+      : offersQ.isError || methodsQ.isError
         ? "failed"
         : plans.length === 0
           ? "missing_plans"
@@ -312,7 +310,13 @@ export function SubscriptionPurchase() {
         ) : status === "failed" ? (
           <div className="subp__error">
             <p>{t("purchase.loadError")}</p>
-            <button className="btn btn--secondary btn--sm" onClick={() => void offersQ.refetch()}>
+            <button
+              className="btn btn--secondary btn--sm"
+              onClick={() => {
+                if (offersQ.isError) void offersQ.refetch();
+                if (methodsQ.isError) void methodsQ.refetch();
+              }}
+            >
               {t("common.retry")}
             </button>
           </div>

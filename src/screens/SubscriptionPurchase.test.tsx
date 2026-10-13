@@ -25,10 +25,10 @@ vi.mock("../api/endpoints", () => ({
       const [p, m, b] = await Promise.all([plans(), mine(), billing()]);
       return { plans: p.plans, new_member: false, trial: { available: !!m.trial_available, days: 7 }, ...b };
     },
-    paymentMethods,
     startTrial,
     subscribe,
   },
+  payApi: { methods: paymentMethods },
 }));
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: toastError, success: vi.fn(), show: toastShow }) }));
 
@@ -230,6 +230,29 @@ describe("SubscriptionPurchase", () => {
     await userEvent.click(await screen.findByRole("button", { name: "결제 수단 등록" }));
     await waitFor(() => expect(screen.getByText("PAYMENT REG")).toBeInTheDocument());
     expect(screen.getByTestId("loc")).toHaveTextContent('"selectedPlanId":"p_year"');
+  });
+
+  it("waits for the payment methods before the CTA can be pressed", async () => {
+    // A member with a card must never be asked to register one because the
+    // methods had not arrived yet.
+    let resolve: (v: unknown) => void = () => {};
+    paymentMethods.mockReturnValue(new Promise((r) => { resolve = r; }));
+    renderPage();
+    expect(await screen.findByText("불러오는 중…")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "7일 무료 체험 시작하기" })).not.toBeInTheDocument();
+    resolve({ methods: [METHOD] });
+    await userEvent.click(await screen.findByRole("button", { name: "7일 무료 체험 시작하기" }));
+    await waitFor(() => expect(startTrial).toHaveBeenCalled());
+    expect(screen.queryByText("결제 수단 등록이 필요해요")).not.toBeInTheDocument();
+  });
+
+  it("offers a retry instead of the register prompt when the methods failed to load", async () => {
+    paymentMethods.mockRejectedValueOnce(new Error("down"));
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "다시 시도" }));
+    await userEvent.click(await screen.findByRole("button", { name: "7일 무료 체험 시작하기" }));
+    await waitFor(() => expect(startTrial).toHaveBeenCalled());
+    expect(screen.queryByText("결제 수단 등록이 필요해요")).not.toBeInTheDocument();
   });
 
   it("keeps the picked plan when the member comes Back without registering", async () => {

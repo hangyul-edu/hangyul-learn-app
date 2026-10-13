@@ -66,8 +66,7 @@ export function Notifications() {
 
   async function fetchPage(cur?: string) {
     const page = await notifApi.list({ group: filter === "all" ? undefined : filter, cursor: cur });
-    const flat = (page.sections ?? []).flatMap((s) => s.items);
-    return { items: (flat.length ? flat : page.items ?? []) as NotificationItem[], next: page.next_cursor ?? null };
+    return { items: (page.sections ?? []).flatMap((s) => s.items), next: page.next_cursor ?? null };
   }
 
   // Reload page 1 on filter change / retry. Guards against stale responses so a

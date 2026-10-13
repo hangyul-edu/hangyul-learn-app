@@ -15,6 +15,7 @@ import type {
   SeriesDetail,
   DailyLearningActivity,
   ChannelTalkIdentity,
+  CancellationReason,
   CouponRedemption,
   DashboardSummary,
   ExamResult,
@@ -601,7 +602,8 @@ export const subApi = {
   // (`subscription.status === "payment_pending"`, no access yet); a decline is 402.
   subscribe: (plan_id: string, method_id?: string, quote?: CheckoutQuote) =>
     http.post<{ subscription?: { status?: string } }>("/subscriptions", { plan_id, method_id, ...quote }),
-  cancel: (reason?: string) => http.post<unknown>("/subscriptions/cancel", { reason }),
+  cancel: (reason?: CancellationReason, reason_text?: string) =>
+    http.post<unknown>("/subscriptions/cancel", { reason, reason_text }),
   resume: () => http.post<unknown>("/subscriptions/resume"),
   /** One call validates and applies; the server enforces the 10/24h attempt cap. */
   redeemCoupon: (code: string) => http.post<CouponRedemption>("/subscriptions/coupons/redeem", { code }),

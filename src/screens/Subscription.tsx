@@ -12,7 +12,7 @@ import { useToast } from "../hooks/toast";
 import { ApiError, errorMessage } from "../lib/http";
 import { formatMoney, formatLongDate } from "../lib/format";
 import { hasLiveSubscription } from "../lib/subscription";
-import type { CouponRedemption, Invoice } from "../lib/types";
+import type { CancellationReason, CouponRedemption, Invoice } from "../lib/types";
 import { CancelReasonModal } from "../components/CancelReasonModal";
 import { DetailHeader } from "../components/DetailHeader";
 
@@ -156,10 +156,10 @@ export function Subscription() {
     setReasonOpen(true);
   }
 
-  async function doCancel(reason?: string) {
+  async function doCancel(reason?: CancellationReason, detail?: string) {
     setBusy(true);
     try {
-      await subApi.cancel(reason);
+      await subApi.cancel(reason, detail);
       toast.success(t("subscription.cancelScheduled"));
       setReasonOpen(false);
       refresh();
@@ -410,7 +410,7 @@ export function Subscription() {
         open={reasonOpen}
         loading={busy}
         onSkip={() => !busy && void doCancel()}
-        onSubmit={(reason) => void doCancel(reason)}
+        onSubmit={(reason, detail) => void doCancel(reason, detail)}
       />
     </div>
   );

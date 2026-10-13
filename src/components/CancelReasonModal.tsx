@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation, type TranslationKey } from "../i18n";
+import type { CancellationReason } from "../lib/types";
 import radioOn from "../assets/brand/radio-on.svg";
 import radioOff from "../assets/brand/radio-off.svg";
 
@@ -14,12 +15,15 @@ import radioOff from "../assets/brand/radio-off.svg";
  *
  * Picking 기타 (직접입력) reveals the free-text box (MOR-013); every other choice
  * hides it again and discards what was typed.
+ *
+ * The ids are the server's `CancellationReason` values — anything else is
+ * refused (422) and nothing is cancelled.
  */
-const REASONS: { id: string; label: TranslationKey }[] = [
-  { id: "price", label: "cancelReason.price" },
-  { id: "usage", label: "cancelReason.usage" },
-  { id: "features", label: "cancelReason.features" },
-  { id: "competitor", label: "cancelReason.competitor" },
+const REASONS: { id: CancellationReason; label: TranslationKey }[] = [
+  { id: "too_expensive", label: "cancelReason.price" },
+  { id: "low_usage", label: "cancelReason.usage" },
+  { id: "missing_features", label: "cancelReason.features" },
+  { id: "using_other_service", label: "cancelReason.competitor" },
   { id: "other", label: "cancelReason.other" },
 ];
 
@@ -32,11 +36,11 @@ export function CancelReasonModal({
   open: boolean;
   loading: boolean;
   onSkip: () => void;
-  /** Called with the chosen reason (free text when 기타 is picked). */
-  onSubmit: (reason: string) => void;
+  /** Called with the chosen reason, plus the typed text when 기타 is picked. */
+  onSubmit: (reason: CancellationReason, detail?: string) => void;
 }) {
   const { t } = useTranslation();
-  const [picked, setPicked] = useState<string | null>(null);
+  const [picked, setPicked] = useState<CancellationReason | null>(null);
   const [detail, setDetail] = useState("");
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -65,7 +69,9 @@ export function CancelReasonModal({
   if (!open) return null;
 
   const isOther = picked === "other";
-  const reason = isOther ? detail.trim() : picked ?? "";
+  const typed = detail.trim();
+  // 기타 still needs something typed before it can be submitted.
+  const canSubmit = picked !== null && (!isOther || typed !== "");
 
   return (
     <div className="overlay overlay--center wd__overlay">
@@ -114,8 +120,8 @@ export function CancelReasonModal({
           </button>
           <button
             className="crm__btn crm__btn--go"
-            onClick={() => onSubmit(reason)}
-            disabled={loading || !reason}
+            onClick={() => picked && onSubmit(picked, isOther ? typed : undefined)}
+            disabled={loading || !canSubmit}
           >
             {loading ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("cancelReason.submit")}
           </button>

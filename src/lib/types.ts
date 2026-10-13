@@ -821,6 +821,14 @@ export interface MySubscription {
   /** True when the current period is covered by a coupon grant, not a payment. */
   coupon_backed?: boolean;
 }
+/** POST /subscriptions/cancel `reason` — the survey's choices, as the server
+ *  names them. Free text for "other" goes in `reason_text`. */
+export type CancellationReason =
+  | "too_expensive"
+  | "low_usage"
+  | "missing_features"
+  | "using_other_service"
+  | "other";
 
 /* ---- Settings ---- */
 export interface AppSettings {

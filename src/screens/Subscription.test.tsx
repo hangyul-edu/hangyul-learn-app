@@ -5,13 +5,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { ApiError } from "../lib/http";
 
-const { mine, invoices, redeemCoupon } = vi.hoisted(() => ({
+const { mine, invoices, redeemCoupon, cancel } = vi.hoisted(() => ({
   mine: vi.fn(),
   invoices: vi.fn(),
   redeemCoupon: vi.fn(),
+  cancel: vi.fn(),
 }));
 vi.mock("../api/endpoints", () => ({
-  subApi: { mine, redeemCoupon },
+  subApi: { mine, redeemCoupon, cancel },
   billingApi: { invoices },
 }));
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn(), show: vi.fn() }) }));
@@ -96,6 +97,41 @@ describe("Subscription — my plan", () => {
     renderPage();
     expect(await screen.findByText("Annual")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "해지하기" })).not.toBeInTheDocument();
+  });
+});
+
+describe("Subscription — cancellation reason", () => {
+  async function openReasonStep() {
+    mine.mockResolvedValue(sub("active"));
+    cancel.mockResolvedValue({});
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "해지하기" }));
+    await userEvent.click(await screen.findByRole("button", { name: "해지" }));
+    await screen.findByText("해지 사유를 선택해주세요");
+  }
+
+  it("sends the survey choice as the server's reason value", async () => {
+    // Regression: the modal sent its own ids ("price", …), which the server
+    // refuses with 422 — every cancel with a reason failed.
+    await openReasonStep();
+    await userEvent.click(screen.getByRole("radio", { name: "가격이 부담됩니다" }));
+    await userEvent.click(screen.getByRole("button", { name: "제출" }));
+    await waitFor(() => expect(cancel).toHaveBeenCalledWith("too_expensive", undefined));
+  });
+
+  it("sends 기타 as reason 'other' with the typed text in reason_text", async () => {
+    await openReasonStep();
+    await userEvent.click(screen.getByRole("radio", { name: "기타 (직접입력)" }));
+    expect(screen.getByRole("button", { name: "제출" })).toBeDisabled();
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "  너무 바빠요  " } });
+    await userEvent.click(screen.getByRole("button", { name: "제출" }));
+    await waitFor(() => expect(cancel).toHaveBeenCalledWith("other", "너무 바빠요"));
+  });
+
+  it("cancels with no reason on 건너뛰기", async () => {
+    await openReasonStep();
+    await userEvent.click(screen.getByRole("button", { name: "건너뛰기" }));
+    await waitFor(() => expect(cancel).toHaveBeenCalledWith(undefined, undefined));
   });
 });
 

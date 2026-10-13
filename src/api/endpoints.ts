@@ -416,7 +416,11 @@ export type InternationalCurrencyOption = {
 export type InternationalCardOptions = {
   available: boolean;
   currencies: InternationalCurrencyOption[];
-  /** The live subscription's plan currency: any other currency is refused. Null = free choice. */
+  /** The only currency a card may be registered in (`registration.currency` of
+   *  GET /payment-methods): the live subscription's, else the member's billing
+   *  currency (KRW for a +82 phone number, USD otherwise). Any other is refused;
+   *  KRW means no overseas card at all. Null only without a billing-currency
+   *  lookup (offline dev) = free choice. */
   required_currency?: string | null;
 };
 /**

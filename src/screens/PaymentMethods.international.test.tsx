@@ -246,7 +246,8 @@ describe("international card form", () => {
     expect(radios.map((r) => r.textContent)).toEqual(["미국 달러(USD)"]);
     expect(radios[0]).toHaveAttribute("aria-checked", "true");
     expect(radios[0]).toBeDisabled();
-    expect(screen.getByText(/이용 중인 구독이 미국 달러\(USD\)로 결제돼서 미국 달러\(USD\)로만 등록할 수 있어요/)).toBeInTheDocument();
+    // required_currency is the member's billing currency, subscription or not.
+    expect(screen.getByText(/회원님은 미국 달러\(USD\)로 결제되어 미국 달러\(USD\)로만 등록할 수 있어요/)).toBeInTheDocument();
   });
 
   it("shows 'not available' when the required currency isn't offered", async () => {
@@ -267,6 +268,8 @@ describe("international card form", () => {
     renderScreen();
     await openForm();
     expect(await screen.findByText("지금은 해외 카드를 등록할 수 없어요")).toBeInTheDocument();
+    // A member sent here is billed outside KRW, so a Korean card is no way out.
+    expect(screen.getByText("잠시 후 다시 시도해 주세요.")).toBeInTheDocument();
     expect(screen.queryByLabelText("카드 번호")).not.toBeInTheDocument();
   });
 

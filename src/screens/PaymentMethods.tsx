@@ -75,10 +75,7 @@ const WarnTriangle = () => (
 const CheckMark = () => <img src={successIcon} alt="" aria-hidden="true" />;
 
 /* -------------------------------- helpers ------------------------------- */
-// Logo height (px). Both marks share the same height so their icons render at
-// the same size (each icon fills its 32-unit-tall viewBox at 1:1), while Toss
-// Pay still reads wider via its longer icon+wordmark lockup. Sizing lives here
-// (the config), not in the card markup, so each provider stays tunable.
+// The Korean wallets, in display order.
 const EASY_PAY: {
   provider: MethodProvider;
   labelKey: TranslationKey;
@@ -98,12 +95,11 @@ function cardName(m: PaymentMethod): string {
    server's _RENEWING_STATES plus the derived `trial_ending`. */
 const RENEWING = new Set(["trial", "trial_ending", "active", "payment_pending", "payment_failed", "grace_period", "suspended"]);
 
-/* One connection/registration flow driven through the shared Sheet: a link to
-   the provider's window (which returns to this page, handled on mount) plus a
-   manual entry for the value it returns. */
+/* The manual registration entry, used only when the provider's window is not
+   configured (local dev with the fake provider): the member pastes the value
+   the window would have returned. */
 type Flow = {
   title: string;
-  authorizeUrl: string;
   placeholder: string;
   confirm: (token: string) => Promise<void>;
 };
@@ -488,7 +484,6 @@ export function PaymentMethods() {
       // fake provider): only the manual entry remains.
       return {
         title: t("paymentMethods.domesticCardTitle"),
-        authorizeUrl: "",
         placeholder: t("paymentMethods.authKeyPlaceholder"),
         confirm: (key) =>
           payApi.cardConfirm(res.intent_id, { authKey: key, customerKey: res.customer_key }).then(() => undefined),
@@ -521,7 +516,6 @@ export function PaymentMethods() {
       // only the manual entry remains.
       return {
         title: t(provider === "toss_pay" ? "paymentMethods.tossPay" : "paymentMethods.naverPay"),
-        authorizeUrl: "",
         placeholder: t("paymentMethods.authKeyPlaceholder"),
         confirm: (key) =>
           confirm(res.intent_id, { authKey: key, customerKey: res.customer_key }).then(() => undefined),
@@ -754,13 +748,6 @@ export function PaymentMethods() {
         <p className="muted" style={{ fontSize: 13, marginBottom: 12 }}>
           {t("paymentMethods.flowHint")}
         </p>
-        {flow?.authorizeUrl && (
-          // Same tab: the window returns to this page, which finishes the
-          // registration from the saved intent (sessionStorage is per tab).
-          <a className="btn btn--secondary btn--block" href={flow.authorizeUrl} rel="noreferrer" style={{ marginBottom: 12 }}>
-            {t("paymentMethods.openPaymentWindow")}
-          </a>
-        )}
         <TextField label={t("paymentMethods.authValueLabel")} placeholder={flow?.placeholder} value={token} onChange={(e) => setToken(e.target.value)} />
         <div style={{ height: 12 }} />
         <Button block loading={confirming} disabled={!token.trim()} onClick={confirmFlow}>{t("paymentMethods.registerDone")}</Button>

@@ -831,12 +831,6 @@ export type CancellationReason =
   | "other";
 
 /* ---- Settings ---- */
-export interface AppSettings {
-  theme: "system" | "light" | "dark";
-  sound_effects: boolean;
-  vibration: boolean;
-  autoplay_audio: boolean;
-}
 export interface CategoryPref {
   category: string;
   level: number;
@@ -888,13 +882,6 @@ export interface StreakCalendarResp {
     goal_achieved_days: number;
   };
 }
-export interface StatsResp {
-  range: string;
-  total_minutes: number;
-  total_sentences: number;
-  total_questions: number;
-}
-
 /* ---- Learning Management dashboard ---- */
 export type ManagementPeriod = "7d" | "1m" | "3m" | "1y";
 export interface ManagementBucket {

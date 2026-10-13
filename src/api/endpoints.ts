@@ -5,7 +5,6 @@ import { deviceTimeZone } from "../lib/timezone";
 import { activeLanguage } from "../lib/language";
 import { recordingFilename, type RecordingInfo } from "../lib/recording";
 import type {
-  AppSettings,
   AttendanceCheckIn,
   CheckoutQuote,
   CheckpointInteraction,
@@ -38,7 +37,6 @@ import type {
   LeagueHistoryResponse,
   LeagueLifecycleResponse,
   LearningPreferences,
-  Lecture,
   LectureDetail,
   ManagementPeriod,
   ManagementStats,
@@ -71,7 +69,6 @@ import type {
   AccountDeletionBody,
   AccountDeletionMethods,
   SpeechAttempt,
-  StatsResp,
   StreakCalendarResp,
   StudyAttemptResult,
   StudyCustomization,
@@ -158,12 +155,10 @@ export const authApi = {
 
 /* ------------------------------- User ------------------------------- */
 export const userApi = {
-  me: () => http.get<Me>("/users/me"),
   checkNickname: (nickname: string) =>
     http.post<NicknameCheck>("/users/check-nickname", { nickname }, { auth: false }),
   registerProfile: (body: Record<string, unknown>) => http.post<Me>("/users/me/profile", body),
   updateProfile: (body: Record<string, unknown>) => http.patch<Me>("/users/me/profile", body),
-  updateMe: (body: Record<string, unknown>) => http.patch<Me>("/users/me", body),
   uploadImage: (file: File) => {
     const fd = new FormData();
     fd.append("file", file);
@@ -239,7 +234,6 @@ export const sentenceApi = {
     }),
   saved: (params: { save_type?: string; sort?: string; q?: string; cursor?: string }) =>
     http.get<SavedSentencesPage>("/saved-sentences", { limit: 20, ...params }),
-  removeSaved: (id: string) => http.del<unknown>(`/saved-sentences/${id}`),
   // Remove only the incorrect-answer (auto_wrong) record; keeps any bookmark.
   clearAutoSave: (id: string) => http.del<unknown>(`/saved-sentences/${id}/auto-save`),
   // Mark a saved sentence reviewed (updates last_reviewed_at) — on audio play.
@@ -292,9 +286,6 @@ export const learnApi = {
     }),
   /** One series' lessons and its 바로 학습하기 target (COU-002). */
   series: (seriesId: string, lang?: string) => http.get<SeriesDetail>(`/series/${seriesId}`, { lang }),
-  /** Unified lecture catalog — both tracks; pass `track` to filter. */
-  lectures: (track?: "track_conversation" | "track_topik", lang?: string) =>
-    http.get<{ items: Lecture[] }>("/lectures", { track, lang }),
   lecture: (lectureId: string, lang?: string) => http.get<LectureDetail>(`/lectures/${lectureId}`, { lang }),
   lecturePlay: (lectureId: string) =>
     http.get<{ video: { url: string; duration_seconds: number; captions_url: string | null } }>(`/lectures/${lectureId}/play`),
@@ -317,7 +308,6 @@ export const learnApi = {
   progress: (lectureId: string, position_seconds: number) =>
     http.post<{ position_seconds: number; max_watched_seconds: number; completed: boolean }>(`/lectures/${lectureId}/progress`, { position_seconds }),
   streakCalendar: (year?: number, month?: number) => http.get<StreakCalendarResp>("/learning/streak-calendar", { year, month }),
-  stats: (range: string) => http.get<StatsResp>("/learning/stats", { range }),
   /** Learning Management dashboard: today's summary + period chart + totals. */
   management: (period: ManagementPeriod) =>
     http.get<ManagementStats>("/learning/management", { period }),
@@ -362,7 +352,6 @@ export const studyApi = {
     topik_section?: "listening" | "reading";
     topik_question_type?: string;
   }) => http.post<StudySession>("/study-sessions", body),
-  get: (sessionId: string) => http.get<StudySession>(`/study-sessions/${sessionId}`),
   present: (sessionId: string, activityId: string) =>
     http.post<void>(`/study-sessions/${sessionId}/activities/${activityId}/present`),
   attempt: (sessionId: string, activityId: string, body: { answer: string; client_request_id: string; duration_ms?: number }) =>
@@ -616,8 +605,6 @@ export const subApi = {
 
 /* ----------------------------- Settings ----------------------------- */
 export const settingsApi = {
-  get: () => http.get<AppSettings>("/settings/me"),
-  update: (body: Partial<AppSettings>) => http.put<AppSettings>("/settings/me", body),
   language: () => http.get<{ app_language: string }>("/settings/me/language"),
   setLanguage: (app_language: string) => http.put<{ app_language: string }>("/settings/me/language", { app_language }),
   // Read: all categories together (for the screen that lists conversation + TOPIK).

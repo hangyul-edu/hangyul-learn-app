@@ -131,38 +131,40 @@ Go to **http://localhost:5173**. You land on the welcome screen.
      ```
 2. **Profile setup** → nickname (tap 중복확인) + pick an avatar → 다음.
 3. **Onboarding** → choose 회화 or TOPIK → level/target → daily goal → 시작.
-4. **Home** → streak, daily-goal rings per track, quick actions.
-5. **회화 학습** → play audio, tap 🎙️ *따라 말하기* to record and get a
-   pronunciation score, save ⭐ sentences.
-6. **TOPIK 학습** → daily set + browse → solve a question → see grading.
-7. **학습 → 강의** → browse courses → open a lesson → watch (progress saved) →
+4. **Attendance** → right after sign-in the daily 출석 check-in runs on its
+   own and shows the points / streak modal once a day.
+5. **홈** tab → streak, the 회화 and TOPIK daily goals, and shortcuts to
+   **강의** and **복습** (saved sentences and questions).
+6. **맞춤 학습** tab → start a **회화** session (listen, record to get a
+   pronunciation score, save sentences) or a **TOPIK** session (solve
+   questions, see grading). The gear opens each track's level and daily-goal
+   settings.
+7. **강의** tab → browse courses → open a lesson → watch (progress saved) →
    for TOPIK lessons, tap *복습 문제 풀기* to run an AI practice set. Courses and
    lectures are admin-managed and start empty, so create one in the admin portal
    first or this list is legitimately empty.
-8. **학습 → TOPIK 기출 모의고사** → pick an exam → answer → get scored.
-9. **학습 → AI 추천 문장** → optionally type a situation → get tailored sentences.
-10. **리그** → your rank, weekly leaderboard, daily 출석 (attendance).
-11. **친구** → search by phone, send/accept requests.
-12. **AI 튜터** → chat with the tutor.
-13. **멤버십** → start a trial / subscribe, apply a coupon, manage **결제 수단**
-    and view **결제 내역** (invoices). Cards have two flows, picked by where
-    the card was issued:
-    - **국내 카드** (Korean-issued, charged in KRW): Toss's billing window via
-      the SDK; without a Toss client key (offline dev) paste the authKey to
-      confirm.
-    - **해외 카드** (issued abroad): the app's own form — choose the billing
-      currency, then card number + MM/YY (birth date only if the currency
-      requires it; never a CVC). Offline dev offers KRW and USD and accepts
-      any Luhn-valid number with a future expiry, e.g. `4242 4242 4242 4242`.
+8. **리그** tab → your rank, weekly leaderboard, points history.
+9. **더보기 → 친구 관리** → search by phone, send/accept requests.
+10. **더보기 → 구독 플랜** → start a trial / subscribe, apply a coupon, manage
+    **결제수단 관리** and view **결제 내역** (invoices). The phone number's
+    country decides the currency and the card: a `+82` number is billed in KRW
+    and registers a Korean-issued card, any other number in USD with a card
+    issued abroad.
+    - **국내 카드** (+82 members): Toss's billing window via the SDK; without a
+      Toss client key (offline dev) paste the authKey to confirm.
+    - **해외 카드** (everyone else): the app's own form — the billing currency is
+      fixed to the member's, then card number + MM/YY (birth date only if the
+      currency requires it; never a CVC). Offline dev accepts any Luhn-valid
+      number with a future expiry, e.g. `4242 4242 4242 4242`.
     See `docs/payments/02-payment-method-registration.md` §2.3.5.
-14. **내 정보** → settings, **계정 관리** (change email / phone / password),
+11. **더보기** → settings, **계정 관리** (change email / phone / password),
     logout, delete account.
 
 > Premium-gated areas (premium lectures, AI practice, premium exam sets, AI
 > sentence recommendations past the free quota) return `402` for free members;
 > the app shows a clean upgrade prompt. A daily goal above 5 is rejected (`422`)
 > for free members. Start a
-> free trial from **멤버십** to unlock them for testing.
+> free trial from **더보기 → 구독 플랜** to unlock them for testing.
 
 ### Use test accounts
 

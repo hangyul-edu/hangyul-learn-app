@@ -635,10 +635,11 @@ export const en: Catalog = {
     close: "Close",
     productsTitle: "Plans",
     cancelAnytime: "Cancel anytime.", // 784:50692
+    // One paragraph, wrapped by its 324px box (1421:21525) — unlike ko, no break.
     trialNote:
-      "7-day free trial ends with automatic billing for your selected plan.\nAnnual subscriptions are non-refundable after 30 days from the billing date.",
+      "7-day free trial ends with automatic billing for your selected plan. Annual subscriptions are non-refundable after 30 days from the billing date.",
     paidNote:
-      "Your selected plan is billed automatically.\nAnnual subscriptions are non-refundable after 30 days from the billing date.",
+      "Your selected plan is billed automatically. Annual subscriptions are non-refundable after 30 days from the billing date.",
     loading: "Loading…",
     loadError: "Couldn't load this information.",
     eyebrow: "Try it free for a week",

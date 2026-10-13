@@ -69,10 +69,11 @@ beforeEach(() => {
 });
 
 describe("ChangePhone in setup mode", () => {
-  it("explains why the number is asked for", () => {
+  it("asks for the number without explaining what it is used for", () => {
     renderStep();
     expect(screen.getByRole("heading")).toHaveTextContent(ko.phoneSetup.title);
-    expect(screen.getByText(/결제 통화/)).toBeInTheDocument();
+    expect(screen.getByText(ko.phoneSetup.intro)).toBeInTheDocument();
+    expect(screen.queryByText(/결제 통화|계정을 찾을/)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: ko.common.back })).not.toBeInTheDocument();
   });
 

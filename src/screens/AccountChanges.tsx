@@ -149,9 +149,9 @@ export function ChangePassword() {
  *
  * `mode="setup"` is social signup's phone step (/setup/phone): a member who
  * signed in with a provider that gave no phone number verifies one before
- * using the app. Same SMS flow and API; the copy explains why (the number sets
- * the billing currency and recovers the account), X signs out like the terms
- * step, and saving continues to the next signup step instead of going back.
+ * using the app. Same SMS flow and API; a one-line intro asks for the number
+ * (without saying what it is used for), X signs out like the terms step, and
+ * saving continues to the next signup step instead of going back.
  */
 export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" }) {
   const { t } = useTranslation();

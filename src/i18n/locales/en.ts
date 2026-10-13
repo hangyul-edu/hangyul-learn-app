@@ -541,8 +541,7 @@ export const en: Catalog = {
 
   phoneSetup: {
     title: "Verify your phone number",
-    intro:
-      "Verify your phone number to start using Hangyul.\nYour number sets the currency you're billed in, and it's how you recover your account.",
+    intro: "Verify your phone number to start using Hangyul.",
     submit: "Next",
     saved: "Phone number saved",
     blockedA11y: "Finish verification to continue",

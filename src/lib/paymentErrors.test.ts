@@ -9,7 +9,7 @@ beforeEach(() => setCurrentLanguage("ko"));
 describe("currency mismatch copy", () => {
   it("points a KRW card at the overseas-card flow for a USD plan", () => {
     const e = new ApiError(422, "subscription.currency_mismatch", "raw", { card_currency: "KRW", plan_currency: "USD" });
-    expect(paymentErrorMessage(e)).toBe("이 카드는 원화(KRW)로만 결제돼요. 달러(USD) 요금제는 해외 카드로 등록해 주세요.");
+    expect(paymentErrorMessage(e)).toBe("이 카드는 원화(KRW)로만 결제돼요. 미국 달러(USD) 요금제는 해외 카드로 등록해 주세요.");
   });
 
   it("names both currencies otherwise, in English too", () => {

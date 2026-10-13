@@ -10,10 +10,118 @@ import payLetterB from "../assets/brand/pay-letter-b.svg";
 import payLetterO from "../assets/brand/pay-letter-o.svg";
 import payRadioOn from "../assets/brand/pay-radio-on.svg";
 import payRadioOff from "../assets/brand/pay-radio-off.svg";
+import { BillingCountrySheet, useSaveBillingCountry } from "../components/BillingCountrySheet";
 import { useToast } from "../hooks/toast";
-import { formatMoney } from "../lib/format";
+import { formatLongDate, formatMoney } from "../lib/format";
+import { ApiError } from "../lib/http";
 import { currencyLabel, currencyMismatchText, paymentErrorMessage } from "../lib/paymentErrors";
-import type { PaymentMethod, Plan } from "../lib/types";
+import { countryName } from "../lib/phone";
+import type { TranslationKey } from "../i18n";
+import type { Offers, PaymentMethod, PaymentOption, Plan } from "../lib/types";
+
+const OPTION_LABEL: Record<string, TranslationKey> = {
+  toss_card: "purchase.optionDomesticCard",
+  toss_intl_card: "purchase.optionIntlCard",
+  naver_pay: "purchase.optionNaverPay",
+  toss_pay: "purchase.optionTossPay",
+};
+
+/**
+ * Where the member's billing country stands, above the plans: confirmed (with
+ * a Change button), suggested from their nationality (Confirm / Change), or
+ * not known yet (Choose). Prices below are in its currency; checkout waits
+ * for a confirmed one.
+ */
+function BillingCountryBlock({
+  offers,
+  saving,
+  onConfirm,
+  onChange,
+}: {
+  offers: Offers;
+  saving: boolean;
+  onConfirm: () => void;
+  onChange: () => void;
+}) {
+  const { t, language } = useTranslation();
+  const bc = offers.billing_country;
+  const currency = offers.currency ? currencyLabel(offers.currency, t) : "";
+  if (bc.confirmed && bc.country) {
+    return (
+      <div className="subp__country" data-testid="billing-country">
+        <div className="subp__country-row">
+          <span className="subp__country-text">
+            <span className="subp__country-label">{t("billingCountry.label")}</span>
+            {countryName(bc.country, language)} · {t("billingCountry.pricesIn", { currency })}
+          </span>
+          <button type="button" className="subp__country-btn" onClick={onChange}>
+            {t("billingCountry.change")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+  if (bc.country) {
+    return (
+      <div className="subp__country subp__country--ask" data-testid="billing-country" role="group" aria-labelledby="bc-ask-title">
+        <p className="subp__country-title" id="bc-ask-title">{t("billingCountry.suggestedTitle")}</p>
+        <p className="subp__country-body">
+          {t("billingCountry.suggestedBody", { country: countryName(bc.country, language) })}
+          <br />
+          <b>{t("billingCountry.pricesIn", { currency })}</b>
+        </p>
+        <div className="subp__country-actions">
+          <button type="button" className="subp__country-btn subp__country-btn--primary" onClick={onConfirm} disabled={saving}>
+            {t("billingCountry.confirm")}
+          </button>
+          <button type="button" className="subp__country-btn" onClick={onChange} disabled={saving}>
+            {t("billingCountry.change")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="subp__country subp__country--ask" data-testid="billing-country" role="group" aria-labelledby="bc-none-title">
+      <p className="subp__country-title" id="bc-none-title">{t("billingCountry.noneTitle")}</p>
+      <p className="subp__country-body">{t("billingCountry.noneBody")}</p>
+      <div className="subp__country-actions">
+        <button type="button" className="subp__country-btn subp__country-btn--primary" onClick={onChange}>
+          {t("billingCountry.choose")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * What the selected plan charges, and when: the annual charge beside its
+ * monthly equivalent, the renewal price (a subscription keeps the price it
+ * starts at), and — on a trial — the date billing begins.
+ */
+function ChargeSummary({ plan, trialDays }: { plan: Plan; trialDays: number | null }) {
+  const { t, language } = useTranslation();
+  const c = plan.currency ?? "USD";
+  const { isYear, current, curMonthly } = pricing(plan);
+  const total = money(current, c);
+  const monthly = money(curMonthly, c);
+  let first: string;
+  if (trialDays !== null) {
+    const startsAt = new Date(Date.now() + trialDays * 86_400_000).toISOString();
+    const date = formatLongDate(startsAt, language);
+    first = isYear
+      ? t("purchase.summaryTrialYear", { days: trialDays, date, total, monthly })
+      : t("purchase.summaryTrialMonth", { days: trialDays, date, total });
+  } else {
+    first = isYear ? t("purchase.summaryPaidYear", { total, monthly }) : t("purchase.summaryPaidMonth", { total });
+  }
+  return (
+    <div className="subp__summary" data-testid="charge-summary" aria-live="polite">
+      <p>{first}</p>
+      <p>{t(isYear ? "purchase.summaryRenewYear" : "purchase.summaryRenewMonth", { total })}</p>
+    </div>
+  );
+}
 
 type ScreenStatus = "loading" | "ready" | "submitting" | "missing_plans" | "failed";
 
@@ -167,8 +275,10 @@ export function SubscriptionPurchase() {
   const returned = loc.state as { selectedPlanId?: string; from?: string } | null;
   const [selectedId, setSelectedId] = useState<string | null>(returned?.selectedPlanId ?? null);
   const [payModal, setPayModal] = useState(false);
+  const [countryOpen, setCountryOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
+  const confirmCountry = useSaveBillingCountry();
 
   // What this member is offered: one plan per interval, priced for them (the
   // plan's new-member price where it applies), and their one free trial —
@@ -176,7 +286,12 @@ export function SubscriptionPurchase() {
   const offersQ = useQuery({ queryKey: ["sub-offers"], queryFn: subApi.offers });
   const methodsQ = useQuery({ queryKey: ["payment-methods"], queryFn: subApi.paymentMethods });
 
-  const plans: Plan[] = offersQ.data?.plans ?? [];
+  const offers = offersQ.data;
+  const plans: Plan[] = offers?.plans ?? [];
+  // Every plan is priced and charged in this one currency: the billing country's.
+  const currency = offers?.currency ?? null;
+  const countryConfirmed = !!offers?.billing_country.confirmed;
+  const paymentOptions: PaymentOption[] = offers?.payment_options ?? [];
   const methods = (methodsQ.data?.methods ?? methodsQ.data?.items ?? []) as PaymentMethod[];
   // Proceed as long as ANY usable method (card or quick-pay) is registered — the
   // registration popup is only for users with no payment method at all. Being
@@ -215,7 +330,14 @@ export function SubscriptionPurchase() {
   async function start() {
     if (submittingRef.current) return; // one request per press
     const plan = plans.find((p) => p.plan_id === selectedId);
-    if (!plan) return;
+    if (!plan || !currency) return;
+    // The member confirms their billing country before any checkout.
+    if (!countryConfirmed) {
+      const suggested = offers?.billing_country.country;
+      if (suggested) await confirmCountry.save(suggested);
+      else setCountryOpen(true);
+      return;
+    }
     if (!hasPaymentMethod) {
       setPayModal(true); // gate: only when NO payment method is registered
       return;
@@ -224,20 +346,23 @@ export function SubscriptionPurchase() {
     // Pay: KRW). Explain up front instead of letting the server refuse with
     // subscription.currency_mismatch (still mapped below as a fallback).
     const card = chargeMethod?.billing_currency?.toUpperCase();
-    const planCur = plan.currency?.toUpperCase();
-    if (card && planCur && card !== planCur) {
+    const planCur = currency.toUpperCase();
+    if (card && card !== planCur) {
       const hasMatching = active.some((m) => m.billing_currency?.toUpperCase() === planCur);
       setCurrencyBlock({ plan, card, hasMatching });
       return;
     }
+    // What this screen shows is what is charged: the server refuses (409
+    // subscription.price_changed) rather than charge another currency or amount.
+    const quote = { currency: planCur, quoted_amount_cents: pricing(plan).current };
     submittingRef.current = true;
     setSubmitting(true);
     try {
       // Separate flows: trial only for eligible accounts, paid otherwise. The
       // backend rechecks both, so this can never grant a second trial.
-      if (eligible) await subApi.startTrial(plan.plan_id);
+      if (eligible) await subApi.startTrial(plan.plan_id, quote);
       else {
-        const res = await subApi.subscribe(plan.plan_id);
+        const res = await subApi.subscribe(plan.plan_id, undefined, quote);
         // Charge not decided yet: no access until it settles, so say so.
         if (res?.subscription?.status === "payment_pending") toast.show(t("subscription.subPending"));
       }
@@ -248,7 +373,11 @@ export function SubscriptionPurchase() {
     } catch (e) {
       // e.g. trial already used → refresh eligibility so the UI switches to paid.
       // subscription.currency_mismatch gets its own copy (card vs plan currency).
-      toast.error(paymentErrorMessage(e));
+      if (e instanceof ApiError && e.code === "subscription.price_changed") toast.error(t("purchase.priceChanged"));
+      else if (e instanceof ApiError && e.code === "subscription.billing_country_unconfirmed") setCountryOpen(true);
+      else if (e instanceof ApiError && e.code === "subscription.currency_not_offered")
+        toast.error(t("purchase.notSoldInCurrency", { currency: currencyLabel(currency, t) }));
+      else toast.error(paymentErrorMessage(e));
       void offersQ.refetch();
     } finally {
       submittingRef.current = false;
@@ -281,7 +410,9 @@ export function SubscriptionPurchase() {
 
   const ctaKey = eligible ? "purchase.startTrial" : "purchase.startNow";
   const ctaLabel = t(ctaKey).replace(/<\/?s>/g, "");
-  const ctaDisabled = status !== "ready" || !selectedId;
+  // No payment method can pay this currency with the merchants configured now.
+  const ctaDisabled = status !== "ready" || !selectedId || (!!currency && paymentOptions.length === 0);
+  const selectedPlan = plans.find((p) => p.plan_id === selectedId) ?? null;
 
   return (
     <div className="subp">
@@ -320,10 +451,22 @@ export function SubscriptionPurchase() {
             </h1>
             <p className="subp__desc">{t("purchase.heroDesc")}</p>
 
+            {offers && (
+              <BillingCountryBlock
+                offers={offers}
+                saving={confirmCountry.saving}
+                onConfirm={() => offers.billing_country.country && void confirmCountry.save(offers.billing_country.country)}
+                onChange={() => setCountryOpen(true)}
+              />
+            )}
+
             {status === "missing_plans" ? (
-              <p className="subp__noplans" role="status">
-                {t("purchase.noProducts")}
-              </p>
+              // No country yet: the block above asks for one; nothing to price.
+              currency && (
+                <p className="subp__noplans" role="status">
+                  {t("purchase.noProducts")}
+                </p>
+              )
             ) : (
               <div className="subp__plans" role="radiogroup" aria-label={t("purchase.productsTitle")}>
                 {[...plans]
@@ -337,6 +480,23 @@ export function SubscriptionPurchase() {
                     />
                   ))}
               </div>
+            )}
+
+            {selectedPlan && status !== "missing_plans" && (
+              <ChargeSummary plan={selectedPlan} trialDays={eligible ? (offers?.trial.days ?? 7) : null} />
+            )}
+            {currency && plans.length > 0 && (
+              paymentOptions.length > 0 ? (
+                <p className="subp__paywith">
+                  {t("purchase.payWith", {
+                    methods: paymentOptions.map((o) => t(OPTION_LABEL[o.provider] ?? "purchase.optionIntlCard")).join(" · "),
+                  })}
+                </p>
+              ) : (
+                <p className="subp__unavailable" role="status">
+                  {t("purchase.noPaymentOption", { currency: currencyLabel(currency, t) })}
+                </p>
+              )
             )}
 
             <button className="subp__cta" onClick={start} disabled={ctaDisabled} aria-label={ctaLabel}>
@@ -384,6 +544,13 @@ export function SubscriptionPurchase() {
           </div>
         </div>
       )}
+
+      <BillingCountrySheet
+        open={countryOpen}
+        current={offers?.billing_country.country ?? null}
+        onClose={() => setCountryOpen(false)}
+      />
+      {confirmCountry.dialog}
 
       {currencyBlock && (
         <div className="overlay overlay--center" onClick={() => setCurrencyBlock(null)}>

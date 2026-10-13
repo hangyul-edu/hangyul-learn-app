@@ -154,9 +154,9 @@ describe("international card form", () => {
     renderScreen();
     await openForm();
     const radios = await screen.findAllByRole("radio");
-    expect(radios.map((r) => r.textContent)).toEqual(["달러(USD)"]);
+    expect(radios.map((r) => r.textContent)).toEqual(["미국 달러(USD)"]);
     expect(radios[0]).toHaveAttribute("aria-checked", "true");
-    expect(screen.getByText(/선택한 통화로 결제돼요. 이 카드는 달러\(USD\) 요금제 결제에만/)).toBeInTheDocument();
+    expect(screen.getByText(/선택한 통화로 결제돼요. 이 카드는 미국 달러\(USD\) 요금제 결제에만/)).toBeInTheDocument();
     // No CVC / PIN, and no birth date unless the currency requires it.
     expect(screen.queryByLabelText(/CVC|보안코드|비밀번호/)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/생년월일/)).not.toBeInTheDocument();
@@ -177,8 +177,8 @@ describe("international card form", () => {
     subs.mine.mockResolvedValue({ status: "active", plan_id: "plan_usd", plan_currency: "USD" });
     renderScreen();
     await openForm();
-    await waitFor(() => expect(screen.getByRole("radio", { name: "달러(USD)" })).toHaveAttribute("aria-checked", "true"));
-    expect(screen.getByText(/이용 중인 요금제가 달러\(USD\)로 결제돼서/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("radio", { name: "미국 달러(USD)" })).toHaveAttribute("aria-checked", "true"));
+    expect(screen.getByText(/이용 중인 요금제가 미국 달러\(USD\)로 결제돼서/)).toBeInTheDocument();
     expect(subs.offers).not.toHaveBeenCalled();
   });
 
@@ -190,7 +190,7 @@ describe("international card form", () => {
     });
     renderScreen({ selectedPlanId: "plan_usd" });
     await openForm();
-    await waitFor(() => expect(screen.getByRole("radio", { name: "달러(USD)" })).toHaveAttribute("aria-checked", "true"));
+    await waitFor(() => expect(screen.getByRole("radio", { name: "미국 달러(USD)" })).toHaveAttribute("aria-checked", "true"));
   });
 
   it("locks the currency to required_currency and explains why", async () => {
@@ -198,17 +198,17 @@ describe("international card form", () => {
     renderScreen();
     await openForm();
     const radios = await screen.findAllByRole("radio");
-    expect(radios.map((r) => r.textContent)).toEqual(["달러(USD)"]);
+    expect(radios.map((r) => r.textContent)).toEqual(["미국 달러(USD)"]);
     expect(radios[0]).toHaveAttribute("aria-checked", "true");
     expect(radios[0]).toBeDisabled();
-    expect(screen.getByText(/이용 중인 구독이 달러\(USD\)로 결제돼서 달러\(USD\)로만 등록할 수 있어요/)).toBeInTheDocument();
+    expect(screen.getByText(/이용 중인 구독이 미국 달러\(USD\)로 결제돼서 미국 달러\(USD\)로만 등록할 수 있어요/)).toBeInTheDocument();
   });
 
   it("shows 'not available' when the required currency isn't offered", async () => {
     api.internationalCardOptions.mockResolvedValue({ available: true, currencies: [OPTIONS.currencies[0]], required_currency: "USD" });
     renderScreen();
     await openForm();
-    expect(await screen.findByText(/지금은 달러\(USD\) 해외 카드를 등록할 수 없어요/)).toBeInTheDocument();
+    expect(await screen.findByText(/지금은 미국 달러\(USD\) 해외 카드를 등록할 수 없어요/)).toBeInTheDocument();
     expect(screen.queryByLabelText("카드 번호")).not.toBeInTheDocument();
   });
 
@@ -272,7 +272,7 @@ describe("international card form", () => {
     api.registerInternationalCard.mockResolvedValue({ method: INTL_CARD });
     const { qc } = renderScreen();
     await openForm();
-    await userEvent.click(await screen.findByRole("radio", { name: "달러(USD)" }));
+    await userEvent.click(await screen.findByRole("radio", { name: "미국 달러(USD)" }));
     await fillCard();
     const listCalls = api.methods.mock.calls.length;
     await userEvent.click(screen.getByRole("button", { name: "등록하기" }));
@@ -308,7 +308,7 @@ describe("international card form", () => {
     renderScreen();
     await openForm();
     expect(await screen.findByText(/100원.*결제되었다가 바로 취소돼요/)).toBeInTheDocument();
-    await userEvent.click(await screen.findByRole("radio", { name: "달러(USD)" }));
+    await userEvent.click(await screen.findByRole("radio", { name: "미국 달러(USD)" }));
     await fillCard(PAN, "0731", { consent: false });
     await userEvent.click(screen.getByRole("button", { name: "등록하기" }));
     expect(await screen.findByText(/자동 결제에 동의해야 카드를 등록할 수 있어요/)).toBeInTheDocument();
@@ -364,7 +364,7 @@ describe("international card form", () => {
     ],
     [
       new ApiError(422, "payment_method.currency_mismatch", "x", { subscription_currency: "USD", card_currency: "KRW" }),
-      /이용 중인 구독은 달러\(USD\)로 결제돼요/,
+      /이용 중인 구독은 미국 달러\(USD\)로 결제돼요/,
     ],
     [new ApiError(422, "payment_method.unsupported_currency", "x", { available_currencies: ["USD"] }), /선택한 통화는 지금 사용할 수 없어요/],
   ])("maps %s to friendly copy", async (error, text) => {
@@ -456,7 +456,7 @@ describe("registered cards show region and currency", () => {
     expect(locked).toHaveAttribute("aria-disabled", "true");
     await userEvent.click(locked);
     expect(api.setDefault).not.toHaveBeenCalled();
-    expect(await screen.findByText(/원화\(KRW\)로만 결제돼요. 달러\(USD\) 요금제는 해외 카드로/)).toBeInTheDocument();
+    expect(await screen.findByText(/원화\(KRW\)로만 결제돼요. 미국 달러\(USD\) 요금제는 해외 카드로/)).toBeInTheDocument();
   });
 
   it("maps a currency_mismatch from the domestic intent to friendly copy", async () => {
@@ -465,7 +465,7 @@ describe("registered cards show region and currency", () => {
     );
     renderScreen();
     await userEvent.click(await screen.findByLabelText("국내 카드 추가"));
-    expect(await screen.findByText(/원화\(KRW\)로만 결제돼요. 달러\(USD\) 요금제는 해외 카드로/)).toBeInTheDocument();
+    expect(await screen.findByText(/원화\(KRW\)로만 결제돼요. 미국 달러\(USD\) 요금제는 해외 카드로/)).toBeInTheDocument();
     expect(requestTossBillingAuth).not.toHaveBeenCalled();
   });
 

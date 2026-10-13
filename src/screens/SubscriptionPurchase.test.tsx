@@ -5,30 +5,42 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 /* -------------------------------- mocks --------------------------------- */
-const { plans, mine, paymentMethods, startTrial, subscribe, toastShow, toastError } = vi.hoisted(() => ({
-  plans: vi.fn(),
-  mine: vi.fn(),
-  paymentMethods: vi.fn(),
-  startTrial: vi.fn(),
-  subscribe: vi.fn(),
-  toastShow: vi.fn(),
-  toastError: vi.fn(),
-}));
-// The screen reads one call, GET /subscriptions/offers. The tests set its two
-// halves separately: the plans offered (`plans`) and the member's trial
-// eligibility (`mine`, as /subscriptions/me reports it).
+const { plans, mine, country, paymentMethods, startTrial, subscribe, setBillingCountry, toastShow, toastError } =
+  vi.hoisted(() => ({
+    plans: vi.fn(),
+    mine: vi.fn(),
+    country: vi.fn(),
+    paymentMethods: vi.fn(),
+    startTrial: vi.fn(),
+    subscribe: vi.fn(),
+    setBillingCountry: vi.fn(),
+    toastShow: vi.fn(),
+    toastError: vi.fn(),
+  }));
+// The screen reads one call, GET /subscriptions/offers. The tests set its
+// parts separately: the plans offered (`plans`), the member's trial
+// eligibility (`mine`, as /subscriptions/me reports it) and their billing
+// country with its currency and payment options (`country`).
 vi.mock("../api/endpoints", () => ({
   subApi: {
     offers: async () => {
-      const [p, m] = await Promise.all([plans(), mine()]);
-      return { plans: p.plans, new_member: false, trial: { available: !!m.trial_available, days: 7 } };
+      const [p, m, c] = await Promise.all([plans(), mine(), country()]);
+      return { plans: p.plans, new_member: false, trial: { available: !!m.trial_available, days: 7 }, preview: false, ...c };
     },
     paymentMethods,
     startTrial,
     subscribe,
+    setBillingCountry,
   },
 }));
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: toastError, success: vi.fn(), show: toastShow }) }));
+
+/** A confirmed US billing country: USD prices, payable by an overseas card. */
+const CONFIRMED_US = {
+  billing_country: { country: "US", source: "confirmed", confirmed: true, currency: "USD" },
+  currency: "USD",
+  payment_options: [{ provider: "toss_intl_card", kind: "card", card_region: "international" }],
+};
 
 import { SubscriptionPurchase } from "./SubscriptionPurchase";
 import { I18nProvider } from "../i18n";
@@ -56,6 +68,8 @@ const PLANS = [
     original_monthly_cents: 1299, current_monthly_cents: 999, discount_percent: 23,
   },
 ];
+/** What the screen shows for the annual plan, sent so a stale price is refused. */
+const YEAR_QUOTE = { currency: "USD", quoted_amount_cents: 7188 };
 const METHOD = { method_id: "pm1", kind: "card", provider: "toss_card", status: "active", is_default: true, display_name: "카드" };
 
 function renderPage() {
@@ -79,6 +93,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   plans.mockResolvedValue({ plans: PLANS });
   mine.mockResolvedValue({ status: "expired", trial_started: false, trial_available: true });
+  country.mockResolvedValue(CONFIRMED_US);
+  setBillingCountry.mockResolvedValue({ billing_country: CONFIRMED_US.billing_country, subscription: null });
   paymentMethods.mockResolvedValue({ methods: [METHOD] });
   startTrial.mockResolvedValue({});
   subscribe.mockResolvedValue({});
@@ -112,8 +128,8 @@ describe("SubscriptionPurchase", () => {
     renderPage();
     await screen.findByRole("button", { name: "7일 무료 체험 시작하기" });
     // Monthly-equivalent + annual total from the server price.
-    expect(screen.getByText("$5.99")).toBeInTheDocument();
-    expect(screen.getByText("($71.88)")).toBeInTheDocument();
+    expect(screen.getByText("US$5.99")).toBeInTheDocument();
+    expect(screen.getByText("(US$71.88)")).toBeInTheDocument();
     const year = screen.getByRole("radio", { name: /12개월/ });
     expect(year).toHaveAttribute("aria-checked", "true");
     expect(screen.getByRole("radio", { name: /1개월/ })).toHaveAttribute("aria-checked", "false");
@@ -135,10 +151,10 @@ describe("SubscriptionPurchase", () => {
     renderPage();
     await screen.findByRole("button", { name: "7일 무료 체험 시작하기" });
     const year = screen.getByRole("radio", { name: /12개월/ });
-    expect(within(year).getByText("$3.99")).toBeInTheDocument();
-    expect(within(year).getByText("($47.88)")).toBeInTheDocument();
+    expect(within(year).getByText("US$3.99")).toBeInTheDocument();
+    expect(within(year).getByText("(US$47.88)")).toBeInTheDocument();
     expect(within(year).getByText("최대 69%할인")).toBeInTheDocument();
-    expect(within(year).getByText("$12.99/월 ($155.88)")).toBeInTheDocument();
+    expect(within(year).getByText("US$12.99/월 (US$155.88)")).toBeInTheDocument();
   });
 
   it("makes room above a card whose ribbon would overlap the card before it", async () => {
@@ -203,7 +219,7 @@ describe("SubscriptionPurchase", () => {
     });
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: "7일 무료 체험 시작하기" }));
-    await waitFor(() => expect(startTrial).toHaveBeenCalledWith("p_year"));
+    await waitFor(() => expect(startTrial).toHaveBeenCalledWith("p_year", YEAR_QUOTE));
     expect(screen.queryByText("결제 수단 등록이 필요해요")).not.toBeInTheDocument();
   });
 
@@ -224,7 +240,7 @@ describe("SubscriptionPurchase", () => {
   it("trial CTA (with a valid method) calls the trial endpoint, then routes to management", async () => {
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: "7일 무료 체험 시작하기" }));
-    await waitFor(() => expect(startTrial).toHaveBeenCalledWith("p_year"));
+    await waitFor(() => expect(startTrial).toHaveBeenCalledWith("p_year", YEAR_QUOTE));
     expect(subscribe).not.toHaveBeenCalled();
     await waitFor(() => expect(screen.getByText("MANAGE")).toBeInTheDocument());
   });
@@ -233,7 +249,7 @@ describe("SubscriptionPurchase", () => {
     mine.mockResolvedValue({ status: "expired", trial_started: true, trial_available: false });
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: "지금 바로 시작하기" }));
-    await waitFor(() => expect(subscribe).toHaveBeenCalledWith("p_year"));
+    await waitFor(() => expect(subscribe).toHaveBeenCalledWith("p_year", undefined, YEAR_QUOTE));
     expect(startTrial).not.toHaveBeenCalled();
     expect(toastShow).not.toHaveBeenCalled();
   });
@@ -323,7 +339,7 @@ describe("SubscriptionPurchase — plan cards", () => {
     expect(annual.querySelector("s")).toBeNull();
     expect(monthly.querySelector("s")).toBeNull();
     expect(screen.queryByText(/0% 할인/)).not.toBeInTheDocument();
-    expect(within(monthly).getByText("$12.99")).toBeInTheDocument();
+    expect(within(monthly).getByText("US$12.99")).toBeInTheDocument();
   });
 
   it("annual right column stacks purple badge, one struck original, then final price", async () => {
@@ -334,9 +350,9 @@ describe("SubscriptionPurchase — plan cards", () => {
     expect(hl).toHaveClass("plan__badge-hl");
     expect(hl.closest(".plan__badge")).toHaveClass("plan__badge--purple");
     // A single struck original line covering monthly + annual total.
-    expect(within(annual).getByText("$12.99/월 ($155.88)").closest("s")).toBeInTheDocument();
+    expect(within(annual).getByText("US$12.99/월 (US$155.88)").closest("s")).toBeInTheDocument();
     // Final current price below.
-    expect(within(annual).getByText("$5.99")).toHaveClass("plan__final-main");
+    expect(within(annual).getByText("US$5.99")).toHaveClass("plan__final-main");
   });
 
   it("annual selected radio is orange (selected state via class), swaps on monthly select", async () => {
@@ -350,9 +366,9 @@ describe("SubscriptionPurchase — plan cards", () => {
 
   it("annual final price uses three distinctly-styled parts", async () => {
     const { annual } = await cards();
-    expect(within(annual).getByText("$5.99")).toHaveClass("plan__final-main");
+    expect(within(annual).getByText("US$5.99")).toHaveClass("plan__final-main");
     expect(within(annual).getByText("/월")).toHaveClass("plan__final-per");
-    expect(within(annual).getByText("($71.88)")).toHaveClass("plan__final-total");
+    expect(within(annual).getByText("(US$71.88)")).toHaveClass("plan__final-total");
   });
 
   it("renders no orange arrow/zigzag graphic and no intermediate $7.99/$95.88 tier", async () => {
@@ -368,10 +384,10 @@ describe("SubscriptionPurchase — plan cards", () => {
     const pill = within(monthly).getByText("23% 할인");
     expect(pill).toHaveClass("plan__badge--black");
     // The rule runs through the whole original price, /월 suffix included.
-    expect(within(monthly).getByText("$12.99/월").closest("s")).toBeInTheDocument();
+    expect(within(monthly).getByText("US$12.99/월").closest("s")).toBeInTheDocument();
     // The badge sits on that same row, immediately before the struck price.
     expect(pill.closest(".plan__month-row")).not.toBeNull();
-    const cur = within(monthly).getByText("$9.99");
+    const cur = within(monthly).getByText("US$9.99");
     expect(cur).toHaveClass("plan__final-main");
     expect(cur.closest(".plan__month-cur")).not.toBeNull();
   });
@@ -399,8 +415,8 @@ describe("SubscriptionPurchase — plan cards", () => {
     await screen.findByRole("button", { name: "7일 무료 체험 시작하기" });
     expect(screen.getByText("최대 60%할인")).toBeInTheDocument(); // server, not 50%
     expect(screen.getByText("25% 할인")).toBeInTheDocument(); // server, not 20%
-    expect(screen.getByText("$5.00")).toBeInTheDocument(); // server current_monthly_cents
-    expect(screen.getByText("$9.99/월 ($120.00)").closest("s")).toBeInTheDocument(); // server monthly+total
+    expect(screen.getByText("US$5.00")).toBeInTheDocument(); // server current_monthly_cents
+    expect(screen.getByText("US$9.99/월 (US$120.00)").closest("s")).toBeInTheDocument(); // server monthly+total
   });
 });
 
@@ -415,7 +431,7 @@ describe("SubscriptionPurchase currency pre-check", () => {
     await userEvent.click(await screen.findByRole("button", { name: "지금 바로 시작하기" }));
     const dialog = await screen.findByRole("alertdialog");
     expect(within(dialog).getByText("이 결제수단으로는 결제할 수 없어요")).toBeInTheDocument();
-    expect(within(dialog).getByText(/원화\(KRW\)로만 결제돼요. 달러\(USD\) 요금제는 해외 카드로/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/원화\(KRW\)로만 결제돼요. 미국 달러\(USD\) 요금제는 해외 카드로/)).toBeInTheDocument();
     expect(subscribe).not.toHaveBeenCalled();
     expect(startTrial).not.toHaveBeenCalled();
     // The path out: straight to the overseas-card form, keeping the plan.
@@ -430,7 +446,7 @@ describe("SubscriptionPurchase currency pre-check", () => {
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: "7일 무료 체험 시작하기" }));
     const dialog = await screen.findByRole("alertdialog");
-    expect(within(dialog).getByText(/달러\(USD\) 결제수단을 기본 결제수단으로 선택하면/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/미국 달러\(USD\) 결제수단을 기본 결제수단으로 선택하면/)).toBeInTheDocument();
     expect(startTrial).not.toHaveBeenCalled();
     await userEvent.click(within(dialog).getByRole("button", { name: "결제수단 관리" }));
     expect(await screen.findByText("PAYMENT REG")).toBeInTheDocument();
@@ -442,7 +458,7 @@ describe("SubscriptionPurchase currency pre-check", () => {
     paymentMethods.mockResolvedValue({ methods: [{ ...USD_CARD, is_default: true }] });
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: "지금 바로 시작하기" }));
-    await waitFor(() => expect(subscribe).toHaveBeenCalledWith("p_year"));
+    await waitFor(() => expect(subscribe).toHaveBeenCalledWith("p_year", undefined, YEAR_QUOTE));
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
@@ -456,5 +472,122 @@ describe("SubscriptionPurchase currency pre-check", () => {
     await userEvent.click(await screen.findByRole("button", { name: "지금 바로 시작하기" }));
     await waitFor(() => expect(toastError).toHaveBeenCalled());
     expect(toastError.mock.calls[0][0]).toMatch(/원화\(KRW\)로만 결제돼요/);
+  });
+});
+
+describe("SubscriptionPurchase — billing country, currency and what is charged", () => {
+  const KR_PLANS = [
+    {
+      ...PLANS[0], currency: "KRW", price_cents: 154800, promo_price_cents: 69000,
+      original_total_cents: 154800, current_total_cents: 69000,
+      original_monthly_cents: 12900, current_monthly_cents: 5750, discount_percent: 55,
+    },
+    {
+      ...PLANS[1], currency: "KRW", price_cents: 12900, promo_price_cents: 9900,
+      original_total_cents: 12900, current_total_cents: 9900,
+      original_monthly_cents: 12900, current_monthly_cents: 9900, discount_percent: 23,
+    },
+  ];
+
+  it("shows the confirmed country and its currency, with a way to change it", async () => {
+    renderPage();
+    const block = await screen.findByTestId("billing-country");
+    expect(block).toHaveTextContent("결제 국가");
+    expect(block).toHaveTextContent("미국");
+    expect(block).toHaveTextContent("미국 달러(USD)로 결제");
+    expect(within(block).getByRole("button", { name: "변경" })).toBeInTheDocument();
+  });
+
+  it("asks to confirm the nationality suggestion before any checkout", async () => {
+    country.mockResolvedValue({
+      ...CONFIRMED_US,
+      billing_country: { country: "US", source: "nationality", confirmed: false, currency: "USD" },
+    });
+    renderPage();
+    const block = await screen.findByTestId("billing-country");
+    expect(block).toHaveTextContent("결제 국가를 확인해 주세요");
+    expect(block).toHaveTextContent(/등록하신 국적을 바탕으로 미국을\(를\) 제안했어요/);
+    // The CTA confirms the country first; nothing is started or charged.
+    await userEvent.click(screen.getByRole("button", { name: "7일 무료 체험 시작하기" }));
+    await waitFor(() => expect(setBillingCountry).toHaveBeenCalledWith("US", false));
+    expect(startTrial).not.toHaveBeenCalled();
+    expect(subscribe).not.toHaveBeenCalled();
+  });
+
+  it("lets the member choose a country when there is nothing to suggest", async () => {
+    country.mockResolvedValue({
+      billing_country: { country: null, source: null, confirmed: false, currency: null },
+      currency: null,
+      payment_options: [],
+    });
+    plans.mockResolvedValue({ plans: [] });
+    renderPage();
+    const block = await screen.findByTestId("billing-country");
+    expect(block).toHaveTextContent("결제 국가를 선택해 주세요");
+    expect(screen.queryByText(/이용 가능한 구독 상품이 없어요/)).not.toBeInTheDocument();
+    await userEvent.click(within(block).getByRole("button", { name: "선택" }));
+    expect(await screen.findByRole("dialog")).toHaveTextContent("결제 정보와 결제 수단이 속한 국가를 선택해 주세요");
+    await userEvent.type(screen.getByRole("searchbox", { name: "국가 검색" }), "대한민국");
+    await userEvent.click(screen.getByRole("button", { name: /대한민국/ }));
+    expect(screen.getByRole("status")).toHaveTextContent("대한민국 · 원화(KRW)로 결제");
+    await userEvent.click(screen.getByRole("button", { name: "이 국가로 결제" }));
+    await waitFor(() => expect(setBillingCountry).toHaveBeenCalledWith("KR", false));
+  });
+
+  it("states the annual charge, its monthly equivalent, the renewal and when billing starts after the trial", async () => {
+    renderPage();
+    const summary = await screen.findByTestId("charge-summary");
+    expect(summary).toHaveTextContent(/7일 무료 체험 후 .+부터 연 US\$71\.88\(월 US\$5\.99 상당\)이 결제돼요\./);
+    expect(summary).toHaveTextContent("이후 해지할 때까지 매년 US$71.88에 자동 갱신돼요.");
+    await userEvent.click(screen.getByRole("radio", { name: /1개월 요금제/ }));
+    expect(screen.getByTestId("charge-summary")).toHaveTextContent(/7일 무료 체험 후 .+부터 월 US\$9\.99이 결제돼요\./);
+  });
+
+  it("states what is charged today when there is no trial", async () => {
+    mine.mockResolvedValue({ status: "expired", trial_started: true, trial_available: false });
+    renderPage();
+    const summary = await screen.findByTestId("charge-summary");
+    expect(summary).toHaveTextContent("오늘 US$71.88이 결제돼요. (12개월, 월 US$5.99 상당)");
+    expect(screen.getByText("결제 수단: 해외 카드")).toBeInTheDocument();
+  });
+
+  it("prices a Korean billing country in won and lists the methods that can pay it", async () => {
+    country.mockResolvedValue({
+      billing_country: { country: "KR", source: "confirmed", confirmed: true, currency: "KRW" },
+      currency: "KRW",
+      payment_options: [
+        { provider: "toss_card", kind: "card", card_region: "domestic" },
+        { provider: "naver_pay", kind: "naver_pay", card_region: null },
+        { provider: "toss_intl_card", kind: "card", card_region: "international" },
+      ],
+    });
+    plans.mockResolvedValue({ plans: KR_PLANS });
+    renderPage();
+    expect(await screen.findByText("₩5,750")).toBeInTheDocument();
+    expect(screen.getByText("(₩69,000)")).toBeInTheDocument();
+    expect(screen.getByText("결제 수단: 국내 카드 · 네이버페이 · 해외 카드")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "7일 무료 체험 시작하기" }));
+    await waitFor(() =>
+      expect(startTrial).toHaveBeenCalledWith("p_year", { currency: "KRW", quoted_amount_cents: 69000 }),
+    );
+  });
+
+  it("does not offer checkout when no configured method can pay the currency", async () => {
+    country.mockResolvedValue({ ...CONFIRMED_US, payment_options: [] });
+    renderPage();
+    expect(await screen.findByText(/지금은 미국 달러\(USD\) 결제 수단을 이용할 수 없어요/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "7일 무료 체험 시작하기" })).toBeDisabled();
+  });
+
+  it("re-reads the offers instead of charging a price that changed", async () => {
+    const { ApiError } = await import("../lib/http");
+    startTrial.mockRejectedValue(
+      new ApiError(409, "subscription.price_changed", "x", { currency: "USD", amount_cents: 7999, quoted_amount_cents: 7188 }),
+    );
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "7일 무료 체험 시작하기" }));
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith("가격이 변경됐어요. 새 가격을 확인한 뒤 다시 시도해 주세요."));
+    await waitFor(() => expect(plans.mock.calls.length).toBeGreaterThan(1));
+    expect(screen.queryByText("MANAGE")).not.toBeInTheDocument();
   });
 });

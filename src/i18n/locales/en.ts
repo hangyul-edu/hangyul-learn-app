@@ -210,6 +210,9 @@ export const en: Catalog = {
     myPlanHeading: "My Plan", // 784:62116
     planLabel: "Plan", // 784:62119
     nextBilling: "Next billing date", // 784:62122
+    renewalLabel: "Renewal price",
+    renewalYear: "{amount}/yr",
+    renewalMonth: "{amount}/mo",
     statusLabel: "Status", // 784:62274
     statusCanceling: "Canceling", // 784:62275
     cancel: "Cancel Plan", // 784:62125
@@ -660,6 +663,47 @@ export const en: Catalog = {
     discountedPrice: "<s>up to {pct}% off</s>", // 898:19697
     discountPct: "{pct}% off",
     perMonthPriceWithTotal: "{price}/mo ({total})",
+    summaryTrialYear: "Free for {days} days, then {total} per year (about {monthly}/mo) from {date}.",
+    summaryTrialMonth: "Free for {days} days, then {total} per month from {date}.",
+    summaryPaidYear: "{total} charged today for 12 months (about {monthly}/mo).",
+    summaryPaidMonth: "{total} charged today for 1 month.",
+    summaryRenewYear: "Renews every year at {total} until you cancel.",
+    summaryRenewMonth: "Renews every month at {total} until you cancel.",
+    payWith: "Pay with: {methods}",
+    noPaymentOption: "Paying in {currency} isn't available right now. Choose another billing country or try again later.",
+    priceChanged: "The price changed. Please review the new price and try again.",
+    notSoldInCurrency: "This plan isn't sold in {currency}.",
+    optionDomesticCard: "Korean card",
+    optionIntlCard: "Overseas card",
+    optionNaverPay: "Naver Pay",
+    optionTossPay: "Toss Pay",
+  },
+
+  billingCountry: {
+    label: "Billing country",
+    pricesIn: "Billed in {currency}",
+    suggestedTitle: "Confirm your billing country",
+    suggestedBody: "We suggested {country} from your registered nationality. Confirm it, or choose the country your billing details and payment method belong to.",
+    noneTitle: "Choose your billing country",
+    noneBody: "Your billing country sets the currency you pay in.",
+    previewNote: "These are prices for a country you haven't confirmed. Confirm your billing country to check out.",
+    confirm: "Confirm",
+    change: "Change",
+    choose: "Choose",
+    sheetTitle: "Billing country",
+    sheetHint: "Choose the country your billing details and payment method belong to. Travelling, signing in from abroad or changing the app language never changes it.",
+    search: "Search countries",
+    noResults: "No results",
+    currencyFor: "Billed in {currency}",
+    save: "Use this country",
+    saved: "Billing country saved.",
+    keepTitle: "Your current subscription stays the same",
+    keepBody1: "{country} is billed in {newCurrency}.",
+    keepBody2: "Your current subscription stays in {currency}: {amount} will still be charged on your next billing date ({date}).",
+    keepBody3: "The new billing country applies only to subscriptions you start later.",
+    keepConfirm: "Yes, change it",
+    storeManaged: "If you subscribed through an app store, the store manages its price and billing.",
+    unsupported: "This country can't be selected.",
   },
 
   /** Saved sentences / TAL-038, Figma 798:76840. */

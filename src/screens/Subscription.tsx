@@ -14,6 +14,8 @@ import { formatMoney, formatLongDate } from "../lib/format";
 import { hasLiveSubscription } from "../lib/subscription";
 import type { CouponRedemption, Invoice } from "../lib/types";
 import { CancelReasonModal } from "../components/CancelReasonModal";
+import { BillingCountrySheet } from "../components/BillingCountrySheet";
+import { countryName } from "../lib/phone";
 import { DetailHeader } from "../components/DetailHeader";
 
 /* ---------------- date helpers (locale ko-KR, timezone-safe) ---------------- */
@@ -76,6 +78,9 @@ export function Subscription() {
 
   const mine = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
   const m = mine.data;
+  const countryQ = useQuery({ queryKey: ["billing-country"], queryFn: subApi.billingCountry });
+  const billingCountry = countryQ.data?.billing_country;
+  const [countryOpen, setCountryOpen] = useState(false);
   // A cancelled subscription still shows (with 해지 취소) until it lapses.
   const hasSub = hasLiveSubscription(m) || m?.status === "cancelled";
 
@@ -190,6 +195,15 @@ export function Subscription() {
   const planName = m?.plan_name || t("subscription.planFallback");
   const endIso = m?.current_period_end;
   const endDate = longDate(endIso);
+  // What each renewal charges, in the subscription's own currency (kept
+  // whatever the billing country becomes). Not for a coupon pass or a
+  // cancellation that will not renew.
+  const renewal =
+    m?.renewal_amount_cents != null && m.plan_currency && !scheduledCancel && !m.coupon_backed
+      ? t(m.interval === "year" ? "subscription.renewalYear" : "subscription.renewalMonth", {
+          amount: formatMoney(m.renewal_amount_cents, m.plan_currency),
+        })
+      : null;
 
   return (
     <div className="screen subm">
@@ -218,6 +232,12 @@ export function Subscription() {
                       too and adds a 구독 상태 row underneath. */}
                   <span className="subm__label">{t("subscription.nextBilling")}</span>
                   <span className="subm__value">{endDate}</span>
+                </div>
+              )}
+              {renewal && (
+                <div className="subm__srow">
+                  <span className="subm__label">{t("subscription.renewalLabel")}</span>
+                  <span className="subm__value">{renewal}</span>
                 </div>
               )}
               {scheduledCancel && (
@@ -259,6 +279,24 @@ export function Subscription() {
               </button>
             </div>
           )}
+
+          {/* The billing country web prices and checkout use. Changing it never
+              touches the running subscription (the sheet explains that and
+              asks first when the currency would differ). */}
+          {billingCountry && (
+            <div className="subm__voucher subm__country" data-testid="billing-country-row">
+              <span className="subm__voucher-label subm__country-label">
+                {t("billingCountry.label")}
+                {": "}
+                {billingCountry.country ? countryName(billingCountry.country, language) : "-"}
+                {billingCountry.currency ? ` (${billingCountry.currency})` : ""}
+              </span>
+              <button className="subm__voucher-btn" onClick={() => setCountryOpen(true)}>
+                {t(billingCountry.confirmed ? "billingCountry.change" : "billingCountry.choose")}
+              </button>
+            </div>
+          )}
+          {m?.store_managed && <p className="subm__store-note">{t("billingCountry.storeManaged")}</p>}
 
           {/* Course-access / voucher code */}
           <div className="subm__voucher">
@@ -396,6 +434,13 @@ export function Subscription() {
         loading={busy}
         onSkip={() => !busy && void doCancel()}
         onSubmit={(reason) => void doCancel(reason)}
+      />
+
+      <BillingCountrySheet
+        open={countryOpen}
+        current={billingCountry?.country ?? null}
+        onClose={() => setCountryOpen(false)}
+        onSaved={() => qc.invalidateQueries({ queryKey: ["sub-me"] })}
       />
     </div>
   );

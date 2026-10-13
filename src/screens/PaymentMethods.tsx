@@ -187,7 +187,9 @@ export function PaymentMethods() {
   const buyingPlanId = navState?.selectedPlanId;
   const offersQ = useQuery({ queryKey: ["sub-offers"], queryFn: subApi.offers, enabled: !!buyingPlanId });
   const plans: Plan[] = offersQ.data?.plans ?? [];
-  const buyingCurrency = plans.find((p) => p.plan_id === buyingPlanId)?.currency?.toUpperCase() ?? null;
+  // Every offered plan is priced in the member's billing currency.
+  const buyingCurrency =
+    (plans.find((p) => p.plan_id === buyingPlanId)?.currency ?? offersQ.data?.currency)?.toUpperCase() ?? null;
   const preferredCurrency = liveCurrency ?? buyingCurrency;
   const currencyLocked = (m: PaymentMethod) =>
     !!liveCurrency && !!m.billing_currency && m.billing_currency.toUpperCase() !== liveCurrency;

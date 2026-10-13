@@ -9137,6 +9137,178 @@ textarea.input {
   gap: 12px;
 }
 
+/* ---- billing country, charge summary and payment options (app-authored) ---- */
+.subp__country {
+  position: relative;
+  margin: 20px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f6f7f8;
+  text-align: left;
+  font-family: var(--font-body);
+}
+.subp__country-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.subp__country-text {
+  flex: 1;
+  min-width: 0;
+  color: #262c31;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+}
+.subp__country-label {
+  display: block;
+  color: #778088;
+  font-size: 12px;
+  line-height: 17px;
+}
+.subp__country--ask {
+  background: #fff4ec;
+  border: 1px solid #ffd2b3;
+}
+.subp__country-title {
+  margin: 0;
+  color: #262c31;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+}
+.subp__country-body {
+  margin: 4px 0 10px;
+  color: #5f676e;
+  font-size: 13px;
+  line-height: 19px;
+}
+.subp__country-actions {
+  display: flex;
+  gap: 8px;
+}
+.subp__country-btn {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid #d9dde1;
+  background: #fff;
+  color: #262c31;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.subp__country-btn--primary {
+  border-color: #ff6700;
+  background: #ff6700;
+  color: #fff;
+}
+.subp__summary {
+  /* Opaque, like the plan cards, so the decorative letters stay behind it. */
+  position: relative;
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #eceff1;
+  background: #fff;
+  text-align: left;
+  color: #3d454c;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 19px;
+}
+.subp__summary p {
+  margin: 0;
+}
+.subp__summary p + p {
+  margin-top: 4px;
+  color: #778088;
+}
+.subp__paywith,
+.subp__unavailable {
+  margin: 8px 0 0;
+  text-align: left;
+  color: #778088;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 17px;
+}
+.subp__unavailable {
+  color: #d1453b;
+}
+
+/* Billing-country sheet */
+.bcs__hint {
+  margin: 0 0 10px;
+  color: #6b7178;
+  font-size: 13px;
+  line-height: 19px;
+}
+.bcs__search.country-select__search {
+  margin: 0 0 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.bcs__list {
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+  max-height: min(46vh, 340px);
+  overflow-y: auto;
+  border: 1px solid #eceff1;
+  border-radius: 10px;
+}
+.bcs__empty {
+  padding: 14px 16px;
+  font-size: 13px;
+  color: #8a929a;
+}
+.bcs__item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border: none;
+  border-bottom: 1px solid #f2f4f5;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.bcs__list li:last-child .bcs__item {
+  border-bottom: none;
+}
+.bcs__name {
+  flex: 1;
+  min-width: 0;
+  color: #262c31;
+  font-size: 14px;
+  font-weight: 600;
+}
+.bcs__currency {
+  flex: 0 0 auto;
+  color: #8a929a;
+  font-size: 12px;
+  font-weight: 700;
+}
+.bcs__item.is-selected .bcs__name {
+  color: #ff6700;
+  font-weight: 800;
+}
+.bcs__item:active {
+  background: #f4f6f6;
+}
+.bcs__chosen {
+  margin: 0 0 10px;
+  color: #3d454c;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 /* ---------------- TOPIK part-selection modal ---------------- */
 .tpart {
   /* Figma TAL-004 Group 1410118209 (1825:27266) — a 333x370 white card, r16,
@@ -9633,6 +9805,25 @@ textarea.input {
   font-weight: 600;
   font-size: 15px;
   line-height: 25px;
+}
+/* The billing-country band sits right above the voucher band (app-authored). */
+.subm__country-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+.subm__country + .subm__voucher,
+.subm__country + .subm__store-note + .subm__voucher {
+  margin-top: 1px;
+}
+.subm__store-note {
+  margin: 6px 0 0;
+  color: #778088;
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 17px;
 }
 .subm__voucher-btn {
   /* cp_C_04_followBtn */

@@ -217,6 +217,10 @@ export const ko = {
     myPlanHeading: "내 구독정보", // 784:62116 "My Plan"
     planLabel: "이용 구독 플랜", // 784:62119 "Plan"
     nextBilling: "다음 결제일", // 784:62122 "Next billing date"
+    /** app-authored: what each renewal charges, in the subscription's own currency. */
+    renewalLabel: "갱신 금액",
+    renewalYear: "{amount}/년",
+    renewalMonth: "{amount}/월",
     statusLabel: "구독 상태", // MOR-014 624:9942 (EN 784:62274 "Status")
     statusCanceling: "해지 예정", // MOR-014 784:62275 "Canceling"
     cancel: "해지하기", // 784:62125 "Cancel Plan"
@@ -369,7 +373,7 @@ export const ko = {
     currencyLockedA11y: "{name}, 현재 구독과 결제 통화가 달라 기본 결제수단으로 선택할 수 없어요",
     currencyName: {
       KRW: "원화(KRW)",
-      USD: "달러(USD)",
+      USD: "미국 달러(USD)",
       JPY: "엔화(JPY)",
     },
     currencyMismatchKrwCard: "이 카드는 원화(KRW)로만 결제돼요. {plan} 요금제는 해외 카드로 등록해 주세요.",
@@ -674,6 +678,50 @@ export const ko = {
     discountedPrice: "<s>최대 {pct}%할인</s> 된 가격", // 2532:26708
     discountPct: "{pct}% 할인",
     perMonthPriceWithTotal: "{price}/월 ({total})",
+    /** app-authored: what the selected plan charges, and when. */
+    summaryTrialYear: "{days}일 무료 체험 후 {date}부터 연 {total}(월 {monthly} 상당)이 결제돼요.",
+    summaryTrialMonth: "{days}일 무료 체험 후 {date}부터 월 {total}이 결제돼요.",
+    summaryPaidYear: "오늘 {total}이 결제돼요. (12개월, 월 {monthly} 상당)",
+    summaryPaidMonth: "오늘 {total}이 결제돼요. (1개월)",
+    summaryRenewYear: "이후 해지할 때까지 매년 {total}에 자동 갱신돼요.",
+    summaryRenewMonth: "이후 해지할 때까지 매월 {total}에 자동 갱신돼요.",
+    payWith: "결제 수단: {methods}",
+    noPaymentOption: "지금은 {currency} 결제 수단을 이용할 수 없어요. 다른 결제 국가를 선택하거나 잠시 후 다시 시도해 주세요.",
+    priceChanged: "가격이 변경됐어요. 새 가격을 확인한 뒤 다시 시도해 주세요.",
+    notSoldInCurrency: "이 요금제는 {currency}로 판매되지 않아요.",
+    optionDomesticCard: "국내 카드",
+    optionIntlCard: "해외 카드",
+    optionNaverPay: "네이버페이",
+    optionTossPay: "토스페이",
+  },
+
+  /** app-authored: the billing country — chosen by the member, never inferred
+   *  from location, phone or app language; nationality only suggests it. */
+  billingCountry: {
+    label: "결제 국가",
+    pricesIn: "{currency}로 결제",
+    suggestedTitle: "결제 국가를 확인해 주세요",
+    suggestedBody: "등록하신 국적을 바탕으로 {country}을(를) 제안했어요. 결제 정보와 결제 수단에 맞는 국가인지 확인하거나 변경해 주세요.",
+    noneTitle: "결제 국가를 선택해 주세요",
+    noneBody: "결제 국가에 따라 결제 통화가 정해져요.",
+    previewNote: "아직 확인하지 않은 국가의 가격이에요. 결제하려면 결제 국가를 확인해 주세요.",
+    confirm: "확인",
+    change: "변경",
+    choose: "선택",
+    sheetTitle: "결제 국가",
+    sheetHint: "결제 정보와 결제 수단이 속한 국가를 선택해 주세요. 여행, 해외 접속, 앱 언어 변경으로는 바뀌지 않아요.",
+    search: "국가 검색",
+    noResults: "검색 결과가 없어요",
+    currencyFor: "{currency}로 결제",
+    save: "이 국가로 결제",
+    saved: "결제 국가를 저장했어요.",
+    keepTitle: "현재 구독은 그대로 유지돼요",
+    keepBody1: "{country}의 결제 통화는 {newCurrency}예요.",
+    keepBody2: "지금 이용 중인 구독은 {currency}로 유지되며, 다음 결제일({date})에 {amount}이(가) 그대로 청구돼요.",
+    keepBody3: "새 결제 국가는 앞으로 새로 시작하는 구독에만 적용돼요.",
+    keepConfirm: "네, 변경할게요",
+    storeManaged: "앱스토어에서 구독한 경우 가격과 결제는 스토어에서 관리돼요.",
+    unsupported: "선택할 수 없는 국가예요.",
   },
 
   /** Saved sentences / TAL-038, Figma 537:9613. */

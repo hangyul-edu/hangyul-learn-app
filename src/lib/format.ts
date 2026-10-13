@@ -82,21 +82,33 @@ export function formatLongDate(iso: string | null | undefined, language: AppLang
 /** Currencies with no minor unit: their `*_cents` amounts are whole units (ISO 4217). */
 const ZERO_DECIMAL = new Set(["KRW", "JPY"]);
 
-/** Format a server `*_cents` amount (the currency's minor unit) for display. */
+/** Symbols that name their currency unambiguously. USD is always "US$" —
+ *  never a bare "$", which reads as any dollar (CAD, AUD, SGD…). */
+const UNAMBIGUOUS_SYMBOL: Record<string, string> = { KRW: "₩", USD: "US$" };
+
+/** Format a server `*_cents` amount (the currency's minor unit) for display:
+ *  "₩9,900", "US$5.99". Same in every app language. */
 export function formatMoney(cents: number, currency = "KRW"): string {
-  const zeroDecimal = ZERO_DECIMAL.has(currency.toUpperCase());
+  const code = currency.toUpperCase();
+  const zeroDecimal = ZERO_DECIMAL.has(code);
   const amount = zeroDecimal ? cents : cents / 100;
+  const digits = zeroDecimal ? 0 : 2;
+  const symbol = UNAMBIGUOUS_SYMBOL[code];
+  if (symbol) {
+    const number = new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    }).format(Math.abs(amount));
+    return `${amount < 0 ? "-" : ""}${symbol}${number}`;
+  }
   try {
     return new Intl.NumberFormat("ko-KR", {
       style: "currency",
-      currency,
-      // The designs print "$5.99", not the locale-qualified "US$5.99" the
-      // default `currencyDisplay: "symbol"` produces for USD under ko-KR.
-      currencyDisplay: "narrowSymbol",
-      maximumFractionDigits: zeroDecimal ? 0 : 2,
+      currency: code,
+      maximumFractionDigits: digits,
     }).format(amount);
   } catch {
-    return `${amount.toLocaleString()} ${currency}`;
+    return `${amount.toLocaleString()} ${code}`;
   }
 }
 

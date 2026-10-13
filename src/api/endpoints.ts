@@ -273,7 +273,7 @@ export const learnApi = {
   recordSession: (body: { session_type: "sentence" | "review" | "lecture"; duration_seconds: number; category?: "conversation" | "topik"; lecture_id?: string }) =>
     http.post<SessionFinalizeResult>("/learning/sessions", body),
   // Catalog reads take the app language as `lang`: course, series and lesson
-  // titles/descriptions come back in it where the admin wrote it, else Korean.
+  // titles/descriptions come back in it where the admin wrote it, else English.
   course: (courseId: string, lang?: string) => http.get<Course>(`/courses/${courseId}`, { lang }),
   /** Courses for the Classes tab (COU-001), each with its series as cards.
    *  The tab shows series, not lessons, so one preview lesson is plenty. */
@@ -289,10 +289,10 @@ export const learnApi = {
   lecture: (lectureId: string, lang?: string) => http.get<LectureDetail>(`/lectures/${lectureId}`, { lang }),
   lecturePlay: (lectureId: string) =>
     http.get<{ video: { url: string; duration_seconds: number; captions_url: string | null } }>(`/lectures/${lectureId}/play`),
-  /** The full sentence / question behind a checkpoint, fetched when playback reaches it. */
   /** A fresh signed playback URL only — for when the one from `lecturePlay` ran out mid-watch. */
   lectureVideo: (lectureId: string) =>
     http.get<{ lecture_id: string; video_url: string; expires_at: string }>(`/lectures/${lectureId}/video`),
+  /** The full sentence / question behind a checkpoint, fetched when playback reaches it. */
   checkpointInteraction: (lectureId: string, checkpointId: string) =>
     http.get<CheckpointInteraction>(`/lectures/${lectureId}/checkpoints/${checkpointId}/interaction`),
   /** Mark a fully watched lecture complete: +100 points the first time (409 if not watched through). */

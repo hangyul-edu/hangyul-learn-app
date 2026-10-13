@@ -86,13 +86,6 @@
   --warning: #ffac00; /* Figma ramp FFAC00 */
   --warning-bg: #fff7e0;
 
-  /* ---- League tiers (not defined in the Figma style guide) ---- */
-  --tier-green: #22c55e;
-  --tier-lime: #84cc16;
-  --tier-yellow: #eab308;
-  --tier-orange: #ff6700;
-  --tier-red: #f24147;
-
   /* ---- Radius ---- */
   --r-xs: 8px;
   --r-sm: 12px;

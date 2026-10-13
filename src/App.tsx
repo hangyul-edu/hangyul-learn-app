@@ -75,22 +75,24 @@ import { SocialSignupTerms } from "./screens/SocialSignupTerms";
 import { SOCIAL_PHONE_PATH, SOCIAL_TERMS_PATH, nextSetupPath } from "./hooks/loginFlow";
 
 
-function RequireAuth({ children }: { children: ReactNode }) {
+export function RequireAuth({ children }: { children: ReactNode }) {
   const { status, me } = useAuth();
   const loc = useLocation();
   if (status === "booting") return <Splash />;
   if (status === "signed-out") return <Navigate to="/welcome" replace state={{ from: loc.pathname }} />;
-  // A first social login that has not accepted the signup agreements → the
-  // terms step comes before anything else (the server enforces it too).
-  const onTerms = loc.pathname === SOCIAL_TERMS_PATH;
-  if (me?.terms_agreement_pending && !onTerms) return <Navigate to={SOCIAL_TERMS_PATH} replace />;
-  if (me && !me.terms_agreement_pending && onTerms) return <Navigate to="/home" replace />;
-  // A social account without a phone number verifies one next — before the
-  // profile, since the number sets the billing currency (the server reports
-  // the step until a number is saved).
+  // A social account without a phone number verifies one before anything
+  // else — a new member before the terms, an existing account straight
+  // after sign-in (the server reports the step until a number is saved).
   const onPhone = loc.pathname === SOCIAL_PHONE_PATH;
-  if (me?.phone_verification_pending && !onTerms && !onPhone) return <Navigate to={SOCIAL_PHONE_PATH} replace />;
+  if (me?.phone_verification_pending && !onPhone) return <Navigate to={SOCIAL_PHONE_PATH} replace />;
   if (me && !me.phone_verification_pending && onPhone) return <Navigate to={nextSetupPath(me)} replace />;
+  // A first social login that has not accepted the signup agreements → the
+  // terms step comes next (the server enforces it too). Not while the phone
+  // step is showing: it comes first, and sending it to the terms would bounce
+  // straight back here.
+  const onTerms = loc.pathname === SOCIAL_TERMS_PATH;
+  if (me?.terms_agreement_pending && !onTerms && !onPhone) return <Navigate to={SOCIAL_TERMS_PATH} replace />;
+  if (me && !me.terms_agreement_pending && onTerms) return <Navigate to={nextSetupPath(me)} replace />;
   // Signed in but profile never set up → force profile setup.
   if (me && !me.nickname && !onTerms && !loc.pathname.startsWith("/setup")) return <Navigate to="/setup/profile" replace />;
   return <>{children}</>;

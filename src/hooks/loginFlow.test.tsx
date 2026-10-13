@@ -46,7 +46,15 @@ async function routeFor(tok: TokenResponse, me: Partial<Me>): Promise<string> {
 }
 
 describe("useLoginFlow", () => {
-  it("sends a first social login to the terms step", async () => {
+  it("sends a new social member to the phone step before the terms", async () => {
+    expect(
+      await routeFor(token("phone_verification", true), {
+        nickname: null, terms_agreement_pending: true, phone_verification_pending: true,
+      }),
+    ).toBe("/setup/phone");
+  });
+
+  it("sends a first social login whose provider gave a phone to the terms step", async () => {
     expect(await routeFor(token("terms_agreement", true), { nickname: null, terms_agreement_pending: true }))
       .toBe("/signup/terms");
   });
@@ -95,7 +103,9 @@ describe("signup step paths", () => {
     const me = (over: Partial<Me>) =>
       ({ nickname: null, terms_agreement_pending: false, phone_verification_pending: false,
         onboarding_completed: false, ...over }) as Me;
-    expect(nextSetupPath(me({ terms_agreement_pending: true, phone_verification_pending: true }))).toBe("/signup/terms");
+    // The phone comes before the terms of a new social member.
+    expect(nextSetupPath(me({ terms_agreement_pending: true, phone_verification_pending: true }))).toBe("/setup/phone");
+    expect(nextSetupPath(me({ terms_agreement_pending: true }))).toBe("/signup/terms");
     expect(nextSetupPath(me({ phone_verification_pending: true }))).toBe("/setup/phone");
     expect(nextSetupPath(me({}))).toBe("/setup/profile");
     expect(nextSetupPath(me({ nickname: "me" }))).toBe("/setup/onboarding");

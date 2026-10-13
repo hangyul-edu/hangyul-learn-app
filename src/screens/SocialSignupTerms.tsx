@@ -49,7 +49,7 @@ export function SocialSignupTerms() {
     try {
       const { next_step } = await authApi.agreeSocialTerms(agreementPayload(agree));
       setMe((prev) => ({ ...prev!, terms_agreement_pending: false }));
-      // Normally the phone step (no phone from the provider) or the profile.
+      // Normally the profile: the phone step came before the terms.
       nav(pathForStep(next_step === "terms_agreement" ? "profile_registration" : next_step), {
         replace: true,
       });

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
+import { StrictMode } from "react";
 
 const { startConversation, sendMessage } = vi.hoisted(() => ({
   startConversation: vi.fn(),
@@ -54,5 +55,20 @@ describe("AI tutor chat", () => {
     await userEvent.click(await screen.findByRole("button", { name: "다시 시도" }));
     expect(await screen.findByPlaceholderText("메시지를 입력하세요")).toBeInTheDocument();
     expect(startConversation).toHaveBeenCalledTimes(2);
+  });
+
+  it("opens one conversation under StrictMode, and names its send button", async () => {
+    render(
+      <StrictMode>
+        <I18nProvider language="ko">
+          <MemoryRouter>
+            <AiChat />
+          </MemoryRouter>
+        </I18nProvider>
+      </StrictMode>,
+    );
+    await screen.findByPlaceholderText("메시지를 입력하세요");
+    expect(startConversation).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "메시지 보내기" })).toBeInTheDocument();
   });
 });

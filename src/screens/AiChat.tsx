@@ -37,7 +37,11 @@ export function AiChat() {
     }
   }
 
+  // Once per mount: StrictMode's dev re-run must not open a second conversation.
+  const started = useRef(false);
   useEffect(() => {
+    if (started.current) return;
+    started.current = true;
     void start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -115,7 +119,7 @@ export function AiChat() {
           // Enter while a Korean IME is composing only commits the syllable.
           onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && send()}
         />
-        <Button style={{ flex: "0 0 56px", padding: 0 }} loading={sending} disabled={!text.trim()} onClick={send}>
+        <Button style={{ flex: "0 0 56px", padding: 0 }} loading={sending} disabled={!text.trim()} onClick={send} aria-label={t("chat.send")}>
           ➤
         </Button>
       </div>

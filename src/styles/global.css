@@ -8027,6 +8027,8 @@ textarea.input {
   font-size: 14px;
   line-height: 1.5;
   white-space: pre-line;
+  /* Korean wraps between words ("이 번호를"), not inside them. */
+  word-break: keep-all;
 }
 .pchg__spacer {
   /* Figma pins the CTA to the bottom bar; the spacer eats the slack. */

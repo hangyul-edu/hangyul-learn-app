@@ -267,9 +267,10 @@ export const quizApi = {
 
 /* ---------------------- Learning / recommend / AI -------------------- */
 export const learnApi = {
-  /** Record a completed learning session (duration + category). Finalizes a
-   *  pending level-up and — for a personalized (custom) session that earned
-   *  points — creates the "학습 완료! +Np 적립" notification. */
+  /** Record a completed learning session (duration + category). Adds a
+   *  personalized (custom) session's time to its track and, when it earned
+   *  points, creates the "학습 완료! +Np 적립" notification. Never changes a
+   *  level (`leveled_up` is always false). */
   recordSession: (body: { session_type: "sentence" | "review" | "lecture"; duration_seconds: number; category?: "conversation" | "topik"; lecture_id?: string }) =>
     http.post<SessionFinalizeResult>("/learning/sessions", body),
   // Catalog reads take the app language as `lang`: course, series and lesson

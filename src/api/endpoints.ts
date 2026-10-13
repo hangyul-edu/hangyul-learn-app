@@ -600,7 +600,6 @@ export const subApi = {
   resume: () => http.post<unknown>("/subscriptions/resume"),
   /** One call validates and applies; the server enforces the 10/24h attempt cap. */
   redeemCoupon: (code: string) => http.post<CouponRedemption>("/subscriptions/coupons/redeem", { code }),
-  paymentMethods: () => http.get<{ items?: unknown[]; methods?: unknown[] }>("/payment-methods"),
 };
 
 /* ----------------------------- Settings ----------------------------- */

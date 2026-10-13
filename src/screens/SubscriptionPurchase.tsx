@@ -30,11 +30,11 @@ function money(cents: number, currency = "USD"): string {
 function pricing(p: Plan) {
   return {
     isYear: p.interval === "year",
-    original: p.original_total_cents!,
-    current: p.current_total_cents!,
-    origMonthly: p.original_monthly_cents!,
-    curMonthly: p.current_monthly_cents!,
-    discountPct: p.discount_percent!,
+    original: p.original_total_cents,
+    current: p.current_total_cents,
+    origMonthly: p.original_monthly_cents,
+    curMonthly: p.current_monthly_cents,
+    discountPct: p.discount_percent,
   };
 }
 

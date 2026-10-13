@@ -749,18 +749,18 @@ export interface Plan {
    *  published in the admin console; null when none is published. */
   badge?: { ko: string; en: string } | null;
 
-  // Server-computed presentation values (see SubscriptionPlan on the backend).
-  // Preferred over client-side derivation when present.
+  // Server-computed presentation values (see SubscriptionPlan on the backend),
+  // always sent; the screen renders them as they are.
   /** List charge for one billing interval, in cents. */
-  original_total_cents?: number;
+  original_total_cents: number;
   /** Current (discounted) charge for one billing interval, in cents. */
-  current_total_cents?: number;
+  current_total_cents: number;
   /** List price per month, in cents (yearly ÷ 12). */
-  original_monthly_cents?: number;
+  original_monthly_cents: number;
   /** Current price per month, in cents (yearly ÷ 12). */
-  current_monthly_cents?: number;
+  current_monthly_cents: number;
   /** Whole-percent saving of the current price vs. the list price. */
-  discount_percent?: number;
+  discount_percent: number;
 }
 /** POST /subscriptions/coupons/redeem — the grant a coupon code produced. */
 export interface CouponRedemption {

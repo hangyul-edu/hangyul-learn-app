@@ -16,7 +16,7 @@ import type { CancellationReason, CouponRedemption, Invoice } from "../lib/types
 import { CancelReasonModal } from "../components/CancelReasonModal";
 import { DetailHeader } from "../components/DetailHeader";
 
-/* ---------------- date helpers (locale ko-KR, timezone-safe) ---------------- */
+/* ---------------- date helpers (the device's local date, YY/MM/DD) ---------------- */
 function fmtShort(iso?: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);

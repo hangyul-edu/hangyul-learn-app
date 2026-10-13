@@ -87,7 +87,7 @@ describe("Subscription — billing currency and country", () => {
       }
       return {
         billing_country: { country: "KR", source: "confirmed", confirmed: true, currency: "KRW" },
-        subscription: { plan_id: "p_year", currency: "USD", renewal_amount_cents: 7188, next_billing_at: null, store_managed: false },
+        subscription: { plan_id: "p_year", currency: "USD", renewal_amount_cents: 7188, next_billing_at: null },
       };
     });
     renderPage();

@@ -280,7 +280,7 @@ export function Subscription() {
             </div>
           )}
 
-          {/* The billing country web prices and checkout use. Changing it never
+          {/* The billing country prices and checkout use. Changing it never
               touches the running subscription (the sheet explains that and
               asks first when the currency would differ). */}
           {billingCountry && (
@@ -296,7 +296,6 @@ export function Subscription() {
               </button>
             </div>
           )}
-          {m?.store_managed && <p className="subm__store-note">{t("billingCountry.storeManaged")}</p>}
 
           {/* Course-access / voucher code */}
           <div className="subm__voucher">

@@ -9814,16 +9814,8 @@ textarea.input {
   white-space: nowrap;
   font-size: 14px;
 }
-.subm__country + .subm__voucher,
-.subm__country + .subm__store-note + .subm__voucher {
+.subm__country + .subm__voucher {
   margin-top: 1px;
-}
-.subm__store-note {
-  margin: 6px 0 0;
-  color: #778088;
-  font-family: var(--font-body);
-  font-size: 12px;
-  line-height: 17px;
 }
 .subm__voucher-btn {
   /* cp_C_04_followBtn */

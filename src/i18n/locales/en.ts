@@ -702,7 +702,6 @@ export const en: Catalog = {
     keepBody2: "Your current subscription stays in {currency}: {amount} will still be charged on your next billing date ({date}).",
     keepBody3: "The new billing country applies only to subscriptions you start later.",
     keepConfirm: "Yes, change it",
-    storeManaged: "If you subscribed through an app store, the store manages its price and billing.",
     unsupported: "This country can't be selected.",
   },
 

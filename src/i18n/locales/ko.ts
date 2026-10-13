@@ -720,7 +720,6 @@ export const ko = {
     keepBody2: "지금 이용 중인 구독은 {currency}로 유지되며, 다음 결제일({date})에 {amount}이(가) 그대로 청구돼요.",
     keepBody3: "새 결제 국가는 앞으로 새로 시작하는 구독에만 적용돼요.",
     keepConfirm: "네, 변경할게요",
-    storeManaged: "앱스토어에서 구독한 경우 가격과 결제는 스토어에서 관리돼요.",
     unsupported: "선택할 수 없는 국가예요.",
   },
 

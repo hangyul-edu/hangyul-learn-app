@@ -766,7 +766,7 @@ export interface CouponRedemption {
 /** GET /subscriptions/offers — what the purchase screen offers this member:
  *  one plan per interval (the new-member price where it applies) and the
  *  member's one free trial, the same length on every plan. */
-/** The billing country web prices are shown for (GET /subscriptions/offers,
+/** The billing country prices are shown for (GET /subscriptions/offers,
  *  /subscriptions/billing-country). `source`: "confirmed" — the member chose
  *  it, checkout may proceed; "nationality" — only a suggestion from their
  *  registered nationality, to confirm or change first; null — a previewed
@@ -804,7 +804,6 @@ export interface LiveSubscriptionBilling {
   currency: string;
   renewal_amount_cents: number | null;
   next_billing_at: string | null;
-  store_managed: boolean;
 }
 /** What the purchase screen showed for a checkout, sent so the server can
  *  refuse a stale price instead of charging it. */
@@ -842,8 +841,6 @@ export interface MySubscription {
   interval?: "month" | "year" | null;
   next_billing_at?: string | null;
   provider?: string | null;
-  /** Billed by an app store, which owns its price and renewals. */
-  store_managed?: boolean;
   /** True when the current period is covered by a coupon grant, not a payment. */
   coupon_backed?: boolean;
 }

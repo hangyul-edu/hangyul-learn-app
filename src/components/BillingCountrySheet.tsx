@@ -11,7 +11,7 @@ import type { BillingCountryState } from "../lib/types";
 import { ConfirmDialog, Sheet } from "./ui/Modal";
 import { Button } from "./ui/kit";
 
-/** The web billing currency of a country, as the server decides it
+/** The billing currency of a country, as the server decides it
  *  (subscriptions/domain/billing_country.web_currency_for). Only used to
  *  label the list; prices always come from the server. */
 export function webCurrencyFor(country: string): string {

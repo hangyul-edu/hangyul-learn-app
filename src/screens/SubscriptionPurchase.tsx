@@ -8,7 +8,6 @@ import payLetterG from "../assets/brand/pay-letter-g.svg";
 import payLetterR from "../assets/brand/pay-letter-r.svg";
 import payLetterB from "../assets/brand/pay-letter-b.svg";
 import payLetterO from "../assets/brand/pay-letter-o.svg";
-import payRibbon from "../assets/brand/pay-ribbon.svg";
 import payRadioOn from "../assets/brand/pay-radio-on.svg";
 import payRadioOff from "../assets/brand/pay-radio-off.svg";
 import { useToast } from "../hooks/toast";
@@ -84,10 +83,8 @@ function PlanCard({ plan, selected, onSelect }: { plan: Plan; selected: boolean;
       onClick={onSelect}
     >
       {ribbon && (
-        /* Rectangle 4985 — drawn vertically (27x148) in Figma and rotated a
-           quarter turn; the label rides on top of it. */
+        /* Rectangle 4985, as wide as its label (global.css .plan__ribbon). */
         <span className="plan__ribbon">
-          <img className="plan__ribbon-art" src={payRibbon} alt="" aria-hidden="true" />
           <span className="plan__ribbon-text">{ribbon}</span>
         </span>
       )}

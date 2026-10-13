@@ -8869,30 +8869,29 @@ textarea.input {
   margin-top: 13px;
 }
 
-/* ---- launch ribbon: Rectangle 4985, 150x27 at (17,-13) off the card ---- */
+/* ---- promo ribbon: Rectangle 4985, 27 tall at (17,-13) off the card ----
+   Figma draws it 150 wide for "Launch special"; here it is as wide as its
+   text (11px in, the same gap again before the 11px swallow-tail notch), up
+   to that 150 + 8 so no admin text can reach the prices. The notch is the
+   art's tail: it cuts 11px into the right end, meeting at mid-height. */
 .plan__ribbon {
   position: absolute;
   left: 17px;
   top: -13px;
   z-index: 2;
-  width: 150px;
+  box-sizing: border-box;
+  max-width: 158px;
   height: 27px;
   display: flex;
   align-items: center;
-}
-.plan__ribbon-art {
-  /* Drawn vertically (27x148) in Figma and rotated a quarter turn. */
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 27px;
-  height: 150px;
-  transform: translate(-50%, -50%) rotate(-90deg) scale(-1, 1);
+  padding: 0 22px 0 11px;
+  background: #ff6700;
+  border-radius: 1.5px 0 0 1.5px;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 11px) 50%, 100% 100%, 0 100%);
 }
 .plan__ribbon-text {
   position: relative;
-  z-index: 1;
-  padding-left: 11px;
+  overflow: hidden;
   color: #fff;
   font-family: var(--font-body);
   font-weight: 700;

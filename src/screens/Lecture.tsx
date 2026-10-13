@@ -238,16 +238,23 @@ export function Lecture() {
   // Try to fetch a real playback URL; premium content 402s → show the gate.
   // Once per visit, after the fresh read: a later refetch (window focus) must
   // not swap the URL and restart the video mid-play.
+  // Any other failure says so with a retry, instead of a black stage forever.
   const playRequestedRef = useRef(false);
-  useEffect(() => {
-    if (!fresh || playRequestedRef.current) return;
+  const [playFailed, setPlayFailed] = useState(false);
+  function requestPlay() {
     playRequestedRef.current = true;
+    setPlayFailed(false);
     learnApi
       .lecturePlay(lectureId)
       .then((r) => setVideoUrl(r.video.url))
       .catch((e) => {
         if (e instanceof ApiError && e.status === 402) setPremiumLocked(true);
+        else setPlayFailed(true);
       });
+  }
+  useEffect(() => {
+    if (!fresh || playRequestedRef.current) return;
+    requestPlay();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fresh]);
 
@@ -505,6 +512,11 @@ export function Lecture() {
                 <div className="lecp__gate-emoji">👑</div>
                 <div className="lecp__gate-title">{t("courses.premiumLecture")}</div>
                 <Button size="sm" onClick={() => nav("/subscription")}>{t("study.upgrade")}</Button>
+              </div>
+            ) : playFailed ? (
+              <div className="lecp__gate" role="alert">
+                <div className="lecp__gate-title">{t("courses.videoLoadError")}</div>
+                <Button size="sm" onClick={requestPlay}>{t("common.retry")}</Button>
               </div>
             ) : (
               // While the playback URL loads the stage stays black: the video

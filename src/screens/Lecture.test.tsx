@@ -494,6 +494,18 @@ describe("Lecture player", () => {
     expect((container.querySelector(".lecp") as HTMLElement).dataset.controls).toBe("shown");
   });
 
+  it("says the video failed to load, with a retry, instead of a black stage", async () => {
+    lecture.mockResolvedValue(detail(null));
+    lecturePlay.mockRejectedValueOnce(new Error("offline"));
+    const { container } = renderLecture();
+    expect(await screen.findByText("영상을 불러오지 못했어요.")).toBeInTheDocument();
+    expect(container.querySelector(".lecp__blank")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+    await loadedVideo(container);
+    expect(lecturePlay).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText("영상을 불러오지 못했어요.")).not.toBeInTheDocument();
+  });
+
   it("never shows the lesson's thumbnail: the stage is black until the video's own picture", async () => {
     // Regression: the thumbnail filled the screen before the video started.
     lecture.mockResolvedValue(detail(null, { thumbnail_url: "http://x/thumb.png" }));

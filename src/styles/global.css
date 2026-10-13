@@ -8862,6 +8862,12 @@ textarea.input {
 .plan--monthly {
   height: 90px;
 }
+/* A ribbon overhangs its card by 13px (top: -13px), more than the 11px gap:
+   a card below another makes room for it, keeping the same 11px clearance
+   between the ribbon and the card above. */
+.plan--ribboned:not(:first-child) {
+  margin-top: 13px;
+}
 
 /* ---- launch ribbon: Rectangle 4985, 150x27 at (17,-13) off the card ---- */
 .plan__ribbon {

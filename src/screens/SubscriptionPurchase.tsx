@@ -80,7 +80,7 @@ function PlanCard({ plan, selected, onSelect }: { plan: Plan; selected: boolean;
       role="radio"
       aria-checked={selected}
       aria-label={label}
-      className={`plan plan--${isYear ? "annual" : "monthly"}${selected ? " plan--on" : ""}`}
+      className={`plan plan--${isYear ? "annual" : "monthly"}${ribbon ? " plan--ribboned" : ""}${selected ? " plan--on" : ""}`}
       onClick={onSelect}
     >
       {ribbon && (

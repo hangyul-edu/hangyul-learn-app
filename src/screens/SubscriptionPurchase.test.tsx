@@ -141,6 +141,15 @@ describe("SubscriptionPurchase", () => {
     expect(within(year).getByText("$12.99/월 ($155.88)")).toBeInTheDocument();
   });
 
+  it("makes room above a card whose ribbon would overlap the card before it", async () => {
+    plans.mockResolvedValue({ plans: [PLANS[0], { ...PLANS[1], badge: { ko: "가장 인기 있는 플랜", en: "Most popular" } }] });
+    renderPage();
+    await screen.findByRole("button", { name: "7일 무료 체험 시작하기" });
+    expect(screen.getByRole("radio", { name: /1개월/ })).toHaveClass("plan--ribboned");
+    expect(screen.getByRole("radio", { name: /12개월/ })).toHaveClass("plan--ribboned");
+    plans.mockResolvedValue({ plans: PLANS });
+  });
+
   it("prints KRW plans in whole won, not won ÷ 100", async () => {
     // Regression: every currency was divided by 100, so ₩9,900 showed as ₩99.
     plans.mockResolvedValue({

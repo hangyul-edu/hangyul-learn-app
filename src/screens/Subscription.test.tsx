@@ -1,19 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { ApiError } from "../lib/http";
 
-const { mine, invoices, redeemCoupon, billingCountry, setBillingCountry } = vi.hoisted(() => ({
+const { mine, invoices, redeemCoupon } = vi.hoisted(() => ({
   mine: vi.fn(),
   invoices: vi.fn(),
   redeemCoupon: vi.fn(),
-  billingCountry: vi.fn(),
-  setBillingCountry: vi.fn(),
 }));
 vi.mock("../api/endpoints", () => ({
-  subApi: { mine, redeemCoupon, billingCountry, setBillingCountry },
+  subApi: { mine, redeemCoupon },
   billingApi: { invoices },
 }));
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn(), show: vi.fn() }) }));
@@ -47,18 +45,12 @@ const sub = (status: string, over: Record<string, unknown> = {}) => ({
 });
 const NO_SUB = sub("expired", { subscription_id: null, plan_id: null, current_period_end: null });
 
-const US_CONFIRMED = {
-  billing_country: { country: "US", source: "confirmed", confirmed: true, currency: "USD" },
-  subscription: null,
-};
-
 beforeEach(() => {
   vi.clearAllMocks();
   invoices.mockResolvedValue({ invoices: [], next_cursor: null });
-  billingCountry.mockResolvedValue(US_CONFIRMED);
 });
 
-describe("Subscription — billing currency and country", () => {
+describe("Subscription — renewal price", () => {
   it("shows the renewal price in the subscription's own currency", async () => {
     mine.mockResolvedValue(sub("active", { interval: "year", plan_currency: "USD", renewal_amount_cents: 7188 }));
     renderPage();
@@ -66,64 +58,12 @@ describe("Subscription — billing currency and country", () => {
     expect(screen.getByText("갱신 금액")).toBeInTheDocument();
   });
 
-  it("shows the billing country with its currency", async () => {
-    mine.mockResolvedValue(sub("active"));
-    renderPage();
-    const row = await screen.findByTestId("billing-country-row");
-    expect(row).toHaveTextContent("결제 국가: 미국 (USD)");
-  });
-
-  it("explains that a running subscription stays as it is and changes the country only on a yes", async () => {
+  it("has no billing country to show or change (the phone number decides the currency)", async () => {
     mine.mockResolvedValue(sub("active", { interval: "year", plan_currency: "USD", renewal_amount_cents: 7188 }));
-    setBillingCountry.mockImplementation(async (_country: string, acknowledge: boolean) => {
-      if (!acknowledge) {
-        throw new ApiError(409, "billing_country.confirmation_required", "x", {
-          country: "KR",
-          new_currency: "KRW",
-          subscription_currency: "USD",
-          renewal_amount_cents: 7188,
-          next_billing_at: "2027-10-13T00:00:00Z",
-        });
-      }
-      return {
-        billing_country: { country: "KR", source: "confirmed", confirmed: true, currency: "KRW" },
-        subscription: { plan_id: "p_year", currency: "USD", renewal_amount_cents: 7188, next_billing_at: null },
-      };
-    });
     renderPage();
-    const row = await screen.findByTestId("billing-country-row");
-    await userEvent.click(within(row).getByRole("button", { name: "변경" }));
-    await userEvent.type(screen.getByRole("searchbox", { name: "국가 검색" }), "대한민국");
-    await userEvent.click(screen.getByRole("button", { name: /대한민국/ }));
-    await userEvent.click(screen.getByRole("button", { name: "이 국가로 결제" }));
-
-    // Refused until the member acknowledges: the dialog says what stays.
-    expect(await screen.findByText("현재 구독은 그대로 유지돼요")).toBeInTheDocument();
-    expect(screen.getByText(/대한민국의 결제 통화는 원화\(KRW\)예요\./)).toBeInTheDocument();
-    expect(screen.getByText(/미국 달러\(USD\)로 유지되며, 다음 결제일\(2027년 10월 13일\)에 US\$71\.88이\(가\) 그대로 청구돼요/)).toBeInTheDocument();
-    expect(setBillingCountry).toHaveBeenCalledTimes(1);
-    expect(setBillingCountry).toHaveBeenLastCalledWith("KR", false);
-
-    await userEvent.click(screen.getByRole("button", { name: "네, 변경할게요" }));
-    await waitFor(() => expect(setBillingCountry).toHaveBeenLastCalledWith("KR", true));
-    await waitFor(() => expect(screen.queryByText("현재 구독은 그대로 유지돼요")).not.toBeInTheDocument());
-  });
-
-  it("cancelling the explanation leaves the country as it was", async () => {
-    mine.mockResolvedValue(sub("active", { interval: "month", plan_currency: "USD", renewal_amount_cents: 999 }));
-    setBillingCountry.mockRejectedValue(
-      new ApiError(409, "billing_country.confirmation_required", "x", {
-        country: "KR", new_currency: "KRW", subscription_currency: "USD", renewal_amount_cents: 999, next_billing_at: null,
-      }),
-    );
-    renderPage();
-    await userEvent.click(within(await screen.findByTestId("billing-country-row")).getByRole("button", { name: "변경" }));
-    await userEvent.click(screen.getAllByRole("button", { name: /대한민국/ })[0]);
-    await userEvent.click(screen.getByRole("button", { name: "이 국가로 결제" }));
-    await screen.findByText("현재 구독은 그대로 유지돼요");
-    await userEvent.click(screen.getByRole("button", { name: "취소" }));
-    expect(setBillingCountry).toHaveBeenCalledTimes(1);
-    expect(setBillingCountry).not.toHaveBeenCalledWith("KR", true);
+    await screen.findByText("US$71.88/년");
+    expect(screen.queryByTestId("billing-country-row")).not.toBeInTheDocument();
+    expect(screen.queryByText(/결제 국가/)).not.toBeInTheDocument();
   });
 });
 

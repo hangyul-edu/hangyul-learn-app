@@ -7,7 +7,6 @@ import { recordingFilename, type RecordingInfo } from "../lib/recording";
 import type {
   AppSettings,
   AttendanceCheckIn,
-  BillingCountryState,
   CheckoutQuote,
   CheckpointInteraction,
   TimezoneSync,
@@ -52,6 +51,7 @@ import type {
   Page,
   Offers,
   PaymentMethod,
+  PaymentMethodList,
   PointsBalance,
   PointsHistoryResponse,
   ChatMessage,
@@ -457,7 +457,9 @@ const confirmBody = (intent_id: string, ret: WindowReturn) => ({
 });
 
 export const payApi = {
-  methods: () => http.get<{ methods: PaymentMethod[] }>("/payment-methods"),
+  /** `registration`: the one kind of method the member may add — a domestic
+   *  card (KRW: a +82 phone number) or an overseas card in `currency`. */
+  methods: () => http.get<PaymentMethodList>("/payment-methods"),
   /** Korean-issued cards only: Toss's hosted billing window. Overseas cards
    *  go through `registerInternationalCard` (the server refuses them here). */
   cardIntent: (return_url: string) =>
@@ -588,17 +590,9 @@ export const notifApi = {
 /* --------------------------- Subscription --------------------------- */
 export const subApi = {
   /** The purchase screen's plans and free trial for the signed-in member, in
-   *  their billing country's currency (confirmed, else suggested). */
+   *  their billing currency (KRW for a +82 phone number, USD otherwise). */
   offers: () => http.get<Offers>("/subscriptions/offers"),
   mine: () => http.get<MySubscription>("/subscriptions/me"),
-  billingCountry: () => http.get<BillingCountryState>("/subscriptions/billing-country"),
-  /** 409 `billing_country.confirmation_required` until `acknowledge` is true
-   *  when a running subscription is billed in another currency. */
-  setBillingCountry: (country: string, acknowledge = false) =>
-    http.put<BillingCountryState>("/subscriptions/billing-country", {
-      country,
-      acknowledge_subscription_unchanged: acknowledge,
-    }),
   /** `quote` is what the screen showed; the server refuses (409
    *  subscription.price_changed) rather than charge anything else. */
   startTrial: (plan_id: string, quote?: CheckoutQuote) =>

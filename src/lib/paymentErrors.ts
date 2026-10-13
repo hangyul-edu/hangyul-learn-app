@@ -65,9 +65,23 @@ export function currencyMismatchText(
   return t("paymentMethods.currencyMismatch", { card: currencyLabel(card, t), plan: currencyLabel(plan, t) });
 }
 
+/**
+ * `payment_method.registration_not_offered`: not the kind of method this
+ * member registers — a domestic card when billed in KRW (a +82 phone
+ * number), an overseas card otherwise. Returns null for any other error.
+ */
+export function registrationNotOfferedMessage(e: unknown, t: Translate = tNow): string | null {
+  if (!(e instanceof ApiError) || e.code !== "payment_method.registration_not_offered") return null;
+  return e.details?.card_region === "domestic"
+    ? t("paymentMethods.registerDomesticOnly")
+    : t("paymentMethods.registerInternationalOnly", {
+        currency: currencyLabel(detailString(e, "billing_currency") ?? "USD", t),
+      });
+}
+
 /** `errorMessage()` plus the payment codes that need their own wording. */
 export function paymentErrorMessage(e: unknown, t: Translate = tNow): string {
-  return currencyMismatchMessage(e, t) ?? errorMessage(e);
+  return currencyMismatchMessage(e, t) ?? registrationNotOfferedMessage(e, t) ?? errorMessage(e);
 }
 
 /* ------------------- overseas-card registration errors ------------------- */
@@ -161,6 +175,8 @@ export function intlCardError(e: unknown, t: Translate = tNow): IntlCardError {
           : msg("paymentMethods.currencyMismatchGeneric"),
       };
     }
+    case "payment_method.registration_not_offered":
+      return { ...base, message: registrationNotOfferedMessage(e, t) ?? msg("paymentMethods.intl.errors.generic") };
     case "payment_method.invalid_intent_state":
       return { ...base, message: msg("paymentMethods.intl.errors.retryFresh") };
     case "payment_method.provider_unavailable":

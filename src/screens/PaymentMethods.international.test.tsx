@@ -65,6 +65,11 @@ const INTL_CARD: PaymentMethod = {
   billing_currency: "USD",
 };
 
+/** A member whose phone number is outside +82: billed in USD, registers overseas cards. */
+const OVERSEAS = { currency: "USD", card_region: "international" } as const;
+/** A +82 member: billed in KRW, registers domestic cards. */
+const DOMESTIC = { currency: "KRW", card_region: "domestic" } as const;
+
 function renderScreen(state?: unknown) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   const utils = render(
@@ -101,7 +106,7 @@ beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
   Element.prototype.scrollIntoView = vi.fn();
-  api.methods.mockResolvedValue({ methods: [] });
+  api.methods.mockResolvedValue({ methods: [], registration: OVERSEAS });
   api.internationalCardOptions.mockResolvedValue(OPTIONS);
   billing.recovery.mockResolvedValue({ recovery_required: false, can_retry_immediately: false });
   subs.mine.mockResolvedValue({ status: "none" });
@@ -120,18 +125,58 @@ afterEach(() => {
   consoleSpies.length = 0;
 });
 
-describe("choosing domestic vs international", () => {
-  it("explains which button to press and that domestic cards are charged in KRW", async () => {
+describe("one card button, decided by the phone number", () => {
+  it("a +82 member sees only the domestic card button, charged in KRW, and the Korean wallets", async () => {
+    api.methods.mockResolvedValue({ methods: [], registration: DOMESTIC });
     renderScreen();
-    expect(await screen.findByText(/한국 카드사.*국내 카드, 해외에서 발급한 카드는 해외 카드/)).toBeInTheDocument();
+    expect(await screen.findByLabelText("국내 카드 추가")).toBeInTheDocument();
     expect(screen.getByText("한국에서 발급한 카드 · 원화(KRW)로 결제")).toBeInTheDocument();
-    expect(screen.getByText(/해외에서 발급한 Visa·Mastercard·JCB 등 · 선택한 통화로 결제/)).toBeInTheDocument();
+    expect(screen.queryByLabelText("해외 카드 추가")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("네이버페이 연결하기")).toBeInTheDocument();
+    expect(screen.queryByText(/카드를 발급한 곳을 기준으로 골라 주세요/)).not.toBeInTheDocument();
+  });
+
+  it("anyone else sees only the overseas card button, charged in USD, and no wallets", async () => {
+    renderScreen();
+    expect(await screen.findByLabelText("해외 카드 추가")).toBeInTheDocument();
+    expect(screen.getByText("해외에서 발급한 Visa·Mastercard·JCB 등 · 미국 달러(USD)로 결제")).toBeInTheDocument();
+    expect(screen.queryByLabelText("국내 카드 추가")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "간편 결제" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("네이버페이 연결하기")).not.toBeInTheDocument();
+  });
+
+  it("an overseas member still sees a wallet already on file, so it can be removed", async () => {
+    api.methods.mockResolvedValue({
+      methods: [{ method_id: "pm_np", kind: "naver_pay", provider: "naver_pay", status: "active", is_default: true, display_name: "네이버페이" }],
+      registration: OVERSEAS,
+    });
+    renderScreen();
+    expect(await screen.findByLabelText("네이버페이 연결 해제")).toBeInTheDocument();
+    expect(screen.queryByLabelText("국내 카드 추가")).not.toBeInTheDocument();
+  });
+
+  it("explains a refused registration with the phone-number rule", async () => {
+    api.methods.mockResolvedValue({ methods: [], registration: DOMESTIC });
+    api.cardIntent.mockRejectedValue(
+      new ApiError(422, "payment_method.registration_not_offered", "raw", {
+        billing_currency: "USD",
+        card_region: "international",
+        method_currency: "KRW",
+      }),
+    );
+    renderScreen();
+    await userEvent.click(await screen.findByLabelText("국내 카드 추가"));
+    expect(
+      await screen.findByText("+82가 아닌 휴대폰 번호로 가입한 회원은 미국 달러(USD)로 결제되며, 해외 카드만 등록할 수 있어요."),
+    ).toBeInTheDocument();
+    expect(requestTossBillingAuth).not.toHaveBeenCalled();
   });
 
   it("the domestic button still opens Toss's window through the SDK", async () => {
     const widget = { client_key: "test_ck", success_url: "https://s", fail_url: "https://f", card_region: "domestic" };
     api.cardIntent.mockResolvedValue({ intent_id: "pmi", customer_key: "cus", widget });
     requestTossBillingAuth.mockResolvedValue(undefined);
+    api.methods.mockResolvedValue({ methods: [], registration: DOMESTIC });
     renderScreen();
     await userEvent.click(await screen.findByLabelText("국내 카드 추가"));
     await waitFor(() => expect(requestTossBillingAuth).toHaveBeenCalled());
@@ -463,6 +508,7 @@ describe("registered cards show region and currency", () => {
     api.cardIntent.mockRejectedValue(
       new ApiError(422, "payment_method.currency_mismatch", "raw", { subscription_currency: "USD", card_currency: "KRW" }),
     );
+    api.methods.mockResolvedValue({ methods: [], registration: DOMESTIC });
     renderScreen();
     await userEvent.click(await screen.findByLabelText("국내 카드 추가"));
     expect(await screen.findByText(/원화\(KRW\)로만 결제돼요. 미국 달러\(USD\) 요금제는 해외 카드로/)).toBeInTheDocument();

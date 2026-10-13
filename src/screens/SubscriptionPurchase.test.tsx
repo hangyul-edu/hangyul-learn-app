@@ -5,42 +5,32 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 /* -------------------------------- mocks --------------------------------- */
-const { plans, mine, country, paymentMethods, startTrial, subscribe, setBillingCountry, toastShow, toastError } =
-  vi.hoisted(() => ({
-    plans: vi.fn(),
-    mine: vi.fn(),
-    country: vi.fn(),
-    paymentMethods: vi.fn(),
-    startTrial: vi.fn(),
-    subscribe: vi.fn(),
-    setBillingCountry: vi.fn(),
-    toastShow: vi.fn(),
-    toastError: vi.fn(),
-  }));
+const { plans, mine, billing, paymentMethods, startTrial, subscribe, toastShow, toastError } = vi.hoisted(() => ({
+  plans: vi.fn(),
+  mine: vi.fn(),
+  billing: vi.fn(),
+  paymentMethods: vi.fn(),
+  startTrial: vi.fn(),
+  subscribe: vi.fn(),
+  toastShow: vi.fn(),
+  toastError: vi.fn(),
+}));
 // The screen reads one call, GET /subscriptions/offers. The tests set its
 // parts separately: the plans offered (`plans`), the member's trial
 // eligibility (`mine`, as /subscriptions/me reports it) and their billing
-// country with its currency and payment options (`country`).
+// currency (`billing`: the server's, from their phone number).
 vi.mock("../api/endpoints", () => ({
   subApi: {
     offers: async () => {
-      const [p, m, c] = await Promise.all([plans(), mine(), country()]);
-      return { plans: p.plans, new_member: false, trial: { available: !!m.trial_available, days: 7 }, preview: false, ...c };
+      const [p, m, b] = await Promise.all([plans(), mine(), billing()]);
+      return { plans: p.plans, new_member: false, trial: { available: !!m.trial_available, days: 7 }, ...b };
     },
     paymentMethods,
     startTrial,
     subscribe,
-    setBillingCountry,
   },
 }));
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: toastError, success: vi.fn(), show: toastShow }) }));
-
-/** A confirmed US billing country: USD prices, payable by an overseas card. */
-const CONFIRMED_US = {
-  billing_country: { country: "US", source: "confirmed", confirmed: true, currency: "USD" },
-  currency: "USD",
-  payment_options: [{ provider: "toss_intl_card", kind: "card", card_region: "international" }],
-};
 
 import { SubscriptionPurchase } from "./SubscriptionPurchase";
 import { I18nProvider } from "../i18n";
@@ -93,8 +83,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   plans.mockResolvedValue({ plans: PLANS });
   mine.mockResolvedValue({ status: "expired", trial_started: false, trial_available: true });
-  country.mockResolvedValue(CONFIRMED_US);
-  setBillingCountry.mockResolvedValue({ billing_country: CONFIRMED_US.billing_country, subscription: null });
+  billing.mockResolvedValue({ currency: "USD" });
   paymentMethods.mockResolvedValue({ methods: [METHOD] });
   startTrial.mockResolvedValue({});
   subscribe.mockResolvedValue({});
@@ -475,7 +464,7 @@ describe("SubscriptionPurchase currency pre-check", () => {
   });
 });
 
-describe("SubscriptionPurchase — billing country, currency and what is charged", () => {
+describe("SubscriptionPurchase — currency and what is charged", () => {
   const KR_PLANS = [
     {
       ...PLANS[0], currency: "KRW", price_cents: 154800, promo_price_cents: 69000,
@@ -489,94 +478,29 @@ describe("SubscriptionPurchase — billing country, currency and what is charged
     },
   ];
 
-  it("shows the confirmed country and its currency, with a way to change it", async () => {
+  it("has no billing-country picker, charge summary or payment-method list", async () => {
+    // The currency follows the phone number on the server; the screen is the
+    // plans, the CTA and the notes — nothing for the member to choose.
     renderPage();
-    const block = await screen.findByTestId("billing-country");
-    expect(block).toHaveTextContent("결제 국가");
-    expect(block).toHaveTextContent("미국");
-    expect(block).toHaveTextContent("미국 달러(USD)로 결제");
-    expect(within(block).getByRole("button", { name: "변경" })).toBeInTheDocument();
+    await screen.findByRole("button", { name: "7일 무료 체험 시작하기" });
+    expect(screen.queryByTestId("billing-country")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("charge-summary")).not.toBeInTheDocument();
+    expect(screen.queryByText(/결제 국가/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/결제 수단:/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "변경" })).not.toBeInTheDocument();
   });
 
-  it("asks to confirm the nationality suggestion before any checkout", async () => {
-    country.mockResolvedValue({
-      ...CONFIRMED_US,
-      billing_country: { country: "US", source: "nationality", confirmed: false, currency: "USD" },
-    });
-    renderPage();
-    const block = await screen.findByTestId("billing-country");
-    expect(block).toHaveTextContent("결제 국가를 확인해 주세요");
-    expect(block).toHaveTextContent(/등록하신 국적을 바탕으로 미국을\(를\) 제안했어요/);
-    // The CTA confirms the country first; nothing is started or charged.
-    await userEvent.click(screen.getByRole("button", { name: "7일 무료 체험 시작하기" }));
-    await waitFor(() => expect(setBillingCountry).toHaveBeenCalledWith("US", false));
-    expect(startTrial).not.toHaveBeenCalled();
-    expect(subscribe).not.toHaveBeenCalled();
-  });
-
-  it("lets the member choose a country when there is nothing to suggest", async () => {
-    country.mockResolvedValue({
-      billing_country: { country: null, source: null, confirmed: false, currency: null },
-      currency: null,
-      payment_options: [],
-    });
-    plans.mockResolvedValue({ plans: [] });
-    renderPage();
-    const block = await screen.findByTestId("billing-country");
-    expect(block).toHaveTextContent("결제 국가를 선택해 주세요");
-    expect(screen.queryByText(/이용 가능한 구독 상품이 없어요/)).not.toBeInTheDocument();
-    await userEvent.click(within(block).getByRole("button", { name: "선택" }));
-    expect(await screen.findByRole("dialog")).toHaveTextContent("결제 정보와 결제 수단이 속한 국가를 선택해 주세요");
-    await userEvent.type(screen.getByRole("searchbox", { name: "국가 검색" }), "대한민국");
-    await userEvent.click(screen.getByRole("button", { name: /대한민국/ }));
-    expect(screen.getByRole("status")).toHaveTextContent("대한민국 · 원화(KRW)로 결제");
-    await userEvent.click(screen.getByRole("button", { name: "이 국가로 결제" }));
-    await waitFor(() => expect(setBillingCountry).toHaveBeenCalledWith("KR", false));
-  });
-
-  it("states the annual charge, its monthly equivalent, the renewal and when billing starts after the trial", async () => {
-    renderPage();
-    const summary = await screen.findByTestId("charge-summary");
-    expect(summary).toHaveTextContent(/7일 무료 체험 후 .+부터 연 US\$71\.88\(월 US\$5\.99 상당\)이 결제돼요\./);
-    expect(summary).toHaveTextContent("이후 해지할 때까지 매년 US$71.88에 자동 갱신돼요.");
-    await userEvent.click(screen.getByRole("radio", { name: /1개월 요금제/ }));
-    expect(screen.getByTestId("charge-summary")).toHaveTextContent(/7일 무료 체험 후 .+부터 월 US\$9\.99이 결제돼요\./);
-  });
-
-  it("states what is charged today when there is no trial", async () => {
-    mine.mockResolvedValue({ status: "expired", trial_started: true, trial_available: false });
-    renderPage();
-    const summary = await screen.findByTestId("charge-summary");
-    expect(summary).toHaveTextContent("오늘 US$71.88이 결제돼요. (12개월, 월 US$5.99 상당)");
-    expect(screen.getByText("결제 수단: 해외 카드")).toBeInTheDocument();
-  });
-
-  it("prices a Korean billing country in won and lists the methods that can pay it", async () => {
-    country.mockResolvedValue({
-      billing_country: { country: "KR", source: "confirmed", confirmed: true, currency: "KRW" },
-      currency: "KRW",
-      payment_options: [
-        { provider: "toss_card", kind: "card", card_region: "domestic" },
-        { provider: "naver_pay", kind: "naver_pay", card_region: null },
-        { provider: "toss_intl_card", kind: "card", card_region: "international" },
-      ],
-    });
+  it("prices a +82 member in won and sends the price shown", async () => {
+    billing.mockResolvedValue({ currency: "KRW" });
     plans.mockResolvedValue({ plans: KR_PLANS });
+    paymentMethods.mockResolvedValue({ methods: [{ ...METHOD, billing_currency: "KRW" }] });
     renderPage();
     expect(await screen.findByText("₩5,750")).toBeInTheDocument();
     expect(screen.getByText("(₩69,000)")).toBeInTheDocument();
-    expect(screen.getByText("결제 수단: 국내 카드 · 네이버페이 · 해외 카드")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "7일 무료 체험 시작하기" }));
     await waitFor(() =>
       expect(startTrial).toHaveBeenCalledWith("p_year", { currency: "KRW", quoted_amount_cents: 69000 }),
     );
-  });
-
-  it("does not offer checkout when no configured method can pay the currency", async () => {
-    country.mockResolvedValue({ ...CONFIRMED_US, payment_options: [] });
-    renderPage();
-    expect(await screen.findByText(/지금은 미국 달러\(USD\) 결제 수단을 이용할 수 없어요/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "7일 무료 체험 시작하기" })).toBeDisabled();
   });
 
   it("re-reads the offers instead of charging a price that changed", async () => {

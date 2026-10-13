@@ -361,11 +361,9 @@ export const ko = {
     delete: "삭제",
     retryingStatus: "결제를 진행하고 있어요",
     changingDefaultStatus: "기본 결제수단 변경 중",
-    /** Which card button to press: decided by where the card was issued. */
-    cardChoiceHint:
-      "카드를 발급한 곳을 기준으로 골라 주세요. 한국 카드사(국민·신한 등)에서 발급한 카드는 국내 카드, 해외에서 발급한 카드는 해외 카드예요.",
+    /** Under the one card button the member gets (+82 phone: domestic; otherwise: overseas). */
     addDomesticSub: "한국에서 발급한 카드 · 원화(KRW)로 결제",
-    addInternationalSub: "해외에서 발급한 Visa·Mastercard·JCB 등 · 선택한 통화로 결제",
+    addInternationalSub: "해외에서 발급한 Visa·Mastercard·JCB 등 · {currency}로 결제",
     regionDomestic: "국내",
     regionInternational: "해외",
     /** Tag on a registered card, e.g. "해외 · USD". */
@@ -379,9 +377,12 @@ export const ko = {
     currencyMismatchKrwCard: "이 카드는 원화(KRW)로만 결제돼요. {plan} 요금제는 해외 카드로 등록해 주세요.",
     currencyMismatch: "이 카드는 {card}로만 결제돼요. {plan} 요금제는 {plan}로 결제되는 카드로 결제해 주세요.",
     currencyMismatchGeneric: "이 카드의 결제 통화가 요금제 통화와 달라 사용할 수 없어요. 다른 결제수단을 선택해 주세요.",
+    /** payment_method.registration_not_offered: the phone number decides which card a member registers. */
+    registerDomesticOnly: "+82 휴대폰 번호로 가입한 회원은 원화(KRW)로 결제되며, 국내 카드만 등록할 수 있어요.",
+    registerInternationalOnly: "+82가 아닌 휴대폰 번호로 가입한 회원은 {currency}로 결제되며, 해외 카드만 등록할 수 있어요.",
     /** The app's own overseas-card form (POST /payment-methods/cards/international). */
     intl: {
-      intro: "해외에서 발급한 카드를 등록해요. 한국에서 발급한 카드는 ‘국내 카드’로 등록해 주세요.",
+      intro: "해외에서 발급한 카드를 등록해요.",
       currencyLabel: "결제 통화",
       currencyHint: "선택한 통화로 결제돼요. 이 카드는 {currency} 요금제 결제에만 사용할 수 있어요.",
       currencyPreselected: "이용 중인 요금제가 {currency}로 결제돼서 미리 선택했어요.",
@@ -678,49 +679,8 @@ export const ko = {
     discountedPrice: "<s>최대 {pct}%할인</s> 된 가격", // 2532:26708
     discountPct: "{pct}% 할인",
     perMonthPriceWithTotal: "{price}/월 ({total})",
-    /** app-authored: what the selected plan charges, and when. */
-    summaryTrialYear: "{days}일 무료 체험 후 {date}부터 연 {total}(월 {monthly} 상당)이 결제돼요.",
-    summaryTrialMonth: "{days}일 무료 체험 후 {date}부터 월 {total}이 결제돼요.",
-    summaryPaidYear: "오늘 {total}이 결제돼요. (12개월, 월 {monthly} 상당)",
-    summaryPaidMonth: "오늘 {total}이 결제돼요. (1개월)",
-    summaryRenewYear: "이후 해지할 때까지 매년 {total}에 자동 갱신돼요.",
-    summaryRenewMonth: "이후 해지할 때까지 매월 {total}에 자동 갱신돼요.",
-    payWith: "결제 수단: {methods}",
-    noPaymentOption: "지금은 {currency} 결제 수단을 이용할 수 없어요. 다른 결제 국가를 선택하거나 잠시 후 다시 시도해 주세요.",
+    /** app-authored: the server refused a checkout whose price is no longer current. */
     priceChanged: "가격이 변경됐어요. 새 가격을 확인한 뒤 다시 시도해 주세요.",
-    notSoldInCurrency: "이 요금제는 {currency}로 판매되지 않아요.",
-    optionDomesticCard: "국내 카드",
-    optionIntlCard: "해외 카드",
-    optionNaverPay: "네이버페이",
-    optionTossPay: "토스페이",
-  },
-
-  /** app-authored: the billing country — chosen by the member, never inferred
-   *  from location, phone or app language; nationality only suggests it. */
-  billingCountry: {
-    label: "결제 국가",
-    pricesIn: "{currency}로 결제",
-    suggestedTitle: "결제 국가를 확인해 주세요",
-    suggestedBody: "등록하신 국적을 바탕으로 {country}을(를) 제안했어요. 결제 정보와 결제 수단에 맞는 국가인지 확인하거나 변경해 주세요.",
-    noneTitle: "결제 국가를 선택해 주세요",
-    noneBody: "결제 국가에 따라 결제 통화가 정해져요.",
-    previewNote: "아직 확인하지 않은 국가의 가격이에요. 결제하려면 결제 국가를 확인해 주세요.",
-    confirm: "확인",
-    change: "변경",
-    choose: "선택",
-    sheetTitle: "결제 국가",
-    sheetHint: "결제 정보와 결제 수단이 속한 국가를 선택해 주세요. 여행, 해외 접속, 앱 언어 변경으로는 바뀌지 않아요.",
-    search: "국가 검색",
-    noResults: "검색 결과가 없어요",
-    currencyFor: "{currency}로 결제",
-    save: "이 국가로 결제",
-    saved: "결제 국가를 저장했어요.",
-    keepTitle: "현재 구독은 그대로 유지돼요",
-    keepBody1: "{country}의 결제 통화는 {newCurrency}예요.",
-    keepBody2: "지금 이용 중인 구독은 {currency}로 유지되며, 다음 결제일({date})에 {amount}이(가) 그대로 청구돼요.",
-    keepBody3: "새 결제 국가는 앞으로 새로 시작하는 구독에만 적용돼요.",
-    keepConfirm: "네, 변경할게요",
-    unsupported: "선택할 수 없는 국가예요.",
   },
 
   /** Saved sentences / TAL-038, Figma 537:9613. */

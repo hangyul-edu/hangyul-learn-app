@@ -456,6 +456,18 @@ export interface PaymentMethod {
   /** The only currency this method can be charged in (e.g. "USD"); null = no restriction tracked. */
   billing_currency?: string | null;
 }
+/** The one kind of payment method a member may register: a domestic card
+ *  (plus the Korean wallets) when billed in KRW — a +82 phone number — else
+ *  an overseas card in `currency`. A live subscription's currency wins. */
+export interface MethodRegistration {
+  currency: string;
+  card_region: CardRegion;
+}
+/** GET /payment-methods. */
+export interface PaymentMethodList {
+  methods: PaymentMethod[];
+  registration?: MethodRegistration;
+}
 export interface Money {
   amount_cents: number;
   currency: string;
@@ -766,54 +778,19 @@ export interface CouponRedemption {
 /** GET /subscriptions/offers — what the purchase screen offers this member:
  *  one plan per interval (the new-member price where it applies) and the
  *  member's one free trial, the same length on every plan. */
-/** The billing country prices are shown for (GET /subscriptions/offers,
- *  /subscriptions/billing-country). `source`: "confirmed" — the member chose
- *  it, checkout may proceed; "nationality" — only a suggestion from their
- *  registered nationality, to confirm or change first; null — a previewed
- *  country, or nothing to suggest. */
-export interface BillingCountry {
-  country: string | null;
-  source: "confirmed" | "nationality" | null;
-  confirmed: boolean;
-  confirmed_at?: string | null;
-  /** KRW for KR, USD for every other country. */
-  currency: string | null;
-}
-/** A kind of payment method that can pay the offered currency with the
- *  payment providers configured right now. */
-export interface PaymentOption {
-  provider: MethodProvider;
-  kind: string;
-  card_region?: "domestic" | "international" | null;
-}
 export interface Offers {
-  billing_country: BillingCountry;
-  /** True when priced for a previewed country, not the member's own. */
-  preview: boolean;
-  /** Every plan below is priced and charged in it; null without a country. */
-  currency: string | null;
+  /** The member's billing currency, which every plan below is priced and
+   *  charged in: KRW for a +82 phone number, USD otherwise. */
+  currency: string;
   plans: Plan[];
-  payment_options: PaymentOption[];
   new_member: boolean;
   trial: { available: boolean; days: number };
-}
-/** How the member's renewing subscription is billed — kept as it is whatever
- *  the billing country becomes. */
-export interface LiveSubscriptionBilling {
-  plan_id: string | null;
-  currency: string;
-  renewal_amount_cents: number | null;
-  next_billing_at: string | null;
 }
 /** What the purchase screen showed for a checkout, sent so the server can
  *  refuse a stale price instead of charging it. */
 export interface CheckoutQuote {
   currency?: string;
   quoted_amount_cents?: number;
-}
-export interface BillingCountryState {
-  billing_country: BillingCountry;
-  subscription: LiveSubscriptionBilling | null;
 }
 /** GET /subscriptions/me. It carries no premium flag: derive a live
  *  subscription from `status` (lib/subscription). Premium *gating* is the

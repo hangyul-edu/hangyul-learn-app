@@ -98,8 +98,11 @@ function tossPay(over: Partial<PaymentMethod> = {}): PaymentMethod {
   };
 }
 
+/** A +82 member: billed in KRW, registers domestic cards (and the wallets). */
+const DOMESTIC = { currency: "KRW", card_region: "domestic" } as const;
+
 function setMethods(...methods: PaymentMethod[]) {
-  api.methods.mockResolvedValue({ methods });
+  api.methods.mockResolvedValue({ methods, registration: DOMESTIC });
 }
 
 function renderScreen(
@@ -138,8 +141,9 @@ describe("PaymentMethods screen", () => {
   it("1. renders the empty state: add rows + the Naver Pay connect button + notice, no cards", async () => {
     setMethods();
     renderScreen();
+    // A +82 member gets the domestic card button only.
     expect(await screen.findByLabelText("국내 카드 추가")).toBeInTheDocument();
-    expect(screen.getByLabelText("해외 카드 추가")).toBeInTheDocument();
+    expect(screen.queryByLabelText("해외 카드 추가")).not.toBeInTheDocument();
     // Toss Pay is implemented but not launched: never offered.
     expect(screen.queryByLabelText("토스페이 연결하기")).not.toBeInTheDocument();
     expect(screen.getByLabelText("네이버페이 연결하기")).toBeInTheDocument();
@@ -155,11 +159,11 @@ describe("PaymentMethods screen", () => {
   });
 
   it("does not flash the empty layout before the initial fetch resolves", async () => {
-    let resolve!: (v: { methods: PaymentMethod[] }) => void;
+    let resolve!: (v: { methods: PaymentMethod[]; registration: typeof DOMESTIC }) => void;
     api.methods.mockReturnValue(new Promise((r) => { resolve = r; }));
     renderScreen();
     expect(screen.queryByLabelText("국내 카드 추가")).not.toBeInTheDocument();
-    resolve({ methods: [] });
+    resolve({ methods: [], registration: DOMESTIC });
     expect(await screen.findByLabelText("국내 카드 추가")).toBeInTheDocument();
   });
 

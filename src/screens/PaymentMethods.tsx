@@ -10,7 +10,7 @@ import { billingApi, payApi, subApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
 import { ApiError, errorMessage } from "../lib/http";
-import { currencyMismatchText, paymentErrorMessage } from "../lib/paymentErrors";
+import { currencyLabel, currencyMismatchText, paymentErrorMessage } from "../lib/paymentErrors";
 import { InternationalCardSheet } from "../components/InternationalCardSheet";
 import {
   NOTICE_GUIDANCE_KEY,
@@ -176,6 +176,17 @@ export function PaymentMethods() {
   const recoveryQ = useQuery({ queryKey: RECOVERY_QK, queryFn: billingApi.recovery });
   const methods = q.data?.methods ?? [];
   const cards = methods.filter((m) => m.kind === "card");
+  // The one kind of method this member may add (the server decides it from
+  // their phone number): a domestic card — and the Korean wallets — for KRW,
+  // an overseas card otherwise.
+  const registration = q.data?.registration;
+  const registerRegion = registration?.card_region ?? null;
+  // Wallets charge KRW: offered to domestic members only (and launched); one
+  // already on file always shows, so it can be seen and removed.
+  const easyPay = EASY_PAY.filter(
+    ({ provider }) =>
+      (registerRegion === "domestic" && isPayLaunched(provider)) || methods.some((m) => m.provider === provider),
+  );
 
   /* --- currency binding: a card charged in one currency pays only plans in it --- */
   const subQ = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
@@ -190,7 +201,7 @@ export function PaymentMethods() {
   // Every offered plan is priced in the member's billing currency.
   const buyingCurrency =
     (plans.find((p) => p.plan_id === buyingPlanId)?.currency ?? offersQ.data?.currency)?.toUpperCase() ?? null;
-  const preferredCurrency = liveCurrency ?? buyingCurrency;
+  const preferredCurrency = registration?.currency ?? liveCurrency ?? buyingCurrency;
   const currencyLocked = (m: PaymentMethod) =>
     !!liveCurrency && !!m.billing_currency && m.billing_currency.toUpperCase() !== liveCurrency;
   const methodTag = (m: PaymentMethod): string | null => {
@@ -639,34 +650,38 @@ export function PaymentMethods() {
                 })}
               </ul>
 
-              {/* Two distinct flows, chosen by where the card was issued:
-                  Korean → Toss's window (KRW); overseas → our own form. */}
-              <p className="pm__card-hint">{t("paymentMethods.cardChoiceHint")}</p>
-              <button className="pm__add" onClick={startDomesticCard} disabled={!!starting || retry.isPending} aria-label={t("paymentMethods.addDomesticA11y")}>
-                <Plus />
-                <span className="pm__add-text">
-                  <span className="pm__add-label">{t("paymentMethods.addDomestic")}</span>
-                  <span className="pm__add-sub">{t("paymentMethods.addDomesticSub")}</span>
-                </span>
-              </button>
-              <button className="pm__add" onClick={() => setIntlOpen(true)} disabled={!!starting || retry.isPending} aria-label={t("paymentMethods.addInternationalA11y")}>
-                <Plus />
-                <span className="pm__add-text">
-                  <span className="pm__add-label">{t("paymentMethods.addInternational")}</span>
-                  <span className="pm__add-sub">{t("paymentMethods.addInternationalSub")}</span>
-                </span>
-              </button>
+              {/* One flow per member, decided by the server from their phone
+                  number: +82 → a Korean card in Toss's window (KRW); anyone
+                  else → an overseas card in our own form (USD). */}
+              {registerRegion === "domestic" && (
+                <button className="pm__add" onClick={startDomesticCard} disabled={!!starting || retry.isPending} aria-label={t("paymentMethods.addDomesticA11y")}>
+                  <Plus />
+                  <span className="pm__add-text">
+                    <span className="pm__add-label">{t("paymentMethods.addDomestic")}</span>
+                    <span className="pm__add-sub">{t("paymentMethods.addDomesticSub")}</span>
+                  </span>
+                </button>
+              )}
+              {registerRegion === "international" && (
+                <button className="pm__add" onClick={() => setIntlOpen(true)} disabled={!!starting || retry.isPending} aria-label={t("paymentMethods.addInternationalA11y")}>
+                  <Plus />
+                  <span className="pm__add-text">
+                    <span className="pm__add-label">{t("paymentMethods.addInternational")}</span>
+                    <span className="pm__add-sub">
+                      {t("paymentMethods.addInternationalSub", { currency: currencyLabel(registration?.currency, t) })}
+                    </span>
+                  </span>
+                </button>
+              )}
             </section>
 
-            {/* --- Easy payment --- */}
+            {/* --- Easy payment: Korean wallets, KRW only — for members who
+                register domestic cards, or to see/remove one already on file --- */}
+            {easyPay.length > 0 && (
             <section className="pm__section" aria-label={t("paymentMethods.easyPaySection")}>
               <h2 className="pm__section-title">{t("paymentMethods.easyPaySection")}</h2>
               <ul className="pm__list pm__list--ez" role="list">
-                {EASY_PAY.filter(
-                  // Not-launched wallets (lib/launch.ts) are never offered; one
-                  // already on file still shows, so it can be seen and removed.
-                  ({ provider }) => isPayLaunched(provider) || methods.some((m) => m.provider === provider),
-                ).map(({ provider, labelKey, Logo }) => {
+                {easyPay.map(({ provider, labelKey, Logo }) => {
                   const connected = methods.find((m) => m.provider === provider);
                   const connect = provider === "toss_pay" ? startTossPay : startNaverPay;
                   return (
@@ -708,6 +723,7 @@ export function PaymentMethods() {
                 })}
               </ul>
             </section>
+            )}
 
             {/* --- Notice --- */}
             <section className="pm__notice" aria-label={t("paymentMethods.noticeSection")}>
@@ -742,7 +758,7 @@ export function PaymentMethods() {
 
       {/* --- overseas-issued card: the app's own form --- */}
       <InternationalCardSheet
-        open={intlOpen}
+        open={intlOpen && registerRegion === "international"}
         onClose={closeIntl}
         preferredCurrency={preferredCurrency}
         onRegistered={intlRegistered}

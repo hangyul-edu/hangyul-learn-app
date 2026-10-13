@@ -5,8 +5,9 @@
  * length-checked).
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 
 const { me } = vi.hoisted(() => ({ me: { current: null as null | { phone: string; nationality: string | null } } }));
@@ -21,12 +22,14 @@ import { I18nProvider } from "../i18n";
 
 const api = authApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
-function renderScreen() {
+function renderScreen(qc = new QueryClient()) {
   return render(
     <I18nProvider language="en">
-      <MemoryRouter>
-        <ChangePhone />
-      </MemoryRouter>
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>
+          <ChangePhone />
+        </MemoryRouter>
+      </QueryClientProvider>
     </I18nProvider>,
   );
 }
@@ -77,5 +80,29 @@ describe("ChangePhone", () => {
     await user.click(requestCode());
     expect(toastError).toHaveBeenCalledWith("That's already your current number");
     expect(api.startPhone).not.toHaveBeenCalled();
+  });
+
+  it("drops the billing data read for the old number once the change is saved", async () => {
+    // The calling code decides the currency (+82 → KRW, else USD) and which
+    // card may be registered, so nothing cached for the old number may stay.
+    api.confirmPhone.mockResolvedValue({ verification_token: "tok" });
+    api.changePhone.mockResolvedValue({ phone: "+14155550123" });
+    const qc = new QueryClient();
+    const invalidate = vi.spyOn(qc, "invalidateQueries");
+    const user = userEvent.setup();
+    me.current = { phone: "+821099998888", nationality: "US" };
+    renderScreen(qc);
+    await user.type(phoneField(), "415-555-0123");
+    await user.click(requestCode());
+    await user.type(document.querySelector<HTMLInputElement>(".pchg__code")!, "123456");
+    await user.click(document.querySelector<HTMLButtonElement>(".pchg__confirm")!);
+    await waitFor(() => expect(document.querySelector(".pchg__submit")).toBeEnabled());
+    expect(invalidate).not.toHaveBeenCalled();
+    await user.click(document.querySelector<HTMLButtonElement>(".pchg__submit")!);
+    await waitFor(() => expect(api.changePhone).toHaveBeenCalled());
+    const keys = invalidate.mock.calls.map(([f]) => JSON.stringify(f?.queryKey));
+    expect(keys).toEqual(
+      expect.arrayContaining(['["payment-methods"]', '["sub-offers"]', '["intl-card-options"]']),
+    );
   });
 });

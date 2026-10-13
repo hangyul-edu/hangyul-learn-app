@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "../i18n";
 import { authApi } from "../api/endpoints";
+import { INTL_OPTIONS_QK } from "../components/InternationalCardSheet";
 import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
 import { countdownLabel } from "../hooks/verification";
@@ -147,6 +149,7 @@ export function ChangePassword() {
 export function ChangePhone() {
   const { t } = useTranslation();
   const nav = useNavigate();
+  const qc = useQueryClient();
   const toast = useToast();
   const { me, setMe } = useAuth();
 
@@ -250,6 +253,11 @@ export function ChangePhone() {
     try {
       const res = await authApi.changePhone(e164, token!, country);
       if (me) setMe({ ...me, phone: res.phone ?? e164, nationality: country });
+      // The number's calling code decides the billing currency and which
+      // card the member may register: drop what was read for the old one.
+      for (const key of [["payment-methods"], ["sub-offers"], INTL_OPTIONS_QK]) {
+        void qc.invalidateQueries({ queryKey: key });
+      }
       toast.success(t("accountChanges.phoneChanged"));
       nav(-1);
     } catch (e) {

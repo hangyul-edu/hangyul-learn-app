@@ -1481,6 +1481,7 @@ export const ko = {
     done: "완료",
     progress: "진행률",
     premiumLecture: "프리미엄 강의",
+    videoLoadError: "영상을 불러오지 못했어요.", // app-authored
     /** COU-002 (2414:27684) — the lesson row's completion chip and CTA. */
     /** COU-004 (230:7011) — the video player's chrome. */
     excludeSpeaking: "말하기 제외", // 230:7048

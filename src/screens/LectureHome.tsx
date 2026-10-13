@@ -23,6 +23,14 @@ const ROTATE_MS = 5000;
 const SETTLE_MS = 150;
 
 /* --------------------------- Banner carousel --------------------------- */
+/** The in-app path a banner opens, or null. Only in-app paths are followed:
+ *  anything else (an external URL, a protocol-relative "//host") leaves the
+ *  banner a plain picture rather than a button that does nothing. */
+function bannerPath(b: Banner): string | null {
+  const url = b.action_url;
+  return url && url.startsWith("/") && !/^\/[/\\]/.test(url) ? url : null;
+}
+
 function BannerCarousel() {
   const { t } = useTranslation();
   const nav = useNavigate();
@@ -115,7 +123,8 @@ function BannerCarousel() {
     settleRef.current = window.setTimeout(settle, SETTLE_MS);
   }
   function open(b: Banner) {
-    if (b.action_url && b.action_url.startsWith("/")) nav(b.action_url);
+    const to = bannerPath(b);
+    if (to) nav(to);
   }
 
   // Independent banner state: loading → skeleton; error → hide (never the empty
@@ -151,15 +160,21 @@ function BannerCarousel() {
         {/* Each slide is exactly one screen wide and holds one 335px card with
             20px either side (2658:26022), so a single banner shows at a time
             and its neighbours stay fully off-screen until swiped in. */}
-        {banners.map((b, i) => (
+        {banners.map((b, i) => {
+          const link = !!bannerPath(b);
+          return (
           <div key={b.banner_id} className="lechome__slide">
             <div
-              className={`lechome__banner ${b.action_url ? "is-link" : ""}`}
-              role={b.action_url ? "button" : "img"}
-              tabIndex={b.action_url ? 0 : -1}
+              className={`lechome__banner ${link ? "is-link" : ""}`}
+              role={link ? "button" : "img"}
+              tabIndex={link ? 0 : -1}
               aria-label={t("courses.bannerItemA11y", { alt: b.alt_text, i: i + 1, total: banners.length })}
               onClick={() => open(b)}
-              onKeyDown={(e) => e.key === "Enter" && open(b)}
+              onKeyDown={(e) => {
+                if (!link || (e.key !== "Enter" && e.key !== " ")) return;
+                e.preventDefault(); // Space would scroll the page
+                open(b);
+              }}
             >
               {/* The part of the image the admin chose; without one, the
                   image is cover-cropped around its centre. */}
@@ -173,7 +188,8 @@ function BannerCarousel() {
               />
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
       {banners.length > 1 && (
         <div className="lechome__dots" aria-hidden="true">

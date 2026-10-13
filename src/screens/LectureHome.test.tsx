@@ -310,6 +310,30 @@ describe("LectureHome — banners and empty states", () => {
     expect(screen.queryByText("아직 등록된 강의가 없어요")).not.toBeInTheDocument();
   });
 
+  it("opens a banner's in-app destination on tap, Enter or Space", async () => {
+    banners.mockResolvedValue({ banners: [{ ...banner("b1"), action_url: "/subscription" }] });
+    renderPage();
+    const link = await screen.findByRole("button", { name: /배너 b1/ });
+    expect(link).toHaveAttribute("tabindex", "0");
+    fireEvent.keyDown(link, { key: " " });
+    expect(await screen.findByTestId("where")).toHaveTextContent("/subscription");
+  });
+
+  it.each([["https://example.com/sale"], ["//example.com"], ["/\\example.com"]])(
+    "leaves a banner pointing at %s a plain picture, not a dead button",
+    async (url) => {
+      banners.mockResolvedValue({ banners: [{ ...banner("b1"), action_url: url }] });
+      const { container } = renderPage();
+      const pic = await screen.findByRole("img", { name: /배너 b1/ });
+      expect(pic).not.toHaveClass("is-link");
+      expect(pic).toHaveAttribute("tabindex", "-1");
+      fireEvent.click(pic);
+      fireEvent.keyDown(pic, { key: "Enter" });
+      expect(screen.queryByTestId("where")).not.toBeInTheDocument();
+      expect(container.querySelector(".lechome__banner")).toBe(pic);
+    },
+  );
+
   it("a single banner renders no pagination dots (no auto-slide)", async () => {
     banners.mockResolvedValue({ banners: [banner("only")] });
     const { container } = renderPage();

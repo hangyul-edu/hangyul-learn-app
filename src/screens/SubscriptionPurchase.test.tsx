@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 
 /* -------------------------------- mocks --------------------------------- */
 const { plans, mine, billing, paymentMethods, startTrial, subscribe, toastShow, toastError } = vi.hoisted(() => ({
@@ -62,16 +62,22 @@ const PLANS = [
 const YEAR_QUOTE = { currency: "USD", quoted_amount_cents: 7188 };
 const METHOD = { method_id: "pm1", kind: "card", provider: "toss_card", status: "active", is_default: true, display_name: "카드" };
 
-function renderPage() {
+/** The payment screen's back arrow (DetailHeader: one history step back). */
+function Back() {
+  const nav = useNavigate();
+  return <button onClick={() => nav(-1)}>BACK</button>;
+}
+
+function renderPage(entry: string | { pathname: string; state?: unknown } = "/subscription/start") {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <I18nProvider language="ko">
       <QueryClientProvider client={qc}>
-        <MemoryRouter initialEntries={["/subscription/start"]}>
+        <MemoryRouter initialEntries={[entry]}>
           <Routes>
             <Route path="/subscription/start" element={<><SubscriptionPurchase /><Loc /></>} />
             <Route path="/subscription" element={<><div>MANAGE</div><Loc /></>} />
-            <Route path="/account/payment" element={<><div>PAYMENT REG</div><Loc /></>} />
+            <Route path="/account/payment" element={<><div>PAYMENT REG</div><Back /><Loc /></>} />
             <Route path="/policy/refund" element={<div>REFUND POLICY</div>} />
           </Routes>
         </MemoryRouter>
@@ -224,6 +230,24 @@ describe("SubscriptionPurchase", () => {
     await userEvent.click(await screen.findByRole("button", { name: "결제 수단 등록" }));
     await waitFor(() => expect(screen.getByText("PAYMENT REG")).toBeInTheDocument());
     expect(screen.getByTestId("loc")).toHaveTextContent('"selectedPlanId":"p_year"');
+  });
+
+  it("keeps the picked plan when the member comes Back without registering", async () => {
+    paymentMethods.mockResolvedValue({ methods: [] });
+    renderPage();
+    await userEvent.click(await screen.findByRole("radio", { name: /월간|매월|1개월/ }));
+    await userEvent.click(screen.getByRole("button", { name: "7일 무료 체험 시작하기" }));
+    await userEvent.click(await screen.findByRole("button", { name: "결제 수단 등록" }));
+    await userEvent.click(await screen.findByRole("button", { name: "BACK" }));
+    await waitFor(() => expect(screen.getByTestId("loc")).toHaveTextContent('/subscription/start{"selectedPlanId":"p_month"}'));
+    await waitFor(() => expect(screen.getAllByRole("radio").find((r) => r.getAttribute("aria-checked") === "true")?.className).toContain("plan--monthly"));
+  });
+
+  it("shows the plan the payment screen came back with", async () => {
+    renderPage({ pathname: "/subscription/start", state: { selectedPlanId: "p_month" } });
+    await screen.findByRole("button", { name: "7일 무료 체험 시작하기" });
+    const checked = screen.getAllByRole("radio").find((r) => r.getAttribute("aria-checked") === "true");
+    expect(checked?.className).toContain("plan--monthly");
   });
 
   it("trial CTA (with a valid method) calls the trial endpoint, then routes to management", async () => {

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { I18nProvider } from "../i18n";
 import { ToastProvider } from "../hooks/toast";
 import type { PaymentMethod } from "../lib/types";
@@ -453,6 +453,89 @@ describe("PaymentMethods screen", () => {
     renderScreen("/account/payment?customerKey=cus_someone_else&authKey=ak_x");
     expect(await screen.findByText("결제수단을 등록하지 못했어요. 다시 시도해 주세요.")).toBeInTheDocument();
     expect(api.naverpayConfirm).not.toHaveBeenCalled();
+  });
+
+  describe("arriving from the purchase screen", () => {
+    const FROM_PURCHASE = { from: "/subscription/start", selectedPlanId: "p_month" };
+    const RETURN_TO_KEY = "hangyul.pm-return-to.v1";
+    const noKeyWidget = { client_key: "", success_url: "https://w", fail_url: "https://w", card_region: "domestic" };
+
+    function Loc() {
+      const l = useLocation();
+      return <div data-testid="loc">{l.pathname}{JSON.stringify(l.state ?? null)}</div>;
+    }
+    type Entry = { pathname: string; search?: string; state?: unknown };
+    function renderAt(entry: Entry, behind: Entry[] = []) {
+      const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+      return render(
+        <I18nProvider language="ko">
+          <QueryClientProvider client={qc}>
+            <MemoryRouter initialEntries={[...behind, entry]} initialIndex={behind.length}>
+              <ToastProvider>
+                <PaymentMethods />
+                <Loc />
+              </ToastProvider>
+            </MemoryRouter>
+          </QueryClientProvider>
+        </I18nProvider>,
+      );
+    }
+    async function registerManually() {
+      api.cardIntent.mockResolvedValue({ intent_id: "pmi_c", customer_key: "ck", widget: noKeyWidget });
+      api.cardConfirm.mockResolvedValue({ method: card() });
+      await userEvent.click(await screen.findByLabelText("국내 카드 추가"));
+      await userEvent.type(await screen.findByRole("textbox"), "authkey");
+      await userEvent.click(screen.getByRole("button", { name: "등록 완료" }));
+      await waitFor(() => expect(api.cardConfirm).toHaveBeenCalled());
+    }
+
+    it("goes back to it with the chosen plan once a method is registered", async () => {
+      // One step back: the purchase screen's own entry, which kept the plan.
+      renderAt({ pathname: "/account/payment", state: FROM_PURCHASE }, [
+        { pathname: "/subscription", state: null },
+        { pathname: "/subscription/start", state: { selectedPlanId: "p_month" } },
+      ]);
+      await registerManually();
+      await waitFor(() =>
+        expect(screen.getByTestId("loc")).toHaveTextContent('/subscription/start{"selectedPlanId":"p_month"}'),
+      );
+    });
+
+    it("stays put when the member came from anywhere else", async () => {
+      renderAt({ pathname: "/account/payment" });
+      await registerManually();
+      expect(await screen.findByText("등록되었어요")).toBeInTheDocument();
+      expect(screen.getByTestId("loc")).toHaveTextContent(/^\/account\/payment/);
+    });
+
+    it("keeps the way back across Toss's window, which drops the history state", async () => {
+      const widget = { client_key: "test_ck_x", success_url: "https://w", fail_url: "https://w", card_region: "domestic" };
+      api.cardIntent.mockResolvedValue({ intent_id: "pmi_c", customer_key: "cus_1", widget });
+      requestTossBillingAuth.mockResolvedValue(undefined);
+      const { unmount } = renderAt({ pathname: "/account/payment", state: FROM_PURCHASE });
+      await userEvent.click(await screen.findByLabelText("국내 카드 추가"));
+      await waitFor(() => expect(requestTossBillingAuth).toHaveBeenCalled());
+      expect(JSON.parse(sessionStorage.getItem(RETURN_TO_KEY) ?? "{}")).toEqual(FROM_PURCHASE);
+      unmount();
+
+      // Toss redirects back to a fresh page load: no history state.
+      api.cardConfirm.mockResolvedValue({ method: card() });
+      renderAt({ pathname: "/account/payment", search: "?customerKey=cus_1&authKey=ak_1" });
+      await waitFor(() => expect(api.cardConfirm).toHaveBeenCalledWith("pmi_c", { authKey: "ak_1", customerKey: "cus_1" }));
+      await waitFor(() =>
+        expect(screen.getByTestId("loc")).toHaveTextContent('/subscription/start{"selectedPlanId":"p_month"}'),
+      );
+      expect(sessionStorage.getItem(RETURN_TO_KEY)).toBeNull();
+    });
+
+    it("does not leave the page when the window's registration failed", async () => {
+      sessionStorage.setItem(PENDING_KEY, JSON.stringify({ provider: "toss_card", intentId: "pmi_c", customerKey: "cus_1" }));
+      sessionStorage.setItem(RETURN_TO_KEY, JSON.stringify(FROM_PURCHASE));
+      api.cardConfirm.mockRejectedValue(new Error("declined"));
+      renderAt({ pathname: "/account/payment", search: "?customerKey=cus_1&authKey=ak_1" });
+      await waitFor(() => expect(api.cardConfirm).toHaveBeenCalled());
+      expect(screen.getByTestId("loc")).toHaveTextContent(/^\/account\/payment/);
+    });
   });
 
   it("9b. deleting the primary never hands it to a revoked method", async () => {

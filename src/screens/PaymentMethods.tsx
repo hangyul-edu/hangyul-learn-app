@@ -47,6 +47,37 @@ const RECOVERY_QK = ["payment-recovery"] as const;
 const RETURN_URL = () => window.location.origin + "/account/payment";
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/* Arriving from the purchase screen, a successful registration goes back to
+   it with the plan the member picked. A registration window leaves the app
+   (and its history state) behind, so the way back is kept for this tab
+   across the window, like the pending registration itself. */
+const PURCHASE_PATH = "/subscription/start";
+const RETURN_TO_KEY = "hangyul.pm-return-to.v1";
+type ReturnTo = { from?: string; selectedPlanId?: string | null };
+
+function rememberReturnTo(state: ReturnTo | null): void {
+  try {
+    if (state?.from === PURCHASE_PATH) {
+      sessionStorage.setItem(RETURN_TO_KEY, JSON.stringify({ from: state.from, selectedPlanId: state.selectedPlanId ?? null }));
+    } else {
+      sessionStorage.removeItem(RETURN_TO_KEY);
+    }
+  } catch {
+    /* storage unavailable: the member goes back by hand */
+  }
+}
+
+/** Read and forget where a window's return should lead. */
+function takeReturnTo(): ReturnTo | null {
+  try {
+    const raw = sessionStorage.getItem(RETURN_TO_KEY);
+    sessionStorage.removeItem(RETURN_TO_KEY);
+    return raw ? (JSON.parse(raw) as ReturnTo) : null;
+  } catch {
+    return null;
+  }
+}
+
 /* --------------------------------- icons -------------------------------- */
 /* Group 1410118763 — the 10x12 bin glyph exported from SET-002. */
 const Trash = () => <img src={trashIcon} width={10} height={12} alt="" aria-hidden="true" />;
@@ -188,9 +219,9 @@ export function PaymentMethods() {
   const subQ = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
   const sub = subQ.data;
   const liveCurrency = sub && RENEWING.has(sub.status) ? sub.plan_currency?.toUpperCase() ?? null : null;
-  // Arriving from the purchase screen: maybe a request to open the
-  // overseas-card form straight away.
-  const navState = location.state as { addCard?: string } | null;
+  // Arriving from the purchase screen: where to go back to once a method is
+  // registered, and maybe a request to open the overseas-card form at once.
+  const navState = location.state as (ReturnTo & { addCard?: string }) | null;
   const currencyLocked = (m: PaymentMethod) =>
     !!liveCurrency && !!m.billing_currency && m.billing_currency.toUpperCase() !== liveCurrency;
   const methodTag = (m: PaymentMethod): string | null => {
@@ -213,6 +244,15 @@ export function PaymentMethods() {
   const retryBtnRef = useRef<HTMLButtonElement>(null);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: QK });
+  /** After a registration: back to the purchase screen when that is where the
+   *  member came from. Without a window in between, its history entry is the
+   *  one right behind this (it keeps the plan there), so step back rather than
+   *  stack a second copy its close button would land on. */
+  const backToPurchase = (returnTo: ReturnTo | null, viaWindow = false) => {
+    if (returnTo?.from !== PURCHASE_PATH) return;
+    if (!viaWindow) navigate(-1);
+    else navigate(PURCHASE_PATH, { replace: true, state: { selectedPlanId: returnTo.selectedPlanId ?? null } });
+  };
   const invalidateRecovery = () => qc.invalidateQueries({ queryKey: RECOVERY_QK });
   const scrollToCards = () => cardsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
@@ -410,6 +450,7 @@ export function PaymentMethods() {
     const search = location.search;
     // Drop the provider's parameters so a reload does not confirm again.
     navigate({ pathname: location.pathname }, { replace: true, state: location.state });
+    const returnTo = takeReturnTo();
     const pending = takePendingRegistration();
     if (!pending) return;
     const ret = parseRegistrationReturn(pending, search);
@@ -431,6 +472,7 @@ export function PaymentMethods() {
       .then(() => {
         toast.success(t("paymentMethods.registered"));
         invalidate();
+        backToPurchase(returnTo, true);
       })
       .catch((e) => toast.error(errorMessage(e)))
       .finally(() => setConfirming(false));
@@ -460,6 +502,7 @@ export function PaymentMethods() {
       if (res.widget.client_key) {
         // Toss opens its window through the SDK and returns to this page.
         savePendingRegistration({ provider: "toss_card", intentId: res.intent_id, customerKey: res.customer_key });
+        rememberReturnTo(navState);
         try {
           await requestTossBillingAuth({
             clientKey: res.widget.client_key,
@@ -491,6 +534,7 @@ export function PaymentMethods() {
       const confirm = provider === "toss_pay" ? payApi.tosspayConfirm : payApi.naverpayConfirm;
       if (res.window.client_key) {
         savePendingRegistration({ provider, intentId: res.intent_id, customerKey: res.customer_key });
+        rememberReturnTo(navState);
         try {
           await requestEasyPayBillingAuth({
             clientKey: res.window.client_key,
@@ -518,11 +562,12 @@ export function PaymentMethods() {
   const startNaverPay = () => startWallet("naver_pay");
 
   const closeIntl = useCallback(() => setIntlOpen(false), []);
-  const intlRegistered = useCallback(() => {
+  const intlRegistered = () => {
     setIntlOpen(false);
     toast.success(t("paymentMethods.registered"));
     void qc.invalidateQueries({ queryKey: QK });
-  }, [qc, t, toast]);
+    backToPurchase(navState);
+  };
 
   async function confirmFlow() {
     if (!flow || !token.trim() || confirming) return;
@@ -533,6 +578,7 @@ export function PaymentMethods() {
       setToken("");
       toast.success(t("paymentMethods.registered"));
       invalidate();
+      backToPurchase(navState);
     } catch (e) {
       toast.error(errorMessage(e));
     } finally {

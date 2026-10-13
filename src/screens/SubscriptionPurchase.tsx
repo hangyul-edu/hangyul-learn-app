@@ -164,7 +164,8 @@ export function SubscriptionPurchase() {
   const loc = useLocation();
   const toast = useToast();
   const qc = useQueryClient();
-  // Selected plan is preserved across the payment-method registration round trip.
+  // The plan picked before going to register a payment method: the payment
+  // screen comes back with it, and Back finds it on this history entry.
   const returned = loc.state as { selectedPlanId?: string; from?: string } | null;
   const [selectedId, setSelectedId] = useState<string | null>(returned?.selectedPlanId ?? null);
   const [payModal, setPayModal] = useState(false);
@@ -190,7 +191,6 @@ export function SubscriptionPurchase() {
   // Free-trial eligibility is server-authoritative (never local): one trial
   // per person, across accounts they withdrew and signed up again.
   const eligible = offersQ.data?.trial.available;
-  const entryMode: "free_trial" | "direct_paid" = eligible ? "free_trial" : "direct_paid";
 
   // Default selection: recommended → annual → first active plan. (No recommended
   // flag on the plan today, so annual is the effective recommendation.)
@@ -261,11 +261,19 @@ export function SubscriptionPurchase() {
     }
   }
 
+  /** To the payment-method screen, which comes back here with the plan after
+   *  a registration. The choice is also kept on this history entry, so going
+   *  Back without registering keeps it too. */
+  function toPaymentMethods(extra: { addCard?: "international" } = {}) {
+    nav(loc.pathname, { replace: true, state: { selectedPlanId: selectedId } });
+    nav("/account/payment", {
+      state: { from: "/subscription/start", selectedPlanId: selectedId, ...extra },
+    });
+  }
+
   function goRegisterPayment() {
     setPayModal(false);
-    nav("/account/payment", {
-      state: { from: "/subscription/start", selectedPlanId: selectedId, entryMode },
-    });
+    toPaymentMethods();
   }
 
   /** From the currency explanation: straight to the overseas-card form for a
@@ -274,14 +282,7 @@ export function SubscriptionPurchase() {
     const block = currencyBlock;
     setCurrencyBlock(null);
     const addIntl = !!block && !block.hasMatching && block.plan.currency?.toUpperCase() !== "KRW";
-    nav("/account/payment", {
-      state: {
-        from: "/subscription/start",
-        selectedPlanId: selectedId,
-        entryMode,
-        ...(addIntl ? { addCard: "international" } : {}),
-      },
-    });
+    toPaymentMethods(addIntl ? { addCard: "international" } : {});
   }
 
   const ctaKey = eligible ? "purchase.startTrial" : "purchase.startNow";

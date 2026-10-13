@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, Sheet } from "../components/ui/Modal";
@@ -32,7 +32,7 @@ import {
   requestTossBillingAuth,
 } from "../lib/tossPayments";
 import { useTranslation, type TranslationKey } from "../i18n";
-import type { MethodProvider, PaymentMethod, Plan } from "../lib/types";
+import type { MethodProvider, PaymentMethod, PaymentMethodList, Plan } from "../lib/types";
 import { isPayLaunched } from "../lib/launch";
 import cardArt from "../assets/brand/pm-card-art.svg";
 import trashIcon from "../assets/brand/ic-trash.svg";
@@ -232,9 +232,10 @@ export function PaymentMethods() {
     mutationFn: (id: string) => payApi.setDefault(id),
     onMutate: async (id) => {
       await qc.cancelQueries({ queryKey: QK });
-      const prev = qc.getQueryData<{ methods: PaymentMethod[] }>(QK);
-      qc.setQueryData<{ methods: PaymentMethod[] }>(QK, (old) =>
-        old ? { methods: old.methods.map((m) => ({ ...m, is_default: m.method_id === id })) } : old,
+      const prev = qc.getQueryData<PaymentMethodList>(QK);
+      // Keep `registration`: the add-card and wallet sections are drawn from it.
+      qc.setQueryData<PaymentMethodList>(QK, (old) =>
+        old ? { ...old, methods: old.methods.map((m) => ({ ...m, is_default: m.method_id === id })) } : old,
       );
       return { prev };
     },
@@ -255,6 +256,15 @@ export function PaymentMethods() {
     }
     setDefault.mutate(m.method_id);
   }
+  // Enter / Space on the row itself picks it; keys pressed on the delete
+  // button inside it bubble up here and must stay that button's own.
+  const rowKeyDown = (m: PaymentMethod) => (e: KeyboardEvent) => {
+    if (e.target !== e.currentTarget) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      selectPrimary(m);
+    }
+  };
 
   /* --- deletion / disconnect --- */
   const remove = useMutation({
@@ -624,7 +634,7 @@ export function PaymentMethods() {
                             })
                       }
                       onClick={() => selectPrimary(m)}
-                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectPrimary(m); } }}
+                      onKeyDown={rowKeyDown(m)}
                     >
                       <Radio checked={m.is_default} />
                       <CardGlyph />
@@ -698,7 +708,7 @@ export function PaymentMethods() {
                             state: t(connected.is_default ? "paymentMethods.selected" : "paymentMethods.notSelected"),
                           })}
                           onClick={() => selectPrimary(connected)}
-                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectPrimary(connected); } }}
+                          onKeyDown={rowKeyDown(connected)}
                         >
                           <Radio checked={connected.is_default} />
                           <div className="pm__row-main pm__row-main--logo"><Logo /></div>

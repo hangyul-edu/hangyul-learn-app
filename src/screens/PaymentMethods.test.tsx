@@ -333,6 +333,35 @@ describe("PaymentMethods screen", () => {
     expect(screen.getByText("해당 결제수단을 삭제할까요?")).toBeInTheDocument();
   });
 
+  it("13b. Enter on the delete button deletes; it does not make the row the default", async () => {
+    setMethods(card({ is_default: false }), card({ method_id: "pm_kb", display_name: "KB Card", issuer: "KB Card", masked_card_number: "1111********2222", is_default: true }));
+    renderScreen();
+    (await screen.findByLabelText(/Shinhan Card.*삭제/)).focus();
+    await userEvent.keyboard("{Enter}");
+    expect(api.setDefault).not.toHaveBeenCalled();
+    expect(screen.getByText("해당 결제수단을 삭제할까요?")).toBeInTheDocument();
+  });
+
+  it("13c. Enter on the row itself still makes it the default", async () => {
+    setMethods(card(), card({ method_id: "pm_kb", display_name: "KB Card", issuer: "KB Card", masked_card_number: "1111********2222", is_default: false }));
+    api.setDefault.mockResolvedValue(undefined);
+    renderScreen();
+    (await screen.findByRole("button", { name: /KB Card.*선택 안 됨/ })).focus();
+    await userEvent.keyboard("{Enter}");
+    expect(api.setDefault).toHaveBeenCalledWith("pm_kb");
+  });
+
+  it("13d. the add-card button stays while a new default is being saved", async () => {
+    setMethods(card(), card({ method_id: "pm_kb", display_name: "KB Card", issuer: "KB Card", masked_card_number: "1111********2222", is_default: false }));
+    api.setDefault.mockReturnValue(new Promise(() => {})); // still saving
+    renderScreen();
+    await userEvent.click(await screen.findByRole("button", { name: /KB Card.*선택 안 됨/ }));
+    // The optimistic update flipped the radio but kept `registration`.
+    await waitFor(() => expect(screen.getByRole("button", { name: /KB Card.*선택됨/ })).toBeInTheDocument());
+    expect(screen.getByLabelText("국내 카드 추가")).toBeInTheDocument();
+    expect(screen.getByLabelText("네이버페이 연결하기")).toBeInTheDocument();
+  });
+
   it("14. refetches methods after a successful registration flow", async () => {
     setMethods();
     // No client key (card billing not configured): the manual entry is the flow.

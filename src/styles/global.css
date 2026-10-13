@@ -7837,6 +7837,19 @@ textarea.input {
 .pchg__phone::placeholder {
   color: var(--ink-4);
 }
+/* Every phone field's placeholder is the picked country's example number
+   (lib/phone phoneExample): 8–13 digits. Next to the country picker and the
+   verify button a field has only ~83px on a 320px screen, so there the
+   example drops to 12px — Korea's 11 digits fit — and a longer one ends in
+   an ellipsis rather than being cut mid-digit. */
+input[type="tel"] {
+  text-overflow: ellipsis;
+}
+@media (max-width: 359px) {
+  input[type="tel"]::placeholder {
+    font-size: 12px;
+  }
+}
 .pchg__phone.is-error {
   border-color: var(--danger);
 }

@@ -6,8 +6,32 @@ import {
   formatPhoneForDisplay,
   normalizeE164,
   phoneCountry,
+  phoneExample,
   sanitizePhoneInput,
 } from "./phone";
+
+describe("phoneExample", () => {
+  it("is each country's example mobile number as dialled at home, digits only", () => {
+    expect(phoneExample("KR")).toMatch(/^010\d{8}$/);
+    expect(phoneExample("US")).toBe("2015550123");
+    expect(phoneExample("JP")).toBe("09012345678");
+    expect(phoneExample("GB")).toBe("07400123456");
+    expect(phoneExample("FR")).toBe("0612345678");
+  });
+
+  it("gives every supported country an example the phone fields accept", () => {
+    for (const { code } of PHONE_COUNTRIES) {
+      const example = phoneExample(code);
+      expect(example, code).toMatch(/^\d+$/);
+      expect(checkPhone(code, example).ok, `${code} ${example}`).toBe(true);
+    }
+  });
+
+  it("falls back to the default country for an unknown code", () => {
+    expect(phoneExample("ZZ")).toBe(phoneExample("KR"));
+    expect(phoneExample(null)).toBe(phoneExample("KR"));
+  });
+});
 
 describe("PHONE_COUNTRIES", () => {
   it("covers every country and territory with its calling code", () => {

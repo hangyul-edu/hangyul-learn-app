@@ -16,6 +16,7 @@
 import {
   getCountries,
   getCountryCallingCode,
+  getExampleNumber,
   isSupportedCountry,
   parsePhoneNumberFromString,
   validatePhoneNumberLength,
@@ -27,6 +28,8 @@ import {
 // this file too).
 import { Metadata } from "libphonenumber-js/core";
 import mobileMetadata from "libphonenumber-js/metadata.mobile.json";
+// libphonenumber's example mobile number for every country (~3 KB gzipped).
+import mobileExamples from "libphonenumber-js/mobile/examples";
 
 export type { CountryCode };
 
@@ -62,6 +65,18 @@ export function isPhoneCountry(code: string | null | undefined): code is Country
 /** The picker entry for `code`, falling back to the default country. */
 export function phoneCountry(code: string | null | undefined): PhoneCountry {
   return BY_CODE.get(code ?? "") ?? BY_CODE.get(DEFAULT_PHONE_COUNTRY)!;
+}
+
+/**
+ * A placeholder for the phone field: `country`'s example mobile number as it
+ * is dialled at home, digits only — the way the fields ask for it (no dashes)
+ * and the way {@link checkPhone} accepts it: "01012345678" for KR,
+ * "2015550123" for US, "09012345678" for JP. Empty when libphonenumber has no
+ * example for the country.
+ */
+export function phoneExample(country: string | null | undefined): string {
+  const example = getExampleNumber(phoneCountry(country).code, mobileExamples);
+  return example ? example.formatNational().replace(/\D/g, "") : "";
 }
 
 /**

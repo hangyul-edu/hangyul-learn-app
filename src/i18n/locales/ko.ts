@@ -926,9 +926,6 @@ export const ko = {
     /* 2382:25195 is the field LABEL; 2382:25225 is the placeholder. The app had
        been using the label text as the placeholder and drawing no label. */
     searchLabel: "전화번호로 찾기",
-    // Shortened like findEmail.phonePlaceholder so every phone field reads the
-    // same and fits on a 320px screen.
-    searchPlaceholder: "'-' 없이 입력",
     searchAria: "전화번호로 친구 찾기",
     search: "검색",
     suggested: "추천 친구",
@@ -1653,11 +1650,9 @@ export const ko = {
     subtitle: "가입 시 입력한 이름과 휴대폰번호를 입력해주세요.", // I1:3300;2537:25944
     nameLabel: "이름", // I1:3302;3021:65594
     namePlaceholder: "이름을 입력하세요", // I1:3302;3021:65597
+    // The phone field's placeholder is the selected country's example number
+    // (lib/phone phoneExample), not copy.
     phoneLabel: "휴대폰번호", // 1:3305
-    // Figma 1234:22678 reads "'-'를 제외하고 입력하세요" (150px), but the field
-    // beside the country picker and the 인증하기 pill is 83–142px wide (320–375
-    // screens), so it was cut off. Same instruction, 72px.
-    phonePlaceholder: "'-' 없이 입력",
     verify: "인증하기", // I1234:22679;3021:65406
     verified: "인증완료",
     codeLabel: "인증번호 입력", // 1:3312

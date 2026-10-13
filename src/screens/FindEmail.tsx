@@ -6,7 +6,7 @@ import { authApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { useVerification } from "../hooks/verification";
 import { ApiError, errorMessage } from "../lib/http";
-import { applyPhoneInput, checkPhone } from "../lib/phone";
+import { applyPhoneInput, checkPhone, phoneExample } from "../lib/phone";
 import { usePhoneProblemMessage } from "../hooks/phoneProblem";
 
 /**
@@ -154,7 +154,7 @@ export function FindEmail() {
                 type="tel"
                 inputMode="tel"
                 autoComplete="tel"
-                placeholder={t("findEmail.phonePlaceholder")}
+                placeholder={phoneExample(country)}
                 aria-label={t("findEmail.phoneA11y")}
                 value={localPhone}
                 onChange={(e) => {

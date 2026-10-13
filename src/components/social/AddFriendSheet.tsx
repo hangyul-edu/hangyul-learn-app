@@ -17,7 +17,7 @@ import { RankAvatar } from "../brand/RankBits";
 import { friendApi } from "../../api/endpoints";
 import { useToast } from "../../hooks/toast";
 import { errorMessage } from "../../lib/http";
-import { DEFAULT_PHONE_COUNTRY, applyPhoneInput, hashPhone, isLikelyPhone } from "../../lib/phone";
+import { DEFAULT_PHONE_COUNTRY, applyPhoneInput, hashPhone, isLikelyPhone, phoneExample } from "../../lib/phone";
 import { getContactPhoneHashes } from "../../lib/contacts";
 import type { RecommendedUser } from "../../lib/types";
 
@@ -31,7 +31,6 @@ function useAddCopy() {
     infoAcceptance: t("addFriend.infoAcceptance"),
     infoVisibility: t("addFriend.infoVisibility"),
     searchLabel: t("addFriend.searchLabel"),
-    searchPlaceholder: t("addFriend.searchPlaceholder"),
     searchAria: t("addFriend.searchAria"),
     search: t("addFriend.search"),
     suggested: t("addFriend.suggested"),
@@ -249,7 +248,7 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
             inputMode="tel"
             type="tel"
             aria-label={copy.searchAria}
-            placeholder={copy.searchPlaceholder}
+            placeholder={phoneExample(country)}
             value={phone}
             onChange={(e) => {
               // A pasted "+44 …" moves the picker to that country.

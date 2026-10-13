@@ -9,7 +9,7 @@ import { nextSetupPath } from "../hooks/loginFlow";
 import { useToast } from "../hooks/toast";
 import { countdownLabel } from "../hooks/verification";
 import { errorMessage } from "../lib/http";
-import { DEFAULT_PHONE_COUNTRY, applyPhoneInput, checkPhone, isPhoneCountry } from "../lib/phone";
+import { DEFAULT_PHONE_COUNTRY, applyPhoneInput, checkPhone, isPhoneCountry, phoneExample } from "../lib/phone";
 import { usePhoneProblemMessage } from "../hooks/phoneProblem";
 import { passwordProblem } from "../lib/validation";
 import { CountrySelect } from "../components/ui/CountrySelect";
@@ -353,7 +353,7 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" }) 
               type="tel"
               inputMode="tel"
               autoComplete="tel"
-              placeholder="01012345678"
+              placeholder={phoneExample(country)}
               aria-labelledby="pchg-phone-label"
               aria-invalid={!!phoneErr}
               aria-describedby={phoneErr ? "pchg-phone-err" : undefined}

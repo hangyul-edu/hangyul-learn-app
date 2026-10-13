@@ -10,7 +10,7 @@ import { useToast } from "../hooks/toast";
 import { useVerification } from "../hooks/verification";
 import { errorMessage } from "../lib/http";
 import { passwordProblem } from "../lib/validation";
-import { applyPhoneInput, checkPhone } from "../lib/phone";
+import { applyPhoneInput, checkPhone, phoneExample } from "../lib/phone";
 import { usePhoneProblemMessage } from "../hooks/phoneProblem";
 import { policyDoc, type PolicyId } from "../lib/policies";
 import {
@@ -186,7 +186,7 @@ export function Signup() {
                 type="tel"
                 inputMode="tel"
                 autoComplete="tel"
-                placeholder={t("findEmail.phonePlaceholder")}
+                placeholder={phoneExample(country)}
                 aria-label={t("findEmail.phoneA11y")}
                 value={localPhone}
                 onChange={(e) => {

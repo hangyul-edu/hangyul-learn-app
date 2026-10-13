@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastProvider } from "../../hooks/toast";
 import type { ReactNode } from "react";
+import { phoneExample } from "../../lib/phone";
 
 vi.mock("../../api/endpoints", () => ({
   friendApi: {
@@ -63,11 +64,19 @@ describe("AddFriendSheet", () => {
     expect(screen.getByText("친구가 신청을 수락하면 서로 친구가 됩니다.")).toBeInTheDocument();
     expect(screen.getByText("친구는 내 리그 현황과 프로필을 볼 수 있습니다.")).toBeInTheDocument();
     expect(screen.getByLabelText("전화번호로 친구 찾기")).toBeInTheDocument();
-    // 2382:25195 is the field LABEL and 2382:25225 the placeholder — the app
-    // had been using the label text as the placeholder and drawing no label.
-    // The placeholder is shortened from Figma's so it fits a 320px screen.
+    // 2382:25195 is the field LABEL; the placeholder is an example number for
+    // the selected country (Korea by default).
     expect(screen.getByText("전화번호로 찾기")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("'-' 없이 입력")).toBeInTheDocument();
+    expect(screen.getByLabelText("전화번호로 친구 찾기")).toHaveAttribute("placeholder", phoneExample("KR"));
+  });
+
+  it("shows the example number of the country picked", async () => {
+    wrap(<AddFriendSheet open onClose={() => {}} />);
+    const field = await screen.findByLabelText("전화번호로 친구 찾기");
+    // A pasted international number moves the picker, and the example with it.
+    await userEvent.type(field, "+12015550123");
+    expect(field).toHaveAttribute("placeholder", phoneExample("US"));
+    expect(phoneExample("US")).toBe("2015550123");
   });
 
   it("closes via the X button", async () => {

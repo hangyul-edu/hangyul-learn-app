@@ -1,8 +1,38 @@
 import { useEffect, useId, useRef } from "react";
 import { useTranslation } from "../../i18n";
 import { createPortal } from "react-dom";
-import type { ReactNode } from "react";
+import type { KeyboardEvent, ReactNode, RefObject } from "react";
 import { Button } from "./kit";
+
+/**
+ * Move focus into the modal when it opens and give it back to whatever had it
+ * (the trigger) when it closes. `preventScroll` is essential for the sheet: it
+ * starts off-screen (sliding up), so a scrolling focus would drag the fixed
+ * background along with it.
+ */
+function useFocusInside(open: boolean, ref: RefObject<HTMLElement>) {
+  useEffect(() => {
+    if (!open) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    ref.current?.focus({ preventScroll: true });
+    return () => previouslyFocused?.focus?.({ preventScroll: true });
+  }, [open, ref]);
+}
+
+/**
+ * Escape closes the modal it was pressed in. The handler sits on the modal
+ * itself (focus is moved inside), so only the topmost of two stacked modals
+ * closes. A control that already used the key, or an IME composition the key
+ * cancels (Korean input), is left alone; without `onClose` the modal is not
+ * dismissable right now (e.g. while its action is pending).
+ */
+function escapeCloses(onClose?: () => void) {
+  return (e: KeyboardEvent) => {
+    if (e.key !== "Escape" || !onClose || e.defaultPrevented || e.nativeEvent.isComposing) return;
+    e.stopPropagation();
+    onClose();
+  };
+}
 
 function useLockScroll(open: boolean) {
   useEffect(() => {
@@ -64,27 +94,21 @@ export function Sheet({
   children: ReactNode;
   /** Omit the grip + default title chrome so children own the header. */
   bare?: boolean;
-  /** Accessible name for the modal when there is no visible title element. */
+  /** Accessible name for the modal when there is no visible title element;
+   *  otherwise the visible title names it. */
   label?: string;
   /** Render inside the phone frame (absolute, clipped to its rounded corners),
    *  matching the League guide, instead of a viewport-fixed overlay. */
   contained?: boolean;
 }) {
   const sheetRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
   useLockScroll(open);
   useHardwareBackClose(open, onClose);
-
-  // Move focus into the sheet on open; restore it to the trigger on close.
-  // `preventScroll` is essential: the sheet starts off-screen (sliding up), so a
-  // scrolling focus would drag the fixed background along with it.
-  useEffect(() => {
-    if (!open) return;
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    sheetRef.current?.focus({ preventScroll: true });
-    return () => previouslyFocused?.focus?.({ preventScroll: true });
-  }, [open]);
+  useFocusInside(open, sheetRef);
 
   if (!open) return null;
+  const showTitle = !bare && !!title;
   const overlay = (
     <div className={`overlay ${contained ? "overlay--contained" : ""}`} onClick={onClose}>
       <div
@@ -93,12 +117,14 @@ export function Sheet({
         role="dialog"
         aria-modal="true"
         aria-label={label}
+        aria-labelledby={!label && showTitle ? titleId : undefined}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={escapeCloses(onClose)}
       >
         {!bare && <div className="sheet__grip" />}
-        {!bare && title && (
-          <h3 style={{ fontSize: 18, marginBottom: 14, paddingLeft: 2 }}>{title}</h3>
+        {showTitle && (
+          <h3 id={titleId} style={{ fontSize: 18, marginBottom: 14, paddingLeft: 2 }}>{title}</h3>
         )}
         {children}
       </div>
@@ -131,17 +157,22 @@ export function Dialog({
   text?: ReactNode;
   children?: ReactNode;
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   useLockScroll(open);
+  useFocusInside(open, dialogRef);
   const titleId = useId();
   if (!open) return null;
   return (
     <div className="overlay overlay--center" onClick={onClose}>
       <div
+        ref={dialogRef}
         className="dialog"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={escapeCloses(onClose)}
       >
         {emoji && <div className="dialog__emoji">{emoji}</div>}
         <div className="dialog__title" id={titleId}>{title}</div>

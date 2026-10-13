@@ -24,7 +24,8 @@ it("tries the SDK again after a load that did not define TossPayments", async ()
 
   const first = requestTossBillingAuth(opts);
   scripts[0].onload?.(new Event("load"));
-  await expect(first).rejects.toThrow("Toss SDK unavailable");
+  // Shown through errorMessage() as the translated network message.
+  await expect(first).rejects.toThrow("httpError.network");
 
   const requestBillingAuth = vi.fn(async () => {});
   const second = requestTossBillingAuth(opts);

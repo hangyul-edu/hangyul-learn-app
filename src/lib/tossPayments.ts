@@ -63,17 +63,19 @@ function loadSdk<T>(src: string): Promise<T> {
     script.src = src;
     script.async = true;
     // A failed load must not be cached: the next attempt starts over.
-    const fail = (message: string) => {
+    // A message key, not English: errorMessage() shows it in the app's
+    // language (the payment window could not be reached).
+    const fail = () => {
       loading.delete(src);
-      reject(new Error(message));
+      reject(new Error("httpError.network"));
     };
     script.onload = () => {
       // Read at once: the other SDK version may overwrite the global later.
       const factory = window.TossPayments;
       if (typeof factory === "function") resolve(factory as T);
-      else fail("Toss SDK unavailable");
+      else fail();
     };
-    script.onerror = () => fail("Toss SDK failed to load");
+    script.onerror = () => fail();
     document.head.appendChild(script);
   });
   loading.set(src, promise);

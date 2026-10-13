@@ -186,6 +186,7 @@ describe("useVerification errors", () => {
     const api: { current: ReturnType<typeof useVerification> | null } = { current: null };
     const start = vi.fn(async (): Promise<VerificationStart> => {
       throw new ApiError(429, "rate_limited", "Please wait 42 seconds before requesting another code.", {
+        reason: "resend_cooldown",
         retry_after_seconds: 42,
         resend_available_at: new Date(Date.now() + 42_000).toISOString(),
       });

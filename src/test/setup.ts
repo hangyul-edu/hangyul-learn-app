@@ -1,4 +1,13 @@
 import "@testing-library/jest-dom/vitest";
+import { beforeAll, expect } from "vitest";
+
+// The admin portal shows the server's own error text (admin/main.tsx turns it
+// on at startup); its tests render pages without that entry point.
+beforeAll(async () => {
+  if (expect.getState().testPath?.includes("/src/admin/")) {
+    (await import("../lib/http")).showServerErrorText();
+  }
+});
 
 // The react-router *data* router (createMemoryRouter, needed to exercise
 // useBlocker) builds a `new Request(url, { signal })` for every navigation.

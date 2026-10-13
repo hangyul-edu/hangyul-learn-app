@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ApiError } from "./http";
+import { ApiError, errorMessage } from "./http";
 import { needsRetake, pickRecordingMimeType, recordingFilename, speechErrorMessage } from "./recording";
 
 describe("pickRecordingMimeType", () => {
@@ -45,8 +45,8 @@ describe("speech errors", () => {
   });
 
   it("leaves any other failure to the usual message", () => {
-    const e = new ApiError(503, "speech.recognition_unavailable", "server text");
+    const e = new ApiError(503, "speech_recognition_unavailable", "server text");
     expect(needsRetake(e)).toBe(false);
-    expect(speechErrorMessage(e)).toBe("server text");
+    expect(speechErrorMessage(e)).toBe(errorMessage(e));
   });
 });

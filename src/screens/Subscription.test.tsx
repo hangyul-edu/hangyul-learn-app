@@ -167,10 +167,17 @@ describe("Subscription — coupon redemption", () => {
 
   it("keeps the code entry open (not 'invalid code') when the attempt cap is hit", async () => {
     mine.mockResolvedValue(NO_SUB);
-    redeemCoupon.mockRejectedValue(new ApiError(429, "rate_limited", "잠시 후 다시 시도해 주세요."));
+    redeemCoupon.mockRejectedValue(
+      new ApiError(429, "rate_limited", "You've reached the daily coupon redemption limit.", {
+        reason: "coupon_daily_limit",
+        limit: 10,
+      }),
+    );
     renderPage();
     await submitCode("ABCD-1234-EFGH");
     await waitFor(() => expect(redeemCoupon).toHaveBeenCalled());
-    expect(await screen.findByText("잠시 후 다시 시도해 주세요.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("쿠폰 등록은 24시간에 10번까지 시도할 수 있어요. 나중에 다시 시도해 주세요."),
+    ).toBeInTheDocument();
   });
 });

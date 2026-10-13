@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { setCurrentLanguage } from "../i18n/current";
-import { ApiError, NetworkError } from "./http";
+import { ApiError, NetworkError, errorMessage } from "./http";
 import { currencyMismatchMessage, intlCardError, paymentErrorMessage } from "./paymentErrors";
 import { failureModalKeys, noticeReasonKey } from "./paymentRecovery";
 
@@ -22,7 +22,8 @@ describe("currency mismatch copy", () => {
 
   it("leaves other errors to errorMessage", () => {
     expect(currencyMismatchMessage(new ApiError(409, "conflict", "Already"))).toBeNull();
-    expect(paymentErrorMessage(new ApiError(409, "conflict", "Already"))).toBe("Already");
+    const other = new ApiError(409, "conflict", "Already");
+    expect(paymentErrorMessage(other)).toBe(errorMessage(other));
   });
 });
 

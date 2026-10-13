@@ -1,9 +1,15 @@
-/** Persisted auth session. Kept in localStorage so "auto login" survives reloads. */
+/**
+ * Persisted auth session. Always kept in localStorage, so it is restored after a
+ * reload or browser restart whether or not 자동 로그인 유지 was ticked: the
+ * checkbox only changes the refresh token's server-side lifetime (30 days vs 1).
+ */
 export interface StoredSession {
   accessToken: string;
   refreshToken: string;
-  /** epoch ms when the access token expires (used to refresh proactively). */
+  /** epoch ms when the access token expires. Informational only: nothing reads
+   *  it — refresh is reactive, on a 401 (lib/http). */
   accessExpiresAt: number;
+  /** The 자동 로그인 유지 choice at login. Recorded only; not read client-side. */
   autoLogin: boolean;
 }
 

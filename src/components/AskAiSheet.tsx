@@ -51,6 +51,7 @@ function ChatbotAskSheet({ open, context, onClose }: { open: boolean; context: A
   const [convId, setConvId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const started = useRef(false);
@@ -104,16 +105,15 @@ function ChatbotAskSheet({ open, context, onClose }: { open: boolean; context: A
     const text = draft.trim();
     if (!text || sending || !convId) return;
     setSending(true);
+    setSendError(null);
     try {
       const res = await aiApi.sendMessage(convId, text);
       if (!alive.current) return;
       setDraft("");
       setMessages((m) => [...m, res.user_message, res.assistant_message]);
     } catch (e) {
-      if (alive.current) setInitError(null); // keep draft; surface via a transient assistant line below
-      // Re-add nothing; the draft is preserved for retry.
-      // eslint-disable-next-line no-console
-      void e;
+      // Keep the draft so the learner can send it again without re-typing.
+      if (alive.current) setSendError(errorMessage(e));
     } finally {
       if (alive.current) setSending(false);
     }
@@ -125,8 +125,10 @@ function ChatbotAskSheet({ open, context, onClose }: { open: boolean; context: A
     <ChatSheetView
       messages={messages}
       loading={loading}
-      errorText={initError ? t("misc.explanationError") : null}
-      onRetry={startThread}
+      errorText={initError ? t("misc.explanationError") : sendError}
+      // Retry restarts a thread that failed to open; a failed send is retried
+      // by sending the kept draft again.
+      onRetry={initError ? startThread : undefined}
       draft={draft}
       sending={sending}
       canSend={convId != null}

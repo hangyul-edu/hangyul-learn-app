@@ -82,3 +82,30 @@ describe("AskAiSheet — session activity (grounded tutor)", () => {
     expect(screen.getByRole("button", { name: "메시지 보내기" })).toBeDisabled();
   });
 });
+
+describe("AskAiSheet — item chatbot", () => {
+  const sentenceContext: AskContext = { contextKind: "sentence", contextId: "s_1", autoExplain: false, bubble: false };
+
+  it("says so when a message fails to send, keeps the draft, and sends it again", async () => {
+    ai.startConversation.mockResolvedValue({ conversation: { conversation_id: "c_1" }, first_assistant_message: null });
+    ai.sendMessage.mockRejectedValueOnce(new Error("보내지 못했어요"));
+    renderSheet(sentenceContext);
+    const input = screen.getByPlaceholderText("채팅을 입력하세요.");
+    await waitFor(() => expect(ai.startConversation).toHaveBeenCalled());
+    await userEvent.type(input, "이건 무슨 뜻이에요?");
+    await userEvent.click(screen.getByRole("button", { name: "메시지 보내기" }));
+    expect(await screen.findByText("보내지 못했어요")).toBeInTheDocument();
+    expect(input).toHaveValue("이건 무슨 뜻이에요?");
+    // No "retry" here: that would open a new thread, not resend the message.
+    expect(screen.queryByRole("button", { name: "다시 시도" })).not.toBeInTheDocument();
+
+    const at = new Date().toISOString();
+    ai.sendMessage.mockResolvedValueOnce({
+      user_message: { message_id: "m1", role: "user", content: "이건 무슨 뜻이에요?", created_at: at },
+      assistant_message: { message_id: "m2", role: "assistant", content: "그건 이런 뜻이에요.", created_at: at },
+    });
+    await userEvent.click(screen.getByRole("button", { name: "메시지 보내기" }));
+    expect(await screen.findByText("그건 이런 뜻이에요.")).toBeInTheDocument();
+    expect(screen.queryByText("보내지 못했어요")).not.toBeInTheDocument();
+  });
+});

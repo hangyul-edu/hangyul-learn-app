@@ -5,9 +5,11 @@ import type { ImageCrop } from "./imageCrop";
  *  not yet accepted the signup agreements (the social signup's terms step). */
 export type NextStep = "terms_agreement" | "profile_registration" | "onboarding" | "home" | null;
 export interface Membership {
-  tier: "free" | "premium";
+  tier: "free" | "trial" | "premium";
   is_premium: boolean;
   expires_at: string | null;
+  /** Always sent; optional here only so fixtures can omit it. */
+  role?: "member" | "premium" | "tester" | "admin";
 }
 export interface TokenResponse {
   access_token: string;
@@ -290,7 +292,6 @@ export interface QuizAttemptResult {
   writing?: QuizWritingResult | null;
   correct_answer?: string | null;
   explanation?: string | null;
-  corrected_text?: string | null;
   /** Authoritative writing-answer character count (same rule as the client). */
   server_character_count?: number | null;
   xp_earned?: number;
@@ -512,7 +513,6 @@ export interface Invoice {
 /* ---- Gamification ---- */
 export interface PointsBalance {
   season_points: number;
-  season_id?: string;
 }
 export interface LeaguePosition {
   season_id: string;

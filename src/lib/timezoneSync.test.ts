@@ -60,4 +60,24 @@ describe("syncDeviceTimezone", () => {
     await syncDeviceTimezone();
     expect(syncTimezone).toHaveBeenCalledTimes(2);
   });
+
+  it("still syncs the next account when a reset lands mid-request", async () => {
+    // Regression: the first account's request resolved after the sign-out and
+    // marked the zone synced, so the next account's sync was skipped.
+    let finish!: () => void;
+    syncTimezone.mockImplementationOnce(
+      (timezone: string) =>
+        new Promise((resolve) => {
+          finish = () => resolve({ timezone, changed: true, today: "2026-09-30", resets_at: "2026-09-30T15:00:00Z" });
+        }),
+    );
+    const first = syncDeviceTimezone();
+    await vi.waitFor(() => expect(syncTimezone).toHaveBeenCalledTimes(1));
+    resetTimezoneSync();
+    finish();
+    await first;
+
+    expect(await syncDeviceTimezone()).toBe(true);
+    expect(syncTimezone).toHaveBeenCalledTimes(2);
+  });
 });

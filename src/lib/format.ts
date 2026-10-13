@@ -85,15 +85,18 @@ const ZERO_DECIMAL = new Set(["KRW", "JPY"]);
 /** Symbols that name their currency unambiguously. USD is always "US$" —
  *  never a bare "$", which reads as any dollar (CAD, AUD, SGD…). */
 const UNAMBIGUOUS_SYMBOL: Record<string, string> = { KRW: "₩", USD: "US$" };
+/** The bare symbols, for a screen whose design draws "$5.99" and where the
+ *  currency is otherwise clear (the purchase screen's plan cards). */
+const NARROW_SYMBOL: Record<string, string> = { KRW: "₩", USD: "$" };
 
 /** Format a server `*_cents` amount (the currency's minor unit) for display:
- *  "₩9,900", "US$5.99". Same in every app language. */
-export function formatMoney(cents: number, currency = "KRW"): string {
+ *  "₩9,900", "US$5.99" — or "$5.99" with `narrow`. Same in every app language. */
+export function formatMoney(cents: number, currency = "KRW", { narrow = false } = {}): string {
   const code = currency.toUpperCase();
   const zeroDecimal = ZERO_DECIMAL.has(code);
   const amount = zeroDecimal ? cents : cents / 100;
   const digits = zeroDecimal ? 0 : 2;
-  const symbol = UNAMBIGUOUS_SYMBOL[code];
+  const symbol = (narrow ? NARROW_SYMBOL : UNAMBIGUOUS_SYMBOL)[code];
   if (symbol) {
     const number = new Intl.NumberFormat("en-US", {
       minimumFractionDigits: digits,

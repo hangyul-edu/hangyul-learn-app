@@ -123,8 +123,8 @@ describe("SubscriptionPurchase", () => {
     renderPage();
     await screen.findByRole("button", { name: "7일 무료 체험 시작하기" });
     // Monthly-equivalent + annual total from the server price.
-    expect(screen.getByText("US$5.99")).toBeInTheDocument();
-    expect(screen.getByText("(US$71.88)")).toBeInTheDocument();
+    expect(screen.getByText("$5.99")).toBeInTheDocument();
+    expect(screen.getByText("($71.88)")).toBeInTheDocument();
     const year = screen.getByRole("radio", { name: /12개월/ });
     expect(year).toHaveAttribute("aria-checked", "true");
     expect(screen.getByRole("radio", { name: /1개월/ })).toHaveAttribute("aria-checked", "false");
@@ -146,10 +146,10 @@ describe("SubscriptionPurchase", () => {
     renderPage();
     await screen.findByRole("button", { name: "7일 무료 체험 시작하기" });
     const year = screen.getByRole("radio", { name: /12개월/ });
-    expect(within(year).getByText("US$3.99")).toBeInTheDocument();
-    expect(within(year).getByText("(US$47.88)")).toBeInTheDocument();
+    expect(within(year).getByText("$3.99")).toBeInTheDocument();
+    expect(within(year).getByText("($47.88)")).toBeInTheDocument();
     expect(within(year).getByText("최대 69%할인")).toBeInTheDocument();
-    expect(within(year).getByText("US$12.99/월 (US$155.88)")).toBeInTheDocument();
+    expect(within(year).getByText("$12.99/월 ($155.88)")).toBeInTheDocument();
   });
 
   it("makes room above a card whose ribbon would overlap the card before it", async () => {
@@ -375,7 +375,7 @@ describe("SubscriptionPurchase — plan cards", () => {
     expect(annual.querySelector("s")).toBeNull();
     expect(monthly.querySelector("s")).toBeNull();
     expect(screen.queryByText(/0% 할인/)).not.toBeInTheDocument();
-    expect(within(monthly).getByText("US$12.99")).toBeInTheDocument();
+    expect(within(monthly).getByText("$12.99")).toBeInTheDocument();
   });
 
   it("annual right column stacks purple badge, one struck original, then final price", async () => {
@@ -386,9 +386,9 @@ describe("SubscriptionPurchase — plan cards", () => {
     expect(hl).toHaveClass("plan__badge-hl");
     expect(hl.closest(".plan__badge")).toHaveClass("plan__badge--purple");
     // A single struck original line covering monthly + annual total.
-    expect(within(annual).getByText("US$12.99/월 (US$155.88)").closest("s")).toBeInTheDocument();
+    expect(within(annual).getByText("$12.99/월 ($155.88)").closest("s")).toBeInTheDocument();
     // Final current price below.
-    expect(within(annual).getByText("US$5.99")).toHaveClass("plan__final-main");
+    expect(within(annual).getByText("$5.99")).toHaveClass("plan__final-main");
   });
 
   it("annual selected radio is orange (selected state via class), swaps on monthly select", async () => {
@@ -402,9 +402,9 @@ describe("SubscriptionPurchase — plan cards", () => {
 
   it("annual final price uses three distinctly-styled parts", async () => {
     const { annual } = await cards();
-    expect(within(annual).getByText("US$5.99")).toHaveClass("plan__final-main");
+    expect(within(annual).getByText("$5.99")).toHaveClass("plan__final-main");
     expect(within(annual).getByText("/월")).toHaveClass("plan__final-per");
-    expect(within(annual).getByText("(US$71.88)")).toHaveClass("plan__final-total");
+    expect(within(annual).getByText("($71.88)")).toHaveClass("plan__final-total");
   });
 
   it("renders no orange arrow/zigzag graphic and no intermediate $7.99/$95.88 tier", async () => {
@@ -420,10 +420,10 @@ describe("SubscriptionPurchase — plan cards", () => {
     const pill = within(monthly).getByText("23% 할인");
     expect(pill).toHaveClass("plan__badge--black");
     // The rule runs through the whole original price, /월 suffix included.
-    expect(within(monthly).getByText("US$12.99/월").closest("s")).toBeInTheDocument();
+    expect(within(monthly).getByText("$12.99/월").closest("s")).toBeInTheDocument();
     // The badge sits on that same row, immediately before the struck price.
     expect(pill.closest(".plan__month-row")).not.toBeNull();
-    const cur = within(monthly).getByText("US$9.99");
+    const cur = within(monthly).getByText("$9.99");
     expect(cur).toHaveClass("plan__final-main");
     expect(cur.closest(".plan__month-cur")).not.toBeNull();
   });
@@ -451,8 +451,8 @@ describe("SubscriptionPurchase — plan cards", () => {
     await screen.findByRole("button", { name: "7일 무료 체험 시작하기" });
     expect(screen.getByText("최대 60%할인")).toBeInTheDocument(); // server, not 50%
     expect(screen.getByText("25% 할인")).toBeInTheDocument(); // server, not 20%
-    expect(screen.getByText("US$5.00")).toBeInTheDocument(); // server current_monthly_cents
-    expect(screen.getByText("US$9.99/월 (US$120.00)").closest("s")).toBeInTheDocument(); // server monthly+total
+    expect(screen.getByText("$5.00")).toBeInTheDocument(); // server current_monthly_cents
+    expect(screen.getByText("$9.99/월 ($120.00)").closest("s")).toBeInTheDocument(); // server monthly+total
   });
 });
 

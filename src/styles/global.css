@@ -8835,6 +8835,10 @@ textarea.input {
   margin-top: 13px;
 }
 
+/* Figma measures a card's children from the card's OUTER edge; these absolute
+   offsets count from inside its 1px border, so each is the Figma value minus
+   1 (SET-030 KO 1:4068 / EN 784:50692; the card's inner box is 333 wide). */
+
 /* ---- promo ribbon: Rectangle 4985, 27 tall at (17,-13) off the card ----
    Figma draws it 150 wide for "Launch special"; here it is as wide as its
    text (11px in, the same gap again before the 11px swallow-tail notch), up
@@ -8842,8 +8846,8 @@ textarea.input {
    art's tail: it cuts 11px into the right end, meeting at mid-height. */
 .plan__ribbon {
   position: absolute;
-  left: 17px;
-  top: -13px;
+  left: 16px;
+  top: -14px;
   z-index: 2;
   box-sizing: border-box;
   max-width: 158px;
@@ -8871,8 +8875,8 @@ textarea.input {
   /* Bold 12 / 22.3 in Gray 4. 2532:26730 — card (141, 54) 169x22, right edge on
      the 310 rule: BELOW the purple badge, ABOVE the discounted price. */
   position: absolute;
-  right: 25px;
-  top: 54px;
+  right: 24px;
+  top: 53px;
   color: #adb4ba;
   font-family: var(--font-body);
   font-weight: 700;
@@ -8917,15 +8921,23 @@ textarea.input {
 /* ---- monthly struck original price (898:19543) ---- */
 .plan__month-row {
   /* Holds the discount badge and the ORIGINAL struck price on one row,
-     right-anchored at the card's 303 rule so the badge stays flush against the
-     price at any label width. */
+     right-anchored at the card's 304 rule (281:6743 / 3161:31621) so the badge
+     stays flush against the price at any label width. Badge and price are
+     centred on the card's y=30 (281:6754 at 21, 18 tall): a 22.3 row at 17.85. */
   position: absolute;
-  right: 32px;
-  top: 19px;
+  right: 30px;
+  top: 17.85px;
   display: flex;
   align-items: center;
-  /* The 5px the frame leaves between the badge and the price next to it. */
+  /* The 5px the KO frame leaves between the badge and the price next to it. */
   gap: 5px;
+}
+/* EN (784:50760 / 3161:31621): 4px, and the struck price in ExtraBold. */
+:root:lang(en) .plan__month-row {
+  gap: 4px;
+}
+:root:lang(en) .plan__orig-month {
+  font-weight: 800;
 }
 .plan__orig-month {
   /* Laid out by .plan__month-row. */
@@ -8950,11 +8962,12 @@ textarea.input {
 }
 .plan__badge--purple {
   /* 2532:26732 — #6C07EF, r20.99, 5.249/1.75 padding, Bold 11.372 / 17.757.
-     Card (226, 26) with its right edge on the card's 310 rule, ABOVE the struck
-     price. Right-anchored so the wider Korean label ends on the same rule. */
+     Card (226, 26) 84.5 wide, so its right edge is on the card's 310.5 rule,
+     ABOVE the struck price. Right-anchored so the wider Korean label ends on
+     the same rule. */
   position: absolute;
-  right: 25px;
-  top: 26px;
+  right: 23.5px;
+  top: 25px;
   padding: 1.75px 5.249px;
   border-radius: 20.994px;
   background: #6c07ef;
@@ -8982,8 +8995,8 @@ textarea.input {
   /* 2532:26731 — card (118, 76) 191x28, right edge 309: the bottom row of the
      stack (badge 26 -> struck 54 -> final 76). */
   position: absolute;
-  right: 26px;
-  top: 76px;
+  right: 25px;
+  top: 75px;
   display: inline-flex;
   align-items: baseline;
   gap: 0;
@@ -9005,7 +9018,8 @@ textarea.input {
   line-height: 28px;
 }
 .plan__final-total {
-  margin-left: 3px;
+  /* The frame's "/mo " / "/월 " ends in a space set at 20px. */
+  margin-left: 4.77px;
   color: #adb4ba;
   font-family: var(--font-body);
   font-weight: 600;
@@ -9013,10 +9027,10 @@ textarea.input {
   line-height: 28px;
 }
 .plan__month-cur {
-  /* 898:19544 — right edge at card x=303, top 41. */
+  /* 144:12923 / 784:50759 — right edge at card x=304, top 41. */
   position: absolute;
-  right: 32px;
-  top: 41px;
+  right: 30px;
+  top: 40px;
   display: inline-flex;
   align-items: baseline;
   white-space: nowrap;

@@ -21,7 +21,8 @@ type ScreenStatus = "loading" | "ready" | "submitting" | "missing_plans" | "fail
 /** Plan amounts are minor units: cents for USD, whole won for KRW (no minor
  *  unit) — dividing every currency by 100 showed ₩15,000 as ₩150. */
 function money(cents: number, currency = "USD"): string {
-  return formatMoney(Math.round(cents), currency.toUpperCase());
+  // SET-030 / SET-032 draw the plan prices with a bare "$" ("$5.99/mo").
+  return formatMoney(Math.round(cents), currency.toUpperCase(), { narrow: true });
 }
 /** Displayed amounts: the server's presentation values (original/current
  *  totals, monthly equivalents, discount %). GET /subscriptions/offers computes

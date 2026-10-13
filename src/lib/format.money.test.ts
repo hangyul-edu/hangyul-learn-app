@@ -17,4 +17,10 @@ describe("formatMoney", () => {
     expect(formatMoney(100000, "USD")).toBe("US$1,000.00");
     expect(formatMoney(0, "USD")).toBe("US$0.00");
   });
+
+  it("uses the bare symbol only when asked (narrow)", () => {
+    expect(formatMoney(599, "USD", { narrow: true })).toBe("$5.99");
+    expect(formatMoney(15588, "USD", { narrow: true })).toBe("$155.88");
+    expect(formatMoney(69000, "KRW", { narrow: true })).toBe("₩69,000");
+  });
 });

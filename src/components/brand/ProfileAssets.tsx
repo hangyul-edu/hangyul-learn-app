@@ -70,29 +70,13 @@ export const AVATAR_KEYS = Object.keys(CHAR_META) as AvatarKey[];
 export const avatarLabelKey = (k: AvatarKey): TranslationKey => `avatars.${k}`;
 export const avatarBg = (k: AvatarKey) => CHAR_META[k].bg;
 
+/* The three Hangyul mascot characters, exported from Figma AME-006
+   "\uD504\uB85C\uD544 \uBCC0\uACBD" (290:13195): groups 1410118298 / 1410118292 / 1410118290. */
 const CHAR_ART: Record<AvatarKey, string> = {
   AVATAR_01: avatar01Art,
   AVATAR_02: avatar02Art,
   AVATAR_03: avatar03Art,
 };
-
-/**
- * One of the three Hangyul mascot characters, exported from Figma
- * AME-006 "\uD504\uB85C\uD544 \uBCC0\uACBD" (290:13195): groups 1410118298 / 1410118292 /
- * 1410118290. Each artwork has its own aspect (they strike different poses and
- * hold different props), so it is contained inside the caller's square box
- * rather than stretched to it.
- */
-export function CharacterArt({ variant, fill = "62%" }: { variant: AvatarKey; fill?: string }) {
-  return (
-    <img
-      src={CHAR_ART[variant]}
-      alt=""
-      aria-hidden="true"
-      style={{ width: fill, height: fill, objectFit: "contain", display: "block" }}
-    />
-  );
-}
 
 /** One selectable character avatar (circle bg + art + optional orange ring). */
 export function CharacterAvatar({ variant, selected }: { variant: AvatarKey; selected: boolean }) {

@@ -123,18 +123,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      if (!sessionRef.current) {
+      const booting = sessionRef.current;
+      if (!booting) {
         setStatus("signed-out");
         return;
       }
+      // A sign-in can finish while this check is in flight — returning from a
+      // social provider reloads the app with the previous session stored, and
+      // the completion screen applies the new one. The answer then concerns a
+      // session that is no longer ours: never sign out, or show, over it.
+      const superseded = () => sessionRef.current !== booting;
       try {
         const profile = await http.get<Me>("/users/me");
-        if (!cancelled) {
+        if (!cancelled && !superseded()) {
           setMeState(profile);
           setStatus("signed-in");
         }
       } catch (e) {
-        if (cancelled) return;
+        if (cancelled || superseded()) return;
         if (isTransient(e)) {
           // Offline or the API is down: nothing is known to be wrong with the
           // stored session, so leave it for the next launch instead of wiping

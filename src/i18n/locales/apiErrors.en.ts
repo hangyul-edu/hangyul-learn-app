@@ -203,7 +203,7 @@ export const apiErrorsEn: ApiErrorCatalog = {
     "deleted": "This account was deleted.",
     "suspended": "This account has been suspended. Please contact support.",
     "inactive": "This account can't be used.",
-    "provider_already_linked": "The account with this number already has another sign-in from this service. Sign in the way you usually do.",
+    "provider_already_linked": "Your existing account already has another sign-in from this service. Sign in the way you usually do.",
     "image_required": "Please choose a photo.",
     "image_too_large": "Photos can be up to {max_mb} MB.",
     "image_type": "Only JPG, PNG, WebP and HEIC photos can be uploaded.",

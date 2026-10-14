@@ -18,6 +18,7 @@ const { auth } = vi.hoisted(() => ({
     bootstrapMe: vi.fn(),
     revokeSession: vi.fn(),
     hardSignOut: vi.fn(),
+    applyTokens: vi.fn(),
   },
 }));
 vi.mock("../api/endpoints", () => ({ authApi: { startPhone: vi.fn(), confirmPhone: vi.fn(), changePhone: vi.fn() } }));
@@ -97,6 +98,24 @@ describe("ChangePhone in setup mode", () => {
     renderStep();
     await verifyAndSave("01012345678");
     await waitFor(() => expect(screen.getByTestId("loc")).toHaveTextContent("/home"));
+  });
+
+  it("a member's number signs in to their account instead of failing as taken", async () => {
+    const linked = {
+      access_token: "a2", refresh_token: "r2", expires_in: 900, user_id: "user_member",
+      is_new_user: false, next_step: "home", membership: null,
+    };
+    api.changePhone.mockResolvedValue({ phone: "+821012345678", linked_sign_in: linked });
+    auth.bootstrapMe.mockResolvedValue({
+      user_id: "user_member", phone: "+821012345678", nickname: "member", onboarding_completed: true,
+      phone_verification_pending: false, terms_agreement_pending: false,
+    });
+    renderStep();
+    await verifyAndSave("01012345678");
+    await waitFor(() => expect(screen.getByTestId("loc")).toHaveTextContent("/home"));
+    // The session is replaced with the member's; the deleted account's profile is never touched.
+    expect(auth.applyTokens).toHaveBeenCalledWith(linked, true);
+    expect(auth.setMe).not.toHaveBeenCalled();
   });
 
   it("leaving signs out instead of skipping the step", async () => {

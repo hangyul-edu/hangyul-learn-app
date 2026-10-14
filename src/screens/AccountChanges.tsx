@@ -5,7 +5,7 @@ import { useTranslation } from "../i18n";
 import { authApi } from "../api/endpoints";
 import { INTL_OPTIONS_QK } from "../components/InternationalCardSheet";
 import { useAuth } from "../hooks/auth";
-import { nextSetupPath } from "../hooks/loginFlow";
+import { nextSetupPath, useLoginFlow } from "../hooks/loginFlow";
 import { useToast } from "../hooks/toast";
 import { countdownLabel } from "../hooks/verification";
 import { errorMessage } from "../lib/http";
@@ -160,6 +160,7 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" }) 
   const qc = useQueryClient();
   const toast = useToast();
   const { me, setMe, bootstrapMe, revokeSession, hardSignOut } = useAuth();
+  const completeLogin = useLoginFlow();
   // Setup: social signup's phone step (/setup/phone) — the account has no
   // number yet, the step cannot be skipped, and saving continues the signup.
   const setup = mode === "setup";
@@ -266,6 +267,14 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" }) 
     setSaving(true);
     try {
       const res = await authApi.changePhone(e164, token!, country);
+      if (setup && res.linked_sign_in) {
+        // The number is an existing member's: this sign-in now belongs to
+        // their account and the one just created is gone — continue as them.
+        qc.clear();
+        toast.success(t("phoneSetup.linked"));
+        await completeLogin(res.linked_sign_in, true);
+        return;
+      }
       if (me) setMe({ ...me, phone: res.phone ?? e164, nationality: country });
       // The number's calling code decides the billing currency and which
       // card the member may register: drop what was read for the old one.

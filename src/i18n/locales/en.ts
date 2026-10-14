@@ -542,6 +542,7 @@ export const en: Catalog = {
     intro: "Verify your phone number to start using Hangyul.",
     submit: "Next",
     saved: "Phone number saved",
+    linked: "You already have an account, so we signed you in to it",
     blockedA11y: "Finish verification to continue",
     quitA11y: "Stop signing up",
   },

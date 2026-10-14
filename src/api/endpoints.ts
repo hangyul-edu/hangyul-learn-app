@@ -142,7 +142,13 @@ export const authApi = {
   changePassword: (current_password: string, new_password: string, confirm_new_password: string) =>
     http.post<void>("/auth/password/change", { current_password, new_password, confirm_new_password }),
   changePhone: (phone: string, phone_verification_token: string, nationality?: string) =>
-    http.post<{ phone: string }>("/auth/phone/change", { phone, phone_verification_token, nationality }),
+    // `linked_sign_in`: the number belonged to an existing account and this was
+    // a social sign-up's phone step — sign in to that account with these tokens.
+    http.post<{ phone: string; linked_sign_in?: TokenResponse | null }>("/auth/phone/change", {
+      phone,
+      phone_verification_token,
+      nationality,
+    }),
   startEmailChange: (email: string) =>
     http.post<VerificationStart>("/auth/email/change/verification", { email, language: activeLanguage() }),
   confirmEmailChange: (verification_id: string, code: string) =>

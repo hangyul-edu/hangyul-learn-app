@@ -4,7 +4,7 @@
  * and a code the catalog doesn't know falls back to the status's message.
  */
 import { afterEach, describe, expect, it } from "vitest";
-import { ApiError, errorMessage, showServerErrorText } from "../lib/http";
+import { ApiError, errorMessage, setErrorAudience } from "../lib/http";
 import { setCurrentLanguage } from "./current";
 import { apiErrorText } from "./apiErrors";
 import { apiErrorsKo } from "./locales/apiErrors.ko";
@@ -12,7 +12,7 @@ import { apiErrorsEn } from "./locales/apiErrors.en";
 
 afterEach(() => {
   setCurrentLanguage("ko");
-  showServerErrorText(false);
+  setErrorAudience("member");
 });
 
 const wrongCode = new ApiError(422, "phone_verification_failed", "Verification code is incorrect.", {
@@ -55,9 +55,47 @@ describe("errorMessage for API errors", () => {
     expect(errorMessage(new ApiError(400, "brand_new_code", "Bad."))).toBe("요청을 처리하지 못했어요.");
   });
 
-  it("shows the server's own text in the admin portal", () => {
-    showServerErrorText();
-    expect(errorMessage(wrongCode)).toBe("Verification code is incorrect.");
+});
+
+describe("errorMessage in the admin portal", () => {
+  it("words errors for operators in Korean, never the server's English", () => {
+    setErrorAudience("admin");
+    setCurrentLanguage("ko");
+    const notEmpty = new ApiError(409, "conflict", "Course still has 2 series and 5 lecture(s); delete or move them first.", {
+      reason: "course_not_empty",
+      series: 2,
+      lectures: 5,
+    });
+    expect(errorMessage(notEmpty)).toBe("과정에 시리즈 2개와 강의 5개가 남아 있어요. 먼저 삭제하거나 옮겨 주세요.");
+  });
+
+  it("falls back to the Korean member wording for errors members meet too", () => {
+    setErrorAudience("admin");
+    setCurrentLanguage("ko");
+    expect(errorMessage(wrongCode)).toBe("인증번호가 맞지 않아요.");
+    expect(errorMessage(new ApiError(404, "not_found", "Lecture 'x' not found."))).toBe("요청한 정보를 찾을 수 없어요.");
+  });
+
+  it("keeps the provider's own explanation where an operator needs it", () => {
+    setErrorAudience("admin");
+    const e = new ApiError(502, "llm.auth_failed", "OpenAI가 API 키를 거부했습니다. 키를 확인하세요.", {
+      problem: "OpenAI가 API 키를 거부했습니다. 키를 확인하세요.",
+    });
+    expect(errorMessage(e)).toBe("AI 제공사가 요청을 거부했어요: OpenAI가 API 키를 거부했습니다. 키를 확인하세요.");
+    // Without the explanation, the member's general sentence.
+    expect(errorMessage(new ApiError(502, "llm.auth_failed", "x"))).toBe(apiErrorsKo.codes["llm.auth_failed"]);
+  });
+
+  it("joins a list into the sentence", () => {
+    setErrorAudience("admin");
+    const e = new ApiError(422, "settings.required_missing", "켜기 전에 필수 항목을 입력하세요.", {
+      missing: ["Account ID", "API 토큰"],
+    });
+    expect(errorMessage(e)).toBe("켜기 전에 필수 항목을 입력해 주세요: Account ID, API 토큰");
+    // An empty list leaves the slot unfilled: the code has no other sentence, so the status's.
+    expect(errorMessage(new ApiError(422, "settings.required_missing", "x", { missing: [] }))).toBe(
+      "요청을 처리하지 못했어요.",
+    );
   });
 });
 
@@ -73,7 +111,7 @@ describe("the error catalogs", () => {
   });
 
   it("looks up a dotted code as a whole", () => {
-    expect(apiErrorText({ code: "auth.social_token_invalid" }, "en")).toBe(
+    expect(apiErrorText({ code: "auth.social_token_invalid" }, { language: "en" })).toBe(
       "We couldn't confirm your sign-in. Please try again.",
     );
   });

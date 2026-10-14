@@ -1,11 +1,12 @@
 import "@testing-library/jest-dom/vitest";
 import { beforeAll, expect } from "vitest";
 
-// The admin portal shows the server's own error text (admin/main.tsx turns it
-// on at startup); its tests render pages without that entry point.
+// The admin portal is Korean and words errors for operators (admin/main.tsx
+// sets both at startup); its tests render pages without that entry point.
 beforeAll(async () => {
   if (expect.getState().testPath?.includes("/src/admin/")) {
-    (await import("../lib/http")).showServerErrorText();
+    (await import("../i18n/current")).setCurrentLanguage("ko");
+    (await import("../lib/http")).setErrorAudience("admin");
   }
 });
 

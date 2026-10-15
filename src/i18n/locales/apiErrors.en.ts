@@ -204,6 +204,7 @@ export const apiErrorsEn: ApiErrorCatalog = {
     "deleted": "This account was deleted.",
     "suspended": "This account has been suspended. Please contact support.",
     "inactive": "This account can't be used.",
+    "last_super_admin": "This is the admin portal's last super admin account, so it can't be deleted. Make another admin a super admin first.",
     "provider_already_linked": "Your existing account already has another sign-in from this service. Sign in the way you usually do.",
     "image_required": "Please choose a photo.",
     "image_too_large": "Photos can be up to {max_mb} MB.",

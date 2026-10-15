@@ -210,6 +210,7 @@ export const apiErrorsKo = {
     "deleted": "탈퇴한 계정이에요.",
     "suspended": "이용이 정지된 계정이에요. 고객센터로 문의해 주세요.",
     "inactive": "이용할 수 없는 계정이에요.",
+    "last_super_admin": "관리자 포털의 마지막 최고 관리자 계정은 탈퇴할 수 없어요. 다른 최고 관리자를 먼저 지정해 주세요.",
     "provider_already_linked": "이미 가입된 계정에 같은 서비스의 다른 계정이 연결되어 있어요. 평소 쓰던 방법으로 로그인해 주세요.",
     "image_required": "사진을 선택해 주세요.",
     "image_too_large": "사진은 {max_mb}MB까지 올릴 수 있어요.",

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
@@ -121,6 +121,20 @@ describe("account deletion confirmation", () => {
       client_verifier: "v".repeat(43),
     });
     expect(window.sessionStorage.getItem("hg-withdraw-reauth")).toBeNull();
+  });
+
+  it("explains why the portal's last super admin cannot withdraw", async () => {
+    deletionMethods.mockResolvedValue({ has_password: true, providers: [], web_providers: [] });
+    deleteAccount.mockRejectedValue(
+      new ApiError(409, "conflict", "last super admin", { reason: "last_super_admin" }, undefined),
+    );
+    renderPage();
+    const user = await openWithdrawAndConfirm();
+    await user.type(await screen.findByLabelText("현재 비밀번호"), "Hangyul!2026");
+    await user.click(within(screen.getByRole("dialog", { name: "비밀번호 입력" })).getByRole("button", { name: "회원 탈퇴 진행" }));
+
+    expect(await screen.findByText(/마지막 최고 관리자 계정은 탈퇴할 수 없어요/)).toBeInTheDocument();
+    expect(screen.queryByText("탈퇴가 완료됐습니다")).not.toBeInTheDocument();
   });
 
   it("explains a re-authentication with a different provider account", async () => {

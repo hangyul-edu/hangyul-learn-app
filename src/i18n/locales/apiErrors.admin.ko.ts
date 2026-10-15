@@ -70,7 +70,7 @@ export const apiErrorsAdminKo = {
     "already_admin": "이미 관리자인 계정이에요.",
     "admin_grant_inactive": "이용 중인 계정에만 관리자 권한을 줄 수 있어요.",
     "self_admin_change": "내 관리자 권한은 직접 바꿀 수 없어요.",
-    "last_super_admin": "최고 관리자가 한 명뿐이라 권한을 바꿀 수 없어요. 다른 최고 관리자를 먼저 지정해 주세요.",
+    "last_super_admin": "이용 중인 최고 관리자가 한 명뿐이라 권한을 바꿀 수 없어요. 다른 최고 관리자를 먼저 지정해 주세요.",
     "member_email_unknown": "이 이메일로 가입한 회원이 없어요.",
     "member_not_found": "회원을 찾을 수 없어요.",
     "member_is_admin": "관리자 계정이에요. 관리자 메뉴에서 권한을 관리해 주세요.",

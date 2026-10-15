@@ -98,7 +98,7 @@ export function DefaultProfile({ size = 50 }: { size?: number }) {
       <img
         src={profileDefault}
         alt=""
-        style={{ width: "50.11%", height: "60.17%", transform: "translateY(4%)" }}
+        className="rank-avatar__placeholder"
       />
     </span>
   );

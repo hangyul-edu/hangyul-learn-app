@@ -28,7 +28,7 @@ export function BellIcon({ size = 24 }: { size?: number }) {
       aria-hidden="true"
       width={size}
       height={size}
-      style={{ display: "block" }}
+      className="home-ic"
     />
   );
 }
@@ -48,7 +48,7 @@ export function TopNavChevron({ size = 12, tone = "gray" }: { size?: number; ton
       aria-hidden="true"
       width={size}
       height={size}
-      style={{ display: "block", transform: "scaleX(-1)" }}
+      className="home-ic home-ic--mirrored"
     />
   );
 }
@@ -83,7 +83,7 @@ export function SunIcon({ size = 82, lit = true }: { size?: number; lit?: boolea
  * in a hand-made coloured box. The review tile is the notebook (node 1825:26645).
  */
 export function LectureShortcutArt() {
-  return <img src={lectureArt} alt="" aria-hidden="true" style={{ width: 64.46, height: 50.26, display: "block" }} />;
+  return <img src={lectureArt} alt="" aria-hidden="true" className="home-ic home-ic--lecture" />;
 }
 
 export function ReviewShortcutArt({ size = 74 }: { size?: number }) {

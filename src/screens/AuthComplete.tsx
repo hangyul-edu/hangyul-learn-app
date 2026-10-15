@@ -96,7 +96,7 @@ export function AuthComplete() {
   if (error) {
     return (
       <div className="screen">
-        <div className="screen__body" style={{ display: "grid", placeItems: "center" }}>
+        <div className="screen__body screen__body--center">
           <ErrorState
             message={t(ERROR_TEXT[error] ?? ERROR_TEXT.login_failed)}
             onRetry={() => nav("/welcome", { replace: true })}
@@ -107,7 +107,7 @@ export function AuthComplete() {
   }
   return (
     <div className="screen">
-      <div className="screen__body" style={{ display: "grid", placeItems: "center" }}>
+      <div className="screen__body screen__body--center">
         <LoadingState text={t("authComplete.loading")} />
       </div>
     </div>

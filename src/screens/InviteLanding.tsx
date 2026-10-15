@@ -68,13 +68,13 @@ export function InviteLanding() {
             <span className="spinner spinner--lg" />
           </div>
         ) : q.error || !inviter ? (
-          <div className="afs__panel afs__panel--empty" style={{ marginTop: 24 }}>
+          <div className="afs__panel afs__panel--empty afs__panel--invite">
             <p className="afs__panel-title">{t("invite.invalid")}</p>
             <p className="afs__panel-sub">{t("invite.invalidSub")}</p>
             <Button variant="secondary" onClick={() => nav("/home")}>{t("invite.goHome")}</Button>
           </div>
         ) : (
-          <div className="afs" style={{ marginTop: 12 }}>
+          <div className="afs afs--invite">
             <div className="afs__result">
               <RankAvatar entry={inviter} size={84} />
               <div className="afs__result-name">{inviter.nickname ?? t("home.defaultNickname")}</div>

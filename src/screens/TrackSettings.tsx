@@ -130,7 +130,7 @@ export function TrackSettings() {
           <AcctHeader title={t(cfg.titleKey)} onBack={goBack} />
 
           {q.isError ? (
-            <div className="clset__err" style={{ marginTop: 24 }}>
+            <div className="clset__err clset__err--top">
               <span>{t("trackSettings.loadError")}</span>
               <button className="clset__retry" onClick={() => q.refetch()}>{t("common.retry")}</button>
             </div>

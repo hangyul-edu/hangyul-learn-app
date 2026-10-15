@@ -124,7 +124,9 @@ export function Sheet({
       >
         {!bare && <div className="sheet__grip" />}
         {showTitle && (
-          <h3 id={titleId} style={{ fontSize: 18, marginBottom: 14, paddingLeft: 2 }}>{title}</h3>
+          <h3 id={titleId} className="sheet__title">
+            {title}
+          </h3>
         )}
         {children}
       </div>

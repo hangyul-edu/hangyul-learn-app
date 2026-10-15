@@ -67,11 +67,11 @@ export function WithdrawReauthModal({
         </p>
 
         {loading ? (
-          <div style={{ display: "grid", placeItems: "center", padding: "12px 0" }}>
+          <div className="wdr__busy">
             <Spinner size={22} stroke={2.5} label={t("withdrawReauth.deleting")} />
           </div>
         ) : (
-          <div style={{ display: "grid", gap: 8, margin: "12px 0" }}>
+          <div className="wdr__providers">
             {providers.map((p) => (
               <button key={p} className="wd__btn wd__btn--go" onClick={() => onSelect(p)}>
                 {t(PROVIDER_LABEL[p])}

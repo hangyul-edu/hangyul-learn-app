@@ -132,8 +132,8 @@ export function NoticeDetail() {
                 </>
               ) : (
                 <>
-                  <div className="skeleton" style={{ height: 28, width: "80%", borderRadius: 8 }} />
-                  <div className="skeleton" style={{ height: 16, width: "34%", borderRadius: 6, marginTop: 12 }} />
+                  <div className="skeleton ntc__sk-title" />
+                  <div className="skeleton ntc__sk-date" />
                 </>
               )}
 

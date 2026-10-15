@@ -130,7 +130,7 @@ export function League() {
                   >
                     {(r) =>
                       r.entries.length === 0 ? (
-                        <p className="lg__empty-desc" style={{ marginTop: 32 }}>{t("league.noRanking")}</p>
+                        <p className="lg__empty-desc lg__empty-desc--ranking">{t("league.noRanking")}</p>
                       ) : (
                         <RankingList entries={r.entries} meId={r.me?.user_id} />
                       )

@@ -63,9 +63,9 @@ export function FaqDetail() {
 function FaqDetailSkeleton() {
   return (
     <div className="faq__detail-skeleton" aria-hidden="true">
-      <div className="skeleton" style={{ height: 26, width: "82%", borderRadius: 8 }} />
-      <div className="skeleton" style={{ height: 26, width: "56%", borderRadius: 8, marginTop: 8 }} />
-      <div className="skeleton" style={{ height: 200, borderRadius: 18, marginTop: 20 }} />
+      <div className="skeleton faq__sk-line faq__sk-line--long" />
+      <div className="skeleton faq__sk-line faq__sk-line--short" />
+      <div className="skeleton faq__sk-body" />
     </div>
   );
 }

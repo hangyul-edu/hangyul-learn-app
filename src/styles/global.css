@@ -17955,3 +17955,84 @@ input[type="tel"] {
   white-space: nowrap;
   cursor: pointer;
 }
+
+/* ======== Former inline styles: one class each (static values only) ======== */
+.screen__body.screen__body--center {
+  display: grid;
+  place-items: center;
+}
+.skeleton.faq__sk-line {
+  height: 26px;
+  border-radius: 8px;
+}
+.skeleton.faq__sk-line--long {
+  width: 82%;
+}
+.skeleton.faq__sk-line--short {
+  width: 56%;
+  margin-top: 8px;
+}
+.skeleton.faq__sk-body {
+  height: 200px;
+  border-radius: 18px;
+  margin-top: 20px;
+}
+.skeleton.ntc__sk-title {
+  height: 28px;
+  width: 80%;
+  border-radius: 8px;
+}
+.skeleton.ntc__sk-date {
+  height: 16px;
+  width: 34%;
+  border-radius: 6px;
+  margin-top: 12px;
+}
+.lg__empty-desc.lg__empty-desc--ranking {
+  margin-top: 32px;
+}
+.setupp__fail-line {
+  display: block;
+}
+.clset__err.clset__err--top {
+  margin-top: 24px;
+}
+.afs__panel.afs__panel--invite {
+  margin-top: 24px;
+}
+.afs.afs--invite {
+  margin-top: 12px;
+}
+.wdr__busy {
+  display: grid;
+  place-items: center;
+  padding: 12px 0;
+}
+.wdr__providers {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+.sheet .sheet__title {
+  font-size: 18px;
+  margin-bottom: 14px;
+  padding-left: 2px;
+}
+.optioncard .optioncard__body {
+  flex: 1;
+}
+.rank-avatar__placeholder {
+  width: 50.11%;
+  height: 60.17%;
+  transform: translateY(4%);
+}
+.home-ic {
+  display: block;
+}
+.home-ic.home-ic--mirrored {
+  transform: scaleX(-1);
+}
+.home-ic.home-ic--lecture {
+  width: 64.46px;
+  height: 50.26px;
+}

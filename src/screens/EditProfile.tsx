@@ -147,7 +147,7 @@ export function EditProfile() {
         open={result === "failed"}
         title={t("profileSetup.saveFailTitle")}
         description={t("profileSetup.saveFailBody").split("\n").map((line, i) => (
-          <span key={i} style={{ display: "block" }}>{line}</span>
+          <span key={i} className="setupp__fail-line">{line}</span>
         ))}
         onClose={() => setResult(null)}
       />

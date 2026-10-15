@@ -147,7 +147,7 @@ export function OptionCard({
   return (
     <button type="button" className={`optioncard ${selected ? "is-selected" : ""}`} onClick={onClick}>
       {emoji && <span className="optioncard__emoji">{emoji}</span>}
-      <span style={{ flex: 1 }}>
+      <span className="optioncard__body">
         <div className="optioncard__title">{title}</div>
         {sub && <div className="optioncard__sub">{sub}</div>}
       </span>

@@ -6,7 +6,7 @@
  * friend APIs; nothing is hardcoded. API + cache coordination lives here — the
  * avatar/button primitives stay presentational.
  */
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "../../i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sheet } from "../ui/Modal";
@@ -15,14 +15,16 @@ import { CountrySelect } from "../ui/CountrySelect";
 import { SkeletonList } from "../ui/states";
 import { RankAvatar } from "../brand/RankBits";
 import { friendApi } from "../../api/endpoints";
+import { useRefreshSocial } from "../../api/queries";
+import { useBusyKeys } from "../../hooks/useBusyKeys";
 import { useToast } from "../../hooks/toast";
 import { errorMessage } from "../../lib/http";
 import { DEFAULT_PHONE_COUNTRY, applyPhoneInput, hashPhone, isLikelyPhone, phoneExample } from "../../lib/phone";
 import { getContactPhoneHashes } from "../../lib/contacts";
 import type { RecommendedUser } from "../../lib/types";
-import { CloseIcon } from "../brand/Glyphs";
-import { useRefreshSocial } from "../../api/queries";
-import { withKey, withoutKey } from "../../lib/collections";
+import { InfoBox, SearchIcon, SheetHeader, nameOf } from "./sheetParts";
+
+export { IncomingFriendRequestSheet } from "./IncomingFriendRequestSheet";
 
 /* ------------------------------ localization ---------------------------- */
 /** Add-friend sheet copy, bound to the active language (`addFriend.*`). */
@@ -66,53 +68,6 @@ function useAddCopy() {
   };
 }
 
-/** Incoming friend-request sheet copy (`incomingRequest.*`). */
-function useIncomingCopy() {
-  const { t } = useTranslation();
-  return {
-    title: t("incomingRequest.title"),
-    close: t("incomingRequest.close"),
-    infoRequested: (name: string) => t("incomingRequest.infoRequested", { name }),
-    infoVisibility: t("incomingRequest.infoVisibility"),
-    reject: t("incomingRequest.reject"),
-    accept: t("incomingRequest.accept"),
-    loadError: t("incomingRequest.loadError"),
-    retry: t("common.retry"),
-    accepted: (name: string) => t("incomingRequest.accepted", { name }),
-    rejected: t("incomingRequest.rejected"),
-  };
-}
-
-const nameOf = (u: { nickname?: string | null }, fallback: string) => u.nickname ?? fallback;
-
-const SearchIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-    <path d="M20 20l-3.2-3.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-  </svg>
-);
-
-function SheetHeader({ title, closeLabel, onClose }: { title: string; closeLabel: string; onClose: () => void }) {
-  return (
-    <div className="afs__header">
-      <h2 className="afs__title">{title}</h2>
-      <button className="afs__close" aria-label={closeLabel} onClick={onClose}>
-        <CloseIcon size={26} color="#262c31" />
-      </button>
-    </div>
-  );
-}
-
-function InfoBox({ lines }: { lines: string[] }) {
-  return (
-    <ul className="afs__info">
-      {lines.map((line) => (
-        <li key={line}>{line}</li>
-      ))}
-    </ul>
-  );
-}
-
 /* ----------------------------- Add Friend ------------------------------- */
 export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const copy = useAddCopy();
@@ -126,7 +81,7 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
   const [phone, setPhone] = useState("");
   const [searchState, setSearchState] = useState<"idle" | "searching" | "error">("idle");
   const [result, setResult] = useState<RecommendedUser | "none" | null>(null);
-  const [busy, setBusy] = useState<Set<string>>(new Set());
+  const { busy, run } = useBusyKeys();
   const [sharing, setSharing] = useState(false);
 
   const recs = useQuery({
@@ -152,18 +107,17 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
   }
 
   async function act(userId: string, fn: () => Promise<unknown>, done: string) {
-    if (busy.has(userId)) return;
-    setBusy((prev) => withKey(prev, userId));
-    try {
-      await fn();
-      toast.success(done);
-    } catch (e) {
-      toast.error(errorMessage(e));
-    } finally {
-      setBusy((prev) => withoutKey(prev, userId));
-      refreshSocial();
-      refreshDiscovery();
-    }
+    const ran = await run(userId, async () => {
+      try {
+        await fn();
+        toast.success(done);
+      } catch (e) {
+        toast.error(errorMessage(e));
+      }
+    });
+    if (!ran) return;
+    refreshSocial();
+    refreshDiscovery();
   }
 
   async function runSearch() {
@@ -325,97 +279,6 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
           <Button block loading={sharing} onClick={shareInvite} aria-label={copy.inviteAria}>
             {copy.invite}
           </Button>
-        )}
-      </div>
-    </Sheet>
-  );
-}
-
-/* ----------------------- Incoming Friend Request ------------------------ */
-export function IncomingFriendRequestSheet({
-  requestId,
-  open,
-  onClose,
-}: {
-  requestId: string | null;
-  open: boolean;
-  onClose: () => void;
-}) {
-  const copy = useIncomingCopy();
-  const { t } = useTranslation();
-  const toast = useToast();
-  const refreshSocial = useRefreshSocial();
-  const [busy, setBusy] = useState(false);
-
-  const q = useQuery({
-    queryKey: ["friend-request", requestId],
-    queryFn: () => friendApi.getRequest(requestId as string),
-    enabled: open && !!requestId,
-  });
-  const request = q.data;
-  const requesterName = useMemo(
-    () => (request ? nameOf(request, t("home.defaultNickname")) : ""),
-    [request, t],
-  );
-
-  async function respond(fn: () => Promise<unknown>, done: string, plain = false) {
-    if (busy || !requestId) return;
-    setBusy(true);
-    try {
-      await fn();
-      if (plain) toast.show(done, "default", { icon: false });
-      else toast.success(done);
-      onClose();
-    } catch (e) {
-      toast.error(errorMessage(e));
-    } finally {
-      setBusy(false);
-      refreshSocial();
-    }
-  }
-
-  return (
-    <Sheet open={open} onClose={onClose} bare contained label={copy.title}>
-      <div className="afs afs--incoming">
-        <SheetHeader title={copy.title} closeLabel={copy.close} onClose={onClose} />
-
-        {q.isLoading && !request ? (
-          <div className="afs__recs">
-            <SkeletonList rows={2} height={60} />
-          </div>
-        ) : q.error || !request ? (
-          <div className="afs__panel afs__panel--empty">
-            <p className="afs__panel-title">{copy.loadError}</p>
-            <Button variant="secondary" size="sm" onClick={() => q.refetch()}>
-              {copy.retry}
-            </Button>
-          </div>
-        ) : (
-          <>
-            <InfoBox lines={[copy.infoRequested(requesterName), copy.infoVisibility]} />
-            <div className="afs__result">
-              {/* 893:32778 — 60px in LEG-020. */}
-              <RankAvatar entry={request} size={60} />
-              <div className="afs__result-name">{requesterName}</div>
-            </div>
-            <div className="afs__actions">
-              <Button
-                variant="secondary"
-                block
-                disabled={busy}
-                onClick={() => respond(() => friendApi.reject(requestId as string), copy.rejected)}
-              >
-                {copy.reject}
-              </Button>
-              <Button
-                block
-                loading={busy}
-                onClick={() => respond(() => friendApi.accept(requestId as string), copy.accepted(requesterName), true)}
-              >
-                {copy.accept}
-              </Button>
-            </div>
-          </>
         )}
       </div>
     </Sheet>

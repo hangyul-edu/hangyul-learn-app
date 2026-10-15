@@ -15,7 +15,7 @@ import type { Friend, FriendRequest } from "../lib/types";
 import { DetailHeader } from "../components/DetailHeader";
 import { PlusIcon } from "../components/PlusIcon";
 import { SOCIAL_KEYS, useRefreshSocial } from "../api/queries";
-import { withKey, withoutKey } from "../lib/collections";
+import { useBusyKeys } from "../hooks/useBusyKeys";
 
 type Tab = "friends" | "received" | "sent";
 
@@ -150,7 +150,7 @@ export function Social() {
     initialTab === "received" || initialTab === "sent" ? initialTab : "friends",
   );
   const [deleteTarget, setDeleteTarget] = useState<Friend | null>(null);
-  const [busy, setBusy] = useState<Set<string>>(new Set());
+  const { busy, run } = useBusyKeys();
   // Add Friend opens from the header / empty states / a ?add=1 or ?tab=find deep
   // link. The incoming-request sheet opens
   // from a received-tab row or a ?request=<id> deep link.
@@ -165,22 +165,21 @@ export function Social() {
   const refreshAll = useRefreshSocial();
 
   async function act(id: string, fn: () => Promise<unknown>, done: string, plain = false) {
-    if (busy.has(id)) return; // block duplicate taps
-    setBusy((prev) => withKey(prev, id));
-    try {
-      await fn();
-      // `plain` uses the icon-less charcoal snackbar (same as the invite-copy
-      // confirmation) — e.g. the "…님과 친구가 되었어요!" acceptance message.
-      if (plain) toast.show(done, "default", { icon: false });
-      else toast.success(done);
-      refreshAll();
-    } catch (e) {
-      // Reconcile in case the state already changed on another device.
-      toast.error(errorMessage(e));
-      refreshAll();
-    } finally {
-      setBusy((prev) => withoutKey(prev, id));
-    }
+    // One request per row at a time (duplicate taps are dropped).
+    await run(id, async () => {
+      try {
+        await fn();
+        // `plain` uses the icon-less charcoal snackbar (same as the invite-copy
+        // confirmation) — e.g. the "…님과 친구가 되었어요!" acceptance message.
+        if (plain) toast.show(done, "default", { icon: false });
+        else toast.success(done);
+        refreshAll();
+      } catch (e) {
+        // Reconcile in case the state already changed on another device.
+        toast.error(errorMessage(e));
+        refreshAll();
+      }
+    });
   }
 
   const removing = deleteTarget ? busy.has(deleteTarget.user_id) : false;

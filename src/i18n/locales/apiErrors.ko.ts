@@ -59,7 +59,6 @@ export const apiErrorsKo = {
 
     // Subscription and premium
     "subscription_required": "프리미엄 회원만 이용할 수 있어요.",
-    "access.premium_required": "프리미엄 회원만 이용할 수 있어요.",
     "subscription_not_found": "이용 중인 구독이 없어요.",
     "subscription.already_active": "이미 구독 중이에요.",
     "subscription.trial_used": "무료 체험은 한 번만 이용할 수 있어요.",

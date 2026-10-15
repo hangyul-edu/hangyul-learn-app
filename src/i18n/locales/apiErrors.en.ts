@@ -53,7 +53,6 @@ export const apiErrorsEn: ApiErrorCatalog = {
 
     // Subscription and premium
     "subscription_required": "This is for premium members.",
-    "access.premium_required": "This is for premium members.",
     "subscription_not_found": "You don't have an active subscription.",
     "subscription.already_active": "You're already subscribed.",
     "subscription.trial_used": "The free trial can only be used once.",

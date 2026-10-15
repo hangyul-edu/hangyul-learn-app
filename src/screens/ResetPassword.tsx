@@ -6,6 +6,7 @@ import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import { passwordProblem } from "../lib/validation";
 import { Spinner } from "../components/ui/Spinner";
+import { BackChevronIcon } from "../components/brand/Glyphs";
 
 /**
  * "비밀번호 재설정" — second stage of password reset. Consumes the short-lived
@@ -60,9 +61,7 @@ export function ResetPassword() {
       <form className="findemail__scroll" onSubmit={submit}>
         <div className="findemail__inner">
           <button type="button" className="findemail__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <BackChevronIcon size={26} />
           </button>
 
           <h1 className="findemail__title">{t("resetPassword.title")}</h1>

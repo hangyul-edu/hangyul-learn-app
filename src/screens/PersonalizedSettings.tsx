@@ -12,6 +12,7 @@ import { settingsApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import type { CategoryPref, LearningPreferences } from "../lib/types";
+import { AcctHeader } from "../components/layout/AcctHeader";
 
 type Translate = (key: TranslationKey, vars?: Record<string, string | number>) => string;
 
@@ -198,14 +199,7 @@ export function PersonalizedSettings() {
     <div className="screen clset">
       <div className="clset__scroll">
         <div className="clset__inner">
-          <header className="acct__header">
-            <button className="acct__back" onClick={goBack} aria-label={t("common.back")}>
-              <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-            <h1 className="acct__title">{t("personalizedSettings.title")}</h1>
-          </header>
+          <AcctHeader title={t("personalizedSettings.title")} onBack={goBack} />
 
           {/* Figma repeats the title as a large page heading under the nav bar
               (1825:32493). Hidden from the a11y tree so it does not duplicate

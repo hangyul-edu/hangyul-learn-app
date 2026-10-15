@@ -17,6 +17,7 @@ import { currencyLabel, currencyMismatchText, paymentErrorMessage } from "../lib
 import type { Plan } from "../lib/types";
 import { Spinner } from "../components/ui/Spinner";
 import { TwoButtonAlert } from "../components/ui/TwoButtonAlert";
+import { CloseIcon } from "../components/brand/Glyphs";
 
 type ScreenStatus = "loading" | "ready" | "submitting" | "missing_plans" | "failed";
 
@@ -303,9 +304,7 @@ export function SubscriptionPurchase() {
         <img className="subp__deco subp__deco--o" src={payLetterO} alt="" />
       </div>
       <button className="subp__close" onClick={() => nav(-1)} aria-label={t("purchase.close")}>
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M6 6l12 12M18 6L6 18" stroke="#9aa0a6" strokeWidth="2" strokeLinecap="round" />
-        </svg>
+        <CloseIcon color="#9aa0a6" weight={2} />
       </button>
 
       <div className={`subp__body${eligible ? " subp__body--trial" : ""}`}>

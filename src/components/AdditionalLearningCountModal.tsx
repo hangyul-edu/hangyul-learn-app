@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useModalFocus } from "../hooks/useModalFocus";
 import { useTranslation } from "../i18n";
 import { Spinner } from "./ui/Spinner";
+import { CloseIcon } from "./brand/Glyphs";
 
 /** The extra-batch sizes offered after the daily goal is complete. Matches the
  * backend's EXTRA_LEARNING_COUNTS (5 / 10 / 15 / 20). */
@@ -63,9 +64,7 @@ export function AdditionalLearningCountModal({
             disabled={submitting}
             aria-label={t("session.additionalCloseA11y")}
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18" stroke="#25282b" strokeWidth="2.2" strokeLinecap="round" />
-            </svg>
+            <CloseIcon color="#25282b" />
           </button>
 
           <p className="addlearn__eyebrow">{t("session.additionalTitle")}</p>

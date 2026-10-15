@@ -11,6 +11,7 @@ import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import { CONVERSATION_LEVEL_MAX, TOPIK_GRADE_MAX } from "../lib/levels";
 import { Spinner } from "../components/ui/Spinner";
+import { AcctHeader } from "../components/layout/AcctHeader";
 
 const CFG = {
   conversation: {
@@ -136,14 +137,7 @@ export function TrackSettings() {
     <div className="screen trkset">
       <div className="trkset__scroll">
         <div className="trkset__inner">
-          <header className="acct__header">
-            <button className="acct__back" onClick={goBack} aria-label={t("common.back")}>
-              <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-            <h1 className="acct__title">{t(cfg.titleKey)}</h1>
-          </header>
+          <AcctHeader title={t(cfg.titleKey)} onBack={goBack} />
 
           {q.isError ? (
             <div className="clset__err" style={{ marginTop: 24 }}>

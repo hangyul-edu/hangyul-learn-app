@@ -15,6 +15,8 @@ import { usePhoneProblemMessage } from "../hooks/phoneProblem";
 import { passwordProblem } from "../lib/validation";
 import { CountrySelect } from "../components/ui/CountrySelect";
 import { Spinner } from "../components/ui/Spinner";
+import { BackChevronIcon } from "../components/brand/Glyphs";
+import { AcctHeader } from "../components/layout/AcctHeader";
 
 /* ------------------------- Password ------------------------- */
 /**
@@ -74,9 +76,7 @@ export function ChangePassword() {
       <div className="setupp__scroll">
         <div className="setupp__inner">
           <button className="setupp__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
-            <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <BackChevronIcon size={27} />
           </button>
 
           <h1 className="setupp__title">{t("accountChanges.passwordTitle")}</h1>
@@ -364,22 +364,11 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" | "
     <div className="screen acct pchg">
       <div className="acct__scroll">
         <div className="acct__inner">
-          <header className="acct__header">
-            {setup ? (
-              <button className="acct__back" onClick={quitSetup} aria-label={t("phoneSetup.quitA11y")}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-                </svg>
-              </button>
-            ) : (
-              <button className="acct__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
-                <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            )}
-            <h1 className="acct__title">{t(setup ? "phoneSetup.title" : "accountChanges.phoneTitle")}</h1>
-          </header>
+          <AcctHeader
+            title={t(setup ? "phoneSetup.title" : "accountChanges.phoneTitle")}
+            onBack={setup ? quitSetup : () => nav(-1)}
+            quitLabel={setup ? t("phoneSetup.quitA11y") : undefined}
+          />
           {setup && <p className="pchg__intro">{t("phoneSetup.intro")}</p>}
 
           {/* Phone number */}
@@ -637,14 +626,7 @@ export function ChangeEmail() {
     <div className="screen acct echg">
       <div className="acct__scroll">
         <div className="acct__inner">
-          <header className="acct__header">
-            <button className="acct__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
-              <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-            <h1 className="acct__title">{t("accountChanges.emailTitle")}</h1>
-          </header>
+          <AcctHeader title={t("accountChanges.emailTitle")} onBack={() => nav(-1)} />
 
           {/* Email */}
           <div className="acct__label" id="echg-email-label">{t("accountChanges.emailLabel")}</div>

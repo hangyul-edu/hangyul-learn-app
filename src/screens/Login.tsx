@@ -6,6 +6,7 @@ import { authApi } from "../api/endpoints";
 import { useLoginFlow } from "../hooks/loginFlow";
 import { ApiError, errorMessage } from "../lib/http";
 import { Spinner } from "../components/ui/Spinner";
+import { BackChevronIcon } from "../components/brand/Glyphs";
 
 /**
  * Login screen — AME-003 (Figma KO 1:3436 / EN 784:50343).
@@ -59,9 +60,7 @@ export function Login() {
       <div className="login__scroll">
         <div className="login__inner">
           <button className="login__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <BackChevronIcon />
           </button>
 
           <div className="login__brand">

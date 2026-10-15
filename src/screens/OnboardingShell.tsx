@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "../i18n";
+import { BackChevronIcon } from "../components/brand/Glyphs";
 
 /**
  * Shared chrome for the onboarding question screens — Figma AUR-002 (67:6111),
@@ -34,9 +35,7 @@ export function OnboardingShell({
   return (
     <div className="screen onbq">
       <button className="onbq__back" onClick={onBack} aria-label={t("common.back")} disabled={backDisabled}>
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <BackChevronIcon />
       </button>
 
       <div

@@ -10,6 +10,7 @@ import { Markdown } from "../lib/markdown";
 import { Button } from "../components/ui/kit";
 import { ErrorState } from "../components/ui/states";
 import type { Notice, NoticeSummary } from "../lib/types";
+import { BackChevronIcon } from "../components/brand/Glyphs";
 
 type NoticesPage = { items: NoticeSummary[]; next_cursor: string | null };
 
@@ -98,7 +99,7 @@ export function NoticeDetail() {
     <div className="ntc ntc--detail">
       <header className="ntc__dheader">
         <button className="ntc__back" onClick={goBack} aria-label={copy.back}>
-          <BackChevron />
+          <BackChevronIcon size={27} />
         </button>
       </header>
 
@@ -176,13 +177,5 @@ function EmptyNotFound({
         {actionLabel}
       </Button>
     </div>
-  );
-}
-
-function BackChevron() {
-  return (
-    <svg width="27" height="27" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   );
 }

@@ -9,6 +9,7 @@ import { errorMessage } from "../lib/http";
 import { applyPhoneInput, checkPhone, phoneExample } from "../lib/phone";
 import { usePhoneProblemMessage } from "../hooks/phoneProblem";
 import { Spinner } from "../components/ui/Spinner";
+import { BackChevronIcon } from "../components/brand/Glyphs";
 
 function emailValid(e: string) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
@@ -102,9 +103,7 @@ export function FindPassword() {
       <div className="findemail__scroll">
         <div className="findemail__inner">
           <button className="findemail__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <BackChevronIcon />
           </button>
 
           <h1 className="findemail__title">{t("findPassword.title")}</h1>

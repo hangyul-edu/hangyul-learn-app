@@ -10,6 +10,7 @@ import {
   tierName,
 } from "../lib/league";
 import { CitrusBadge, GuideBanner, RewardIcon } from "../components/brand/LeagueGuideArt";
+import { CloseIcon } from "../components/brand/Glyphs";
 
 /**
  * Regular League guide, presented as a native bottom-up sheet (slide from the
@@ -92,9 +93,7 @@ export function LeagueGuideSheet({ onClose }: { onClose: () => void }) {
           {/* Hero */}
           <section className="lgg__hero">
             <button className="lgg__close" onClick={requestClose} aria-label={t("league.guideCloseA11y")}>
-              <svg width="17.5" height="17.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M6 6l12 12M18 6L6 18" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" />
-              </svg>
+              <CloseIcon size={17.5} color="#fff" weight={2.4} />
             </button>
             <div className="lgg__hero-text">
               <h1 className="lgg__title">{t("league.guideTitle")}</h1>

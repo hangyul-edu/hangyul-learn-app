@@ -3,6 +3,7 @@ import { useTranslation } from "../i18n";
 import { HangyulAiMessage } from "./HangyulAiMessage";
 import type { ChatMessage } from "../lib/types";
 import { Spinner } from "./ui/Spinner";
+import { CloseIcon } from "./brand/Glyphs";
 
 /**
  * Presentational shell for the 물어보기 chatbot bottom sheet — the single shared
@@ -65,9 +66,7 @@ export function ChatSheetView({
         <header className="askai__header">
           <h2 className="askai__title">{t("chat.ask")}</h2>
           <button className="askai__close" onClick={onClose} aria-label={t("chat.closeA11y")}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18" stroke="#111" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+            <CloseIcon size={28} color="#111" weight={2} />
           </button>
         </header>
 

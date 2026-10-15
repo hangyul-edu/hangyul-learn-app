@@ -20,6 +20,7 @@ import { errorMessage } from "../../lib/http";
 import { DEFAULT_PHONE_COUNTRY, applyPhoneInput, hashPhone, isLikelyPhone, phoneExample } from "../../lib/phone";
 import { getContactPhoneHashes } from "../../lib/contacts";
 import type { RecommendedUser } from "../../lib/types";
+import { CloseIcon } from "../brand/Glyphs";
 
 /* ------------------------------ localization ---------------------------- */
 /** Add-friend sheet copy, bound to the active language (`addFriend.*`). */
@@ -82,11 +83,6 @@ function useIncomingCopy() {
 
 const nameOf = (u: { nickname?: string | null }, fallback: string) => u.nickname ?? fallback;
 
-const CloseIcon = () => (
-  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M6 6l12 12M18 6L6 18" stroke="#262c31" strokeWidth="2.2" strokeLinecap="round" />
-  </svg>
-);
 const SearchIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
@@ -108,7 +104,7 @@ function SheetHeader({ title, closeLabel, onClose }: { title: string; closeLabel
     <div className="afs__header">
       <h2 className="afs__title">{title}</h2>
       <button className="afs__close" aria-label={closeLabel} onClick={onClose}>
-        <CloseIcon />
+        <CloseIcon size={26} color="#262c31" />
       </button>
     </div>
   );

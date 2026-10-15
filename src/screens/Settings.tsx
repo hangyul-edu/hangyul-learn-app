@@ -5,6 +5,7 @@ import { notifApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { useTranslation } from "../i18n";
 import { Async } from "../components/ui/states";
+import { BackChevronIcon } from "../components/brand/Glyphs";
 
 /**
  * Notification Settings (알림 설정) — two push-preference toggles.
@@ -17,12 +18,6 @@ import { Async } from "../components/ui/states";
  * in-app notification list, history, or unread state.
  */
 type PushKey = "service_notifications" | "marketing";
-
-const BackChevron = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M15 5l-7 7 7 7" stroke="#262c31" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
 
 function Switch({
   on,
@@ -85,7 +80,7 @@ export function Settings() {
     <div className="screen nset">
       <header className="nset__header">
         <button className="nset__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
-          <BackChevron />
+          <BackChevronIcon color="#262c31" />
         </button>
         <h1 className="nset__title">{t("notificationSettings.title")}</h1>
       </header>

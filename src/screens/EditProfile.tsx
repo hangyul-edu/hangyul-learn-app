@@ -23,6 +23,7 @@ import { SuccessModal } from "../components/SuccessModal";
 import { FailModal } from "../components/FailModal";
 import icModalSuccess from "../assets/brand/ic-modal-success.svg";
 import { Spinner } from "../components/ui/Spinner";
+import { BackChevronIcon } from "../components/brand/Glyphs";
 
 /**
  * Profile edit ("프로필 변경") — reuses the profile-registration visual system
@@ -186,9 +187,7 @@ export function EditProfile() {
             disabled={busy}
             aria-label={t("common.back")}
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <BackChevronIcon />
           </button>
 
           <h1 className="setupp__title">{t("profileSetup.editTitle")}</h1>

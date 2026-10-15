@@ -8,6 +8,7 @@ import lhBanner from "../assets/brand/lh-season-banner.svg";
 import { useTranslation, type TranslationKey } from "../i18n";
 import { gameApi } from "../api/endpoints";
 import type { LeagueHistoryItem, LeagueHistorySeason } from "../lib/types";
+import { BackChevronIcon } from "../components/brand/Glyphs";
 
 type Phase = "loading" | "ready" | "error";
 type More = "idle" | "loading" | "done" | "error";
@@ -235,9 +236,7 @@ export function LeagueHistory() {
       {/* Header */}
       <header className="lh__header">
         <button className="lh__back" onClick={() => nav(-1)} aria-label={copy.back}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M15 5l-7 7 7 7" stroke="#262c31" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <BackChevronIcon color="#262c31" />
         </button>
         <h1 className="lh__title">{copy.title}</h1>
       </header>

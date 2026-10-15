@@ -15,6 +15,7 @@ import { friendApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import { useTranslation } from "../i18n";
+import { BackChevronIcon } from "../components/brand/Glyphs";
 
 export function InviteLanding() {
   const { token } = useParams<{ token: string }>();
@@ -57,9 +58,7 @@ export function InviteLanding() {
     <div className="screen fm">
       <header className="fm__header">
         <button className="fm__back" onClick={() => nav("/home")} aria-label={t("common.back")}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M15 5l-7 7 7 7" stroke="#262c31" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <BackChevronIcon color="#262c31" />
         </button>
         <h1 className="fm__title">{t("invite.title")}</h1>
       </header>

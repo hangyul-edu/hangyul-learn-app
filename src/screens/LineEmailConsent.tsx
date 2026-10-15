@@ -7,6 +7,7 @@ import { PolicyBody } from "./Policy";
 import { useSocialLogin } from "../hooks/socialLogin";
 import { policyDoc, type PolicyId } from "../lib/policies";
 import { Spinner } from "../components/ui/Spinner";
+import { CloseIcon } from "../components/brand/Glyphs";
 
 export const LINE_EMAIL_CONSENT_PATH = "/login/line";
 const PRIVACY_POLICY: PolicyId = "purchase-privacy";
@@ -46,9 +47,7 @@ export function LineEmailConsent() {
     <div className="screen sterms lcons">
       <div className="sterms__top">
         <button type="button" className="sterms__close" onClick={close} aria-label={t("lineConsent.closeA11y")}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-          </svg>
+          <CloseIcon />
         </button>
       </div>
 

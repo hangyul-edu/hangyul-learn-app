@@ -22,6 +22,7 @@ import {
   type Agreements,
 } from "../lib/signupAgreements";
 import { Spinner } from "../components/ui/Spinner";
+import { BackChevronIcon } from "../components/brand/Glyphs";
 
 function emailValid(e: string) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
@@ -144,9 +145,7 @@ export function Signup() {
       <div className="signup__scroll">
         <div className="signup__inner">
           <button className="signup__back" onClick={() => nav(-1)} aria-label={t("common.back")}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <BackChevronIcon />
           </button>
 
           <h1 className="signup__title">{t("signup.title")}</h1>

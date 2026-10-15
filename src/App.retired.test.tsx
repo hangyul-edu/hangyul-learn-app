@@ -40,6 +40,9 @@ describe("retired screens", () => {
     ["/recommend/sentences", "/recommend?track=conversation"],
     ["/ai", "/courses"],
     ["/account/billing", "/subscription"],
+    // What league notifications linked to before.
+    ["/leagues/2026-W16/grp_abc", "/league"],
+    ["/leagues", "/league"],
   ])("%s opens %s", (from, to) => {
     expect(landOn(from)).toBe(to);
   });
@@ -58,5 +61,8 @@ describe("retired screens", () => {
     expect(landOn("/recommend/settings")).toBe("/recommend/settings");
     expect(landOn("/subscription")).toBe("/subscription");
     expect(landOn("/account/payment")).toBe("/account/payment");
+    expect(landOn("/league")).toBe("/league");
+    expect(landOn("/league/history")).toBe("/league/history");
+    expect(landOn("/league/result")).toBe("/league/result");
   });
 });

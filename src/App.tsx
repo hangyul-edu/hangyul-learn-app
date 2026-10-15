@@ -133,6 +133,9 @@ export const RETIRED_SCREENS: readonly (readonly [path: string, to: string])[] =
   ["/ai", "/courses"],
   // Payment history is listed on 구독 관리.
   ["/account/billing", "/subscription"],
+  // League notifications once linked /leagues/{season}/{group}, an address
+  // the app never had; the league screen shows the member's current league.
+  ["/leagues/*", "/league"],
 ];
 
 /** Opens `to`, keeping the old address's query and fragment (`to`'s own

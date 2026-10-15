@@ -1,6 +1,6 @@
 import { API_BASE_URL } from "./config";
 import { resolveMessage } from "../i18n/current";
-import { apiErrorText, type ErrorAudience } from "../i18n/apiErrors";
+import { apiErrorText } from "../i18n/apiErrors";
 
 /** One entry of a `validation_error` problem's `errors[]`: which field, never its value. */
 export interface ApiFieldError {
@@ -228,17 +228,6 @@ export const http = {
     apiFetch<T>(p, { method: "POST", ...o, form }),
 };
 
-let errorAudience: ErrorAudience = "member";
-
-/**
- * Word API errors for operators: the admin portal turns this on at startup
- * (with Korean as its language), so its errors come from the admin catalog
- * before the member one.
- */
-export function setErrorAudience(audience: ErrorAudience): void {
-  errorAudience = audience;
-}
-
 /**
  * Turn any thrown value into a user-friendly message in the active language.
  *
@@ -249,7 +238,7 @@ export function setErrorAudience(audience: ErrorAudience): void {
  */
 export function errorMessage(e: unknown): string {
   if (e instanceof ApiError) {
-    return apiErrorText(e, { audience: errorAudience }) ?? resolveMessage(friendlyFallback(e.status));
+    return apiErrorText(e) ?? resolveMessage(friendlyFallback(e.status));
   }
   if (e instanceof NetworkError) return resolveMessage(e.message);
   if (e instanceof Error && e.message) return resolveMessage(e.message);

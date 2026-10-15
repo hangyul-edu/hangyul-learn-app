@@ -1,14 +1,4 @@
 import "@testing-library/jest-dom/vitest";
-import { beforeAll, expect } from "vitest";
-
-// The admin portal is Korean and words errors for operators (admin/main.tsx
-// sets both at startup); its tests render pages without that entry point.
-beforeAll(async () => {
-  if (expect.getState().testPath?.includes("/src/admin/")) {
-    (await import("../i18n/current")).setCurrentLanguage("ko");
-    (await import("../lib/http")).setErrorAudience("admin");
-  }
-});
 
 // The react-router *data* router (createMemoryRouter, needed to exercise
 // useBlocker) builds a `new Request(url, { signal })` for every navigation.

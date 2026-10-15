@@ -7,30 +7,18 @@
  * slots are filled from `details` (a list is joined with commas); a sentence
  * whose slots `details` cannot fill is skipped rather than shown with a bare
  * `{name}`.
- *
- * The admin portal (Korean only) looks in its own catalog first, then in the
- * Korean member catalog: reasons before codes in both.
  */
 import type { AppLanguage } from "../lib/language";
 import { getCurrentLanguage } from "./current";
 import { interpolate } from "./translate";
 import { apiErrorsKo, type ApiErrorCatalog } from "./locales/apiErrors.ko";
 import { apiErrorsEn } from "./locales/apiErrors.en";
-import { apiErrorsAdminKo } from "./locales/apiErrors.admin.ko";
 
 const CATALOGS: Record<AppLanguage, ApiErrorCatalog> = { ko: apiErrorsKo, en: apiErrorsEn };
 
 export interface ServerProblem {
   code: string;
   details?: Record<string, unknown>;
-}
-
-/** Who reads the message: a member (in the app language) or an operator. */
-export type ErrorAudience = "member" | "admin";
-
-interface Catalog {
-  codes: Record<string, string>;
-  reasons: Record<string, string>;
 }
 
 function fill(message: string | undefined, details: Record<string, unknown> | undefined): string | null {
@@ -49,15 +37,13 @@ function fill(message: string | undefined, details: Record<string, unknown> | un
 /** The catalogs' sentence for this problem, or null when none has one. */
 export function apiErrorText(
   problem: ServerProblem,
-  { audience = "member", language = getCurrentLanguage() }: { audience?: ErrorAudience; language?: AppLanguage } = {},
+  { language = getCurrentLanguage() }: { language?: AppLanguage } = {},
 ): string | null {
-  const catalogs: Catalog[] =
-    audience === "admin" ? [apiErrorsAdminKo, apiErrorsKo] : [CATALOGS[language]];
+  const catalog: ApiErrorCatalog = CATALOGS[language];
   const reason = problem.details?.reason;
-  const candidates = [
-    ...(typeof reason === "string" ? catalogs.map((c) => c.reasons[reason]) : []),
-    ...catalogs.map((c) => c.codes[problem.code]),
-  ];
+  const reasons: Record<string, string> = catalog.reasons;
+  const codes: Record<string, string> = catalog.codes;
+  const candidates = [typeof reason === "string" ? reasons[reason] : undefined, codes[problem.code]];
   for (const message of candidates) {
     const text = fill(message, problem.details);
     if (text) return text;

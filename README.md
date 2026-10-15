@@ -10,6 +10,14 @@ It is intentionally **not** an API tester or admin panel: no raw payloads, no
 endpoint names, no developer controls are shown to users. Admin-only APIs are not
 integrated.
 
+Hangyul is three repositories that work together:
+
+| Repository | What it is |
+|---|---|
+| **hangyul-learn-app** (this one) | The member web app |
+| [hangyul-admin](https://github.com/hangyul-edu/hangyul-admin) | The admin portal, served at `/admin` |
+| hangyul-api | The backend API both apps call |
+
 ---
 
 ## 1. Requirements
@@ -22,9 +30,14 @@ integrated.
 ## 2. Install dependencies
 
 ```bash
-cd frontend
+git clone https://github.com/hangyul-edu/hangyul-learn-app.git
+cd hangyul-learn-app
 npm install
 ```
+
+Clone it next to the other two repositories (`hangyul-api`, `hangyul-admin`) in
+the same parent folder: the backend finds the app's build and its message
+catalogs there.
 
 ---
 
@@ -40,6 +53,7 @@ cp .env.example .env
 |---|---|---|
 | `VITE_API_BASE_URL` | Backend base URL used by the app. **Leave empty for local dev** → the app calls `/api`, which the Vite dev server proxies to the backend (no CORS). Set it to the real origin for production builds, e.g. `https://api.hangyul.app`. | *(empty → `/api`)* |
 | `VITE_DEV_BACKEND` | Where the dev proxy forwards `/api` (dev only). | `http://127.0.0.1:8000` |
+| `VITE_DEV_ADMIN` | Where the dev server forwards `/admin` — the admin portal's own dev server (dev only). | `http://localhost:5174` |
 | `VITE_CHANNEL_TALK_PLUGIN_KEY` | ChannelTalk web SDK plugin key. When set, the messenger boots at startup and the FAQ support button opens it. | *(empty → SDK not loaded)* |
 
 ### Setting the backend API base URL
@@ -71,11 +85,15 @@ a phone it fills the screen. The frame is a size container (size things with
 `cqw`/`cqh`, not `vw`/`vh`) and the containing block of `position: fixed`
 overlays, so dims, sheets and dialogs stay inside it. It hot-reloads on save.
 
+**http://localhost:5173/admin** opens the admin portal, which this dev server
+forwards to the portal's own dev server: run `npm run dev` in `hangyul-admin`
+as well (port 5174) when you need it.
+
 ---
 
 ## 5. Run the backend together with the frontend
 
-From the **repository root** (one directory up):
+From the **hangyul-api** repository:
 
 ```bash
 # 1) Provide a database schema.
@@ -156,7 +174,7 @@ Go to **http://localhost:5173**. You land on the welcome screen.
       fixed to the member's, then card number + MM/YY (birth date only if the
       currency requires it; never a CVC). Offline dev accepts any Luhn-valid
       number with a future expiry, e.g. `4242 4242 4242 4242`.
-    See `docs/payments/02-payment-method-registration.md` §2.3.5.
+    See `docs/payments/02-payment-method-registration.md` §2.3.5 in hangyul-api.
 11. **더보기** → settings, **계정 관리** (change email / phone / password),
     logout, delete account.
 
@@ -209,36 +227,33 @@ VITE_API_BASE_URL=https://your-backend npm run build   # type-checks, then bundl
 npm run preview                                        # serve the built dist locally
 ```
 
-The build output is static files in `frontend/dist/` — deploy them to any static
+The build output is static files in `dist/` — deploy them to any static
 host (Netlify, Vercel, S3+CloudFront, Nginx…). Configure the host to **serve
 `index.html` for unknown routes** (SPA fallback) so client-side routing works on
-refresh/deep-links, and `admin.html` for `/admin` and `/admin/*` (two bundles,
-two entry HTML files — see `docs/admin-portal.md`).
+refresh/deep-links. The admin portal is built and deployed from its own
+repository (hangyul-admin); the API can also serve both builds itself (see
+`docs/architecture.md` in hangyul-api).
 
-**Vercel** is covered by the checked-in `frontend/vercel.json`; set the project's
-**Root Directory** to `frontend` so it is picked up. Its rewrites map `/admin`
-and `/admin/*` to `admin.html` and everything else to `index.html`. Order
-matters — the `/admin` rules must precede the catch-all — and Vercel checks the
+**Vercel** is covered by the checked-in `vercel.json` (Root Directory: the
+repository root): it maps every route to `index.html`. Vercel checks the
 filesystem before applying rewrites, so hashed `/assets/*` files still serve
-normally. Without it a deep link like `/faq` 404s on refresh; `src/main.tsx`
-also carries a runtime `/admin` → `admin.html` redirect as a last-resort
-fallback for hosts that cannot be configured, which the rewrites make redundant.
+normally. Without it a deep link like `/faq` 404s on refresh.
 
 Remember that `VITE_*` values are **inlined at build time**: changing one in the
 host's dashboard requires a fresh build (redeploy with the build cache cleared),
 not just a restart. Set `VITE_API_BASE_URL` explicitly for any host that is not
 also serving the API — the `/api` default only resolves through the dev proxy or
 a single-box deployment. The API must in turn list the deployed origin in
-`CORS_ALLOW_ORIGINS` (see the root `.env.example`).
+`CORS_ALLOW_ORIGINS` (see hangyul-api's `.env.example`).
 
 ---
 
 ## 8. Project structure
 
 ```
-frontend/
+hangyul-learn-app/
 ├─ index.html
-├─ vite.config.ts          # dev server + /api → backend proxy
+├─ vite.config.ts          # dev server: /api → backend, /admin → admin dev server
 ├─ .env.example
 └─ src/
    ├─ main.tsx             # providers: QueryClient, I18n, Toast, Auth
@@ -253,10 +268,7 @@ frontend/
    │                       #   Field, Modal, CountrySelect, states
    ├─ components/layout/   # Screen, TopBar, AppShell (bottom nav)
    ├─ components/          # session, topik, faq, social, brand — per-domain pieces
-   ├─ screens/             # one flat file per journey screen
-   └─ admin/               # NOT part of the member app — the admin portal is a
-                           #   second Vite entry (admin.html), see
-                           #   docs/admin-portal.md
+   └─ screens/             # one flat file per journey screen
 ```
 
 Design principles: a single typed API layer (`api/endpoints.ts`), a reusable UI

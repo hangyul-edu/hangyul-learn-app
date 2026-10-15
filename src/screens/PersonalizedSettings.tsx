@@ -14,6 +14,7 @@ import { errorMessage } from "../lib/http";
 import type { CategoryPref, LearningPreferences } from "../lib/types";
 import { AcctHeader } from "../components/layout/AcctHeader";
 import { useLearningPrefs } from "../api/queries";
+import { useDragReorder } from "../hooks/useDragReorder";
 
 const CAT_LABEL_KEYS: Record<string, TranslationKey> = {
   conversation: "personalizedSettings.conversationTrack",
@@ -91,20 +92,22 @@ export function PersonalizedSettings() {
   // drag refs/state
   const listRef = useRef<HTMLUListElement>(null);
   const handleRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const dragIdxRef = useRef<number | null>(null);
-  const targetRef = useRef<number | null>(null);
-  const startRef = useRef({ y: 0, rects: [] as DOMRect[], stride: 0 });
   const seqRef = useRef(0);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [targetIndex, setTargetIndex] = useState<number | null>(null);
-  const [dragDy, setDragDy] = useState(0);
 
   // Sync from server whenever it changes and we're not mid-drag.
   useEffect(() => {
-    if (q.data && dragIdxRef.current == null) setItems(sortByOrder(q.data));
+    if (q.data && !drag.isDragging()) setItems(sortByOrder(q.data));
   }, [q.data]);
 
   const canReorder = items.length > 1 && !q.isLoading && !q.isError;
+  const drag = useDragReorder({
+    listRef,
+    enabled: canReorder,
+    onDrop: (from, to) => commitMove(from, to),
+    // No change: back to the server's order.
+    onCancel: () => q.data && setItems(sortByOrder(q.data)),
+  });
+  const { dragIndex, beginDrag, itemTransform } = drag;
 
   async function persist(next: CategoryPref[]) {
     const mySeq = ++seqRef.current;
@@ -133,65 +136,6 @@ export function PersonalizedSettings() {
     setItems(next);
     setAnnounce(t("personalizedSettings.movedA11y", { name: catLabel(items[from].category, t), pos: to + 1 }));
     void persist(next);
-  }
-
-  // ---- pointer drag ----
-  function onMove(e: PointerEvent) {
-    const di = dragIdxRef.current;
-    if (di == null) return;
-    const { y, rects } = startRef.current;
-    const dy = e.clientY - y;
-    setDragDy(dy);
-    const center = rects[di].top + rects[di].height / 2 + dy;
-    let t = di;
-    for (let j = 0; j < rects.length; j++) {
-      const c = rects[j].top + rects[j].height / 2;
-      if (j < di && center < c) {
-        t = j;
-        break;
-      }
-      if (j > di && center > c) t = j;
-    }
-    targetRef.current = t;
-    setTargetIndex(t);
-  }
-  function onUp() {
-    window.removeEventListener("pointermove", onMove);
-    const di = dragIdxRef.current;
-    const t = targetRef.current;
-    dragIdxRef.current = null;
-    targetRef.current = null;
-    setDragIndex(null);
-    setTargetIndex(null);
-    setDragDy(0);
-    if (di == null || t == null || t === di) {
-      if (q.data) setItems(sortByOrder(q.data)); // no change → resync
-      return;
-    }
-    commitMove(di, t);
-  }
-  function beginDrag(e: React.PointerEvent, index: number) {
-    if (!canReorder || e.button != null && e.button !== 0) return;
-    e.preventDefault();
-    const lis = Array.from(listRef.current?.children ?? []) as HTMLElement[];
-    const rects = lis.map((el) => el.getBoundingClientRect());
-    startRef.current = { y: e.clientY, rects, stride: rects.length > 1 ? rects[1].top - rects[0].top : 0 };
-    dragIdxRef.current = index;
-    targetRef.current = index;
-    setDragIndex(index);
-    setTargetIndex(index);
-    setDragDy(0);
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp, { once: true });
-  }
-
-  function itemTransform(i: number): number {
-    if (dragIndex == null || targetIndex == null) return 0;
-    if (i === dragIndex) return dragDy;
-    const s = startRef.current.stride;
-    if (dragIndex < targetIndex && i > dragIndex && i <= targetIndex) return -s;
-    if (dragIndex > targetIndex && i < dragIndex && i >= targetIndex) return s;
-    return 0;
   }
 
   return (

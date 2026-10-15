@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation, type TranslationKey } from "../i18n";
+import { useTranslation, type TranslationKey, type Translate } from "../i18n";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { learnApi } from "../api/endpoints";
@@ -48,7 +48,7 @@ function bucketLabel(
   period: ManagementPeriod,
   index: number,
   locale: string,
-  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+  t: Translate,
 ): string {
   // Parse at local midnight: a bare "YYYY-MM-DD" is parsed as UTC and would
   // shift to the previous day (and so the previous weekday) west of Greenwich.

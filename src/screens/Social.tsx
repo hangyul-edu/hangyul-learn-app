@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useTranslation, type TranslationKey } from "../i18n";
+import { useTranslation, type Translate } from "../i18n";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "../components/ui/kit";
 import { Dialog } from "../components/ui/Modal";
@@ -69,7 +69,7 @@ function useFmCopy() {
 /** Display name with the shared fallback; `t` is passed since this is not a hook. */
 const nameOf = (
   u: { nickname?: string | null },
-  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+  t: Translate,
 ) => u.nickname ?? t("home.defaultNickname");
 
 /* -------------------------------- rows ---------------------------------- */

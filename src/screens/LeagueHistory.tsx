@@ -5,7 +5,7 @@ import { EmptyState, ErrorState, LoadingState, SkeletonList, Spinner } from "../
 import { CitrusBadge } from "../components/brand/LeagueGuideArt";
 import { TIER_META, type LeagueTier } from "../lib/league";
 import lhBanner from "../assets/brand/lh-season-banner.svg";
-import { useTranslation, type TranslationKey } from "../i18n";
+import { useTranslation, type TranslationKey, type Translate } from "../i18n";
 import { gameApi } from "../api/endpoints";
 import type { LeagueHistoryItem, LeagueHistorySeason } from "../lib/types";
 import { BackChevronIcon } from "../components/brand/Glyphs";
@@ -51,7 +51,7 @@ const mmdd = (iso: string) => `${iso.slice(5, 7)}.${iso.slice(8, 10)}`;
 /** ISO date spoken for screen readers, in the active language. */
 const spokenDate = (
   iso: string,
-  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+  t: Translate,
 ) => {
   const [, m, d] = iso.split("-");
   return t("leagueHistory.spokenDate", { m: Number(m), d: Number(d) });
@@ -59,7 +59,7 @@ const spokenDate = (
 
 function rowAria(
   item: LeagueHistoryItem,
-  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+  t: Translate,
 ): string {
   const meta = TIER_META[item.tier as LeagueTier];
   const tier = meta ? t("league.tierLabel", { tier: meta.name }) : item.tier_label ?? "";

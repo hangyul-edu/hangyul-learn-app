@@ -10,10 +10,7 @@ import { applyPhoneInput, checkPhone, phoneExample } from "../lib/phone";
 import { usePhoneProblemMessage } from "../hooks/phoneProblem";
 import { Spinner } from "../components/ui/Spinner";
 import { BackChevronIcon } from "../components/brand/Glyphs";
-
-function emailValid(e: string) {
-  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
-}
+import { isEmailLike } from "../lib/validation";
 
 /**
  * "비밀번호 찾기" — first stage of password reset: verify the registered email
@@ -63,10 +60,10 @@ export function FindPassword() {
   const verifiedMatches =
     phoneV.verified && !!verifiedFor && verifiedFor.e164 === e164 && verifiedFor.country === country;
 
-  const canSubmit = emailValid(email.trim()) && verifiedMatches && !busy;
+  const canSubmit = isEmailLike(email.trim()) && verifiedMatches && !busy;
 
   function requestSms() {
-    if (!emailValid(email.trim())) {
+    if (!isEmailLike(email.trim())) {
       setEmailErr(t("findPassword.emailInvalid"));
       return;
     }

@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { useTranslation, type TranslationKey } from "../../i18n";
+import { useTranslation, type Translate } from "../../i18n";
 import { useDismiss } from "../../hooks/useDismiss";
 import { TOPIK_TYPE_LABEL_EN, TOPIK_TYPE_LABEL_KO } from "../../lib/topikTypeLabels";
 import type { TopikQuestionType } from "../../lib/types";
@@ -14,7 +14,7 @@ import type { TopikQuestionType } from "../../lib/types";
 function typeLabel(
   item: TopikQuestionType,
   language: string,
-  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+  t: Translate,
 ): string {
   const ko = language === "ko";
   const fromFigma = (ko ? TOPIK_TYPE_LABEL_KO : TOPIK_TYPE_LABEL_EN)[item.code];

@@ -6,11 +6,10 @@
  * request that caused the error (it may have carried a card number).
  */
 import { tCurrent } from "../i18n/current";
-import type { TranslationKey } from "../i18n";
+import type { TranslationKey, Translate } from "../i18n";
 import { ApiError, NetworkError, errorMessage } from "./http";
 import type { CardField } from "./cardInput";
 
-type Translate = (key: TranslationKey, vars?: Record<string, string | number>) => string;
 const tNow: Translate = (key, vars) => tCurrent(key, vars);
 
 /** "원화(KRW)" / "US dollars (USD)" for the currencies we name; the bare code otherwise. */

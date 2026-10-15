@@ -23,11 +23,7 @@ import playerFwd5 from "../assets/brand/player-fwd5.svg";
 import playerKnob from "../assets/brand/player-knob.svg";
 import { AskMascot } from "../components/lecture/AskMascot";
 import { useDashboard } from "../api/queries";
-
-/** mm:ss, zero-padded — COU-004 prints both ends of the scrubber that way. */
-function fmt(sec: number) {
-  return `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(Math.floor(sec % 60)).padStart(2, "0")}`;
-}
+import { mmss } from "../lib/format";
 
 /** Playback speeds the speed chip cycles through, shown as "1x", "1.25x"… */
 const SPEEDS = [1, 1.25, 1.5, 2] as const;
@@ -578,8 +574,8 @@ export function Lecture() {
 
             <div className="lecp__controls" {...hoverHold}>
               <div className="lecp__times">
-                <span>{fmt(pos)}</span>
-                <span>{fmt(duration || l.duration_seconds)}</span>
+                <span>{mmss(pos)}</span>
+                <span>{mmss(duration || l.duration_seconds)}</span>
               </div>
               <div className="lecp__track">
                 <span className="lecp__track-fill" style={{ width: `${pct(l)}%` }} />

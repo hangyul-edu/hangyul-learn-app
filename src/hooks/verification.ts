@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { secondsUntil } from "../lib/format";
+import { mmss, secondsUntil } from "../lib/format";
 import { ApiError, errorMessage } from "../lib/http";
 import { resolveMessage } from "../i18n/current";
 import type { VerificationStart, VerificationConfirm } from "../lib/types";
@@ -149,13 +149,7 @@ export function useVerification(opts: {
   };
 }
 
-/** Format seconds as MM:SS (e.g. 180 → "03:00"). */
-export function mmss(total: number): string {
-  const s = Math.max(0, Math.floor(total));
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
-}
+export { mmss };
 
 /**
  * The countdown label to render, or `null` when there is no countdown.

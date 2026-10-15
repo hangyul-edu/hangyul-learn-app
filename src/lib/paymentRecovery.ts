@@ -9,7 +9,7 @@
  */
 import type { AppLanguage } from "./language";
 import { localeFor } from "./format";
-import type { TranslationKey } from "../i18n";
+import type { TranslationKey, Translate } from "../i18n";
 
 /** Notice-card sentence describing why the automatic payment failed (§3). */
 export function noticeReasonKey(failureClass?: string | null): TranslationKey {
@@ -117,7 +117,7 @@ export function failureModalKeys(failureClass?: string | null): [TranslationKey,
 export function formatRetryAt(
   iso: string | null | undefined,
   language: AppLanguage,
-  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+  t: Translate,
   now: Date = new Date(),
 ): string {
   if (!iso) return "";

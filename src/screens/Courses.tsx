@@ -13,14 +13,9 @@ import { clearSeriesReward, peekSeriesReward, progressSavesSettled } from "./Lec
 import type { CourseRewardState, LectureEntryState } from "./Lecture";
 import icCheck from "../assets/brand/ic-16-check.svg";
 import icBack from "../assets/brand/ic-topnav-back.svg";
+import { mmss } from "../lib/format";
 
 /** mm:ss — COU-002 prints every lesson's length as a zero-padded clock. */
-function fmtDur(sec: number) {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
-
 // The lecture tab (LectureHome) is the catalog browser; this file holds the
 // series screen (/series/:seriesId) and the old course link's redirect.
 
@@ -44,7 +39,7 @@ function LessonRow({ lesson, onOpen, onPractice }: { lesson: Lecture; onOpen: ()
       </button>
       <button className="cdet__main" onClick={onOpen}>
         <span className="cdet__title">{lesson.title}</span>
-        <span className="cdet__dur">{fmtDur(lesson.duration_seconds)}</span>
+        <span className="cdet__dur">{mmss(lesson.duration_seconds)}</span>
       </button>
       <span className={`cdet__status ${lesson.completed ? "is-done" : ""}`}>
         {lesson.completed && <img className="cdet__status-check" src={icCheck} alt="" aria-hidden="true" />}

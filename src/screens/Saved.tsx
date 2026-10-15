@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { useTranslation, type TranslationKey } from "../i18n";
+import { useTranslation, type TranslationKey, type Translate } from "../i18n";
 import { SkeletonList } from "../components/ui/states";
 import { sentenceApi, quizApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
@@ -81,7 +81,7 @@ const itemId = (it: SavedSentenceItem | Quiz) => (isSentence(it) ? it.sentence_i
  * is a raw taxonomy code (`reading_03`), never display text. */
 function quizTitle(
   q: Quiz,
-  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+  t: Translate,
 ): string {
   const skillKey = q.topik_section ? SKILL_LABEL_KEYS[q.topik_section] : undefined;
   return t("saved.quizTitle", { level: q.level, skill: skillKey ? ` · ${t(skillKey)}` : "" });

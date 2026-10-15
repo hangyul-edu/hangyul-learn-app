@@ -1,4 +1,4 @@
-import type { TranslationKey } from "../i18n";
+import type { TranslationKey, Translate } from "../i18n";
 /**
  * Presentation helpers for the Notifications screen.
  *
@@ -26,7 +26,6 @@ export function bucketKey(createdAt: string, now: Date = new Date()): string {
 }
 
 /** Formats a message from the active catalog; supplied by the caller's `t`. */
-type Translate = (key: TranslationKey, vars?: Record<string, string | number>) => string;
 
 /** Date heading for a group (today / yesterday / M-D, with the year when needed). */
 export function bucketLabel(createdAt: string, t: Translate, now: Date = new Date()): string {

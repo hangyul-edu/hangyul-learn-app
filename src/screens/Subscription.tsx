@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation, type TranslationKey } from "../i18n";
+import { useTranslation, type Translate } from "../i18n";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { ConfirmDialog } from "../components/ui/Modal";
 import { SkeletonList } from "../components/ui/states";
@@ -47,7 +47,7 @@ function fmtDot(iso?: string | null): string {
  */
 function buildSuccess(
   grant: CouponRedemption,
-  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+  t: Translate,
 ): VoucherSuccess {
   const plan = grant.plan_name || t("subscription.planFallback");
   const from = fmtDot(grant.effective_start_at);

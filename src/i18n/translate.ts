@@ -12,6 +12,9 @@ export const CATALOGS: Record<AppLanguage, Catalog> = { ko, en };
 /** Every valid message key, e.g. `"home.greeting"`. */
 export type TranslationKey = DotPaths<Catalog>;
 
+/** The `t` function, for helpers that format text outside React. */
+export type Translate = (key: TranslationKey, vars?: Record<string, string | number>) => string;
+
 /** Walk a dot path; returns undefined if the path is missing or hits a branch. */
 function lookup(catalog: CatalogNode, key: string): string | undefined {
   let node: string | CatalogNode | undefined = catalog;

@@ -21,3 +21,9 @@ export function passwordProblem(p: string): TranslationKey | null {
     return "validation.passwordComposition";
   return null;
 }
+
+/** A plausible email address: something@domain.tld, no spaces. The server
+ * decides deliverability; this only catches typos before a request. */
+export function isEmailLike(email: string): boolean {
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+}

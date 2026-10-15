@@ -12,7 +12,7 @@ import { countdownLabel } from "../hooks/verification";
 import { ApiError, errorMessage } from "../lib/http";
 import { DEFAULT_PHONE_COUNTRY, applyPhoneInput, checkPhone, isPhoneCountry, phoneExample } from "../lib/phone";
 import { usePhoneProblemMessage } from "../hooks/phoneProblem";
-import { passwordProblem } from "../lib/validation";
+import { passwordProblem, isEmailLike } from "../lib/validation";
 import { CountrySelect } from "../components/ui/CountrySelect";
 import { Spinner } from "../components/ui/Spinner";
 import { BackChevronIcon } from "../components/brand/Glyphs";
@@ -528,7 +528,7 @@ export function ChangeEmail() {
   const [now, setNow] = useState(() => Date.now());
 
   const emailNorm = email.trim();
-  const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailNorm);
+  const emailValid = isEmailLike(emailNorm);
   const sameAsCurrent = !!me?.email && emailNorm.toLowerCase() === me.email.toLowerCase();
 
   // Timestamp-based countdown; recomputed from server `expires_at`.

@@ -1,7 +1,4 @@
-import { useTranslation } from "../i18n";
-import type { TranslationKey } from "../i18n";
-
-type Translate = (key: TranslationKey, vars?: Record<string, string | number>) => string;
+import { useTranslation, type Translate } from "../i18n";
 
 /**
  * Pure builder over the `topikSession.*` catalog entries. Exported separately

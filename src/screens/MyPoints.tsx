@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useTranslation, type TranslationKey } from "../i18n";
+import { useTranslation, type Translate } from "../i18n";
 import { useQuery } from "@tanstack/react-query";
 import { EmptyState, ErrorState, LoadingState, SkeletonList, Spinner } from "../components/ui/states";
 import { gameApi } from "../api/endpoints";
@@ -44,7 +44,7 @@ function usePointsCopy() {
  */
 function describe(
   tx: PointTransaction,
-  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+  t: Translate,
 ): string {
   const d = tx.detail ?? {};
   const isQuestion = d.item_type === "question";

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { settingsOrigin, useSettingsBack } from "../lib/settingsNav";
-import { useTranslation, type TranslationKey } from "../i18n";
+import { useTranslation, type TranslationKey, type Translate } from "../i18n";
 import { useQueryClient } from "@tanstack/react-query";
 import trackIconConv from "../assets/brand/track-icon-conv.svg";
 import trackIconTopik from "../assets/brand/track-icon-topik.svg";
@@ -14,8 +14,6 @@ import { errorMessage } from "../lib/http";
 import type { CategoryPref, LearningPreferences } from "../lib/types";
 import { AcctHeader } from "../components/layout/AcctHeader";
 import { useLearningPrefs } from "../api/queries";
-
-type Translate = (key: TranslationKey, vars?: Record<string, string | number>) => string;
 
 const CAT_LABEL_KEYS: Record<string, TranslationKey> = {
   conversation: "personalizedSettings.conversationTrack",

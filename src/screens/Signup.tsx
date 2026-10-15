@@ -9,7 +9,7 @@ import { useLoginFlow } from "../hooks/loginFlow";
 import { useToast } from "../hooks/toast";
 import { useVerification } from "../hooks/verification";
 import { errorMessage } from "../lib/http";
-import { passwordProblem } from "../lib/validation";
+import { passwordProblem, isEmailLike } from "../lib/validation";
 import { applyPhoneInput, checkPhone, phoneExample } from "../lib/phone";
 import { usePhoneProblemMessage } from "../hooks/phoneProblem";
 import { policyDoc, type PolicyId } from "../lib/policies";
@@ -23,10 +23,6 @@ import {
 } from "../lib/signupAgreements";
 import { Spinner } from "../components/ui/Spinner";
 import { BackChevronIcon } from "../components/brand/Glyphs";
-
-function emailValid(e: string) {
-  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
-}
 
 export function Signup() {
   const { t, language } = useTranslation();
@@ -84,7 +80,7 @@ export function Signup() {
     void phoneV.request();
   }
   function requestEmail() {
-    if (!emailValid(email)) {
+    if (!isEmailLike(email)) {
       setErrors((x) => ({ ...x, email: t("findPassword.emailInvalid") }));
       return;
     }

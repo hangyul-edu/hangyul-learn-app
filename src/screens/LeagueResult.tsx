@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useTranslation, type TranslationKey } from "../i18n";
+import { useTranslation, type Translate } from "../i18n";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../components/ui/kit";
@@ -34,7 +34,7 @@ function ResultBadge({ tier }: { tier: string }) {
 /** Outcome copy. `t` is passed since this runs outside the component. */
 function resultCopy(
   result: LeagueResultSummary,
-  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+  t: Translate,
 ): { title: string; desc: string } {
   const outcome: LeagueResultOutcome = result.outcome;
   // The server's `resulting_tier_label` is always English ("Lime League"), so

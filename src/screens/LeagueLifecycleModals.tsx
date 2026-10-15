@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation, type TranslationKey } from "../i18n";
+import { useTranslation, type Translate } from "../i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import icMegaphone from "../assets/brand/ic-megaphone.svg";
 import imgPreparing from "../assets/brand/llc-preparing.png";
@@ -218,7 +218,7 @@ function PreviousResultModal() {
  *  ("리그 운영 시간은 미국 동부 시간(ET) 기준") says the same. */
 function formatNextStart(
   iso: string | null,
-  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+  t: Translate,
   locale = "ko-KR",
 ): string {
   if (!iso) return t("leagueLifecycle.startingSoon");

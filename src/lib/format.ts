@@ -1,9 +1,15 @@
-import type { TranslationKey } from "../i18n";
+import type { Translate } from "../i18n";
 import type { AppLanguage } from "./language";
 import { formatPhoneForDisplay } from "./phone";
 import { deviceTimeZone } from "./timezone";
 
-type Translate = (key: TranslationKey, vars?: Record<string, string | number>) => string;
+/** Format seconds as MM:SS (e.g. 180 → "03:00"; fractions and negatives floor to whole, non-negative seconds). */
+export function mmss(total: number): string {
+  const s = Math.max(0, Math.floor(total));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
+}
 
 /**
  * Compact relative age ("just now" / N minutes / N hours / N days), formatted in

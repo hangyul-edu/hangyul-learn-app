@@ -96,12 +96,23 @@ export function useTranslation(): I18nCtx {
  * "Welcome, <s>{name}!</s>" in English — same component, same key, emphasis in
  * the position each design puts it.
  */
-export function T({ k, vars }: { k: TranslationKey; vars?: MessageVars }) {
+export function T({ k, vars, strongClass }: { k: TranslationKey; vars?: MessageVars; strongClass?: string }) {
   const { language } = useI18n();
   const segments = parts(translate(language, k, vars));
   return (
     <>
-      {segments.map((p, i) => (p.strong ? <b key={i}>{p.text}</b> : <span key={i}>{p.text}</span>))}
+      {segments.map((p, i) =>
+        !p.strong ? (
+          <span key={i}>{p.text}</span>
+        ) : strongClass ? (
+          // A design-specific emphasis (a colour, not bold).
+          <span className={strongClass} key={i}>
+            {p.text}
+          </span>
+        ) : (
+          <b key={i}>{p.text}</b>
+        ),
+      )}
     </>
   );
 }

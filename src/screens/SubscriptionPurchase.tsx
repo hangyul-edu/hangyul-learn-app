@@ -1,154 +1,15 @@
-import { useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { parts, translate, useTranslation } from "../i18n";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-
-import { payApi, subApi } from "../api/endpoints";
+import { useNavigate } from "react-router-dom";
+import { T, useTranslation } from "../i18n";
 import payLetterG from "../assets/brand/pay-letter-g.svg";
 import payLetterR from "../assets/brand/pay-letter-r.svg";
 import payLetterB from "../assets/brand/pay-letter-b.svg";
 import payLetterO from "../assets/brand/pay-letter-o.svg";
-import payRadioOn from "../assets/brand/pay-radio-on.svg";
-import payRadioOff from "../assets/brand/pay-radio-off.svg";
-import { useToast } from "../hooks/toast";
-import { formatMoney } from "../lib/format";
-import { ApiError } from "../lib/http";
-import { currencyLabel, currencyMismatchText, paymentErrorMessage } from "../lib/paymentErrors";
-import type { Plan } from "../lib/types";
+import { currencyLabel, currencyMismatchText } from "../lib/paymentErrors";
 import { Spinner } from "../components/ui/Spinner";
 import { TwoButtonAlert } from "../components/ui/TwoButtonAlert";
 import { CloseIcon } from "../components/brand/Glyphs";
-
-type ScreenStatus = "loading" | "ready" | "submitting" | "missing_plans" | "failed";
-
-/** Plan amounts are minor units: cents for USD, whole won for KRW (no minor
- *  unit) — dividing every currency by 100 showed ₩15,000 as ₩150. */
-function money(cents: number, currency = "USD", language?: string): string {
-  // SET-030 / SET-032 draw the plan prices with a bare "$" ("$5.99/mo") and,
-  // in Korean, won after the number ("9,900원/월").
-  return formatMoney(Math.round(cents), currency.toUpperCase(), { narrow: true, language });
-}
-/** Displayed amounts: the server's presentation values (original/current
- *  totals, monthly equivalents, discount %). GET /subscriptions/offers computes
- *  them on every plan, the member's new-member price included, so nothing is
- *  derived here. */
-function pricing(p: Plan) {
-  return {
-    isYear: p.interval === "year",
-    original: p.original_total_cents,
-    current: p.current_total_cents,
-    origMonthly: p.original_monthly_cents,
-    curMonthly: p.current_monthly_cents,
-    discountPct: p.discount_percent,
-  };
-}
-
-/**
- * A plan card, laid out exactly as Figma SET-032 draws it (KO 898:19476 /
- * EN 898:19697, and identically in SET-030 apart from the trial copy):
- *
- *   annual  335x130, r16, 1px Brand border — the launch ribbon overhangs the
- *           top-left, the purple badge sits at (196, 25), the struck price is
- *           right-aligned at 310/54 and the final price at 308/75.
- *   monthly 335x90, r16, 1px Gray 3 — radio centred on the left, the black
- *           discount pill at (188, 20), struck price and current price
- *           right-aligned at 303.
- *
- * Neither authoritative frame carries a hand-drawn arrow across the card, so
- * there is none here. All amounts come from the plan API (never hardcoded),
- * and so does the ribbon: it is the badge an admin published on the plan, on
- * either card. Without a discount there is nothing to strike through, so the
- * discount pill and the struck list price are left out.
- */
-function PlanCard({ plan, selected, onSelect }: { plan: Plan; selected: boolean; onSelect: () => void }) {
-  const { t, language } = useTranslation();
-  const price = (cents: number) => money(cents, plan.currency, language);
-  const { isYear, original, current, origMonthly, curMonthly, discountPct } = pricing(plan);
-  const discounted = discountPct > 0;
-  const ribbon = plan.badge ? plan.badge[language] || plan.badge.en : "";
-  const term = t(isYear ? "purchase.planYear" : "purchase.planMonth");
-  const sel = selected ? t("purchase.selectedSuffix") : "";
-  const label = isYear
-    ? t("purchase.planYearA11y", {
-        selected: sel,
-        monthly: price(curMonthly),
-        total: price(current),
-      })
-    : t("purchase.planMonthA11y", { selected: sel, monthly: price(curMonthly) });
-  return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={selected}
-      aria-label={label}
-      className={`plan plan--${isYear ? "annual" : "monthly"}${ribbon ? " plan--ribboned" : ""}${selected ? " plan--on" : ""}`}
-      onClick={onSelect}
-    >
-      {ribbon && (
-        /* Rectangle 4985, as wide as its label (global.css .plan__ribbon). */
-        <span className="plan__ribbon">
-          <span className="plan__ribbon-text">{ribbon}</span>
-        </span>
-      )}
-
-      <span className="plan__label">
-        <img className="plan__radio" src={selected ? payRadioOn : payRadioOff} alt="" aria-hidden="true" />
-        <span className="plan__term">{term}</span>
-      </span>
-
-      {isYear ? (
-        <>
-          {discounted && (
-            <>
-              <span className="plan__badge plan__badge--purple">
-                {parts(translate(language, "purchase.discountedPrice", { pct: discountPct })).map((seg, i) =>
-                  seg.strong ? (
-                    <span className="plan__badge-hl" key={i}>
-                      {seg.text}
-                    </span>
-                  ) : (
-                    <span key={i}>{seg.text}</span>
-                  ),
-                )}
-              </span>
-              <span className="plan__orig-line">
-                <s>{t("purchase.perMonthPriceWithTotal", { price: price(origMonthly), total: price(original) })}</s>
-              </span>
-            </>
-          )}
-          <span className="plan__final">
-            <span className="plan__final-main">{price(curMonthly)}</span>
-            <span className="plan__final-per">{t("purchase.perMonth")}</span>
-            <span className="plan__final-total">({price(current)})</span>
-          </span>
-        </>
-      ) : (
-        <>
-          {/* Badge and original price share one right-anchored row, so the badge
-              stays flush against the price whatever width the label takes. The
-              rule runs through the whole price, suffix included. */}
-          {discounted && (
-            <span className="plan__month-row">
-              <span className="plan__badge plan__badge--black">
-                {t("purchase.discountPct", { pct: discountPct })}
-              </span>
-              <span className="plan__orig-month">
-                <s>
-                  {price(origMonthly)}
-                  {t("purchase.perMonth")}
-                </s>
-              </span>
-            </span>
-          )}
-          <span className="plan__month-cur">
-            <span className="plan__final-main">{price(curMonthly)}</span>
-            <span className="plan__final-per">{t("purchase.perMonth")}</span>
-          </span>
-        </>
-      )}
-    </button>
-  );
-}
+import { PlanCard } from "./subscriptionPurchase/PlanCard";
+import { needsOverseasCard, usePurchase } from "./subscriptionPurchase/usePurchase";
 
 /**
  * Server-driven subscription purchase screen. One component, two variants:
@@ -160,137 +21,14 @@ function PlanCard({ plan, selected, onSelect }: { plan: Plan; selected: boolean;
  * routes the user to registration and preserves the selected plan.
  */
 export function SubscriptionPurchase() {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const nav = useNavigate();
-  const loc = useLocation();
-  const toast = useToast();
-  const qc = useQueryClient();
-  // The plan picked before going to register a payment method: the payment
-  // screen comes back with it, and Back finds it on this history entry.
-  const returned = loc.state as { selectedPlanId?: string; from?: string } | null;
-  const [selectedId, setSelectedId] = useState<string | null>(returned?.selectedPlanId ?? null);
-  const [payModal, setPayModal] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const submittingRef = useRef(false);
+  const p = usePurchase();
+  const block = p.currencyBlock;
 
-  // What this member is offered: one plan per interval, priced for them (the
-  // plan's new-member price where it applies), and their one free trial —
-  // both decided by the server.
-  const offersQ = useQuery({ queryKey: ["sub-offers"], queryFn: subApi.offers });
-  const methodsQ = useQuery({ queryKey: ["payment-methods"], queryFn: payApi.methods });
-
-  const plans: Plan[] = offersQ.data?.plans ?? [];
-  const methods = methodsQ.data?.methods ?? [];
-  // Proceed as long as ANY usable method (card or quick-pay) is registered — the
-  // registration popup is only for users with no payment method at all. Being
-  // the default is not required (the server resolves the method to charge).
-  const hasPaymentMethod = methods.some((m) => m.status === "active");
-  // The method the server will charge (method_id is omitted → the default).
-  const active = methods.filter((m) => m.status === "active");
-  const chargeMethod = active.find((m) => m.is_default) ?? active[0];
-  const [currencyBlock, setCurrencyBlock] = useState<{ plan: Plan; card: string; hasMatching: boolean } | null>(null);
-  // Free-trial eligibility is server-authoritative (never local): one trial
-  // per person, across accounts they withdrew and signed up again.
-  const eligible = offersQ.data?.trial.available;
-
-  // Default selection: recommended → annual → first active plan. (No recommended
-  // flag on the plan today, so annual is the effective recommendation.)
-  // A selection that is no longer offered (taken off sale while the member was
-  // away registering a card) falls back the same way.
-  useEffect(() => {
-    if (plans.length === 0 || plans.some((p) => p.plan_id === selectedId)) return;
-    const annual = plans.find((p) => p.interval === "year");
-    setSelectedId((annual ?? plans[0]).plan_id);
-  }, [plans, selectedId]);
-
-  // The methods decide what the CTA does (register one first, or explain a
-  // currency mismatch), so the screen waits for them as for the offers.
-  const status: ScreenStatus =
-    offersQ.isLoading || methodsQ.isLoading
-      ? "loading"
-      : offersQ.isError || methodsQ.isError
-        ? "failed"
-        : plans.length === 0
-          ? "missing_plans"
-          : submitting
-            ? "submitting"
-            : "ready";
-
-  async function start() {
-    if (submittingRef.current) return; // one request per press
-    const plan = plans.find((p) => p.plan_id === selectedId);
-    if (!plan) return;
-    if (!hasPaymentMethod) {
-      setPayModal(true); // gate: only when NO payment method is registered
-      return;
-    }
-    // A method charges only its billing_currency (domestic / Toss Pay / Naver
-    // Pay: KRW). Explain up front instead of letting the server refuse with
-    // subscription.currency_mismatch (still mapped below as a fallback).
-    const card = chargeMethod?.billing_currency?.toUpperCase();
-    const planCur = plan.currency?.toUpperCase();
-    if (card && planCur && card !== planCur) {
-      const hasMatching = active.some((m) => m.billing_currency?.toUpperCase() === planCur);
-      setCurrencyBlock({ plan, card, hasMatching });
-      return;
-    }
-    // What this screen shows is what is charged: the server refuses (409
-    // subscription.price_changed) rather than charge another currency or amount.
-    const quote = { currency: planCur, quoted_amount_cents: pricing(plan).current };
-    submittingRef.current = true;
-    setSubmitting(true);
-    try {
-      // Separate flows: trial only for eligible accounts, paid otherwise. The
-      // backend rechecks both, so this can never grant a second trial.
-      if (eligible) await subApi.startTrial(plan.plan_id, quote);
-      else {
-        const res = await subApi.subscribe(plan.plan_id, undefined, quote);
-        // Charge not decided yet: no access until it settles, so say so.
-        if (res?.subscription?.status === "payment_pending") toast.show(t("subscription.subPending"));
-      }
-      qc.invalidateQueries({ queryKey: ["sub-me"] });
-      qc.invalidateQueries({ queryKey: ["sub-offers"] });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
-      nav("/subscription", { replace: true });
-    } catch (e) {
-      // e.g. trial already used → refresh eligibility so the UI switches to paid.
-      // subscription.currency_mismatch gets its own copy (card vs plan currency).
-      if (e instanceof ApiError && e.code === "subscription.price_changed") toast.error(t("purchase.priceChanged"));
-      else toast.error(paymentErrorMessage(e));
-      void offersQ.refetch();
-    } finally {
-      submittingRef.current = false;
-      setSubmitting(false);
-    }
-  }
-
-  /** To the payment-method screen, which comes back here with the plan after
-   *  a registration. The choice is also kept on this history entry, so going
-   *  Back without registering keeps it too. */
-  function toPaymentMethods(extra: { addCard?: "international" } = {}) {
-    nav(loc.pathname, { replace: true, state: { selectedPlanId: selectedId } });
-    nav("/account/payment", {
-      state: { from: "/subscription/start", selectedPlanId: selectedId, ...extra },
-    });
-  }
-
-  function goRegisterPayment() {
-    setPayModal(false);
-    toPaymentMethods();
-  }
-
-  /** From the currency explanation: straight to the overseas-card form for a
-   *  non-KRW plan (unless a matching method exists and only needs selecting). */
-  function goFixCurrency() {
-    const block = currencyBlock;
-    setCurrencyBlock(null);
-    const addIntl = !!block && !block.hasMatching && block.plan.currency?.toUpperCase() !== "KRW";
-    toPaymentMethods(addIntl ? { addCard: "international" } : {});
-  }
-
-  const ctaKey = eligible ? "purchase.startTrial" : "purchase.startNow";
+  const ctaKey = p.eligible ? "purchase.startTrial" : "purchase.startNow";
   const ctaLabel = t(ctaKey).replace(/<\/?s>/g, "");
-  const ctaDisabled = status !== "ready" || !selectedId;
+  const ctaDisabled = p.status !== "ready" || !p.selectedId;
 
   return (
     <div className="subp">
@@ -307,25 +45,19 @@ export function SubscriptionPurchase() {
         <CloseIcon color="#9aa0a6" weight={2} />
       </button>
 
-      <div className={`subp__body${eligible ? " subp__body--trial" : ""}`}>
-        {status === "loading" ? (
+      <div className={`subp__body${p.eligible ? " subp__body--trial" : ""}`}>
+        {p.status === "loading" ? (
           <div className="subp__loading" aria-busy="true">{t("purchase.loading")}</div>
-        ) : status === "failed" ? (
+        ) : p.status === "failed" ? (
           <div className="subp__error">
             <p>{t("purchase.loadError")}</p>
-            <button
-              className="btn btn--secondary btn--sm"
-              onClick={() => {
-                if (offersQ.isError) void offersQ.refetch();
-                if (methodsQ.isError) void methodsQ.refetch();
-              }}
-            >
+            <button className="btn btn--secondary btn--sm" onClick={p.retry}>
               {t("common.retry")}
             </button>
           </div>
         ) : (
           <>
-            {eligible && <p className="subp__eyebrow">{t("purchase.eyebrow")}</p>}
+            {p.eligible && <p className="subp__eyebrow">{t("purchase.eyebrow")}</p>}
             <h1 className="subp__headline">
               {t("purchase.heroLine1")}
               <br />
@@ -333,44 +65,36 @@ export function SubscriptionPurchase() {
             </h1>
             <p className="subp__desc">{t("purchase.heroDesc")}</p>
 
-            {status === "missing_plans" ? (
+            {p.status === "missing_plans" ? (
               <p className="subp__noplans" role="status">
                 {t("purchase.noProducts")}
               </p>
             ) : (
               <div className="subp__plans" role="radiogroup" aria-label={t("purchase.productsTitle")}>
-                {[...plans]
+                {[...p.plans]
                   .sort((a, b) => (a.interval === "year" ? 0 : 1) - (b.interval === "year" ? 0 : 1))
-                  .map((p) => (
+                  .map((plan) => (
                     <PlanCard
-                      key={p.plan_id}
-                      plan={p}
-                      selected={p.plan_id === selectedId}
-                      onSelect={() => setSelectedId(p.plan_id)}
+                      key={plan.plan_id}
+                      plan={plan}
+                      selected={plan.plan_id === p.selectedId}
+                      onSelect={() => p.setSelectedId(plan.plan_id)}
                     />
                   ))}
               </div>
             )}
 
-            <button className="subp__cta" onClick={start} disabled={ctaDisabled} aria-label={ctaLabel}>
-              {submitting ? (
+            <button className="subp__cta" onClick={p.start} disabled={ctaDisabled} aria-label={ctaLabel}>
+              {p.submitting ? (
                 <Spinner size={22} />
               ) : (
-                parts(translate(language, ctaKey)).map((seg, i) =>
-                  seg.strong ? (
-                    <span className="subp__cta-hl" key={i}>
-                      {seg.text}
-                    </span>
-                  ) : (
-                    <span key={i}>{seg.text}</span>
-                  ),
-                )
+                <T k={ctaKey} strongClass="subp__cta-hl" />
               )}
             </button>
 
             <p className="subp__cancel">{t("purchase.cancelAnytime")}</p>
             <p className="subp__note">
-              {eligible
+              {p.eligible
                 ? t("purchase.trialNote")
                 : t("purchase.paidNote")}
             </p>
@@ -382,7 +106,7 @@ export function SubscriptionPurchase() {
       </div>
 
       <TwoButtonAlert
-        open={payModal}
+        open={p.payModal}
         backdropCancels
         centered
         title={t("purchase.needMethodTitle")}
@@ -395,29 +119,25 @@ export function SubscriptionPurchase() {
         }
         cancelLabel={t("common.cancel")}
         confirmLabel={t("purchase.registerMethod")}
-        onCancel={() => setPayModal(false)}
-        onConfirm={goRegisterPayment}
+        onCancel={p.closePayModal}
+        onConfirm={p.goRegisterPayment}
       />
 
       <TwoButtonAlert
-        open={currencyBlock !== null}
+        open={p.currencyBlock !== null}
         backdropCancels
         centered
         title={t("purchase.currencyTitle")}
         body={
-          currencyBlock &&
-          (currencyBlock.hasMatching
-            ? t("purchase.currencySwitchDefault", { currency: currencyLabel(currencyBlock.plan.currency, t) })
-            : currencyMismatchText(currencyBlock.card, currencyBlock.plan.currency, t))
+          block &&
+          (block.hasMatching
+            ? t("purchase.currencySwitchDefault", { currency: currencyLabel(block.plan.currency, t) })
+            : currencyMismatchText(block.card, block.plan.currency, t))
         }
         cancelLabel={t("common.cancel")}
-        confirmLabel={
-          currencyBlock && !currencyBlock.hasMatching && currencyBlock.plan.currency?.toUpperCase() !== "KRW"
-            ? t("purchase.currencyAddIntl")
-            : t("purchase.currencyManage")
-        }
-        onCancel={() => setCurrencyBlock(null)}
-        onConfirm={goFixCurrency}
+        confirmLabel={t(block && needsOverseasCard(block) ? "purchase.currencyAddIntl" : "purchase.currencyManage")}
+        onCancel={p.closeCurrencyBlock}
+        onConfirm={p.goFixCurrency}
       />
     </div>
   );

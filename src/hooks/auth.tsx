@@ -30,6 +30,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>("booting");
   const [me, setMeState] = useState<Me | null>(null);
   const sessionRef = useRef<StoredSession | null>(loadSession());
+  // Counts sign-ins and sign-outs. Refreshing or adopting a rotated pair
+  // replaces sessionRef.current but stays the same sign-in, so it is not
+  // counted.
+  const signInsRef = useRef(0);
 
   // The stored session is shared by every open tab, and refresh tokens are
   // single-use: once another tab rotates the pair, the copy held here is dead.
@@ -78,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       accessExpiresAt: Date.now() + (t.expires_in ?? 1800) * 1000,
       autoLogin,
     };
+    signInsRef.current += 1;
     sessionRef.current = s;
     saveSession(s);
   }
@@ -94,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function hardSignOut() {
+    signInsRef.current += 1;
     sessionRef.current = null;
     clearSession();
     setMeState(null);
@@ -123,8 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const booting = sessionRef.current;
-      if (!booting) {
+      if (!sessionRef.current) {
         setStatus("signed-out");
         return;
       }
@@ -132,7 +137,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // social provider reloads the app with the previous session stored, and
       // the completion screen applies the new one. The answer then concerns a
       // session that is no longer ours: never sign out, or show, over it.
-      const superseded = () => sessionRef.current !== booting;
+      // A refresh during the check (the stored access token has usually
+      // expired by the next launch) is the same sign-in, and must not count.
+      const signIn = signInsRef.current;
+      const superseded = () => signInsRef.current !== signIn;
       try {
         const profile = await http.get<Me>("/users/me");
         if (!cancelled && !superseded()) {

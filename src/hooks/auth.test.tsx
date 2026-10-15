@@ -79,6 +79,34 @@ describe("AuthProvider with a session shared across tabs", () => {
     expect(loadSession()).toBeNull();
   });
 
+  // A stored access token has usually expired by the next launch: the
+  // profile load is refused, the pair is refreshed, and the retry answers.
+  // Refreshing replaced the session held in memory, and the launch check
+  // took that for a different sign-in and dropped the answer — the app
+  // stayed on the splash screen until a reload.
+  it("signs in when the launch check has to refresh an expired access token", async () => {
+    const refreshed = { access_token: jwt({ sid: "s1", jti: "a2" }), refresh_token: jwt({ sid: "s1", jti: "r2" }), expires_in: 900 };
+    fetchMock.mockImplementation(async (url: string, init: { headers: Record<string, string> }) => {
+      if (String(url).includes("/auth/token/refresh")) return res(200, refreshed);
+      return init.headers.authorization === `Bearer ${refreshed.access_token}`
+        ? res(200, { user_id: "u1", nickname: "n" })
+        : res(401, { code: "token_expired" });
+    });
+    await mount();
+    expect(loadSession()?.refreshToken).toBe(refreshed.refresh_token);
+  });
+
+  it("signs in when another tab rotated the pair during the launch check", async () => {
+    const rotated = { access: jwt({ sid: "s1", jti: "a2" }), refresh: jwt({ sid: "s1", jti: "r2" }) };
+    fetchMock.mockImplementation(async (_url: string, init: { headers: Record<string, string> }) => {
+      if (init.headers.authorization === `Bearer ${rotated.access}`) return res(200, { user_id: "u1", nickname: "n" });
+      // The other tab rotates while this tab's request is out.
+      saveSession({ accessToken: rotated.access, refreshToken: rotated.refresh, accessExpiresAt: 0, autoLogin: true });
+      return res(401, { code: "token_expired" });
+    });
+    await mount();
+  });
+
   function lastBearer(): string | undefined {
     const init = fetchMock.mock.calls[fetchMock.mock.calls.length - 1][1] as { headers: Record<string, string> };
     return init.headers.authorization;

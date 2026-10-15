@@ -1,103 +1,25 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "../i18n";
-import {
-  ProfilePlaceholder,
-  CharacterAvatar,
-  CameraIcon,
-  AVATAR_KEYS,
-  avatarBg,
-  avatarLabelKey,
-  characterArtSrc,
-  characterArtStyle,
-  type AvatarKey,
-} from "../components/brand/ProfileAssets";
+import { CameraIcon } from "../components/brand/ProfileAssets";
 import { userApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
-import type { ProfileImageType } from "../lib/types";
 import { Spinner } from "../components/ui/Spinner";
+import { NicknameField, ProfileImagePicker } from "../components/profile/ProfileForm";
+import { useNicknameCheck, useProfileImage } from "../hooks/useProfileForm";
 
 export function SetupProfile() {
   const { t } = useTranslation();
   const nav = useNavigate();
   const toast = useToast();
   const { setMe } = useAuth();
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const [nickname, setNickname] = useState("");
-  const nicknameRef = useRef(nickname);
-  nicknameRef.current = nickname;
-  const [checkToken, setCheckToken] = useState<string | null>(null);
-  const [checking, setChecking] = useState(false);
-  const [checkMsg, setCheckMsg] = useState<{ ok: boolean; text: string } | null>(null);
-
-  const [imageType, setImageType] = useState<ProfileImageType>("AVATAR");
-  const [avatarKey, setAvatarKey] = useState<AvatarKey>("AVATAR_01");
-  const [customUrl, setCustomUrl] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const nick = useNicknameCheck();
+  const image = useProfileImage({ type: "AVATAR", avatarKey: "AVATAR_01", customUrl: null });
   const [busy, setBusy] = useState(false);
-
-  const canSubmit = !!checkToken && !busy && !uploading;
-
-  async function checkNick() {
-    const value = nickname.trim();
-    if (value.length < 2) {
-      setCheckMsg({ ok: false, text: t("profileSetup.nicknameTooShort") });
-      return;
-    }
-    if (checking) return;
-    setChecking(true);
-    setCheckToken(null);
-    try {
-      const res = await userApi.checkNickname(value);
-      // The token is bound to the exact nickname checked; if it was edited
-      // while the check was in flight, this verdict is for a stale value.
-      if (nicknameRef.current.trim() !== value) return;
-      if (res.available && res.check_token) {
-        setCheckToken(res.check_token);
-        setCheckMsg({ ok: true, text: t("profileSetup.nicknameAvailable") });
-      } else {
-        setCheckMsg({ ok: false, text: t("profileSetup.nicknameTaken") });
-      }
-    } catch (e) {
-      setCheckMsg({ ok: false, text: errorMessage(e) });
-    } finally {
-      setChecking(false);
-    }
-  }
-
-  function onNicknameChange(v: string) {
-    setNickname(v);
-    // Any edit invalidates a prior successful check.
-    setCheckToken(null);
-    setCheckMsg(null);
-  }
-
-  function selectCharacter(key: AvatarKey) {
-    // Choosing a character replaces an uploaded photo: it is dropped, not just
-    // hidden, so the character is what shows and what gets saved.
-    setAvatarKey(key);
-    setImageType("AVATAR");
-    setCustomUrl(null);
-  }
-
-  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = ""; // allow re-picking the same file
-    if (!file || uploading) return;
-    setUploading(true);
-    try {
-      const res = await userApi.uploadImage(file);
-      setCustomUrl(res.profile_image_url);
-      setImageType("CUSTOM");
-    } catch (err) {
-      toast.error(errorMessage(err));
-    } finally {
-      setUploading(false);
-    }
-  }
+  const checkToken = nick.checkToken;
+  const canSubmit = !!checkToken && !busy && !image.uploading;
 
   async function submit() {
     if (!canSubmit) {
@@ -107,11 +29,9 @@ export function SetupProfile() {
     setBusy(true);
     try {
       const me = await userApi.registerProfile({
-        nickname: nickname.trim(),
+        nickname: nick.trimmed,
         nickname_check_token: checkToken,
-        profile_image_type: imageType,
-        avatar_key: imageType === "AVATAR" ? avatarKey : null,
-        profile_image_url: imageType === "CUSTOM" ? customUrl : null,
+        ...image.payload(),
       });
       setMe(me);
       nav("/setup/onboarding", { replace: true });
@@ -122,9 +42,6 @@ export function SetupProfile() {
     }
   }
 
-  const showCustom = imageType === "CUSTOM" && !!customUrl;
-  const showChar = !showCustom && imageType === "AVATAR";
-
   return (
     <div className="screen setupp">
       <div className="setupp__scroll">
@@ -132,107 +49,21 @@ export function SetupProfile() {
           <h1 className="setupp__title">{t("profileSetup.setupTitle")}</h1>
           <p className="setupp__subtitle">{t("profileSetup.setupSubtitle")}</p>
 
-          {/* Profile image */}
-          <div className="setupp__label">{t("profileSetup.imageLabel")}</div>
-          <div className="setupp__preview">
-            {/* The preview always shows what will be saved: the uploaded photo,
-                or the selected character on its own tint (same placement as
-                Edit Profile's preview). */}
-            <div
-              className="setupp__preview-circle"
-              style={showChar ? { background: avatarBg(avatarKey) } : undefined}
-              role="img"
-              aria-label={
-                showCustom
-                  ? t("profileSetup.imageUploadedA11y")
-                  : showChar
-                    ? t("profileSetup.imageCharacterA11y", { name: t(avatarLabelKey(avatarKey)) })
-                    : t("profileSetup.previewA11y")
-              }
-            >
-              {showCustom ? (
-                <img src={customUrl!} alt="" className="setupp__preview-img" />
-              ) : showChar ? (
-                <span className="setupp__preview-char">
-                  <img
-                    src={characterArtSrc(avatarKey)}
-                    alt=""
-                    aria-hidden="true"
-                    style={characterArtStyle(avatarKey, 120)}
-                  />
-                </span>
-              ) : (
-                <ProfilePlaceholder />
-              )}
-            </div>
-          </div>
-          <div className="setupp__photo-wrap">
-            <button
-              type="button"
-              className="setupp__photo"
-              onClick={() => fileRef.current?.click()}
-              disabled={uploading}
-              aria-label={t("profileSetup.choosePhotoA11y")}
-            >
-              {uploading ? (
-                <Spinner size={16} stroke={2} />
-              ) : (
-                <CameraIcon />
-              )}
-              <span>{t("profileSetup.choosePhoto")}</span>
-            </button>
-            <input ref={fileRef} type="file" accept="image/*" hidden onChange={onFile} />
-          </div>
+          {/* The preview always shows what will be saved (same placement as
+              Edit Profile's preview). */}
+          <ProfileImagePicker image={image} emptyLabel={t("profileSetup.previewA11y")} camera={<CameraIcon />} />
 
-          {/* Default characters */}
-          <div className="setupp__label">{t("profileSetup.characterLabel")}</div>
-          <div className="setupp__chars" role="radiogroup" aria-label={t("profileSetup.characterLabel")}>
-            {AVATAR_KEYS.map((key) => {
-              const selected = imageType === "AVATAR" && avatarKey === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  className="setupp__char-btn"
-                  role="radio"
-                  aria-checked={selected}
-                  aria-label={t(avatarLabelKey(key))}
-                  onClick={() => selectCharacter(key)}
-                >
-                  <CharacterAvatar variant={key} selected={selected} />
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Nickname */}
-          <div className="setupp__label">{t("profileSetup.nicknameLabel")}</div>
-          <div className="setupp__nick-row">
-            <input
-              className="setupp__nick-input"
-              placeholder={t("profileSetup.nicknamePlaceholderSetup")}
-              aria-label={t("profileSetup.nicknameA11y")}
-              value={nickname}
-              maxLength={10}
-              onChange={(e) => onNicknameChange(e.target.value)}
-            />
-            <button
-              type="button"
-              className="setupp__nick-btn"
-              onClick={checkNick}
-              disabled={checking || nickname.trim().length < 2}
-              aria-label={t("profileSetup.checkDuplicateA11y")}
-            >
-              {checking ? <Spinner size={18} stroke={2} /> : t("profileSetup.checkDuplicate")}
-            </button>
-          </div>
-          <p
-            className={`setupp__nick-msg ${checkMsg ? (checkMsg.ok ? "is-ok" : "is-err") : ""}`}
-            role="status"
-            aria-live="polite"
-          >
-            {checkMsg?.text ?? ""}
-          </p>
+          <NicknameField
+            value={nick.nickname}
+            onChange={nick.change}
+            placeholder={t("profileSetup.nicknamePlaceholderSetup")}
+            checkLabel="profileSetup.checkDuplicate"
+            checkA11y="profileSetup.checkDuplicateA11y"
+            checkDisabled={nick.checking || nick.trimmed.length < 2}
+            checking={nick.checking}
+            onCheck={nick.check}
+            message={nick.message}
+          />
 
           <div className="setupp__spacer" />
 

@@ -1,10 +1,9 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTranslation, type TranslationKey } from "../i18n";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { learnApi } from "../api/endpoints";
 import { DailyLearningSun } from "../components/DailyLearningSun";
-import { LearningSectionSwitcher } from "../components/LearningSectionSwitcher";
+import { LearningSectionHeader } from "../components/LearningSectionSwitcher";
 // Two assets rather than one rotated one: Polygon 11/12 both cast their shadow
 // straight DOWN (dy 2, no dx), and rotating a single glyph in CSS drags its
 // baked shadow round with it.
@@ -48,7 +47,6 @@ function buildGrid(year: number, month: number): Cell[] {
 
 export function Streak() {
   const { t } = useTranslation();
-  const nav = useNavigate();
   const now = new Date();
   const [view, setView] = useState({ y: now.getFullYear(), m: now.getMonth() + 1 });
 
@@ -108,23 +106,7 @@ export function Streak() {
     <div className="screen strk">
       <div className="strk__scroll">
         <div className="strk__inner">
-          <header className="strk__header">
-            <button className="strk__back" onClick={() => nav("/home")} aria-label={t("common.back")}>
-              {/* ic_B_topNav variant=back, exactly as HMA-001 exports it —
-                  kept identical to the Learning-management header. */}
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M16 21L7 12L16 3"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeMiterlimit="10"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-            <LearningSectionSwitcher current="streak" />
-          </header>
+          <LearningSectionHeader current="streak" />
 
           {/* Streak summary banner — copy + sun both key off today's study state. */}
           <div className={`strk__banner${studiedToday ? "" : " strk__banner--inactive"}`}>

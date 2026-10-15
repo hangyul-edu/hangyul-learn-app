@@ -1,14 +1,14 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation, type TranslationKey, type Translate } from "../i18n";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { learnApi } from "../api/endpoints";
-import { LearningSectionSwitcher } from "../components/LearningSectionSwitcher";
+import { LearningSectionHeader } from "../components/LearningSectionSwitcher";
 import { Button } from "../components/ui/kit";
 import { ErrorState } from "../components/ui/states";
 import { localeFor } from "../lib/format";
-import { rectInFrame } from "../lib/frame";
+import { useAnchoredPosition } from "../hooks/useAnchoredPosition";
 import type { ManagementBucket, ManagementPeriod, ManagementStats } from "../lib/types";
 
 const PERIODS: { id: ManagementPeriod; label: TranslationKey }[] = [
@@ -106,23 +106,7 @@ export function LearningManagement() {
     // the empty state needs its own hook rather than one blanket EN override.
     <div className={`screen lmgmt${empty ? " lmgmt--empty" : ""}`}>
       <div className="lmgmt__scroll">
-        <header className="strk__header lmgmt__header">
-          <button className="strk__back" onClick={() => nav("/home")} aria-label={t("common.back")}>
-            {/* ic_B_topNav variant=back, exactly as HMA-002 exports it. The
-                hand-drawn 26px chevron was 2px short and sat 1px right. */}
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M16 21L7 12L16 3"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeMiterlimit="10"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-          <LearningSectionSwitcher current="management" />
-        </header>
+        <LearningSectionHeader current="management" className="lmgmt__header" />
 
         {q.isError && !data ? (
           <div className="lmgmt__errwrap">
@@ -313,26 +297,9 @@ function PeriodDropdown({
 }) {
   const { t } = useTranslation();
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  // Right-aligned under the trigger.
+  const pos = useAnchoredPosition(triggerRef, open, (r) => ({ top: r.bottom + 6, left: r.right }));
 
-  useLayoutEffect(() => {
-    if (!open) {
-      setPos(null);
-      return;
-    }
-    const measure = () => {
-      // position: fixed inside the app frame → placed in frame coordinates.
-      const r = triggerRef.current ? rectInFrame(triggerRef.current) : null;
-      if (r) setPos({ top: r.bottom + 6, left: r.right });
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    window.addEventListener("scroll", measure, true);
-    return () => {
-      window.removeEventListener("resize", measure);
-      window.removeEventListener("scroll", measure, true);
-    };
-  }, [open]);
 
   useEffect(() => {
     if (!open) return;

@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { rectInFrame } from "../lib/frame";
+import { useAnchoredPosition } from "../hooks/useAnchoredPosition";
 import { useTranslation, type TranslationKey } from "../i18n";
 
 /** The two learning sections reachable from the title dropdown. */
@@ -34,8 +34,8 @@ export function LearningSectionSwitcher({ current }: { current: LearningSection 
   const [open, setOpen] = useState(false);
   // Anchor the menu directly under the title: centered on the trigger, dropped
   // just below its bottom edge. Re-measured on resize/scroll while open.
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const pos = useAnchoredPosition(triggerRef, open, (r) => ({ top: r.bottom + 6, left: r.left + r.width / 2 }));
   const menuRef = useRef<HTMLDivElement>(null);
   const optionRefs = useRef<Record<LearningSection, HTMLButtonElement | null>>({
     streak: null,
@@ -44,25 +44,6 @@ export function LearningSectionSwitcher({ current }: { current: LearningSection 
   const navigatingRef = useRef(false);
   const pushedRef = useRef(false);
 
-  useLayoutEffect(() => {
-    if (!open) {
-      setPos(null);
-      return;
-    }
-    const measure = () => {
-      // The menu is position: fixed inside the app frame, so it is placed in
-      // the frame's coordinates (they differ from the window's on desktop).
-      const r = triggerRef.current ? rectInFrame(triggerRef.current) : null;
-      if (r) setPos({ top: r.bottom + 6, left: r.left + r.width / 2 });
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    window.addEventListener("scroll", measure, true);
-    return () => {
-      window.removeEventListener("resize", measure);
-      window.removeEventListener("scroll", measure, true);
-    };
-  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -174,5 +155,32 @@ export function LearningSectionSwitcher({ current }: { current: LearningSection 
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * The Streak / Learning-management header: back to Home, and the switcher
+ * between the two. The back glyph is ic_B_topNav variant=back exactly as
+ * HMA-001/002 export it.
+ */
+export function LearningSectionHeader({ current, className }: { current: LearningSection; className?: string }) {
+  const { t } = useTranslation();
+  const nav = useNavigate();
+  return (
+    <header className={className ? `strk__header ${className}` : "strk__header"}>
+      <button className="strk__back" onClick={() => nav("/home")} aria-label={t("common.back")}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M16 21L7 12L16 3"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeMiterlimit="10"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+      <LearningSectionSwitcher current={current} />
+    </header>
   );
 }

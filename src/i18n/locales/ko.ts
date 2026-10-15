@@ -775,6 +775,10 @@ export const ko = {
     line1: "네트워크가 연결되지 않았어요",
     line2: "Wi-Fi 또는 데이터를 켜주세요",
     retry: "다시 시도",
+    /** The launch check got no answer from the server in time. */
+    unreachableTitle: "연결이 원활하지 않아요",
+    unreachableLine1: "서버에 연결하지 못했어요",
+    unreachableLine2: "잠시 후 다시 시도해주세요",
   },
 
   /** Onboarding questionnaire. app-authored English. */

@@ -7,11 +7,23 @@ import { clearSession, loadSession, saveSession } from "../lib/storage";
 import type { StoredSession } from "../lib/storage";
 import type { Me, TokenResponse } from "../lib/types";
 
-type Status = "booting" | "signed-out" | "signed-in";
+/**
+ * - `booting` — the launch check of a stored session is running.
+ * - `unreachable` — that check got no answer (timeout, offline, server
+ *   error). The session is kept; `retryStartup` runs the check again.
+ */
+type Status = "booting" | "unreachable" | "signed-out" | "signed-in";
+
+/** How long the launch check waits for an answer before offering a retry. */
+export const STARTUP_TIMEOUT_MS = 15_000;
+
+const TIMED_OUT = Symbol("timed out");
 
 interface AuthCtx {
   status: Status;
   me: Me | null;
+  /** Run the launch check again after it found the server unreachable. */
+  retryStartup: () => void;
   /** Store the token pair after a login/social/refresh flow. */
   applyTokens: (t: TokenResponse | { access_token: string; refresh_token: string; expires_in: number }, autoLogin: boolean) => void;
   /** Load /users/me and mark signed-in. Returns the profile. */
@@ -34,6 +46,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // replaces sessionRef.current but stays the same sign-in, so it is not
   // counted.
   const signInsRef = useRef(0);
+  // Numbers the launch checks; only the latest one's answer is used.
+  const startupRef = useRef(0);
 
   // The stored session is shared by every open tab, and refresh tokens are
   // single-use: once another tab rotates the pair, the copy held here is dead.
@@ -126,51 +140,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   // Auto-login on cold start: if a stored session exists, try to load the profile.
+  async function startupCheck() {
+    const attempt = ++startupRef.current;
+    if (!sessionRef.current) {
+      setStatus("signed-out");
+      return;
+    }
+    setStatus("booting");
+    // A sign-in can finish while this check is in flight — returning from a
+    // social provider reloads the app with the previous session stored, and
+    // the completion screen applies the new one. The answer then concerns a
+    // session that is no longer ours: never sign out, or show, over it.
+    // A refresh during the check (the stored access token has usually
+    // expired by the next launch) is the same sign-in, and must not count.
+    // A retry or unmount makes this attempt's answer stale too.
+    const signIn = signInsRef.current;
+    const current = () => startupRef.current === attempt && signInsRef.current === signIn;
+    // Only the profile request is cancelled on timeout. A token refresh it
+    // started keeps running: the server may already have rotated the
+    // single-use refresh token, and only that answer carries the new one.
+    const abort = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<typeof TIMED_OUT>((resolve) => {
+      timer = setTimeout(() => resolve(TIMED_OUT), STARTUP_TIMEOUT_MS);
+    });
+    try {
+      const answer = await Promise.race([http.get<Me>("/users/me", undefined, { signal: abort.signal }), timeout]);
+      if (!current()) return;
+      if (answer === TIMED_OUT) {
+        setStatus("unreachable");
+      } else {
+        setMeState(answer);
+        setStatus("signed-in");
+      }
+    } catch (e) {
+      if (!current()) return;
+      // Offline or the API is down: nothing is known to be wrong with the
+      // stored session, so keep it and offer a retry instead of wiping a
+      // long-lived auto-login over a failed request.
+      if (isTransient(e)) setStatus("unreachable");
+      else hardSignOut();
+    } finally {
+      clearTimeout(timer);
+      abort.abort();
+    }
+  }
+
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!sessionRef.current) {
-        setStatus("signed-out");
-        return;
-      }
-      // A sign-in can finish while this check is in flight — returning from a
-      // social provider reloads the app with the previous session stored, and
-      // the completion screen applies the new one. The answer then concerns a
-      // session that is no longer ours: never sign out, or show, over it.
-      // A refresh during the check (the stored access token has usually
-      // expired by the next launch) is the same sign-in, and must not count.
-      const signIn = signInsRef.current;
-      const superseded = () => signInsRef.current !== signIn;
-      try {
-        const profile = await http.get<Me>("/users/me");
-        if (!cancelled && !superseded()) {
-          setMeState(profile);
-          setStatus("signed-in");
-        }
-      } catch (e) {
-        if (cancelled || superseded()) return;
-        if (isTransient(e)) {
-          // Offline or the API is down: nothing is known to be wrong with the
-          // stored session, so leave it for the next launch instead of wiping
-          // a long-lived auto-login over a failed request.
-          sessionRef.current = null;
-          setStatus("signed-out");
-        } else {
-          hardSignOut();
-        }
-      }
-    })();
+    void startupCheck();
     return () => {
-      cancelled = true;
+      startupRef.current += 1;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function retryStartup() {
+    void startupCheck();
+  }
 
   // Daily attendance check-in + completion modal live in <AttendanceGate>,
   // mounted at the app root — it reads this provider's signed-in status.
 
   const value = useMemo<AuthCtx>(
-    () => ({ status, me, applyTokens, bootstrapMe, setMe, revokeSession, hardSignOut }),
+    () => ({ status, me, retryStartup, applyTokens, bootstrapMe, setMe, revokeSession, hardSignOut }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [status, me],
   );

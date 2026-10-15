@@ -12,16 +12,21 @@ import offlineArt from "../assets/brand/sys-offline.svg";
  *   desc    Medium 15 / 21.5, Gray 6, centred, top 417
  *   retry   cp_C_02_secondaryBtn — 335 wide at (20, 483)
  */
-export function OfflineScreen({ onRetry }: { onRetry: () => void }) {
+export function OfflineScreen({ onRetry, cause = "offline" }: { onRetry: () => void; cause?: "offline" | "unreachable" }) {
   const { t } = useTranslation();
+  // The same layout says "no connection" when the browser is offline, and
+  // "couldn't reach the server" when the app's launch check got no answer.
+  const copy = cause === "offline"
+    ? { title: t("offline.title"), line1: t("offline.line1"), line2: t("offline.line2") }
+    : { title: t("offline.unreachableTitle"), line1: t("offline.unreachableLine1"), line2: t("offline.unreachableLine2") };
   return (
     <div className="screen sysoff" role="alert">
       <img className="sysoff__art" src={offlineArt} alt="" aria-hidden="true" />
-      <h1 className="sysoff__title">{t("offline.title")}</h1>
+      <h1 className="sysoff__title">{copy.title}</h1>
       <p className="sysoff__desc">
-        {t("offline.line1")}
+        {copy.line1}
         <br />
-        {t("offline.line2")}
+        {copy.line2}
       </p>
       <button type="button" className="sysoff__retry" onClick={onRetry}>
         {t("offline.retry")}

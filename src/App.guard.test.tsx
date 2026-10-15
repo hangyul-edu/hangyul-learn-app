@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import type { Me } from "./lib/types";
+import { I18nProvider } from "./i18n";
 
 const auth = vi.hoisted(() => ({ status: "signed-in", me: null as Partial<Me> | null }));
 vi.mock("./hooks/auth", () => ({ useAuth: () => auth }));
@@ -52,5 +53,29 @@ describe("RequireAuth — social signup order", () => {
   it("sends an existing account that agreed long ago but has no phone straight to the phone step", () => {
     expect(landOn("/home", { terms_agreement_pending: false, phone_verification_pending: true, nickname: "me" }))
       .toBe("/setup/phone");
+  });
+});
+
+describe("RequireAuth — launch check without an answer", () => {
+  it("shows the connection error with a retry instead of the page or the splash", () => {
+    const retryStartup = vi.fn();
+    Object.assign(auth, { status: "unreachable", me: null, retryStartup });
+    try {
+      render(
+        <I18nProvider language="ko">
+          <MemoryRouter initialEntries={["/home"]}>
+            <Routes>
+              <Route path="/home" element={<RequireAuth><Where /></RequireAuth>} />
+            </Routes>
+          </MemoryRouter>
+        </I18nProvider>,
+      );
+      expect(screen.getByRole("alert")).toHaveTextContent("연결이 원활하지 않아요");
+      expect(screen.queryByTestId("where")).not.toBeInTheDocument();
+      screen.getByRole("button", { name: "다시 시도" }).click();
+      expect(retryStartup).toHaveBeenCalledTimes(1);
+    } finally {
+      auth.status = "signed-in";
+    }
   });
 });

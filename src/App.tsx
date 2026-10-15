@@ -42,7 +42,7 @@ import { NoticeList } from "./screens/NoticeList";
 import { NoticeDetail } from "./screens/NoticeDetail";
 import { AttendanceGate } from "./components/AttendanceGate";
 import { useDeviceTimezoneSync } from "./hooks/useDeviceTimezoneSync";
-import { OfflineGate } from "./components/OfflineScreen";
+import { OfflineGate, OfflineScreen } from "./components/OfflineScreen";
 import { CourseRedirect, SeriesPage } from "./screens/Courses";
 import { LectureHome } from "./screens/LectureHome";
 import { Lecture } from "./screens/Lecture";
@@ -70,9 +70,10 @@ import { SOCIAL_SIGNUP_PHONE_PATH } from "./hooks/socialSignup";
 
 
 export function RequireAuth({ children }: { children: ReactNode }) {
-  const { status, me } = useAuth();
+  const { status, me, retryStartup } = useAuth();
   const loc = useLocation();
   if (status === "booting") return <Splash />;
+  if (status === "unreachable") return <OfflineScreen cause="unreachable" onRetry={retryStartup} />;
   if (status === "signed-out") return <Navigate to="/welcome" replace state={{ from: loc.pathname }} />;
   // An older social account without a phone number verifies one before
   // anything else, straight after sign-in (the server reports the step until
@@ -94,8 +95,10 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 }
 
 function RequireGuest({ children }: { children: ReactNode }) {
-  const { status } = useAuth();
+  const { status, retryStartup } = useAuth();
   if (status === "booting") return <Splash />;
+  // A stored session that could not be checked: not a guest, not yet signed in.
+  if (status === "unreachable") return <OfflineScreen cause="unreachable" onRetry={retryStartup} />;
   if (status === "signed-in") return <Navigate to="/home" replace />;
   // First launch: AME-001 asks which language to start in before anything else.
   // Once a choice is stored (or the user is signed in and takes it from their

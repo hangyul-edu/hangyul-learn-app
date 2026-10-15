@@ -751,6 +751,9 @@ export const en: Catalog = {
     line1: "You're not connected to the internet",
     line2: "Turn on Wi-Fi or mobile data",
     retry: "Try again",
+    unreachableTitle: "Couldn't connect",
+    unreachableLine1: "We couldn't reach the server",
+    unreachableLine2: "Please try again in a moment",
   },
 
   /** Onboarding questionnaire. app-authored. */

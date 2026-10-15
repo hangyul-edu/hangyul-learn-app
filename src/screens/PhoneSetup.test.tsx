@@ -156,7 +156,7 @@ describe("ChangePhone in sign-up mode (no account yet)", () => {
     renderStep("/signup/phone");
     await verifyAndSave("01012345678");
     await waitFor(() => expect(screen.getByTestId("loc")).toHaveTextContent("/home"));
-    expect(toast.success).toHaveBeenCalledWith(ko.phoneSetup.linked);
+    expect(toast.success).not.toHaveBeenCalled(); // no "you already have an account" notice
   });
 
   it("an expired sign-up starts over from the welcome screen", async () => {

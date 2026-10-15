@@ -566,8 +566,6 @@ export const ko = {
     intro: "한귤을 시작하려면 휴대폰 번호를 인증해 주세요.",
     submit: "다음",
     saved: "휴대폰 번호를 등록했어요",
-    /** The number was an existing member's: the social sign-in joined that account. */
-    linked: "이미 가입된 계정이 있어 그 계정으로 로그인했어요",
     blockedA11y: "인증을 완료하면 다음으로 넘어갈 수 있어요",
     quitA11y: "가입 그만두기",
   },

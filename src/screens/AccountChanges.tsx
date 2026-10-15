@@ -276,8 +276,6 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" | "
       const tokens = await authApi.completeSocialSignup(ticket.signupToken, e164, token!, country);
       clearPendingSignup();
       qc.clear();
-      // The number is an existing member's: the sign-in joined their account.
-      if (!tokens.is_new_user) toast.success(t("phoneSetup.linked"));
       await completeLogin(tokens, true);
     } catch (e) {
       toast.error(errorMessage(e));

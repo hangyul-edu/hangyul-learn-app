@@ -10,6 +10,7 @@ import { gameApi } from "../api/endpoints";
 import type { LeagueHistoryItem, LeagueHistorySeason } from "../lib/types";
 import { BackChevronIcon } from "../components/brand/Glyphs";
 import { useLoadMoreSentinel } from "../hooks/useLoadMoreSentinel";
+import { uniqueBy } from "../lib/collections";
 
 type Phase = "loading" | "ready" | "error";
 type More = "idle" | "loading" | "done" | "error";
@@ -77,17 +78,6 @@ function rowAria(
       : "";
   const pts = t("leagueHistory.pointsA11y", { points: item.points });
   return `${tier}, ${range}${status}${rank}${pts}`;
-}
-
-function dedupById(items: LeagueHistoryItem[]): LeagueHistoryItem[] {
-  const seen = new Set<string>();
-  const out: LeagueHistoryItem[] = [];
-  for (const item of items) {
-    if (seen.has(item.league_week_id)) continue;
-    seen.add(item.league_week_id);
-    out.push(item);
-  }
-  return out;
 }
 
 /* -------------------------------- art ----------------------------------- */
@@ -205,7 +195,7 @@ export function LeagueHistory() {
     try {
       const page = await gameApi.leagueHistory({ seasonId: selectedId, cursor });
       if (mySeq !== seqRef.current) return;
-      setItems((prev) => dedupById([...prev, ...page.items]));
+      setItems((prev) => uniqueBy([...prev, ...page.items], (item) => item.league_week_id));
       setCursor(page.next_cursor);
       setMore(page.next_cursor ? "idle" : "done");
     } catch {

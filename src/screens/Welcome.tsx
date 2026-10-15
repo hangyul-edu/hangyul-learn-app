@@ -10,6 +10,7 @@ import {
   LineIcon,
 } from "../components/brand/AuthBrand";
 import { useSocialLogin } from "../hooks/socialLogin";
+import { LINE_EMAIL_CONSENT_PATH } from "./LineEmailConsent";
 import { isSocialLaunched } from "../lib/launch";
 import type { SocialProvider } from "../lib/types";
 
@@ -29,6 +30,7 @@ const CIRCLE_PROVIDERS: {
  * Single-screen authentication landing — the first screen an unauthenticated
  * user sees. Every action routes to its existing flow:
  *   로그인 → /login · 회원가입 → /signup · social → useSocialLogin
+ *   (LINE first explains its email use on /login/line)
  *   이메일 찾기 / 비밀번호 찾기 → /forgot (email / password mode)
  * All content fits one mobile screen; flexible spacers absorb the slack so
  * short devices don't clip or scroll.
@@ -88,7 +90,7 @@ export function Welcome() {
             <button
               key={provider}
               className={`auth__circle ${className}`}
-              onClick={() => social.start(provider)}
+              onClick={() => (provider === "line" ? nav(LINE_EMAIL_CONSENT_PATH) : social.start(provider))}
               aria-label={t(labelKey)}
             >
               <Icon />

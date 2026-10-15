@@ -548,6 +548,17 @@ export const ko = {
     viewDetailA11y: "{name} 자세히 보기",
   },
 
+  /** LINE's email notice before LINE sign-in (/login/line; app-authored).
+      Not the sign-up terms: only how the LINE email is used. */
+  lineConsent: {
+    title: "LINE 로그인 안내",
+    description:
+      "동의하시면 LINE 계정의 이메일 주소를 제공받아 회원가입, 기존 계정 연결 및 계정 관련 알림 발송에 사용합니다.",
+    privacyPolicy: "개인정보 처리방침",
+    agree: "동의하고 LINE으로 계속하기",
+    closeA11y: "닫기",
+  },
+
   /** Social signup's terms step (app-authored). The agreement rows reuse the
       `signup.agree*` wording. */
   socialTerms: {

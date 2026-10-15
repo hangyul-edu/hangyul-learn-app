@@ -72,6 +72,7 @@ import { ResetPassword } from "./screens/ResetPassword";
 import { LanguagePicker } from "./screens/LanguagePicker";
 import { loadStoredLanguage } from "./lib/language";
 import { SocialSignupTerms } from "./screens/SocialSignupTerms";
+import { LineEmailConsent, LINE_EMAIL_CONSENT_PATH } from "./screens/LineEmailConsent";
 import { SOCIAL_PHONE_PATH, SOCIAL_TERMS_PATH, nextSetupPath } from "./hooks/loginFlow";
 import { SOCIAL_SIGNUP_PHONE_PATH } from "./hooks/socialSignup";
 
@@ -129,6 +130,7 @@ const router = createBrowserRouter(
         <Route path="/welcome" element={<RequireGuest><Welcome /></RequireGuest>} />
         <Route path="/login" element={<RequireGuest><Login /></RequireGuest>} />
         <Route path="/signup" element={<RequireGuest><Signup /></RequireGuest>} />
+        <Route path={LINE_EMAIL_CONSENT_PATH} element={<RequireGuest><LineEmailConsent /></RequireGuest>} />
         <Route path="/forgot" element={<RequireGuest><Forgot /></RequireGuest>} />
         <Route path="/reset-password" element={<RequireGuest><ResetPassword /></RequireGuest>} />
         {/* Social-login callback landing — swaps the one-time code for tokens.

@@ -532,6 +532,15 @@ export const en: Catalog = {
     viewDetailA11y: "View {name} in detail",
   },
 
+  lineConsent: {
+    title: "Email use for LINE sign-in",
+    description:
+      "With your consent, we receive your LINE account’s email address to create or link your Hangyul account and send account-related notifications.",
+    privacyPolicy: "Privacy Policy",
+    agree: "Agree and continue with LINE",
+    closeA11y: "Close",
+  },
+
   socialTerms: {
     title: "Please agree to the terms\nto use Hangyul",
     next: "Next",

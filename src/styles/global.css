@@ -7050,6 +7050,51 @@ textarea.input {
   cursor: default;
 }
 
+/* ================= LINE email notice (/login/line) ===================== */
+/* App-authored, on the sign-up terms screen's frame (.sterms): the LINE mark,
+   a centred title, the explanation card with the Privacy Policy link, and the
+   consent button pinned at the bottom. */
+.lcons__badge {
+  width: 64px;
+  height: 64px;
+  margin: 24px auto 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #06c755;
+  color: #ffffff;
+}
+.lcons__title {
+  margin: 20px 0 24px;
+}
+.lcons__card {
+  padding: 20px;
+  border-radius: 16px;
+  background: var(--gray-1);
+}
+.lcons__desc {
+  margin: 0;
+  color: var(--ink-2);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 24px;
+  word-break: keep-all;
+}
+.lcons__policy {
+  margin-top: 14px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
 /* ================= Social signup terms (/signup/terms) ================== */
 /* App-authored (no Figma frame): a centred two-line title, an "agree to all"
    card and a card of agreement rows, with Next pinned at the bottom. */

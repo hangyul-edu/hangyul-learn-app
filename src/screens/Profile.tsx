@@ -19,13 +19,14 @@ import icBell from "../assets/brand/ic-24-bell-dark.svg";
 import statTotalDays from "../assets/brand/stat-total-days.svg";
 import statBestStreak from "../assets/brand/stat-best-streak.svg";
 import statCurrentStreak from "../assets/brand/stat-current-streak.svg";
-import { subApi, dashboardApi, authApi } from "../api/endpoints";
-import { http, errorMessage, ApiError, NetworkError } from "../lib/http";
+import { dashboardApi, authApi } from "../api/endpoints";
+import { errorMessage, ApiError, NetworkError } from "../lib/http";
 import { useAuth } from "../hooks/auth";
 import type { Me, SocialProvider } from "../lib/types";
 import { useTranslation, type TranslationKey } from "../i18n";
 import { formatLongDate } from "../lib/format";
 import { hasLiveSubscription, isTrialStatus } from "../lib/subscription";
+import { useMySubscription, useUnreadNotifications } from "../api/queries";
 
 /**
  * More menu — Figma MOR-005, English frame 893:33108.
@@ -286,13 +287,9 @@ export function Profile() {
     nav("/welcome", { replace: true });
   }
 
-  const sub = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
+  const sub = useMySubscription();
   const streak = useQuery({ queryKey: ["streak"], queryFn: dashboardApi.streak });
-  const unread = useQuery({
-    queryKey: ["notif-unread"],
-    queryFn: () => http.get<{ has_unread: boolean }>("/notifications/unread"),
-    staleTime: 30_000,
-  });
+  const unread = useUnreadNotifications();
 
   const nickname = me?.nickname ?? me?.name ?? t("home.defaultNickname");
   // MOR-001_더보기메인 (1:5582) shows 총 학습일 / "Total Study Days" here.

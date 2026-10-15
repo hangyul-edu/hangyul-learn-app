@@ -1,9 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { Async, SkeletonList } from "../components/ui/states";
-import { dashboardApi } from "../api/endpoints";
-import { http } from "../lib/http";
 import { useAuth } from "../hooks/auth";
 import {
   BellIcon,
@@ -21,6 +18,7 @@ import {
 } from "../components/AdditionalLearningCountModal";
 import type { DashboardSummary, DashboardTrack, TopikSection } from "../lib/types";
 import { settingsOrigin } from "../lib/settingsNav";
+import { useDashboard, useUnreadNotifications } from "../api/queries";
 
 
 /**
@@ -42,12 +40,8 @@ export function Home() {
   const nav = useNavigate();
   const { me } = useAuth();
   const { t } = useTranslation();
-  const q = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
-  const unread = useQuery({
-    queryKey: ["notif-unread"],
-    queryFn: () => http.get<{ has_unread: boolean }>("/notifications/unread"),
-    staleTime: 30_000,
-  });
+  const q = useDashboard();
+  const unread = useUnreadNotifications();
   // Entitlement for additional learning: the server-authoritative premium flag.
   // `paywall_required` is `!has_premium_access`, which is true for a paid / trial
   // / coupon subscription AND for an admin or tester role (the same gate the

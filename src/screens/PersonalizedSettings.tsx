@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { settingsOrigin, useSettingsBack } from "../lib/settingsNav";
 import { useTranslation, type TranslationKey } from "../i18n";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import trackIconConv from "../assets/brand/track-icon-conv.svg";
 import trackIconTopik from "../assets/brand/track-icon-topik.svg";
 import dragHandleArt from "../assets/brand/ic-drag-handle.svg";
@@ -13,6 +13,7 @@ import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import type { CategoryPref, LearningPreferences } from "../lib/types";
 import { AcctHeader } from "../components/layout/AcctHeader";
+import { useLearningPrefs } from "../api/queries";
 
 type Translate = (key: TranslationKey, vars?: Record<string, string | number>) => string;
 
@@ -84,7 +85,7 @@ export function PersonalizedSettings() {
   const goBack = useSettingsBack("/home");
   const qc = useQueryClient();
   const toast = useToast();
-  const q = useQuery({ queryKey: ["learning-prefs"], queryFn: settingsApi.learning });
+  const q = useLearningPrefs();
 
   const [items, setItems] = useState<CategoryPref[]>([]);
   const [announce, setAnnounce] = useState("");

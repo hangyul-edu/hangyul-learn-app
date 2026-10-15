@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation, type TranslationKey } from "../i18n";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "../components/ui/kit";
 import { Dialog } from "../components/ui/Modal";
 import { ErrorState, SkeletonList } from "../components/ui/states";
@@ -14,14 +14,10 @@ import { localeFor, timeAgo } from "../lib/format";
 import type { Friend, FriendRequest } from "../lib/types";
 import { DetailHeader } from "../components/DetailHeader";
 import { PlusIcon } from "../components/PlusIcon";
+import { SOCIAL_KEYS, useRefreshSocial } from "../api/queries";
+import { withKey, withoutKey } from "../lib/collections";
 
 type Tab = "friends" | "received" | "sent";
-
-const QK = {
-  friends: ["friends"],
-  received: ["friend-requests-received"],
-  sent: ["friend-requests-sent"],
-} as const;
 
 /* ------------------------------ localization ---------------------------- */
 type FmCopy = ReturnType<typeof useFmCopy>;
@@ -145,7 +141,6 @@ function RequestRow({
 /* -------------------------------- screen -------------------------------- */
 export function Social() {
   const { t } = useTranslation();
-  const qc = useQueryClient();
   const toast = useToast();
   const copy = useFmCopy();
 
@@ -163,19 +158,15 @@ export function Social() {
   const [incomingId, setIncomingId] = useState<string | null>(params.get("request"));
 
   // All three lists power the tab counts; they stay small and authoritative.
-  const friends = useQuery({ queryKey: QK.friends, queryFn: friendApi.list });
-  const received = useQuery({ queryKey: QK.received, queryFn: friendApi.received });
-  const sent = useQuery({ queryKey: QK.sent, queryFn: friendApi.sent });
+  const friends = useQuery({ queryKey: SOCIAL_KEYS.friends, queryFn: friendApi.list });
+  const received = useQuery({ queryKey: SOCIAL_KEYS.received, queryFn: friendApi.received });
+  const sent = useQuery({ queryKey: SOCIAL_KEYS.sent, queryFn: friendApi.sent });
 
-  function refreshAll() {
-    [QK.friends, QK.received, QK.sent, ["league-rankings"]].forEach((key) =>
-      qc.invalidateQueries({ queryKey: key }),
-    );
-  }
+  const refreshAll = useRefreshSocial();
 
   async function act(id: string, fn: () => Promise<unknown>, done: string, plain = false) {
     if (busy.has(id)) return; // block duplicate taps
-    setBusy((prev) => new Set(prev).add(id));
+    setBusy((prev) => withKey(prev, id));
     try {
       await fn();
       // `plain` uses the icon-less charcoal snackbar (same as the invite-copy
@@ -188,11 +179,7 @@ export function Social() {
       toast.error(errorMessage(e));
       refreshAll();
     } finally {
-      setBusy((prev) => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
+      setBusy((prev) => withoutKey(prev, id));
     }
   }
 

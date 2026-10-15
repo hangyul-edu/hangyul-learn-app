@@ -9,7 +9,7 @@ import { Async } from "../components/ui/states";
 import { ChatbotBottomSheet } from "../components/ChatbotBottomSheet";
 import { StreamVideo } from "../components/StreamVideo";
 import { CheckpointOverlay } from "../components/lecture/CheckpointOverlay";
-import { dashboardApi, learnApi } from "../api/endpoints";
+import { learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { useMarkStudied } from "../hooks/learningActivity";
 import { useAutoHideControls } from "../hooks/useAutoHideControls";
@@ -22,6 +22,7 @@ import playerBack5 from "../assets/brand/player-back5.svg";
 import playerFwd5 from "../assets/brand/player-fwd5.svg";
 import playerKnob from "../assets/brand/player-knob.svg";
 import { AskMascot } from "../components/lecture/AskMascot";
+import { useDashboard } from "../api/queries";
 
 /** mm:ss, zero-padded — COU-004 prints both ends of the scrubber that way. */
 function fmt(sec: number) {
@@ -203,7 +204,7 @@ export function Lecture() {
   // The video waits for that fresh read (cached data shows the title meanwhile).
   const fresh = q.isFetchedAfterMount && !!q.data;
   // Only to pick the quit confirm's wording: "goal already met" vs "a bit left".
-  const dashboard = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary, enabled: quitOpen });
+  const dashboard = useDashboard({ enabled: quitOpen });
 
   const checkpoints = useMemo(
     () => [...(q.data?.checkpoints ?? [])].sort((a, b) => a.at_second - b.at_second),

@@ -11,9 +11,7 @@ import icStar from "../assets/brand/ic-16-star.svg";
    post-answer sheet uses. */
 import icArrowRight from "../assets/brand/ic-16-arrow-right.svg";
 import { useTranslation } from "../i18n";
-import { useQuery } from "@tanstack/react-query";
 import { Async, SkeletonList } from "../components/ui/states";
-import { dashboardApi } from "../api/endpoints";
 import { ReviewShortcutArt } from "../components/brand/HomeIcons";
 import { DailyLearningSun } from "../components/DailyLearningSun";
 import { TrackDashboard } from "../components/TrackDashboard";
@@ -25,11 +23,12 @@ import {
 } from "../components/AdditionalLearningCountModal";
 import type { DashboardSummary, DashboardTrack, TopikSection } from "../lib/types";
 import { settingsOrigin } from "../lib/settingsNav";
+import { useDashboard } from "../api/queries";
 
 export function Personalized() {
   const { t } = useTranslation();
   const nav = useNavigate();
-  const q = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
+  const q = useDashboard();
   // Entitlement for additional learning: the server-authoritative premium flag.
   // `paywall_required` is `!has_premium_access`, true for a paid / trial / coupon
   // subscription AND for an admin or tester role (the same gate the additional-

@@ -21,6 +21,8 @@ import { DEFAULT_PHONE_COUNTRY, applyPhoneInput, hashPhone, isLikelyPhone, phone
 import { getContactPhoneHashes } from "../../lib/contacts";
 import type { RecommendedUser } from "../../lib/types";
 import { CloseIcon } from "../brand/Glyphs";
+import { useRefreshSocial } from "../../api/queries";
+import { withKey, withoutKey } from "../../lib/collections";
 
 /* ------------------------------ localization ---------------------------- */
 /** Add-friend sheet copy, bound to the active language (`addFriend.*`). */
@@ -90,15 +92,6 @@ const SearchIcon = () => (
   </svg>
 );
 
-/** Invalidate every Friend-Management + Friend-League surface after a mutation. */
-function useSocialRefresh() {
-  const qc = useQueryClient();
-  return () =>
-    [["friends"], ["friend-requests-received"], ["friend-requests-sent"], ["league-rankings"]].forEach(
-      (key) => qc.invalidateQueries({ queryKey: key }),
-    );
-}
-
 function SheetHeader({ title, closeLabel, onClose }: { title: string; closeLabel: string; onClose: () => void }) {
   return (
     <div className="afs__header">
@@ -125,7 +118,7 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
   const copy = useAddCopy();
   const toast = useToast();
   const qc = useQueryClient();
-  const refreshSocial = useSocialRefresh();
+  const refreshSocial = useRefreshSocial();
 
   // Selected country as an ISO code (flag+chevron picker); E.164
   // normalization/hashing reads the country's rules from it.
@@ -160,18 +153,14 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
 
   async function act(userId: string, fn: () => Promise<unknown>, done: string) {
     if (busy.has(userId)) return;
-    setBusy((prev) => new Set(prev).add(userId));
+    setBusy((prev) => withKey(prev, userId));
     try {
       await fn();
       toast.success(done);
     } catch (e) {
       toast.error(errorMessage(e));
     } finally {
-      setBusy((prev) => {
-        const next = new Set(prev);
-        next.delete(userId);
-        return next;
-      });
+      setBusy((prev) => withoutKey(prev, userId));
       refreshSocial();
       refreshDiscovery();
     }
@@ -355,7 +344,7 @@ export function IncomingFriendRequestSheet({
   const copy = useIncomingCopy();
   const { t } = useTranslation();
   const toast = useToast();
-  const refreshSocial = useSocialRefresh();
+  const refreshSocial = useRefreshSocial();
   const [busy, setBusy] = useState(false);
 
   const q = useQuery({

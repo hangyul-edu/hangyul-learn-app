@@ -6,7 +6,7 @@ import { Button } from "../components/ui/kit";
 import { TextField } from "../components/ui/Field";
 import { SkeletonList } from "../components/ui/states";
 import { NaverPayLogo, TossPayLogo } from "../components/brand/PayBrand";
-import { billingApi, payApi, subApi } from "../api/endpoints";
+import { billingApi, payApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
 import { ApiError, errorMessage } from "../lib/http";
@@ -42,6 +42,7 @@ import radioOff from "../assets/brand/pm-radio-off.svg";
 import addPlus from "../assets/brand/pm-add-plus.svg";
 import { DetailHeader } from "../components/DetailHeader";
 import { Spinner } from "../components/ui/Spinner";
+import { useMySubscription } from "../api/queries";
 
 const QK = ["payment-methods"] as const;
 const RECOVERY_QK = ["payment-recovery"] as const;
@@ -217,7 +218,7 @@ export function PaymentMethods() {
   );
 
   /* --- currency binding: a card charged in one currency pays only plans in it --- */
-  const subQ = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
+  const subQ = useMySubscription();
   const sub = subQ.data;
   const liveCurrency = sub && RENEWING.has(sub.status) ? sub.plan_currency?.toUpperCase() ?? null : null;
   // Arriving from the purchase screen: where to go back to once a method is

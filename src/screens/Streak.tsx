@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation, type TranslationKey } from "../i18n";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { dashboardApi, learnApi } from "../api/endpoints";
+import { learnApi } from "../api/endpoints";
 import { DailyLearningSun } from "../components/DailyLearningSun";
 import { LearningSectionSwitcher } from "../components/LearningSectionSwitcher";
 // Two assets rather than one rotated one: Polygon 11/12 both cast their shadow
@@ -10,6 +10,7 @@ import { LearningSectionSwitcher } from "../components/LearningSectionSwitcher";
 // baked shadow round with it.
 import monthArrowPrev from "../assets/brand/ic-month-arrow-prev.svg";
 import monthArrowNext from "../assets/brand/ic-month-arrow-next.svg";
+import { useDashboard } from "../api/queries";
 
 const WEEKDAY_KEYS: TranslationKey[] = [
   "streak.sun",
@@ -65,7 +66,7 @@ export function Streak() {
   // field) as the global sun, so they can never disagree. While it's first
   // loading we treat the state as not-yet-studied, matching the sun's dimmed
   // off state.
-  const summary = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
+  const summary = useDashboard();
   const studiedToday = !!summary.data?.studied_today;
 
   // Completion markers come straight from the server: the set of dates that

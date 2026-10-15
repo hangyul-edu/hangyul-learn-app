@@ -8,7 +8,7 @@
  */
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "../components/ui/kit";
 import { RankAvatar } from "../components/brand/RankBits";
 import { friendApi } from "../api/endpoints";
@@ -16,12 +16,13 @@ import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import { useTranslation } from "../i18n";
 import { BackChevronIcon } from "../components/brand/Glyphs";
+import { useRefreshSocial } from "../api/queries";
 
 export function InviteLanding() {
   const { token } = useParams<{ token: string }>();
   const nav = useNavigate();
   const toast = useToast();
-  const qc = useQueryClient();
+  const refreshSocial = useRefreshSocial();
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -42,9 +43,7 @@ export function InviteLanding() {
       setDone(true);
       // The Social screen's lists and the friend league (same keys it refreshes
       // after its own actions) now include this request / friendship.
-      for (const key of [["friends"], ["friend-requests-received"], ["friend-requests-sent"], ["league-rankings"]]) {
-        qc.invalidateQueries({ queryKey: key });
-      }
+      refreshSocial();
     } catch (e) {
       toast.error(errorMessage(e));
     } finally {

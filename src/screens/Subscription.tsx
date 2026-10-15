@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation, type TranslationKey } from "../i18n";
-import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { ConfirmDialog } from "../components/ui/Modal";
 import { SkeletonList } from "../components/ui/states";
 import { VoucherModal } from "../components/VoucherModal";
@@ -17,6 +17,7 @@ import { CancelReasonModal } from "../components/CancelReasonModal";
 import { DetailHeader } from "../components/DetailHeader";
 import { Spinner } from "../components/ui/Spinner";
 import { useLoadMoreSentinel } from "../hooks/useLoadMoreSentinel";
+import { useMySubscription } from "../api/queries";
 
 /* ---------------- date helpers (the device's local date, YY/MM/DD) ---------------- */
 function fmtShort(iso?: string | null): string {
@@ -76,7 +77,7 @@ export function Subscription() {
   const [reasonOpen, setReasonOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const mine = useQuery({ queryKey: ["sub-me"], queryFn: subApi.mine });
+  const mine = useMySubscription();
   const m = mine.data;
   // A cancelled subscription still shows (with 해지 취소) until it lapses.
   const hasSub = hasLiveSubscription(m) || m?.status === "cancelled";

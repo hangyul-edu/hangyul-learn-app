@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useBlocker, useParams } from "react-router-dom";
 import { useSettingsBack } from "../lib/settingsNav";
 import { useTranslation, type TranslationKey } from "../i18n";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { SkeletonList } from "../components/ui/states";
 import { SettingsSavedModal } from "../components/SettingsSavedModal";
 import { UnsavedChangesModal } from "../components/UnsavedChangesModal";
@@ -12,6 +12,7 @@ import { errorMessage } from "../lib/http";
 import { CONVERSATION_LEVEL_MAX, TOPIK_GRADE_MAX } from "../lib/levels";
 import { Spinner } from "../components/ui/Spinner";
 import { AcctHeader } from "../components/layout/AcctHeader";
+import { useLearningPrefs } from "../api/queries";
 
 const CFG = {
   conversation: {
@@ -56,7 +57,7 @@ export function TrackSettings() {
   const qc = useQueryClient();
   const toast = useToast();
 
-  const q = useQuery({ queryKey: ["learning-prefs"], queryFn: settingsApi.learning });
+  const q = useLearningPrefs();
   const pref = q.data?.categories.find((c) => c.category === category);
   const maxLevel = pref?.max_level ?? cfg.maxLevel;
   // null for premium/trial/tester/admin — they choose any goal, no notice.

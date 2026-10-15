@@ -1,8 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
 import { useTranslation, type TranslationKey } from "../i18n";
 
-import { dashboardApi } from "../api/endpoints";
 import { SunIcon } from "./brand/HomeIcons";
+import { useDashboard } from "../api/queries";
 
 /**
  * A11y copy for the sun. Kept in one place so the label stays consistent across
@@ -25,7 +24,7 @@ export const SUN_COPY_KEYS = {
  */
 export function DailyLearningSun({ size }: { size?: number }) {
   const { t } = useTranslation();
-  const { data, isPending } = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
+  const { data, isPending } = useDashboard();
   const studied = data?.studied_today ?? false;
   return (
     <span

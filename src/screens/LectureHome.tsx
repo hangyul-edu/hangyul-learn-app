@@ -6,9 +6,10 @@ import { DailyLearningSun } from "../components/DailyLearningSun";
 import { SkeletonList } from "../components/ui/states";
 import { ChatbotBottomSheet } from "../components/ChatbotBottomSheet";
 import chatbotFab from "../assets/brand/chatbot-fab.svg";
-import { bannerApi, dashboardApi, learnApi } from "../api/endpoints";
+import { bannerApi, learnApi } from "../api/endpoints";
 import type { Banner, Course, SeriesSummary } from "../lib/types";
 import { croppedImageStyle } from "../lib/imageCrop";
+import { useDashboard } from "../api/queries";
 
 // The Classes tab (COU-001) shows the FULL catalog — every course, each with
 // its series, conversation and TOPIK together, with an optional track filter
@@ -266,7 +267,7 @@ export function LectureHome() {
   const nav = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
   const [filter, setFilter] = useState<TrackFilter>("all");
-  const dash = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
+  const dash = useDashboard();
   // Premium access is the dashboard's server-computed `paywall_required` — the
   // same live check the lecture player enforces (paid, trial, coupon, and the
   // tester/admin roles).

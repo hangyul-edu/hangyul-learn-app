@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { dashboardApi, learnApi, studyApi } from "../api/endpoints";
+import { useQueryClient } from "@tanstack/react-query";
+import { learnApi, studyApi } from "../api/endpoints";
 import { errorMessage } from "../lib/http";
 import { isOpenActivity, visibleActivities } from "../lib/studySession";
 import { randomUuid } from "../lib/uuid";
 import type { StudySession } from "../lib/types";
 import { useToast } from "./toast";
+import { useDashboard } from "../api/queries";
 
 /**
  * The pieces the two daily study screens (conversation, TOPIK) share: today's
@@ -24,7 +25,7 @@ export type DailyTrack = "conversation" | "topik";
 
 /** Today's goal on one track, from the dashboard (server-derived). */
 export function useTrackGoal(category: DailyTrack) {
-  const q = useQuery({ queryKey: ["dashboard"], queryFn: dashboardApi.summary });
+  const q = useDashboard();
   const track = q.data?.tracks.find((x) => x.category === category);
   return {
     track,

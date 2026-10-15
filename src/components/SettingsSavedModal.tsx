@@ -1,5 +1,6 @@
-import { useEffect, useId, useRef } from "react";
+import { useId, useRef } from "react";
 import doneBadge from "../assets/brand/ic-modal-done.svg";
+import { useModalFocus } from "../hooks/useModalFocus";
 
 /**
  * Post-save success modal for settings screens — Figma `cp_G_01_modals`
@@ -30,43 +31,19 @@ export function SettingsSavedModal({
   const id = useId();
   const titleId = `${id}-title`;
   const descId = `${id}-desc`;
+  const dialogRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const restoreFocusRef = useRef<HTMLElement | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    restoreFocusRef.current = document.activeElement as HTMLElement | null;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    // Move accessibility focus to the title so screen readers announce success.
-    titleRef.current?.focus();
-
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onConfirm();
-        return;
-      }
-      // Only one interactive control — keep focus trapped on it.
-      if (e.key === "Tab") {
-        e.preventDefault();
-        btnRef.current?.focus();
-      }
-    }
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-      restoreFocusRef.current?.focus?.();
-    };
-  }, [open, onConfirm]);
+  // Focus goes to the title so screen readers announce success; Tab then
+  // stays on the one button.
+  useModalFocus({ open, containerRef: dialogRef, onEscape: onConfirm, initialFocus: titleRef });
 
   if (!open) return null;
 
   return (
     <div className="overlay overlay--center lsm__overlay">
       <div
+        ref={dialogRef}
         className="wdd lsm"
         role="dialog"
         aria-modal="true"
@@ -82,7 +59,7 @@ export function SettingsSavedModal({
         </h2>
         <p className="wdd__copy" id={descId}>{description}</p>
 
-        <button ref={btnRef} className="wdd__btn" onClick={onConfirm}>
+        <button className="wdd__btn" onClick={onConfirm}>
           {confirmLabel}
         </button>
       </div>

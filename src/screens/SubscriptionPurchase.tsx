@@ -16,6 +16,7 @@ import { ApiError } from "../lib/http";
 import { currencyLabel, currencyMismatchText, paymentErrorMessage } from "../lib/paymentErrors";
 import type { Plan } from "../lib/types";
 import { Spinner } from "../components/ui/Spinner";
+import { TwoButtonAlert } from "../components/ui/TwoButtonAlert";
 
 type ScreenStatus = "loading" | "ready" | "submitting" | "missing_plans" | "failed";
 
@@ -381,43 +382,44 @@ export function SubscriptionPurchase() {
         )}
       </div>
 
-      {payModal && (
-        <div className="overlay overlay--center" onClick={() => setPayModal(false)}>
-          <div className="lgo" role="alertdialog" aria-modal="true" aria-labelledby="pm-title" onClick={(e) => e.stopPropagation()}>
-            <h2 className="lgo__title" id="pm-title">{t("purchase.needMethodTitle")}</h2>
-            <p className="lgo__copy" style={{ textAlign: "center" }}>
-              {t("purchase.needMethodLine1")}
-              <br />
-              {t("purchase.needMethodLine2")}
-            </p>
-            <div className="lgo__actions">
-              <button className="lgo__btn lgo__btn--cancel" onClick={() => setPayModal(false)}>{t("common.cancel")}</button>
-              <button className="lgo__btn lgo__btn--go" onClick={goRegisterPayment}>{t("purchase.registerMethod")}</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <TwoButtonAlert
+        open={payModal}
+        backdropCancels
+        centered
+        title={t("purchase.needMethodTitle")}
+        body={
+          <>
+            {t("purchase.needMethodLine1")}
+            <br />
+            {t("purchase.needMethodLine2")}
+          </>
+        }
+        cancelLabel={t("common.cancel")}
+        confirmLabel={t("purchase.registerMethod")}
+        onCancel={() => setPayModal(false)}
+        onConfirm={goRegisterPayment}
+      />
 
-      {currencyBlock && (
-        <div className="overlay overlay--center" onClick={() => setCurrencyBlock(null)}>
-          <div className="lgo" role="alertdialog" aria-modal="true" aria-labelledby="pm-cur-title" onClick={(e) => e.stopPropagation()}>
-            <h2 className="lgo__title" id="pm-cur-title">{t("purchase.currencyTitle")}</h2>
-            <p className="lgo__copy" style={{ textAlign: "center" }}>
-              {currencyBlock.hasMatching
-                ? t("purchase.currencySwitchDefault", { currency: currencyLabel(currencyBlock.plan.currency, t) })
-                : currencyMismatchText(currencyBlock.card, currencyBlock.plan.currency, t)}
-            </p>
-            <div className="lgo__actions">
-              <button className="lgo__btn lgo__btn--cancel" onClick={() => setCurrencyBlock(null)}>{t("common.cancel")}</button>
-              <button className="lgo__btn lgo__btn--go" onClick={goFixCurrency}>
-                {!currencyBlock.hasMatching && currencyBlock.plan.currency?.toUpperCase() !== "KRW"
-                  ? t("purchase.currencyAddIntl")
-                  : t("purchase.currencyManage")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <TwoButtonAlert
+        open={currencyBlock !== null}
+        backdropCancels
+        centered
+        title={t("purchase.currencyTitle")}
+        body={
+          currencyBlock &&
+          (currencyBlock.hasMatching
+            ? t("purchase.currencySwitchDefault", { currency: currencyLabel(currencyBlock.plan.currency, t) })
+            : currencyMismatchText(currencyBlock.card, currencyBlock.plan.currency, t))
+        }
+        cancelLabel={t("common.cancel")}
+        confirmLabel={
+          currencyBlock && !currencyBlock.hasMatching && currencyBlock.plan.currency?.toUpperCase() !== "KRW"
+            ? t("purchase.currencyAddIntl")
+            : t("purchase.currencyManage")
+        }
+        onCancel={() => setCurrencyBlock(null)}
+        onConfirm={goFixCurrency}
+      />
     </div>
   );
 }

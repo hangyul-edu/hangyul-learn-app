@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { useAttendanceCopy } from "../lib/attendanceCopy";
 import attendanceRing from "../assets/brand/attendance-ring.png";
 import attendanceFruit from "../assets/brand/attendance-tangerine.svg";
+import { useModalFocus } from "../hooks/useModalFocus";
 
 /**
  * Daily-attendance completion modal. Shown ONLY after the server confirms a
@@ -24,42 +25,8 @@ export function AttendanceModal({
   const copy = useAttendanceCopy();
   const dialogRef = useRef<HTMLDivElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
-  const restoreFocusRef = useRef<HTMLElement | null>(null);
 
-  useEffect(() => {
-    restoreFocusRef.current = document.activeElement as HTMLElement | null;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden"; // block background scrolling
-    confirmRef.current?.focus();
-
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onClose();
-        return;
-      }
-      if (e.key !== "Tab") return;
-      const items = Array.from(
-        dialogRef.current?.querySelectorAll<HTMLElement>("button:not([disabled])") ?? [],
-      );
-      if (items.length === 0) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    }
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-      restoreFocusRef.current?.focus?.();
-    };
-  }, [onClose]);
+  useModalFocus({ open: true, containerRef: dialogRef, onEscape: onClose, initialFocus: confirmRef });
 
   return (
     // Non-dismissable backdrop: no onClick handler on the overlay.

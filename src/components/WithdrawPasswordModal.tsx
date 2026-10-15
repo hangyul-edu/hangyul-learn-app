@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useModalFocus } from "../hooks/useModalFocus";
 import { useTranslation } from "../i18n";
 import { Spinner } from "./ui/Spinner";
 
@@ -34,7 +35,6 @@ export function WithdrawPasswordModal({
   const [dirty, setDirty] = useState(false); // typed since the last submit → hide server error
   const dialogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const restoreRef = useRef<HTMLElement | null>(null);
 
   // Reset secure state whenever the modal (re)opens; clear on close.
   useEffect(() => {
@@ -43,48 +43,15 @@ export function WithdrawPasswordModal({
     setDirty(false);
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-    restoreRef.current = document.activeElement as HTMLElement | null;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    // Focus the field once the dialog is presented.
-    const id = window.setTimeout(() => inputRef.current?.focus(), 50);
-
-    const focusables = () =>
-      Array.from(
-        dialogRef.current?.querySelectorAll<HTMLElement>("input, button:not([disabled])") ?? [],
-      );
-
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        if (!loading) {
-          e.preventDefault();
-          onCancel();
-        }
-        return;
-      }
-      if (e.key !== "Tab") return;
-      const items = focusables();
-      if (items.length === 0) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    }
-    document.addEventListener("keydown", onKey);
-    return () => {
-      window.clearTimeout(id);
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-      restoreRef.current?.focus?.();
-    };
-  }, [open, loading, onCancel]);
+  // The field takes focus once the dialog is presented.
+  useModalFocus({
+    open,
+    containerRef: dialogRef,
+    onEscape: loading ? undefined : onCancel,
+    initialFocus: inputRef,
+    focusDelayMs: 50,
+    focusables: "input, button:not([disabled])",
+  });
 
   if (!open) return null;
 

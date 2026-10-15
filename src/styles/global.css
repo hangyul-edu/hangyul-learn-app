@@ -9489,6 +9489,9 @@ input[type="tel"] {
   font-size: 15px;
   line-height: 22.3px;
 }
+.lgo__copy--center {
+  text-align: center;
+}
 .lgo__actions {
   display: flex;
   gap: 8px;

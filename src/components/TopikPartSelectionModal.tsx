@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useModalFocus } from "../hooks/useModalFocus";
 import { useTranslation, type TranslationKey } from "../i18n";
 
 import type { TopikSection } from "../lib/types";
@@ -48,45 +49,11 @@ export function TopikPartSelectionModal({
   const options = OPTIONS.filter((o) => allowed.includes(o.value));
   const [selected, setSelected] = useState<TopikSection>("listening");
   const dialogRef = useRef<HTMLDivElement>(null);
-  const restoreRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (!open) return;
-    setSelected("listening"); // reset each open
-    restoreRef.current = document.activeElement as HTMLElement | null;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden"; // no background scroll
-
-    const focusables = () =>
-      Array.from(dialogRef.current?.querySelectorAll<HTMLElement>("button:not([disabled])") ?? []);
-    focusables()[0]?.focus();
-
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onClose();
-        return;
-      }
-      if (e.key !== "Tab") return;
-      const items = focusables();
-      if (items.length === 0) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    }
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-      restoreRef.current?.focus?.();
-    };
-  }, [open, onClose]);
+    if (open) setSelected("listening"); // reset each open
+  }, [open]);
+  useModalFocus({ open, containerRef: dialogRef, onEscape: onClose });
 
   if (!open) return null;
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useModalFocus } from "../hooks/useModalFocus";
 import { useTranslation } from "../i18n";
 import closeIcon from "../assets/brand/ic-modal-close.svg";
 import { Spinner } from "./ui/Spinner";
@@ -37,7 +38,6 @@ export function VoucherModal({
   const [dirty, setDirty] = useState(false); // typed since last submit → hide server error
   const dialogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const restoreRef = useRef<HTMLElement | null>(null);
 
   // Reset only transient validation UI on open; the code itself is parent-owned.
   useEffect(() => {
@@ -45,45 +45,14 @@ export function VoucherModal({
     setDirty(false);
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-    restoreRef.current = document.activeElement as HTMLElement | null;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const id = window.setTimeout(() => inputRef.current?.focus(), 50);
-
-    const focusables = () =>
-      Array.from(dialogRef.current?.querySelectorAll<HTMLElement>("input, button:not([disabled])") ?? []);
-
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        if (!loading) {
-          e.preventDefault();
-          onClose();
-        }
-        return;
-      }
-      if (e.key !== "Tab") return;
-      const items = focusables();
-      if (items.length === 0) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    }
-    document.addEventListener("keydown", onKey);
-    return () => {
-      window.clearTimeout(id);
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-      restoreRef.current?.focus?.();
-    };
-  }, [open, loading, onClose]);
+  useModalFocus({
+    open,
+    containerRef: dialogRef,
+    onEscape: loading ? undefined : onClose,
+    initialFocus: inputRef,
+    focusDelayMs: 50,
+    focusables: "input, button:not([disabled])",
+  });
 
   if (!open) return null;
 

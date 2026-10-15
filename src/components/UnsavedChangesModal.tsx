@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
 import { useTranslation } from "../i18n";
+import { TwoButtonAlert } from "./ui/TwoButtonAlert";
 
 /**
  * Unsaved-changes confirmation modal. The left (gray) button keeps the user on
@@ -29,57 +29,16 @@ export function UnsavedChangesModal({
   leaveLabel?: string;
 }) {
   const { t } = useTranslation();
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const restoreRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    restoreRef.current = document.activeElement as HTMLElement | null;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const focusables = () =>
-      Array.from(dialogRef.current?.querySelectorAll<HTMLElement>("button:not([disabled])") ?? []);
-    focusables()[0]?.focus(); // "keep editing" (safe default)
-
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onContinue();
-        return;
-      }
-      if (e.key !== "Tab") return;
-      const items = focusables();
-      if (items.length === 0) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    }
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-      restoreRef.current?.focus?.();
-    };
-  }, [open, onContinue]);
-
-  if (!open) return null;
-
   return (
-    <div className="overlay overlay--center wd__overlay">
-      <div ref={dialogRef} className="lgo" role="alertdialog" aria-modal="true" aria-labelledby="unsaved-title" aria-describedby="unsaved-desc">
-        <h2 className="lgo__title" id="unsaved-title">{title ?? t("misc.unsavedTitle")}</h2>
-        <p className="lgo__copy" id="unsaved-desc">{subtitle ?? t("misc.unsavedBody")}</p>
-        <div className="lgo__actions">
-          <button className="lgo__btn lgo__btn--cancel" onClick={onContinue}>{cancelLabel ?? t("misc.unsavedContinue")}</button>
-          <button className="lgo__btn lgo__btn--go" onClick={onLeave}>{leaveLabel ?? t("misc.unsavedLeave")}</button>
-        </div>
-      </div>
-    </div>
+    <TwoButtonAlert
+      open={open}
+      raised
+      title={title ?? t("misc.unsavedTitle")}
+      body={subtitle ?? t("misc.unsavedBody")}
+      cancelLabel={cancelLabel ?? t("misc.unsavedContinue")}
+      confirmLabel={leaveLabel ?? t("misc.unsavedLeave")}
+      onCancel={onContinue}
+      onConfirm={onLeave}
+    />
   );
 }

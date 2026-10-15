@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useModalFocus } from "../hooks/useModalFocus";
 import { useTranslation, type TranslationKey } from "../i18n";
 import type { CancellationReason } from "../lib/types";
 import radioOn from "../assets/brand/radio-on.svg";
@@ -50,22 +51,7 @@ export function CancelReasonModal({
     setDetail("");
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape" && !loading) {
-        e.preventDefault();
-        onSkip();
-      }
-    }
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [open, loading, onSkip]);
+  useModalFocus({ open, containerRef: dialogRef, onEscape: loading ? undefined : onSkip, initialFocus: "none", trap: false });
 
   if (!open) return null;
 

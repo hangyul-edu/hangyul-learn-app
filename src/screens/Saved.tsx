@@ -1,115 +1,41 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { useTranslation, type TranslationKey, type Translate } from "../i18n";
+import { useTranslation } from "../i18n";
 import { SkeletonList } from "../components/ui/states";
 import { sentenceApi, quizApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
-import type { DashboardSummary, Quiz, SavedSentenceItem } from "../lib/types";
-import { rememberSavedTab, readSavedTab, type SavedOrigin, type SavedSource, type SavedTab } from "../lib/savedReturn";
-import icBookmarkFilled from "../assets/brand/ic-24-bookmark-filled.svg";
-import svPlay from "../assets/brand/sv-play.svg";
-import icTrash from "../assets/brand/ic-trash.svg";
+import type { DashboardSummary, Quiz } from "../lib/types";
+import { rememberSavedTab, readSavedTab, type SavedOrigin } from "../lib/savedReturn";
 import chipRepeat from "../assets/brand/chip-ic-repeat.svg";
 import chipStar from "../assets/brand/chip-ic-star.svg";
-import { playOn, unlockedAudio } from "../lib/unlockedAudio";
 import { Spinner } from "../components/ui/Spinner";
-import { useLoadMoreSentinel } from "../hooks/useLoadMoreSentinel";
-
-/* ------------------------------- config -------------------------------- */
-// Shared with the review sessions so the tab a session must return to cannot
-// drift from the tab this screen renders.
-type Mode = SavedTab;
-type Source = SavedSource;
-type Sort = "latest" | "most_wrong" | "least_reviewed";
-type Skill = "all" | "reading" | "listening" | "writing";
-type MoreState = "idle" | "loading" | "error" | "done";
-type FeedStatus = "loading" | "ready" | "error";
-
-/* -------------------------- return-state cache -------------------------- */
-// The screen unmounts when the user opens a saved question for review, so its
-// loaded pages / scroll position would otherwise be lost. We snapshot the full
-// feed into a module-level cache when navigating into a quiz, tagged with the
-// /saved history entry's `loc.key` and the owning user. On the way back
-// (`nav(-1)` returns to that same history entry → same key), the snapshot is
-// restored verbatim; a fresh open from Home pushes a NEW history entry with a
-// different key, so it starts clean. The user tag guards against account
-// switches reusing a stale snapshot.
-type SavedSnapshot = {
-  userId: string | null;
-  locKey: string;
-  mode: Mode;
-  source: Source;
-  sort: Sort;
-  skill: Skill;
-  query: string;
-  dq: string;
-  items: (SavedSentenceItem | Quiz)[];
-  cursor: string | null;
-  more: MoreState;
-  status: FeedStatus;
-  scrollTop: number;
-};
-let savedSnapshot: SavedSnapshot | null = null;
-
-const SORT_LABEL_KEYS: Record<Sort, TranslationKey> = {
-  latest: "saved.sortRecent",
-  most_wrong: "saved.sortMostWrong",
-  least_reviewed: "saved.sortLeastRecent",
-};
-const SENT_SORT: Record<Sort, string> = { latest: "latest", most_wrong: "most_wrong", least_reviewed: "least_recently_viewed" };
-const QUIZ_SORT: Record<Sort, string> = { latest: "recent", most_wrong: "most_incorrect", least_reviewed: "longest_not_reviewed" };
-const SKILLS: { v: Skill; l: TranslationKey }[] = [
-  { v: "all", l: "saved.filterAll" },
-  { v: "reading", l: "saved.filterReading" },
-  { v: "listening", l: "saved.filterListening" },
-  { v: "writing", l: "saved.filterWriting" },
-];
-const SKILL_LABEL_KEYS: Record<string, TranslationKey> = {
-  reading: "saved.filterReading",
-  listening: "saved.filterListening",
-  writing: "saved.filterWriting",
-};
-
-const modeTitleKey = (m: Mode): TranslationKey =>
-  m === "sentence" ? "saved.savedSentences" : "saved.savedQuestions";
-const isSentence = (it: SavedSentenceItem | Quiz): it is SavedSentenceItem => "sentence_id" in it;
-const itemId = (it: SavedSentenceItem | Quiz) => (isSentence(it) ? it.sentence_id : it.quiz_id);
-/** "[TOPIK 3급 · 읽기]" — the section in the app language. `topik_question_type`
- * is a raw taxonomy code (`reading_03`), never display text. */
-function quizTitle(
-  q: Quiz,
-  t: Translate,
-): string {
-  const skillKey = q.topik_section ? SKILL_LABEL_KEYS[q.topik_section] : undefined;
-  return t("saved.quizTitle", { level: q.level, skill: skillKey ? ` · ${t(skillKey)}` : "" });
-}
-function dedup(list: (SavedSentenceItem | Quiz)[]): (SavedSentenceItem | Quiz)[] {
-  const seen = new Set<string>();
-  const out: (SavedSentenceItem | Quiz)[] = [];
-  for (const it of list) {
-    const id = itemId(it);
-    if (!seen.has(id)) { seen.add(id); out.push(it); }
-  }
-  return out;
-}
+import {
+  SORT_LABEL_KEYS,
+  SKILLS,
+  isSentence,
+  itemId,
+  keepSnapshot,
+  modeTitleKey,
+  resumableSnapshot,
+  type Mode,
+  type SavedItem,
+  type SavedSnapshot,
+  type Skill,
+  type Sort,
+  type Source,
+} from "./saved/config";
+import { PickMenu, QuizRow, SentenceRow } from "./saved/SavedRows";
+import { useSavedAudio } from "./saved/useSavedAudio";
+import { useSavedFeed } from "./saved/useSavedFeed";
 
 /* --------------------------------- icons -------------------------------- */
 const Chevron = ({ dir = "down", color = "#9aa0a7", size = 18 }: { dir?: "down" | "left"; color?: string; size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <path d={dir === "left" ? "M15 5l-7 7 7 7" : "M6 9l6 6 6-6"} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
-);
-/* 537:9628's delete control (572:23443) exports as one 12x14 path here, so the
- * drawn fallback is gone. */
-const TrashIcon = () => (
-  <img className="rev__action-ic" src={icTrash} alt="" aria-hidden="true" />
-);
-/* TAL-044's saved control (674:10241) is a real ic_24_text instance. */
-const BookmarkFilled = () => (
-  <img className="rev__action-bm" src={icBookmarkFilled} alt="" aria-hidden="true" />
 );
 const SearchIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -135,11 +61,7 @@ export function Saved() {
   // nothing. The locKey/userId guard already prevents a stale entry from being
   // reused (a fresh visit has a different key).
   const snapRef = useRef<SavedSnapshot | null | undefined>(undefined);
-  if (snapRef.current === undefined) {
-    const cached = savedSnapshot;
-    const canResume = !!cached && cached.locKey === loc.key && cached.userId === userId;
-    snapRef.current = canResume ? cached : null;
-  }
+  if (snapRef.current === undefined) snapRef.current = resumableSnapshot(loc.key, userId);
   const snap = snapRef.current;
   // Idempotent, key-scoped read (never consumed — StrictMode-safe).
   const modeHint: Mode | null = readSavedTab(loc.key);
@@ -180,140 +102,21 @@ export function Saved() {
   const [dq, setDq] = useState(snap ? snap.dq : "");
   const [modeMenu, setModeMenu] = useState(false);
   const [sortMenu, setSortMenu] = useState(false);
-  const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
     const t = window.setTimeout(() => setDq(query.trim()), 300);
     return () => window.clearTimeout(t);
   }, [query]);
 
-  // --- audio ---
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [playingId, setPlayingId] = useState<string | null>(null);
-  const [audioLoadingId, setAudioLoadingId] = useState<string | null>(null);
-  function stopAudio() {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.onended = null;
-      audioRef.current.onerror = null;
-      audioRef.current = null;
-    }
-    setPlayingId(null);
-  }
+  const audio = useSavedAudio();
+  const stopAudio = audio.stop;
 
-  // Speaker button next to a saved sentence: fetch its signed audio URL and play
-  // it right away. Re-tapping the same sentence stops it; tapping another swaps.
-  async function toggleAudio(id: string) {
-    if (playingId === id) {
-      stopAudio();
-      return;
-    }
-    stopAudio();
-    setAudioLoadingId(id);
-    // Unlocked inside the tap, before the URL fetch (iOS).
-    const a = unlockedAudio();
-    try {
-      const { url } = await sentenceApi.audio(id);
-      audioRef.current = a;
-      a.onended = () => setPlayingId(null);
-      a.onerror = () => {
-        setPlayingId(null);
-        toast.error(t("saved.audioError"));
-      };
-      await playOn(a, url);
-      setPlayingId(id);
-      void sentenceApi.markViewed(id).catch(() => {});
-    } catch {
-      toast.error(t("saved.audioError"));
-    } finally {
-      setAudioLoadingId(null);
-    }
-  }
+  const feed = useSavedFeed({ snap, mode, source, sort, skill, dq, onReload: stopAudio });
+  const { items, setItems, cursor, more, status, scrollRef } = feed;
 
-  // --- feed state (state-based cursor pagination) ---
-  const [items, setItems] = useState<(SavedSentenceItem | Quiz)[]>(snap ? snap.items : []);
-  const [cursor, setCursor] = useState<string | null>(snap ? snap.cursor : null);
-  const [status, setStatus] = useState<FeedStatus>(snap ? snap.status : "loading");
-  const [more, setMore] = useState<MoreState>(snap ? snap.more : "idle");
-  const seqRef = useRef(0);
-  const moreLoadingRef = useRef(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const saveType = source === "wrong" ? "auto_wrong" : "favorite";
-  const key = useMemo(() => JSON.stringify({ mode, source, sort, skill, dq }), [mode, source, sort, skill, dq]);
-
-  async function fetchPage(cur?: string): Promise<{ items: (SavedSentenceItem | Quiz)[]; next: string | null }> {
-    if (mode === "sentence") {
-      const page = await sentenceApi.saved({ save_type: saveType, sort: SENT_SORT[sort], q: dq || undefined, cursor: cur });
-      return { items: page.items, next: page.next_cursor };
-    }
-    const page = await quizApi.bookmarks({ save_type: saveType, section: skill, sort: QUIZ_SORT[sort], q: dq || undefined, cursor: cur });
-    return { items: page.items, next: page.next_cursor ?? null };
-  }
-
-  // Reload page 1 whenever the composite query (or retry tick) changes. On the
-  // very first run after restoring a snapshot, skip the fetch and re-apply the
-  // saved scroll position instead — the loaded pages are already in state.
-  const firstRun = useRef(true);
-  useEffect(() => {
-    if (firstRun.current) {
-      firstRun.current = false;
-      if (snap) {
-        const top = snap.scrollTop;
-        requestAnimationFrame(() => {
-          if (scrollRef.current) scrollRef.current.scrollTop = top;
-        });
-        return;
-      }
-    }
-    const mySeq = ++seqRef.current;
-    setStatus("loading");
-    setItems([]);
-    setCursor(null);
-    setMore("idle");
-    stopAudio();
-    if (scrollRef.current) scrollRef.current.scrollTop = 0;
-    (async () => {
-      try {
-        const page = await fetchPage(undefined);
-        if (mySeq !== seqRef.current) return;
-        setItems(dedup(page.items));
-        setCursor(page.next);
-        setMore(page.next ? "idle" : "done");
-        setStatus("ready");
-      } catch {
-        if (mySeq === seqRef.current) setStatus("error");
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, reloadTick]);
-
-  async function loadMore() {
-    if (moreLoadingRef.current || cursor == null) return;
-    moreLoadingRef.current = true;
-    const mySeq = seqRef.current;
-    setMore("loading");
-    try {
-      const page = await fetchPage(cursor);
-      if (mySeq !== seqRef.current) return;
-      setItems((prev) => dedup([...prev, ...page.items]));
-      setCursor(page.next);
-      setMore(page.next ? "idle" : "done");
-    } catch {
-      if (mySeq === seqRef.current) setMore("error");
-    } finally {
-      moreLoadingRef.current = false;
-    }
-  }
-
-  const sentinel = useRef<HTMLDivElement>(null);
-  useLoadMoreSentinel(sentinel, { enabled: more === "idle", onHit: () => void loadMore(), rootRef: scrollRef, rootMargin: "300px" }, [more, cursor, items.length]);
-
-  useEffect(() => () => stopAudio(), []);
-
-  async function removeItem(it: SavedSentenceItem | Quiz) {
+  async function removeItem(it: SavedItem) {
     const id = itemId(it);
-    if (playingId === id) stopAudio();
+    if (audio.playingId === id) stopAudio();
     const prev = items;
     setItems((cur) => cur.filter((x) => itemId(x) !== id));
     try {
@@ -346,7 +149,7 @@ export function Saved() {
     // Record the open as a review touch so it drops down "오래 안 본 순" even if
     // the user never submits an answer (best-effort; ignore failures).
     void quizApi.markViewed(q.quiz_id).catch(() => {});
-    savedSnapshot = { ...live.current, scrollTop: scrollRef.current?.scrollTop ?? 0 };
+    keepSnapshot({ ...live.current, scrollTop: scrollRef.current?.scrollTop ?? 0 });
     rememberSavedTab(loc.key, mode);
     // Start a single-item review session for this saved question.
     nav(`/review/question/${q.quiz_id}`, { state: reviewOrigin() });
@@ -357,7 +160,7 @@ export function Saved() {
   function openSentence(s: { sentence_id: string }) {
     stopAudio();
     void sentenceApi.markViewed(s.sentence_id).catch(() => {});
-    savedSnapshot = { ...live.current, scrollTop: scrollRef.current?.scrollTop ?? 0 };
+    keepSnapshot({ ...live.current, scrollTop: scrollRef.current?.scrollTop ?? 0 });
     rememberSavedTab(loc.key, mode);
     nav(`/review/sentence/${s.sentence_id}`, { state: reviewOrigin() });
   }
@@ -387,16 +190,14 @@ export function Saved() {
             <Chevron dir="down" color="#9aa0a7" size={18} />
           </button>
           {modeMenu && (
-            <>
-              <div className="rev__backdrop" onClick={() => setModeMenu(false)} />
-              <div className="rev__menu rev__menu--mode" role="menu">
-                {(["sentence", "problem"] as Mode[]).map((m) => (
-                  <button key={m} role="menuitemradio" aria-checked={m === mode} className={`rev__menu-item ${m === mode ? "is-active" : ""}`} onClick={() => pickMode(m)}>
-                    {t(modeTitleKey(m))}
-                  </button>
-                ))}
-              </div>
-            </>
+            <PickMenu
+              className="rev__menu--mode"
+              options={["sentence", "problem"] as Mode[]}
+              value={mode}
+              label={(m) => t(modeTitleKey(m))}
+              onPick={pickMode}
+              onClose={() => setModeMenu(false)}
+            />
           )}
         </header>
 
@@ -432,16 +233,17 @@ export function Saved() {
                 <Chevron dir="down" color="#9aa0a7" size={16} />
               </button>
               {sortMenu && (
-                <>
-                  <div className="rev__backdrop" onClick={() => setSortMenu(false)} />
-                  <div className="rev__menu rev__menu--sort" role="menu">
-                    {(Object.keys(SORT_LABEL_KEYS) as Sort[]).map((s) => (
-                      <button key={s} role="menuitemradio" aria-checked={s === sort} className={`rev__menu-item ${s === sort ? "is-active" : ""}`} onClick={() => { setSortMenu(false); if (s !== sort) setSort(s); }}>
-                        {t(SORT_LABEL_KEYS[s])}
-                      </button>
-                    ))}
-                  </div>
-                </>
+                <PickMenu
+                  className="rev__menu--sort"
+                  options={Object.keys(SORT_LABEL_KEYS) as Sort[]}
+                  value={sort}
+                  label={(o) => t(SORT_LABEL_KEYS[o])}
+                  onPick={(o) => {
+                    setSortMenu(false);
+                    if (o !== sort) setSort(o);
+                  }}
+                  onClose={() => setSortMenu(false)}
+                />
               )}
             </div>
           </div>
@@ -468,7 +270,7 @@ export function Saved() {
           ) : status === "error" ? (
             <div className="rev__state">
               <span>{t("saved.loadError")}</span>
-              <button className="rev__retry" onClick={() => setReloadTick((t) => t + 1)}>{t("common.retry")}</button>
+              <button className="rev__retry" onClick={feed.reload}>{t("common.retry")}</button>
             </div>
           ) : items.length === 0 ? (
             <p className={`rev__empty${mode === "problem" ? " rev__empty--problem" : ""}`}>
@@ -478,56 +280,25 @@ export function Saved() {
             <ul className="rev__list" role="list">
               {items.map((it) =>
                 isSentence(it) ? (
-                  <li key={it.sentence_id} className="rev__row">
-                    <div className="rev__main">
-                      <div className="rev__ko">
-                        <span className="rev__ko-text">{it.korean}</span>
-                        <button
-                          className={`rev__speaker ${playingId === it.sentence_id ? "is-playing" : ""}`}
-                          onClick={() => toggleAudio(it.sentence_id)}
-                          aria-label={t(playingId === it.sentence_id ? "saved.stopSentenceA11y" : "saved.playSentenceA11y", {
-                            sentence: it.korean,
-                          })}
-                        >
-                          {audioLoadingId === it.sentence_id ? (
-                            <Spinner size={15} stroke={2} />
-                          ) : (
-                            /* Masked, not an <img>: the export is stroked #5ECECE,
-                               and the glyph has to switch between the idle and
-                               playing colours. */
-                            <span className="rev__speaker-ic" aria-hidden="true" />
-                          )}
-                        </button>
-                      </div>
-                      <div className="rev__tr">{it.translation}</div>
-                    </div>
-                    <button className="rev__play" onClick={() => openSentence(it)} aria-label={t("saved.reviewSentenceA11y", { sentence: it.korean })}>
-                      <img src={svPlay} alt="" aria-hidden="true" />
-                    </button>
-                    <button className="rev__action" onClick={() => removeItem(it)} aria-label={t(source === "wrong" ? "saved.removeFromWrong" : "saved.unbookmark")}>
-                      {source === "wrong" ? <TrashIcon /> : <BookmarkFilled />}
-                    </button>
-                  </li>
+                  <SentenceRow
+                    key={it.sentence_id}
+                    item={it}
+                    source={source}
+                    playing={audio.playingId === it.sentence_id}
+                    loadingAudio={audio.loadingId === it.sentence_id}
+                    onToggleAudio={() => audio.toggle(it.sentence_id)}
+                    onReview={() => openSentence(it)}
+                    onRemove={() => removeItem(it)}
+                  />
                 ) : (
-                  <li key={it.quiz_id} className="rev__row">
-                    <div className="rev__main">
-                      <div className="rev__qtitle">{quizTitle(it, t)}</div>
-                      <div className="rev__qprompt">{it.prompt}</div>
-                    </div>
-                    <button className="rev__play" onClick={() => openQuiz(it)} aria-label={t("saved.reviewQuestionA11y", { title: quizTitle(it, t) })}>
-                      <img src={svPlay} alt="" aria-hidden="true" />
-                    </button>
-                    <button className="rev__action" onClick={() => removeItem(it)} aria-label={t(source === "wrong" ? "saved.removeFromWrong" : "saved.unbookmark")}>
-                      {source === "wrong" ? <TrashIcon /> : <BookmarkFilled />}
-                    </button>
-                  </li>
+                  <QuizRow key={it.quiz_id} item={it} source={source} t={t} onReview={() => openQuiz(it)} onRemove={() => removeItem(it)} />
                 ),
               )}
-              <div className="rev__foot" ref={sentinel}>
+              <div className="rev__foot" ref={feed.sentinel}>
                 {more === "loading" ? (
                   <Spinner size={20} stroke={2} />
                 ) : more === "error" ? (
-                  <button className="rev__retry" onClick={() => { setMore("idle"); void loadMore(); }}>{t("saved.loadMore")}</button>
+                  <button className="rev__retry" onClick={feed.retryMore}>{t("saved.loadMore")}</button>
                 ) : null}
               </div>
             </ul>

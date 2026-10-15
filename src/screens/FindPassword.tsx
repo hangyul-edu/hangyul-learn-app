@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "../i18n";
-import { CountrySelect } from "../components/ui/CountrySelect";
 import { authApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { useVerification } from "../hooks/verification";
 import { errorMessage } from "../lib/http";
-import { applyPhoneInput, checkPhone, phoneExample } from "../lib/phone";
+import { checkPhone } from "../lib/phone";
 import { usePhoneProblemMessage } from "../hooks/phoneProblem";
 import { Spinner } from "../components/ui/Spinner";
 import { BackChevronIcon } from "../components/brand/Glyphs";
 import { isEmailLike } from "../lib/validation";
+import { RecoveryPhoneFields } from "../components/RecoveryPhoneFields";
 
 /**
  * "비밀번호 찾기" — first stage of password reset: verify the registered email
@@ -132,94 +132,18 @@ export function FindPassword() {
             {emailErr && <p className="findemail__err">{emailErr}</p>}
           </div>
 
-          {/* Phone */}
-          <div className="findemail__field">
-            <label className="findemail__label" htmlFor="fp-phone">
-              {t("findEmail.phoneLabel")}
-            </label>
-            <div className="findemail__row">
-              <CountrySelect
-                value={country}
-                onChange={(c) => {
-                  setCountry(c);
-                  setPhoneErr(null);
-                  invalidateOnChange();
-                }}
-                className="findemail__country"
-              />
-              <input
-                id="fp-phone"
-                className={`findemail__input findemail__input--flex ${phoneErr ? "is-error" : ""}`}
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                placeholder={phoneExample(country)}
-                aria-label={t("findEmail.phoneA11y")}
-                value={localPhone}
-                onChange={(e) => {
-                  // A pasted "+44 …" moves the picker to that country.
-                  const next = applyPhoneInput(country, e.target.value);
-                  setCountry(next.country);
-                  setLocalPhone(next.input);
-                  setPhoneErr(null);
-                  invalidateOnChange();
-                }}
-                disabled={phoneV.verified}
-              />
-              <button
-                type="button"
-                className="findemail__pill"
-                onClick={requestSms}
-                disabled={phoneV.sending || phoneV.cooldown > 0 || phoneV.verified}
-                aria-label={t("findEmail.requestCodeA11y")}
-              >
-                {phoneV.verified ? t("findEmail.verified") : phoneV.cooldown > 0 ? `${phoneV.cooldown}s` : t("findEmail.verify")}
-              </button>
-            </div>
-            {phoneErr && <p className="findemail__err">{phoneErr}</p>}
-          </div>
-
-          {/* Verification code — rendered ONLY after a code has actually
-              been requested. `phoneV.requested` is the shared hook's gate:
-              true only once the server returned a verification_id, so a
-              failed request leaves the field hidden and the timer off. */}
-          {phoneV.requested && (
-          <div className="findemail__field">
-            <label className="findemail__label" htmlFor="fp-code">
-              {t("findEmail.codeLabel")}
-            </label>
-            <div className="findemail__row">
-              <div className="findemail__code findemail__input--flex">
-                <input
-                  id="fp-code"
-                  className="findemail__code-input"
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder={t("findEmail.codePlaceholder")}
-                  aria-label={t("findEmail.codeA11y")}
-                  value={phoneV.code}
-                  onChange={(e) => phoneV.setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  disabled={!phoneV.requested || phoneV.verified}
-                />
-                {phoneV.countdown && (
-                  <span className="findemail__timer" aria-hidden="true">
-                    {phoneV.countdown}
-                  </span>
-                )}
-              </div>
-              <button
-                type="button"
-                className="findemail__pill findemail__pill--sm"
-                onClick={phoneV.confirmCode}
-                disabled={phoneV.code.length !== 6 || phoneV.confirming || phoneV.verified}
-                aria-label={t("findEmail.checkCodeA11y")}
-              >
-                {phoneV.verified ? t("findEmail.checkDone") : t("findEmail.check")}
-              </button>
-            </div>
-            {phoneV.error && <p className="findemail__err">{phoneV.error}</p>}
-          </div>
-          )}
+          <RecoveryPhoneFields
+            idPrefix="fp"
+            country={country}
+            setCountry={setCountry}
+            localPhone={localPhone}
+            setLocalPhone={setLocalPhone}
+            phoneErr={phoneErr}
+            setPhoneErr={setPhoneErr}
+            onIdentityChange={invalidateOnChange}
+            verification={phoneV}
+            onRequest={requestSms}
+          />
 
           <div className="findemail__spacer" />
 

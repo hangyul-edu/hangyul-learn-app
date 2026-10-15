@@ -34,8 +34,9 @@ export function PlanSection({
   const { t, language } = useTranslation();
   const nav = useNavigate();
   const m = query.data;
-  // A cancelled subscription still shows (with 해지 취소) until it lapses.
-  const hasSub = hasLiveSubscription(m) || m?.status === "cancelled";
+  // A cancelled subscription keeps its status, so it still shows (with
+  // 해지 취소) until it lapses.
+  const hasSub = hasLiveSubscription(m);
   const status = m?.status ?? "";
   const scheduledCancel = !!m?.cancel_at_period_end;
   const planName = m?.plan_name || t("subscription.planFallback");

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "../../i18n";
+import { useDismiss } from "../../hooks/useDismiss";
 import { PHONE_COUNTRIES, countryName, phoneCountry, type PhoneCountry } from "../../lib/phone";
 
 interface Entry extends PhoneCountry {
@@ -56,23 +57,7 @@ export function CountrySelect({
   }, [entries, query]);
 
   // Dismiss on outside click / Escape while open (the dropdown has no backdrop).
-  useEffect(() => {
-    if (!open) return;
-    function onPointerDown(e: MouseEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
+  useDismiss(rootRef, open, () => setOpen(false));
 
   // A fresh search each time it opens, scrolled to the current country — with
   // ~245 rows it may be far down the list.

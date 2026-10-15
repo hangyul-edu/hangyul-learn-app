@@ -31,6 +31,21 @@ export function isOpenActivity(a: StudyActivity): boolean {
   return OPEN.has(a.status);
 }
 
+/** An attempt's `activity_status` that takes no more graded answers. */
+export function isClosedStatus(status: string): boolean {
+  return !OPEN.has(status);
+}
+
+/** The language session explanations are written in: Korean, else English. */
+export function explanationLanguage(language: string): "ko" | "en" {
+  return language === "ko" ? "ko" : "en";
+}
+
+/** A server message sent in both languages, in the app's. */
+export function localizedMessage(message: { ko: string; en: string }, language: string): string {
+  return language === "ko" ? message.ko : message.en;
+}
+
 /** Activities shown to the learner: the current plan minus withdrawn items. */
 export function visibleActivities(s: StudySession): StudyActivity[] {
   return [...s.activities].filter((a) => a.status !== "withdrawn" && a.status !== "replaced").sort((x, y) => x.position - y.position);

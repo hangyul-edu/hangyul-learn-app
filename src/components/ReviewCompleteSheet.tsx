@@ -1,4 +1,5 @@
 import type { ReviewSessionCopy } from "../lib/reviewSessionCopy";
+import { Spinner } from "./ui/Spinner";
 
 /**
  * Bottom action sheet shown after a saved item is reviewed correctly. Two equal
@@ -22,7 +23,7 @@ export function ReviewCompleteSheet({
   completing?: boolean;
   copy: ReviewSessionCopy;
 }) {
-  const spinner = <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />;
+  const spinner = <Spinner size={20} stroke={2} />;
   return (
     <>
       <div className="casheet__scrim" aria-hidden="true" />

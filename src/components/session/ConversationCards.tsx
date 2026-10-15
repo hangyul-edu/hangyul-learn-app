@@ -7,6 +7,7 @@ import icQuestion from "../../assets/brand/ic-question.svg";
 import icAlert from "../../assets/brand/ic-24-alert.svg";
 import type { SessionConversationCopy } from "../../lib/sessionConversationCopy";
 import type { Sentence } from "../../lib/types";
+import { Spinner } from "../ui/Spinner";
 
 /** Whether the current item is bookmarked, and how to flip it. */
 export type Bookmark = { saved: boolean; onToggle: () => void };
@@ -223,7 +224,7 @@ export function AnswerSentenceCard({
               aria-label={incorrect ? copy.micRetryA11y : copy.recordA11y}
             >
               {voice.scoring ? (
-                <span className="spinner" style={{ width: 26, height: 26 }} />
+                <Spinner size={26} />
               ) : (
                 /* Group 33277 (673:10472) — disc, glyph and both shadows are
                    all inside this one export; nothing is redrawn here. */

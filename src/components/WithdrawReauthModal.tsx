@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useTranslation, type TranslationKey } from "../i18n";
 import type { SocialProvider } from "../lib/types";
+import { Spinner } from "./ui/Spinner";
 
 const PROVIDER_LABEL: Record<SocialProvider, TranslationKey> = {
   google: "welcome.google",
@@ -104,7 +105,7 @@ export function WithdrawReauthModal({
 
         {loading ? (
           <div style={{ display: "grid", placeItems: "center", padding: "12px 0" }}>
-            <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} aria-label={t("withdrawReauth.deleting")} />
+            <Spinner size={22} stroke={2.5} label={t("withdrawReauth.deleting")} />
           </div>
         ) : (
           <div style={{ display: "grid", gap: 8, margin: "12px 0" }}>

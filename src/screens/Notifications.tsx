@@ -7,6 +7,7 @@ import { GROUP_LABEL_KEYS, bucketKey, bucketLabel, relativeTime } from "../lib/n
 import { useTranslation, type TranslationKey } from "../i18n";
 import type { NotificationGroup, NotificationItem } from "../lib/types";
 import { DetailHeader } from "../components/DetailHeader";
+import { Spinner } from "../components/ui/Spinner";
 
 /* -------------------------------- config -------------------------------- */
 type Filter = "all" | NotificationGroup;
@@ -242,7 +243,7 @@ export function Notifications() {
             ))}
             <div className="ntf__foot" ref={sentinel}>
               {more === "loading" ? (
-                <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />
+                <Spinner size={20} stroke={2} />
               ) : more === "error" ? (
                 <button className="ntf__retry" onClick={() => { setMore("idle"); void loadMore(); }}>{t("notifications.loadMore")}</button>
               ) : null}

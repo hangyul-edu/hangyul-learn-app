@@ -5,6 +5,7 @@ import { authApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import { passwordProblem } from "../lib/validation";
+import { Spinner } from "../components/ui/Spinner";
 
 /**
  * "비밀번호 재설정" — second stage of password reset. Consumes the short-lived
@@ -117,7 +118,7 @@ export function ResetPassword() {
             aria-disabled={!canSubmit}
             aria-label={t("resetPassword.submit")}
           >
-            {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("resetPassword.submit")}
+            {busy ? <Spinner size={22} stroke={2.5} /> : t("resetPassword.submit")}
           </button>
         </div>
       </form>

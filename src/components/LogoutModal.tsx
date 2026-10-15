@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "../i18n";
+import { Spinner } from "./ui/Spinner";
 
 /**
  * Logout confirmation modal. Opening it calls no API; only the orange 로그아웃
@@ -85,7 +86,7 @@ export function LogoutModal({
             {t("common.cancel")}
           </button>
           <button className="lgo__btn lgo__btn--go" onClick={onConfirm} disabled={loading}>
-            {loading ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("misc.logout")}
+            {loading ? <Spinner size={22} stroke={2.5} /> : t("misc.logout")}
           </button>
         </div>
       </div>

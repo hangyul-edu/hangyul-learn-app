@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
+import { Spinner } from "./Spinner";
 
 /* ---------------- Button ---------------- */
 type Variant = "primary" | "secondary" | "ghost" | "danger";
@@ -34,7 +35,7 @@ export function Button({
     .join(" ");
   return (
     <button className={cls} disabled={disabled || loading} {...rest}>
-      {loading ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : leftIcon}
+      {loading ? <Spinner size={18} stroke={2} /> : leftIcon}
       {!loading && children}
     </button>
   );

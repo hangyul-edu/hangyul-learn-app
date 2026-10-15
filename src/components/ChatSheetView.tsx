@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useTranslation } from "../i18n";
 import { HangyulAiMessage } from "./HangyulAiMessage";
 import type { ChatMessage } from "../lib/types";
+import { Spinner } from "./ui/Spinner";
 
 /**
  * Presentational shell for the 물어보기 chatbot bottom sheet — the single shared
@@ -133,7 +134,7 @@ export function ChatSheetView({
             aria-label={t("chat.send")}
           >
             {sending ? (
-              <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />
+              <Spinner size={18} stroke={2} />
             ) : (
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M12 20V5M6 11l6-6 6 6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />

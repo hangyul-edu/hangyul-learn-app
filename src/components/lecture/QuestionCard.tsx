@@ -10,6 +10,7 @@ import type { Quiz, QuizAttemptResult } from "../../lib/types";
 import icAlert from "../../assets/brand/ic-24-alert.svg";
 import icBookplus from "../../assets/brand/ic-24-bookplus.svg";
 import icBookmarkOn from "../../assets/brand/ic-24-bookmark-filled.svg";
+import { Spinner } from "../ui/Spinner";
 
 /**
  * The TOPIK question card — in a lecture (COU-011 442:9757, correct COU-012
@@ -170,7 +171,7 @@ export function QuestionCard({
           disabled={busy || !isAnswered(quiz, value) || wrong}
           onClick={() => void submit()}
         >
-          {busy ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : t("study.submitShort")}
+          {busy ? <Spinner size={18} stroke={2} /> : t("study.submitShort")}
         </button>
       ) : (
         <button className="pqz__cta" onClick={() => onDone(attempts === 1 && ok)}>

@@ -6,6 +6,7 @@ import { ErrorState, LoadingState } from "../components/ui/states";
 import { aiApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
+import { Spinner } from "../components/ui/Spinner";
 
 interface Msg {
   role: "user" | "assistant";
@@ -103,7 +104,7 @@ export function AiChat() {
           {sending && (
             <div style={{ display: "flex" }}>
               <div style={{ padding: "12px 16px", borderRadius: 18, background: "var(--surface)", border: "1px solid var(--border)" }}>
-                <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+                <Spinner size={16} stroke={2} />
               </div>
             </div>
           )}

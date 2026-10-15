@@ -6,6 +6,7 @@ import { sanitizeHtml } from "../../lib/sanitizeHtml";
 import type { TopikSessionCopy } from "../../lib/topikSessionCopy";
 import type { Quiz, TopikQuestionFormat } from "../../lib/types";
 import type { AnswerValue } from "../QuestionView";
+import { Spinner } from "../ui/Spinner";
 
 /** The five learner-facing TOPIK formats plus a safe fallback. */
 type Kind = TopikQuestionFormat | "unsupported";
@@ -446,7 +447,7 @@ function AudioPlayer({
         aria-label={label}
       >
         {state === "loading" ? (
-          <span className="spinner" style={{ width: 24, height: 24, borderWidth: 2.5 }} />
+          <Spinner size={24} stroke={2.5} />
         ) : state === "playing" ? (
           <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true">
             <rect x="6" y="5" width="4" height="14" rx="1.2" fill="#fff" />

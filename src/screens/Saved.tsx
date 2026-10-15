@@ -15,6 +15,7 @@ import icTrash from "../assets/brand/ic-trash.svg";
 import chipRepeat from "../assets/brand/chip-ic-repeat.svg";
 import chipStar from "../assets/brand/chip-ic-star.svg";
 import { playOn, unlockedAudio } from "../lib/unlockedAudio";
+import { Spinner } from "../components/ui/Spinner";
 
 /* ------------------------------- config -------------------------------- */
 // Shared with the review sessions so the tab a session must return to cannot
@@ -498,7 +499,7 @@ export function Saved() {
                           })}
                         >
                           {audioLoadingId === it.sentence_id ? (
-                            <span className="spinner" style={{ width: 15, height: 15, borderWidth: 2 }} />
+                            <Spinner size={15} stroke={2} />
                           ) : (
                             /* Masked, not an <img>: the export is stroked #5ECECE,
                                and the glyph has to switch between the idle and
@@ -533,7 +534,7 @@ export function Saved() {
               )}
               <div className="rev__foot" ref={sentinel}>
                 {more === "loading" ? (
-                  <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />
+                  <Spinner size={20} stroke={2} />
                 ) : more === "error" ? (
                   <button className="rev__retry" onClick={() => { setMore("idle"); void loadMore(); }}>{t("saved.loadMore")}</button>
                 ) : null}

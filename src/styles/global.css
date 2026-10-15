@@ -1374,6 +1374,45 @@ textarea.input {
   height: 40px;
   border-width: 4px;
 }
+/* Inline spinners (components/ui/Spinner): a size, optionally a thinner ring. */
+.spinner--s14 {
+  width: 14px;
+  height: 14px;
+}
+.spinner--s15 {
+  width: 15px;
+  height: 15px;
+}
+.spinner--s16 {
+  width: 16px;
+  height: 16px;
+}
+.spinner--s18 {
+  width: 18px;
+  height: 18px;
+}
+.spinner--s20 {
+  width: 20px;
+  height: 20px;
+}
+.spinner--s22 {
+  width: 22px;
+  height: 22px;
+}
+.spinner--s24 {
+  width: 24px;
+  height: 24px;
+}
+.spinner--s26 {
+  width: 26px;
+  height: 26px;
+}
+.spinner--w2 {
+  border-width: 2px;
+}
+.spinner--w25 {
+  border-width: 2.5px;
+}
 @keyframes spin {
   to {
     transform: rotate(360deg);

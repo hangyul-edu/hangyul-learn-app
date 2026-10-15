@@ -22,6 +22,7 @@ import icCamera from "../assets/brand/ic-camera.svg";
 import { SuccessModal } from "../components/SuccessModal";
 import { FailModal } from "../components/FailModal";
 import icModalSuccess from "../assets/brand/ic-modal-success.svg";
+import { Spinner } from "../components/ui/Spinner";
 
 /**
  * Profile edit ("프로필 변경") — reuses the profile-registration visual system
@@ -234,7 +235,7 @@ export function EditProfile() {
               aria-label={t("profileSetup.choosePhotoA11y")}
             >
               {uploading ? (
-                <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+                <Spinner size={16} stroke={2} />
               ) : (
                 <img className="setupp__photo-ic" src={icCamera} alt="" aria-hidden="true" width={20.2128} height={16} />
               )}
@@ -284,7 +285,7 @@ export function EditProfile() {
               disabled={checking || trimmed.length < 1}
               aria-label={t("profileSetup.changeNicknameA11y")}
             >
-              {checking ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : t("profileSetup.changeNickname")}
+              {checking ? <Spinner size={18} stroke={2} /> : t("profileSetup.changeNickname")}
             </button>
           </div>
           <p
@@ -305,7 +306,7 @@ export function EditProfile() {
             aria-disabled={!canSave}
             aria-label={t(canSave ? "profileSetup.save" : "profileSetup.saveBlockedA11y")}
           >
-            {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("profileSetup.save")}
+            {busy ? <Spinner size={22} stroke={2.5} /> : t("profileSetup.save")}
           </button>
         </div>
       </div>

@@ -1,10 +1,9 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "../../i18n";
 import { Button } from "./kit";
+import { Spinner } from "./Spinner";
 
-export function Spinner({ large }: { large?: boolean }) {
-  return <span className={`spinner ${large ? "spinner--lg" : ""}`} />;
-}
+export { Spinner } from "./Spinner";
 
 export function LoadingState({ text }: { text?: string }) {
   const { t } = useTranslation();

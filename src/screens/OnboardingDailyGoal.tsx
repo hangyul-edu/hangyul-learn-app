@@ -1,6 +1,7 @@
 import { useTranslation, type TranslationKey } from "../i18n";
 import { OnboardingShell, OnboardingOption } from "./OnboardingShell";
 import mascotSteps from "../assets/brand/onb-mascot-steps.svg";
+import { Spinner } from "../components/ui/Spinner";
 
 /**
  * Daily-goal options. `n` is the stable backend value (onboarding schema
@@ -92,7 +93,7 @@ export function OnboardingDailyGoal({
         aria-disabled={busy || !valid}
         aria-label={t("onboarding.goStart")}
       >
-        {busy ? <span className="spinner" style={{ width: 24, height: 24, borderWidth: 2.5 }} /> : t("onboarding.goStart")}
+        {busy ? <Spinner size={24} stroke={2.5} /> : t("onboarding.goStart")}
       </button>
     </OnboardingShell>
   );

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "../i18n";
 import closeIcon from "../assets/brand/ic-modal-close.svg";
+import { Spinner } from "./ui/Spinner";
 
 /**
  * Course-access code ("수강권 코드") registration modal. Opening it calls no API;
@@ -151,7 +152,7 @@ export function VoucherModal({
         </div>
 
         <button className="vou__submit" onClick={submit} disabled={loading || !code.trim()}>
-          {loading ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("voucher.submit")}
+          {loading ? <Spinner size={22} stroke={2.5} /> : t("voucher.submit")}
         </button>
       </div>
     </div>

@@ -5,6 +5,7 @@ import { AuthDecor, HangyulLogo } from "../components/brand/AuthBrand";
 import { authApi } from "../api/endpoints";
 import { useLoginFlow } from "../hooks/loginFlow";
 import { ApiError, errorMessage } from "../lib/http";
+import { Spinner } from "../components/ui/Spinner";
 
 /**
  * Login screen — AME-003 (Figma KO 1:3436 / EN 784:50343).
@@ -123,7 +124,7 @@ export function Login() {
             </button>
 
             <button className="login__submit" type="submit" disabled={busy} aria-label={t("login.submit")}>
-              {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("login.submit")}
+              {busy ? <Spinner size={22} stroke={2.5} /> : t("login.submit")}
             </button>
           </form>
 

@@ -16,6 +16,7 @@ import {
   agreementPayload,
   type Agreements,
 } from "../lib/signupAgreements";
+import { Spinner } from "../components/ui/Spinner";
 
 /**
  * Social signup's terms step (/signup/terms). A first social login creates the
@@ -135,7 +136,7 @@ export function SocialSignupTerms() {
 
       <div className="sterms__foot">
         <button type="button" className="sterms__next" onClick={submit} disabled={!requiredDone || busy}>
-          {busy ? <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2.5 }} /> : t("socialTerms.next")}
+          {busy ? <Spinner size={20} stroke={2.5} /> : t("socialTerms.next")}
         </button>
       </div>
 

@@ -17,6 +17,7 @@ import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import type { ProfileImageType } from "../lib/types";
+import { Spinner } from "../components/ui/Spinner";
 
 export function SetupProfile() {
   const { t } = useTranslation();
@@ -174,7 +175,7 @@ export function SetupProfile() {
               aria-label={t("profileSetup.choosePhotoA11y")}
             >
               {uploading ? (
-                <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+                <Spinner size={16} stroke={2} />
               ) : (
                 <CameraIcon />
               )}
@@ -222,7 +223,7 @@ export function SetupProfile() {
               disabled={checking || nickname.trim().length < 2}
               aria-label={t("profileSetup.checkDuplicateA11y")}
             >
-              {checking ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : t("profileSetup.checkDuplicate")}
+              {checking ? <Spinner size={18} stroke={2} /> : t("profileSetup.checkDuplicate")}
             </button>
           </div>
           <p
@@ -243,7 +244,7 @@ export function SetupProfile() {
             aria-disabled={!canSubmit}
             aria-label={t(canSubmit ? "profileSetup.start" : "profileSetup.startBlockedA11y")}
           >
-            {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("profileSetup.start")}
+            {busy ? <Spinner size={22} stroke={2.5} /> : t("profileSetup.start")}
           </button>
         </div>
       </div>

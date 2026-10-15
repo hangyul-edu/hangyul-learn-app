@@ -3,6 +3,7 @@ import { useTranslation, type TranslationKey } from "../i18n";
 import type { CancellationReason } from "../lib/types";
 import radioOn from "../assets/brand/radio-on.svg";
 import radioOff from "../assets/brand/radio-off.svg";
+import { Spinner } from "./ui/Spinner";
 
 /**
  * Cancellation-reason step — Figma MOR-012 (725:20721) and its "other" variant
@@ -123,7 +124,7 @@ export function CancelReasonModal({
             onClick={() => picked && onSubmit(picked, isOther ? typed : undefined)}
             disabled={loading || !canSubmit}
           >
-            {loading ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("cancelReason.submit")}
+            {loading ? <Spinner size={22} stroke={2.5} /> : t("cancelReason.submit")}
           </button>
         </div>
       </div>

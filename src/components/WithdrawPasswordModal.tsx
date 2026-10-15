@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "../i18n";
+import { Spinner } from "./ui/Spinner";
 
 /**
  * Second-step withdrawal gate: current-password confirmation. Opened only after
@@ -143,7 +144,7 @@ export function WithdrawPasswordModal({
             {t("common.cancel")}
           </button>
           <button className="wd__btn wd__btn--go" onClick={submit} disabled={loading} aria-label={t("withdraw.confirmA11y")}>
-            {loading ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("withdraw.confirm")}
+            {loading ? <Spinner size={22} stroke={2.5} /> : t("withdraw.confirm")}
           </button>
         </div>
       </div>

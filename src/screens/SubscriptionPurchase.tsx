@@ -15,6 +15,7 @@ import { formatMoney } from "../lib/format";
 import { ApiError } from "../lib/http";
 import { currencyLabel, currencyMismatchText, paymentErrorMessage } from "../lib/paymentErrors";
 import type { Plan } from "../lib/types";
+import { Spinner } from "../components/ui/Spinner";
 
 type ScreenStatus = "loading" | "ready" | "submitting" | "missing_plans" | "failed";
 
@@ -353,7 +354,7 @@ export function SubscriptionPurchase() {
 
             <button className="subp__cta" onClick={start} disabled={ctaDisabled} aria-label={ctaLabel}>
               {submitting ? (
-                <span className="spinner" style={{ width: 22, height: 22 }} />
+                <Spinner size={22} />
               ) : (
                 parts(translate(language, ctaKey)).map((seg, i) =>
                   seg.strong ? (

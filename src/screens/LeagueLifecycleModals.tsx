@@ -10,6 +10,7 @@ import { useToast } from "../hooks/toast";
 import { localeFor } from "../lib/format";
 import { errorMessage } from "../lib/http";
 import type { LeagueLifecycleResponse } from "../lib/types";
+import { Spinner } from "../components/ui/Spinner";
 
 /* --------------------------- lifecycle hook ----------------------------- */
 export const LIFECYCLE_KEY = ["league-lifecycle"] as const;
@@ -175,7 +176,7 @@ function NewLeagueModal() {
         aria-label={t("leagueLifecycle.join")}
       >
         {join.isPending ? (
-          <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
+          <Spinner size={14} stroke={2} />
         ) : (
           t("leagueLifecycle.join")
         )}

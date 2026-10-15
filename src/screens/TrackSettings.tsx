@@ -10,6 +10,7 @@ import { settingsApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
 import { CONVERSATION_LEVEL_MAX, TOPIK_GRADE_MAX } from "../lib/levels";
+import { Spinner } from "../components/ui/Spinner";
 
 const CFG = {
   conversation: {
@@ -248,7 +249,7 @@ export function TrackSettings() {
           disabled={!dirty || saving}
           aria-disabled={!dirty || saving}
         >
-          {saving ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("trackSettings.save")}
+          {saving ? <Spinner size={22} stroke={2.5} /> : t("trackSettings.save")}
         </button>
       </div>
 

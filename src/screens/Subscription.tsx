@@ -15,6 +15,7 @@ import { hasLiveSubscription } from "../lib/subscription";
 import type { CancellationReason, CouponRedemption, Invoice } from "../lib/types";
 import { CancelReasonModal } from "../components/CancelReasonModal";
 import { DetailHeader } from "../components/DetailHeader";
+import { Spinner } from "../components/ui/Spinner";
 
 /* ---------------- date helpers (the device's local date, YY/MM/DD) ---------------- */
 function fmtShort(iso?: string | null): string {
@@ -347,7 +348,7 @@ export function Subscription() {
 
               <div className="subm__foot" ref={sentinel}>
                 {inv.isFetchingNextPage ? (
-                  <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} />
+                  <Spinner size={22} stroke={2.5} />
                 ) : inv.isFetchNextPageError ? (
                   <button className="subm__retry" onClick={() => inv.fetchNextPage()}>{t("subscription.loadMore")}</button>
                 ) : null}

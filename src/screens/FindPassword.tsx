@@ -8,6 +8,7 @@ import { useVerification } from "../hooks/verification";
 import { errorMessage } from "../lib/http";
 import { applyPhoneInput, checkPhone, phoneExample } from "../lib/phone";
 import { usePhoneProblemMessage } from "../hooks/phoneProblem";
+import { Spinner } from "../components/ui/Spinner";
 
 function emailValid(e: string) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
@@ -234,7 +235,7 @@ export function FindPassword() {
             aria-disabled={!canSubmit}
             aria-label={t(canSubmit ? "findPassword.submit" : "findPassword.submitBlockedA11y")}
           >
-            {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("findPassword.submit")}
+            {busy ? <Spinner size={22} stroke={2.5} /> : t("findPassword.submit")}
           </button>
         </div>
       </div>

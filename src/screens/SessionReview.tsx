@@ -20,6 +20,7 @@ import { randomUuid } from "../lib/uuid";
 import { useReviewSessionCopy } from "../lib/reviewSessionCopy";
 import { useTopikSessionCopy } from "../lib/topikSessionCopy";
 import type { Quiz, QuizAttemptResult } from "../lib/types";
+import { Spinner } from "../components/ui/Spinner";
 
 /**
  * Single-item review session for a saved TOPIK question. Reuses the TOPIK
@@ -272,7 +273,7 @@ export function SessionReview() {
                 style={completed ? { visibility: "hidden" } : undefined}
               >
                 {submitting ? (
-                  <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2.5 }} />
+                  <Spinner size={20} stroke={2.5} />
                 ) : (
                   topikCopy.submit
                 )}

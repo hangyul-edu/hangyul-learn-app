@@ -8,6 +8,7 @@ import { useVerification } from "../hooks/verification";
 import { ApiError, errorMessage } from "../lib/http";
 import { applyPhoneInput, checkPhone, phoneExample } from "../lib/phone";
 import { usePhoneProblemMessage } from "../hooks/phoneProblem";
+import { Spinner } from "../components/ui/Spinner";
 
 /**
  * "이메일 찾기" — recover the account email from the name + a phone number
@@ -232,7 +233,7 @@ export function FindEmail() {
             aria-disabled={!canSubmit}
             aria-label={t(canSubmit ? "findEmail.submit" : "findEmail.submitBlockedA11y")}
           >
-            {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("findEmail.submit")}
+            {busy ? <Spinner size={22} stroke={2.5} /> : t("findEmail.submit")}
           </button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { useTranslation } from "../i18n";
 import icArrow from "../assets/brand/ic-16-arrow.svg";
+import { Spinner } from "./ui/Spinner";
 /**
  * Bottom sheet shown after a CORRECT personalized-learning answer. Two mutually
  * exclusive modes with a distinct visual hierarchy:
@@ -31,7 +32,7 @@ export function CorrectAnswerSheet({
   completing?: boolean;
 }) {
   const { t } = useTranslation();
-  const spinner = <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />;
+  const spinner = <Spinner size={20} stroke={2} />;
   return (
     <>
       {/* Completion-only dim layer behind the sheet (blocks interaction, not blurred). */}

@@ -14,6 +14,7 @@ import { DEFAULT_PHONE_COUNTRY, applyPhoneInput, checkPhone, isPhoneCountry, pho
 import { usePhoneProblemMessage } from "../hooks/phoneProblem";
 import { passwordProblem } from "../lib/validation";
 import { CountrySelect } from "../components/ui/CountrySelect";
+import { Spinner } from "../components/ui/Spinner";
 
 /* ------------------------- Password ------------------------- */
 /**
@@ -131,7 +132,7 @@ export function ChangePassword() {
             aria-disabled={!canSubmit}
             aria-label={t(canSubmit ? "accountChanges.change" : "accountChanges.passwordBlockedA11y")}
           >
-            {busy ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("accountChanges.change")}
+            {busy ? <Spinner size={22} stroke={2.5} /> : t("accountChanges.change")}
           </button>
         </div>
       </div>
@@ -477,7 +478,7 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" | "
               onClick={confirm}
               disabled={!codeReady || confirming}
             >
-              {confirming ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : t("findEmail.check")}
+              {confirming ? <Spinner size={18} stroke={2} /> : t("findEmail.check")}
             </button>
           </div>
           <p className={`pchg__msg ${feedback ? (feedback.ok ? "is-ok" : "is-err") : ""}`} role="status" aria-live="polite">
@@ -500,7 +501,7 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" | "
             )}
           >
             {saving ? (
-              <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} />
+              <Spinner size={22} stroke={2.5} />
             ) : (
               t(setup ? "phoneSetup.submit" : "accountChanges.change")
             )}
@@ -679,7 +680,7 @@ export function ChangeEmail() {
                       : t("accountChanges.resendA11y")
               }
             >
-              {emailActionLabel ?? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />}
+              {emailActionLabel ?? <Spinner size={18} stroke={2} />}
             </button>
           </div>
 
@@ -722,7 +723,7 @@ export function ChangeEmail() {
               disabled={verified ? true : !codeReady || confirming}
               aria-label={t(verified ? "accountChanges.verifiedDoneA11y" : "findEmail.checkCodeA11y")}
             >
-              {confirming ? <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> : verified ? t("findEmail.verified") : t("findEmail.check")}
+              {confirming ? <Spinner size={18} stroke={2} /> : verified ? t("findEmail.verified") : t("findEmail.check")}
             </button>
           </div>
           <p className={`echg__msg ${verified ? "is-ok" : expired ? "is-err" : ""}`} role="status" aria-live="polite">
@@ -740,7 +741,7 @@ export function ChangeEmail() {
             aria-disabled={!canSave}
             aria-label={t(canSave ? "accountChanges.change" : "accountChanges.emailBlockedA11y")}
           >
-            {saving ? <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} /> : t("accountChanges.change")}
+            {saving ? <Spinner size={22} stroke={2.5} /> : t("accountChanges.change")}
           </button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "../i18n";
+import { Spinner } from "./ui/Spinner";
 
 /** The extra-batch sizes offered after the daily goal is complete. Matches the
  * backend's EXTRA_LEARNING_COUNTS (5 / 10 / 15 / 20). */
@@ -133,7 +134,7 @@ export function AdditionalLearningCountModal({
             aria-label={t("session.additionalA11y", { unit, count: selected })}
           >
             {submitting ? (
-              <span className="spinner" style={{ width: 22, height: 22, borderWidth: 2.5 }} />
+              <Spinner size={22} stroke={2.5} />
             ) : (
               t("session.additionalStart")
             )}

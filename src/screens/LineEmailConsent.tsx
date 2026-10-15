@@ -6,6 +6,7 @@ import { LineIcon } from "../components/brand/AuthBrand";
 import { PolicyBody } from "./Policy";
 import { useSocialLogin } from "../hooks/socialLogin";
 import { policyDoc, type PolicyId } from "../lib/policies";
+import { Spinner } from "../components/ui/Spinner";
 
 export const LINE_EMAIL_CONSENT_PATH = "/login/line";
 const PRIVACY_POLICY: PolicyId = "purchase-privacy";
@@ -66,7 +67,7 @@ export function LineEmailConsent() {
 
       <div className="sterms__foot">
         <button type="button" className="sterms__next" onClick={agree} disabled={leaving}>
-          {leaving ? <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2.5 }} /> : t("lineConsent.agree")}
+          {leaving ? <Spinner size={20} stroke={2.5} /> : t("lineConsent.agree")}
         </button>
       </div>
 

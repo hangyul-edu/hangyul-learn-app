@@ -21,6 +21,7 @@ import {
   type AgreeKey,
   type Agreements,
 } from "../lib/signupAgreements";
+import { Spinner } from "../components/ui/Spinner";
 
 function emailValid(e: string) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
@@ -419,7 +420,7 @@ export function Signup() {
           </div>
 
           <button className="signup__submit" type="button" onClick={submitSignup} disabled={busy} aria-label={t("signup.submit")}>
-            {busy ? <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2.5 }} /> : t("signup.submit")}
+            {busy ? <Spinner size={20} stroke={2.5} /> : t("signup.submit")}
           </button>
         </div>
       </div>

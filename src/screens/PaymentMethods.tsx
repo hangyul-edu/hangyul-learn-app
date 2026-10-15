@@ -41,6 +41,7 @@ import radioOn from "../assets/brand/pm-radio-on.svg";
 import radioOff from "../assets/brand/pm-radio-off.svg";
 import addPlus from "../assets/brand/pm-add-plus.svg";
 import { DetailHeader } from "../components/DetailHeader";
+import { Spinner } from "../components/ui/Spinner";
 
 const QK = ["payment-methods"] as const;
 const RECOVERY_QK = ["payment-recovery"] as const;
@@ -632,7 +633,7 @@ export function PaymentMethods() {
                 >
                   {retry.isPending ? (
                     <>
-                      <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />
+                      <Spinner size={18} stroke={2} />
                       {t("paymentMethods.paying")}
                     </>
                   ) : (

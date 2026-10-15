@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 vi.mock("./hooks/auth", () => ({ useAuth: () => ({ status: "signed-in", me: null }) }));
 
-import { RETIRED_SCREENS } from "./App";
+import { RETIRED_SCREENS, RetiredRedirect } from "./App";
 
 function Where() {
-  const { pathname, search } = useLocation();
-  return <div data-testid="where">{pathname + search}</div>;
+  const { pathname, search, hash } = useLocation();
+  return <div data-testid="where">{pathname + search + hash}</div>;
 }
 
 /** Open `path` with the retired-screen redirects mounted, and report where it lands. */
@@ -17,7 +17,7 @@ function landOn(path: string): string {
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         {RETIRED_SCREENS.map(([from, to]) => (
-          <Route key={from} path={from} element={<Navigate to={to} replace />} />
+          <Route key={from} path={from} element={<RetiredRedirect to={to} />} />
         ))}
         <Route path="*" element={<Where />} />
       </Routes>
@@ -28,7 +28,7 @@ function landOn(path: string): string {
   return where;
 }
 
-describe("retired Learn screens", () => {
+describe("retired screens", () => {
   it.each([
     // What study-goal notifications linked to before, and are still stored.
     ["/learn/conversation", "/recommend?track=conversation"],
@@ -39,12 +39,24 @@ describe("retired Learn screens", () => {
     ["/exams/exs_2024_1", "/recommend?track=topik"],
     ["/recommend/sentences", "/recommend?track=conversation"],
     ["/ai", "/courses"],
+    ["/account/billing", "/subscription"],
   ])("%s opens %s", (from, to) => {
     expect(landOn(from)).toBe(to);
+  });
+
+  it("keeps the old link's parameters and fragment", () => {
+    expect(landOn("/account/billing?utm_source=email#top")).toBe("/subscription?utm_source=email#top");
+    expect(landOn("/learn?utm_source=push")).toBe("/recommend?utm_source=push");
+  });
+
+  it("lets the successor's own parameters win", () => {
+    expect(landOn("/learn/topik?track=conversation&ref=mail")).toBe("/recommend?track=topik&ref=mail");
   });
 
   it("leaves current screens alone", () => {
     expect(landOn("/recommend")).toBe("/recommend");
     expect(landOn("/recommend/settings")).toBe("/recommend/settings");
+    expect(landOn("/subscription")).toBe("/subscription");
+    expect(landOn("/account/payment")).toBe("/account/payment");
   });
 });

@@ -1493,18 +1493,6 @@ export const ko = {
     practiceA11y: "{title} 말하기 연습",
   },
 
-  /** Billing history. */
-  billing: {
-    title: "결제 내역",
-    empty: "결제 내역이 없어요",
-    emptyDesc: "구독을 시작하면 여기에 표시돼요.",
-    paid: "결제 완료",
-    pending: "대기 중",
-    unpaid: "미결제",
-    cancelled: "취소됨",
-    refunded: "환불됨",
-  },
-
   /** Account management / MOR-002, Figma 1:5823. */
   account: {
     title: "계정관리",

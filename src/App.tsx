@@ -55,7 +55,6 @@ import { SessionConversation } from "./screens/SessionConversation";
 import { SessionTopik } from "./screens/SessionTopik";
 import { SessionReview } from "./screens/SessionReview";
 import { PaymentMethods } from "./screens/PaymentMethods";
-import { Billing } from "./screens/Billing";
 import { Streak } from "./screens/Streak";
 import { LearningManagement } from "./screens/LearningManagement";
 import { Policy, PolicyList } from "./screens/Policy";
@@ -118,9 +117,10 @@ function AppFrame() {
  * Addresses of retired screens, and the screen that does their job now.
  *
  * The old Learn hub (/learn) and its screens were replaced by 맞춤 학습
- * (/recommend) and lectures. Their addresses still arrive from notifications
- * sent before (stored deep links, pushes already on a phone) and from
- * bookmarks, so each opens its successor rather than falling through to home.
+ * (/recommend) and lectures, and the old billing page by the payment history
+ * on 구독 관리. Their addresses still arrive from notifications sent before
+ * (stored deep links, pushes already on a phone) and from bookmarks, so each
+ * opens its successor rather than falling through to home.
  */
 export const RETIRED_SCREENS: readonly (readonly [path: string, to: string])[] = [
   ["/learn", "/recommend"],
@@ -131,7 +131,20 @@ export const RETIRED_SCREENS: readonly (readonly [path: string, to: string])[] =
   ["/recommend/sentences", "/recommend?track=conversation"],
   // The AI tutor is the chatbot inside lectures.
   ["/ai", "/courses"],
+  // Payment history is listed on 구독 관리.
+  ["/account/billing", "/subscription"],
 ];
+
+/** Opens `to`, keeping the old address's query and fragment (`to`'s own
+ * parameters win), so a tracked or parameterised old link loses nothing. */
+export function RetiredRedirect({ to }: { to: string }) {
+  const { search, hash } = useLocation();
+  const [pathname, own = ""] = to.split("?");
+  const params = new URLSearchParams(search);
+  new URLSearchParams(own).forEach((value, key) => params.set(key, value));
+  const query = params.toString();
+  return <Navigate to={{ pathname, search: query ? `?${query}` : "", hash }} replace />;
+}
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -169,7 +182,7 @@ const router = createBrowserRouter(
         <Route path="/setup/profile" element={<RequireAuth><SetupProfile /></RequireAuth>} />
         <Route path="/setup/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
 
-        {/* Main app with bottom-nav shell (the five bottom-nav tab roots, plus /learn and /social) */}
+        {/* Main app with bottom-nav shell (the five bottom-nav tab roots, plus /social) */}
         <Route element={<RequireAuth><AppShell /></RequireAuth>}>
           <Route path="/home" element={<Home />} />
           <Route path="/courses" element={<LectureHome />} />
@@ -181,7 +194,7 @@ const router = createBrowserRouter(
 
         {/* Detail screens (authenticated, full-screen) */}
         {RETIRED_SCREENS.map(([path, to]) => (
-          <Route key={path} path={path} element={<Navigate to={to} replace />} />
+          <Route key={path} path={path} element={<RetiredRedirect to={to} />} />
         ))}
         <Route path="/series/:seriesId" element={<RequireAuth><SeriesPage /></RequireAuth>} />
         {/* Older links to a course open its first series. */}
@@ -196,7 +209,6 @@ const router = createBrowserRouter(
         <Route path="/lectures/:lectureId/practice" element={<RequireAuth><Practice /></RequireAuth>} />
         <Route path="/lectures/:lectureId/speak" element={<RequireAuth><SpeakPractice /></RequireAuth>} />
         <Route path="/account/payment" element={<RequireAuth><PaymentMethods /></RequireAuth>} />
-        <Route path="/account/billing" element={<RequireAuth><Billing /></RequireAuth>} />
         <Route path="/saved" element={<RequireAuth><Saved /></RequireAuth>} />
         <Route path="/league/history" element={<RequireAuth><LeagueHistory /></RequireAuth>} />
         <Route path="/league/result" element={<RequireAuth><LeagueResult /></RequireAuth>} />

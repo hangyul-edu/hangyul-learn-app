@@ -1483,18 +1483,6 @@ export const en: Catalog = {
     practiceA11y: "Speaking practice for {title}",
   },
 
-  /** Billing history. */
-  billing: {
-    title: "Billing history",
-    empty: "No billing history",
-    emptyDesc: "It will appear here once you subscribe.",
-    paid: "Paid",
-    pending: "Pending",
-    unpaid: "Unpaid",
-    cancelled: "Cancelled",
-    refunded: "Refunded",
-  },
-
   /** Account management. */
   /** Account management / MOR-002, Figma 784:52621 — both inline actions are
       lower-case "change" in the English frame. */

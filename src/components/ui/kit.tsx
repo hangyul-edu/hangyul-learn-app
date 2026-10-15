@@ -158,24 +158,3 @@ export function OptionCard({
     </button>
   );
 }
-
-/* ---------------- Segmented control ---------------- */
-export function Segmented<T extends string>({
-  value,
-  options,
-  onChange,
-}: {
-  value: T;
-  options: { value: T; label: string }[];
-  onChange: (v: T) => void;
-}) {
-  return (
-    <div className="chiprow">
-      {options.map((o) => (
-        <Chip key={o.value} active={value === o.value} onClick={() => onChange(o.value)}>
-          {o.label}
-        </Chip>
-      ))}
-    </div>
-  );
-}

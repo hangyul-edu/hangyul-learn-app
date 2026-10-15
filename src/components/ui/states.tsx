@@ -26,12 +26,11 @@ export function EmptyState({
   text?: string;
   action?: ReactNode;
 }) {
-  const { t } = useTranslation();
   return (
     <div className="state">
       <div className="state__emoji">{emoji}</div>
       <div className="state__title">{title}</div>
-      {text && <div className="state__text">{text ?? t("ui.loading")}</div>}
+      {text && <div className="state__text">{text}</div>}
       {action}
     </div>
   );

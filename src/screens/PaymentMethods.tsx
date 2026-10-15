@@ -9,7 +9,7 @@ import { NaverPayLogo, TossPayLogo } from "../components/brand/PayBrand";
 import { billingApi, payApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
 import { useToast } from "../hooks/toast";
-import { ApiError, errorMessage } from "../lib/http";
+import { ApiError, errorMessage, isNotFound } from "../lib/http";
 import { currencyLabel, currencyMismatchText, paymentErrorMessage } from "../lib/paymentErrors";
 import { InternationalCardSheet } from "../components/InternationalCardSheet";
 import {
@@ -375,7 +375,7 @@ export function PaymentMethods() {
         // Already paid (idempotency guard) → verify and treat as recovered.
         if (e instanceof ApiError && e.status === 409) return verifyRetry(invoiceId);
         // Outstanding invoice vanished (resolved elsewhere) → refresh & clear.
-        if (e instanceof ApiError && e.status === 404) {
+        if (isNotFound(e)) {
           invalidateRecovery();
           throw new Error("resolved");
         }

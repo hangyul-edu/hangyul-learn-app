@@ -5,10 +5,10 @@ import { useMutation, useQuery, useQueryClient, type InfiniteData } from "@tanst
 import { supportApi } from "../api/endpoints";
 import { useNoticesCopy } from "../lib/noticeCopy";
 import { formatNoticeDetailDate } from "../lib/format";
-import { ApiError, errorMessage } from "../lib/http";
+import { errorMessage, isNotFound, retryUnlessNotFound } from "../lib/http";
 import { Markdown } from "../lib/markdown";
 import { Button } from "../components/ui/kit";
-import { ErrorState } from "../components/ui/states";
+import { ErrorState, EmptyState } from "../components/ui/states";
 import type { Notice, NoticeSummary } from "../lib/types";
 import { BackChevronIcon } from "../components/brand/Glyphs";
 
@@ -45,7 +45,7 @@ export function NoticeDetail() {
     enabled: !!noticeId,
     // Temporary metadata (title/date) from the list cache while the body loads.
     placeholderData: placeholderSummary ? { ...placeholderSummary, body: "" } : undefined,
-    retry: (count, err) => !(err instanceof ApiError && err.status === 404) && count < 2,
+    retry: retryUnlessNotFound,
   });
 
   // Mark the notice read once its detail successfully opens (and it was still
@@ -91,7 +91,7 @@ export function NoticeDetail() {
   }, [loc.key, nav, goToList]);
 
   const notFound =
-    !noticeId || (detail.error instanceof ApiError && detail.error.status === 404);
+    !noticeId || isNotFound(detail.error);
   const data = detail.data;
   const showBodySkeleton = detail.isLoading || detail.isPlaceholderData;
 
@@ -107,11 +107,15 @@ export function NoticeDetail() {
         <div className="ntc__detail">
           {notFound ? (
             <div className="ntc__state">
-              <EmptyNotFound
+              <EmptyState
+                emoji="🗒️"
                 title={copy.notFoundTitle}
-                body={copy.notFoundBody}
-                actionLabel={copy.backToList}
-                onAction={goToList}
+                text={copy.notFoundBody}
+                action={
+                  <Button variant="secondary" size="sm" onClick={goToList}>
+                    {copy.backToList}
+                  </Button>
+                }
               />
             </div>
           ) : detail.isError ? (
@@ -153,29 +157,6 @@ export function NoticeDetail() {
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function EmptyNotFound({
-  title,
-  body,
-  actionLabel,
-  onAction,
-}: {
-  title: string;
-  body: string;
-  actionLabel: string;
-  onAction: () => void;
-}) {
-  return (
-    <div className="state">
-      <div className="state__emoji">🗒️</div>
-      <div className="state__title">{title}</div>
-      <div className="state__text">{body}</div>
-      <Button variant="secondary" size="sm" onClick={onAction}>
-        {actionLabel}
-      </Button>
     </div>
   );
 }

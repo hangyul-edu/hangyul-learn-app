@@ -255,3 +255,14 @@ export function errorMessage(e: unknown): string {
   if (e instanceof Error && e.message) return resolveMessage(e.message);
   return resolveMessage("httpError.unknown");
 }
+
+/** The API answered 404: the thing asked for does not exist (or not for you). */
+export function isNotFound(e: unknown): boolean {
+  return e instanceof ApiError && e.status === 404;
+}
+
+/** react-query `retry`: up to two retries, none for a 404 (retrying cannot
+ * make a missing item appear). */
+export function retryUnlessNotFound(failureCount: number, error: unknown): boolean {
+  return !isNotFound(error) && failureCount < 2;
+}

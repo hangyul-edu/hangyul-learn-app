@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "../i18n";
 import { supportApi } from "../api/endpoints";
-import { ApiError, errorMessage } from "../lib/http";
+import { errorMessage, isNotFound, retryUnlessNotFound } from "../lib/http";
 import { EmptyState, ErrorState } from "../components/ui/states";
 import { FaqHeader } from "../components/faq/FaqPieces";
 import { SupportChatButton } from "../components/faq/SupportChatButton";
@@ -20,10 +20,10 @@ export function FaqDetail() {
     queryKey: ["faq", faqId, language],
     queryFn: () => supportApi.faq(faqId, language),
     enabled: !!faqId,
-    retry: (count, err) => !(err instanceof ApiError && err.status === 404) && count < 2,
+    retry: retryUnlessNotFound,
   });
 
-  const notFound = faq.error instanceof ApiError && faq.error.status === 404;
+  const notFound = isNotFound(faq.error);
 
   return (
     <div className="faq faq--detail">

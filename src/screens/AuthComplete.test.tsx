@@ -22,6 +22,7 @@ import {
   takePendingReauth,
   useSocialLogin,
 } from "../hooks/socialLogin";
+import { loadPendingSignup } from "../hooks/socialSignup";
 
 const exchange = authApi.socialExchange as unknown as ReturnType<typeof vi.fn>;
 
@@ -31,6 +32,7 @@ function renderAt(url: string) {
       <MemoryRouter initialEntries={[url]}>
         <Routes>
           <Route path="/auth/complete" element={<AuthComplete />} />
+          <Route path="/signup/phone" element={<p>phone step</p>} />
         </Routes>
       </MemoryRouter>
     </I18nProvider>,
@@ -40,6 +42,7 @@ function renderAt(url: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
+  window.sessionStorage.clear();
 });
 
 describe("social login browser binding", () => {
@@ -83,6 +86,17 @@ describe("social login browser binding", () => {
     await waitFor(() => expect(exchange).toHaveBeenCalledWith("code-1", "my-verifier"));
     await waitFor(() => expect(completeLogin).toHaveBeenCalledWith({ access_token: "a" }, true));
     expect(takeClientVerifier()).toBeNull();
+  });
+
+  it("sends a first sign-in that matched no account to the phone step, with no session", async () => {
+    window.localStorage.setItem("hg-social-verifier", "my-verifier");
+    exchange.mockResolvedValue({
+      signup_token: "ticket-1", provider: "line", expires_in: 1800, next_step: "phone_verification",
+    });
+    renderAt("/auth/complete?login_code=code-2");
+    expect(await screen.findByText("phone step")).toBeInTheDocument();
+    expect(completeLogin).not.toHaveBeenCalled();
+    expect(loadPendingSignup()).toMatchObject({ signupToken: "ticket-1", provider: "line" });
   });
 
   it("never redeems a login code this browser did not start", async () => {

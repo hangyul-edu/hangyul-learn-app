@@ -73,6 +73,7 @@ import { LanguagePicker } from "./screens/LanguagePicker";
 import { loadStoredLanguage } from "./lib/language";
 import { SocialSignupTerms } from "./screens/SocialSignupTerms";
 import { SOCIAL_PHONE_PATH, SOCIAL_TERMS_PATH, nextSetupPath } from "./hooks/loginFlow";
+import { SOCIAL_SIGNUP_PHONE_PATH } from "./hooks/socialSignup";
 
 
 export function RequireAuth({ children }: { children: ReactNode }) {
@@ -80,9 +81,10 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   const loc = useLocation();
   if (status === "booting") return <Splash />;
   if (status === "signed-out") return <Navigate to="/welcome" replace state={{ from: loc.pathname }} />;
-  // A social account without a phone number verifies one before anything
-  // else — a new member before the terms, an existing account straight
-  // after sign-in (the server reports the step until a number is saved).
+  // An older social account without a phone number verifies one before
+  // anything else, straight after sign-in (the server reports the step until
+  // a number is saved). A first social sign-in verifies its number before any
+  // account exists, on its own route (SOCIAL_SIGNUP_PHONE_PATH).
   const onPhone = loc.pathname === SOCIAL_PHONE_PATH;
   if (me?.phone_verification_pending && !onPhone) return <Navigate to={SOCIAL_PHONE_PATH} replace />;
   if (me && !me.phone_verification_pending && onPhone) return <Navigate to={nextSetupPath(me)} replace />;
@@ -147,6 +149,8 @@ const router = createBrowserRouter(
         <Route path={SOCIAL_TERMS_PATH} element={<RequireAuth><SocialSignupTerms /></RequireAuth>} />
 
         {/* Setup (authenticated, outside tab shell) */}
+        {/* A first social sign-in's phone step: no account (and no session) yet. */}
+        <Route path={SOCIAL_SIGNUP_PHONE_PATH} element={<ChangePhone mode="signup" />} />
         <Route path={SOCIAL_PHONE_PATH} element={<RequireAuth><ChangePhone mode="setup" /></RequireAuth>} />
         <Route path="/setup/profile" element={<RequireAuth><SetupProfile /></RequireAuth>} />
         <Route path="/setup/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />

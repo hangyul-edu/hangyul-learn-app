@@ -21,6 +21,8 @@ export const ko = {
     back: "뒤로 가기", // app-authored (a11y)
     close: "닫기", // app-authored (a11y)
     retry: "다시 시도",
+    /** An email the account doesn't have (a social sign-up without one). */
+    notRegistered: "미등록", // app-authored
     networkError: "네트워크 연결을 확인한 후 다시 시도해 주세요.", // app-authored
   },
 
@@ -555,8 +557,9 @@ export const ko = {
   },
 
   /**
-   * Social signup's phone step (/setup/phone) — app-authored, on the phone
-   * change screen's layout. For a member whose provider gave no phone number.
+   * Social signup's phone step (/signup/phone, before any account exists; and
+   * /setup/phone for an older social account without a number) —
+   * app-authored, on the phone change screen's layout.
    */
   phoneSetup: {
     title: "휴대폰 번호 인증",
@@ -1677,6 +1680,9 @@ export const ko = {
     forgotLink: "비밀번호 찾기", // 1:3348
     goToLogin: "로그인하러 가기", // I1:3345;3034:65139;3021:65365
     emailA11y: "가입된 이메일 {email}", // app-authored (a11y)
+    /** The account found has no email (it signed up with a social login). app-authored. */
+    noEmailTitle: "계정을 찾았어요!",
+    noEmailSubtitle: "이 계정에는 등록된 이메일이 없어요. 가입할 때 쓴 소셜 로그인으로 로그인해 주세요.",
   },
 
   /**

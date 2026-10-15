@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "../i18n";
 import { authApi } from "../api/endpoints";
 import { INTL_OPTIONS_QK } from "../components/InternationalCardSheet";
 import { useAuth } from "../hooks/auth";
 import { nextSetupPath, useLoginFlow } from "../hooks/loginFlow";
+import { clearPendingSignup, loadPendingSignup } from "../hooks/socialSignup";
 import { useToast } from "../hooks/toast";
 import { countdownLabel } from "../hooks/verification";
-import { errorMessage } from "../lib/http";
+import { ApiError, errorMessage } from "../lib/http";
 import { DEFAULT_PHONE_COUNTRY, applyPhoneInput, checkPhone, isPhoneCountry, phoneExample } from "../lib/phone";
 import { usePhoneProblemMessage } from "../hooks/phoneProblem";
 import { passwordProblem } from "../lib/validation";
@@ -154,16 +155,20 @@ export function ChangePassword() {
  * (without saying what it is used for), X signs out like the terms step, and
  * saving continues to the next signup step instead of going back.
  */
-export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" }) {
+export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" | "signup" }) {
   const { t } = useTranslation();
   const nav = useNavigate();
   const qc = useQueryClient();
   const toast = useToast();
   const { me, setMe, bootstrapMe, revokeSession, hardSignOut } = useAuth();
   const completeLogin = useLoginFlow();
-  // Setup: social signup's phone step (/setup/phone) — the account has no
-  // number yet, the step cannot be skipped, and saving continues the signup.
-  const setup = mode === "setup";
+  // Signup: a first social sign-in's phone step (/signup/phone) — no account
+  // exists yet; the verified number signs in to the account that holds it,
+  // or only then creates one. Setup: an older social account without a
+  // number (/setup/phone). Neither can be skipped.
+  const signup = mode === "signup";
+  const setup = mode === "setup" || signup;
+  const [pending] = useState(() => (signup ? loadPendingSignup() : null));
 
   const [country, setCountry] = useState<string>(
     isPhoneCountry(me?.nationality) ? me.nationality : DEFAULT_PHONE_COUNTRY,
@@ -260,21 +265,39 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" }) 
     }
   }
 
-  const canSave = !!me && verified && phoneValid && !sameAsCurrent && !saving;
+  const canSave = (signup ? !!pending : !!me) && verified && phoneValid && !sameAsCurrent && !saving;
+
+  async function finishSignup() {
+    // Sent even when the local copy has expired: the server's answer
+    // (`social_signup_expired`) is what the member is shown.
+    const ticket = loadPendingSignup() ?? pending;
+    if (!ticket) return;
+    try {
+      const tokens = await authApi.completeSocialSignup(ticket.signupToken, e164, token!, country);
+      clearPendingSignup();
+      qc.clear();
+      // The number is an existing member's: the sign-in joined their account.
+      if (!tokens.is_new_user) toast.success(t("phoneSetup.linked"));
+      await completeLogin(tokens, true);
+    } catch (e) {
+      toast.error(errorMessage(e));
+      if (e instanceof ApiError && e.code === "social_signup_expired") {
+        clearPendingSignup();
+        nav("/welcome", { replace: true });
+      }
+    }
+  }
 
   async function save() {
     if (!canSave) return;
     setSaving(true);
+    if (signup) {
+      await finishSignup();
+      setSaving(false);
+      return;
+    }
     try {
       const res = await authApi.changePhone(e164, token!, country);
-      if (setup && res.linked_sign_in) {
-        // The number is an existing member's: this sign-in now belongs to
-        // their account and the one just created is gone — continue as them.
-        qc.clear();
-        toast.success(t("phoneSetup.linked"));
-        await completeLogin(res.linked_sign_in, true);
-        return;
-      }
       if (me) setMe({ ...me, phone: res.phone ?? e164, nationality: country });
       // The number's calling code decides the billing currency and which
       // card the member may register: drop what was read for the old one.
@@ -300,7 +323,13 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" }) 
 
   // Leaving the phone step signs out, as leaving the terms step does: the
   // app cannot be used without a number, and the next login comes back here.
+  // A sign-up has no account to sign out of: its ticket is dropped.
   async function quitSetup() {
+    if (signup) {
+      clearPendingSignup();
+      nav("/welcome", { replace: true });
+      return;
+    }
     try {
       await revokeSession();
     } catch {
@@ -328,6 +357,9 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" }) 
       : codeErr
         ? { ok: false, text: codeErr }
         : null;
+
+  // No sign-up in progress here (opened directly, or the ticket expired).
+  if (signup && !pending) return <Navigate to="/welcome" replace />;
 
   return (
     <div className="screen acct pchg">

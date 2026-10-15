@@ -17,6 +17,7 @@ export const en: Catalog = {
     back: "Go back", // app-authored (a11y)
     close: "Close", // app-authored (a11y)
     retry: "Try again",
+    notRegistered: "Not registered", // app-authored
     networkError: "Check your network connection and try again.", // app-authored
   },
 
@@ -1668,6 +1669,8 @@ export const en: Catalog = {
     forgotLink: "Reset password", // 784:50328
     goToLogin: "Go to login", // I784:50325;3034:65139;3021:65365
     emailA11y: "Registered email {email}", // app-authored (a11y)
+    noEmailTitle: "We found your account!",
+    noEmailSubtitle: "This account has no email registered. Sign in with the social login you signed up with.",
   },
 
   /** More / MOR-005, Figma 893:33047 — menu from 893:33108. */

@@ -46,6 +46,7 @@ export const apiErrorsEn: ApiErrorCatalog = {
     "phone_verification_failed": "We couldn't confirm the phone verification. Please verify again.",
     "phone_verification_expired": "The code has expired. Please request a new one.",
     "phone_number_undeliverable": "We can't send a code to this number. Check it or enter another number.",
+    "social_signup_expired": "Your sign-up timed out. Please sign in again from the start.",
     "email_verification_failed": "We couldn't confirm the email verification. Please verify again.",
     "email_verification_expired": "The code has expired. Please request a new one.",
     "verification_delivery_failed": "We couldn't send the code. Please try again in a moment.",

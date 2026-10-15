@@ -52,6 +52,7 @@ export const apiErrorsKo = {
     "phone_verification_failed": "휴대폰 인증을 확인하지 못했어요. 인증을 다시 진행해 주세요.",
     "phone_verification_expired": "인증 시간이 지났어요. 인증번호를 다시 요청해 주세요.",
     "phone_number_undeliverable": "이 번호로는 인증 문자를 보낼 수 없어요. 번호를 확인하거나 다른 번호를 입력해 주세요.",
+    "social_signup_expired": "가입 시간이 지났어요. 처음부터 다시 로그인해 주세요.",
     "email_verification_failed": "이메일 인증을 확인하지 못했어요. 인증을 다시 진행해 주세요.",
     "email_verification_expired": "인증 시간이 지났어요. 인증번호를 다시 요청해 주세요.",
     "verification_delivery_failed": "인증번호를 보내지 못했어요. 잠시 후 다시 시도해 주세요.",

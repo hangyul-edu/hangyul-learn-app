@@ -46,7 +46,8 @@ export function Account() {
           <div className="acct__label" id="acct-email-label">{t("account.email")}</div>
           <div className="acct__row">
             <div className="acct__field acct__field--flex" role="textbox" aria-readonly="true" aria-labelledby="acct-email-label">
-              {me?.email ?? "-"}
+              {/* A social sign-up without an email: never its placeholder. */}
+              {me ? (me.email ?? t("common.notRegistered")) : "-"}
             </div>
             <button className="acct__action" onClick={() => nav("/account/email")}>{t("account.change")}</button>
           </div>

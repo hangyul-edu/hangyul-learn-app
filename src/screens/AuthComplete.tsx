@@ -9,15 +9,18 @@ import {
   takeClientVerifier,
   takeSocialPurpose,
 } from "../hooks/socialLogin";
+import { isSignupPending, savePendingSignup, SOCIAL_SIGNUP_PHONE_PATH } from "../hooks/socialSignup";
 import { LoadingState, ErrorState } from "../components/ui/states";
 import type { SocialProvider } from "../lib/types";
 
 /**
  * Landing page for the social-login callback. The backend has already verified
- * the provider identity and issued our session; it redirected here with a
- * single-use `login_code` (or a `social_error`). We swap the code — together
- * with the verifier saved when this browser started the login — for the real
- * tokens and route the user onward via the normal login flow.
+ * the provider identity; it redirected here with a single-use `login_code` (or
+ * a `social_error`). We swap the code — together with the verifier saved when
+ * this browser started the login — for the real tokens and route the user
+ * onward via the normal login flow. A first sign-in whose email matched no
+ * account gets a sign-up ticket instead: no account exists yet, and the phone
+ * step decides which account it signs in to.
  *
  * A re-authentication (`purpose=reauth`, confirming an account deletion)
  * lands here too, with a `reauth_code` instead: it is passed — with the
@@ -75,8 +78,13 @@ export function AuthComplete() {
     }
     (async () => {
       try {
-        const tokens = await authApi.socialExchange(loginCode, verifier);
-        await completeLogin(tokens, true); // stores tokens + routes by next_step
+        const res = await authApi.socialExchange(loginCode, verifier);
+        if (isSignupPending(res)) {
+          savePendingSignup(res);
+          nav(SOCIAL_SIGNUP_PHONE_PATH, { replace: true });
+          return;
+        }
+        await completeLogin(res, true); // stores tokens + routes by next_step
       } catch {
         setError("login_failed");
       }

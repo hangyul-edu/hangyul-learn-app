@@ -3113,6 +3113,9 @@ textarea.input {
   font-weight: 500;
   font-size: 14px;
   line-height: 21.5px;
+  /* The no-email subtitle runs to two lines: wrap Korean between words. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 .feres__email {
   /* 1:3346 — Body3 Regular 16 / 2.33, -0.16 tracking, Gray 7. */

@@ -81,7 +81,7 @@ export function FindEmail() {
       const res = await authApi.recoverEmail(phoneV.token, name.trim());
       // The backend returns a pre-masked address; pass it (only) to the result
       // screen via navigation state — not persisted anywhere.
-      nav("/find-email/result", { state: { email: res.email } });
+      nav("/find-email/result", { state: { found: true, email: res.email } });
     } catch (e) {
       // Only the backend's account-not-found result gets the dedicated screen;
       // every other error (bad/expired OTP, network, server, …) keeps the

@@ -13,10 +13,11 @@ export function FindEmailResult() {
   const { t } = useTranslation();
   const nav = useNavigate();
   const location = useLocation();
-  const email = (location.state as { email?: string } | null)?.email;
+  const state = location.state as { found?: boolean; email?: string | null } | null;
+  const email = state?.email ?? null;
 
   // Guard: opened without a valid lookup result → back to the lookup form.
-  if (!email) return <Navigate to="/forgot" state={{ mode: "email" }} replace />;
+  if (!state?.found) return <Navigate to="/forgot" state={{ mode: "email" }} replace />;
 
   return (
     <div className="screen findemail feres">
@@ -28,11 +29,15 @@ export function FindEmailResult() {
             </svg>
           </button>
 
-          <h1 className="feres__title">{t("findEmailResult.title")}</h1>
-          <p className="feres__subtitle">{t("findEmailResult.subtitle")}</p>
+          {/* An account without an email (a social sign-up) is shown as not
+              registered — never its placeholder address. */}
+          <h1 className="feres__title">{t(email ? "findEmailResult.title" : "findEmailResult.noEmailTitle")}</h1>
+          <p className="feres__subtitle">
+            {t(email ? "findEmailResult.subtitle" : "findEmailResult.noEmailSubtitle")}
+          </p>
 
-          <p className="feres__email" aria-label={t("findEmailResult.emailA11y", { email })}>
-            {email}
+          <p className="feres__email" aria-label={email ? t("findEmailResult.emailA11y", { email }) : undefined}>
+            {email ?? t("common.notRegistered")}
           </p>
 
           <div className="feres__prompt-row">

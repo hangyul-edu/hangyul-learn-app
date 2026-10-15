@@ -1,10 +1,10 @@
 import type { ImageCrop } from "./imageCrop";
 
 /* ---- Auth ---- */
-/** `terms_agreement`: an account a first social login created, whose owner has
- *  not yet accepted the signup agreements (the social signup's terms step).
- *  `phone_verification`: a social account with no phone number, which verifies
- *  one by SMS next (the number sets the billing currency). */
+/** `terms_agreement`: an account a first social sign-in created, whose owner
+ *  has not yet accepted the signup agreements (the social signup's terms step).
+ *  `phone_verification`: an older social account with no phone number, which
+ *  verifies one by SMS next (the number sets the billing currency). */
 export type NextStep =
   | "terms_agreement"
   | "phone_verification"
@@ -19,6 +19,20 @@ export interface Membership {
   /** Always sent; optional here only so fixtures can omit it. */
   role?: "member" | "premium" | "tester" | "admin";
 }
+/**
+ * A first social sign-in whose email matched no account: **no account exists
+ * yet** and no session is issued. The phone step (`/signup/phone`) verifies a
+ * number and sends it with `signup_token` to `POST /auth/signup/social/phone`,
+ * which signs in to the account holding that number or only then creates one.
+ */
+export interface SocialSignupPending {
+  signup_token: string;
+  provider: SocialProvider;
+  expires_in: number;
+  next_step: "phone_verification";
+}
+/** What a social sign-in answers: a session, or the sign-up's phone step. */
+export type SocialLoginResponse = TokenResponse | SocialSignupPending;
 export interface TokenResponse {
   access_token: string;
   refresh_token: string;
@@ -65,7 +79,9 @@ export type AccountDeletionBody =
 export type ProfileImageType = "CUSTOM" | "AVATAR" | "NONE";
 export interface Me {
   user_id: string;
-  email: string;
+  /** `null` when the account has no real address (a social sign-up whose
+   *  provider gave none): shown as not registered, never as a placeholder. */
+  email: string | null;
   name: string;
   nickname: string | null;
   phone: string | null;

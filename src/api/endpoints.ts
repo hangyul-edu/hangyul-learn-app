@@ -65,6 +65,7 @@ import type {
   Sentence,
   SignupResponse,
   NextStep,
+  SocialLoginResponse,
   SocialProvider,
   AccountDeletionBody,
   AccountDeletionMethods,
@@ -106,7 +107,7 @@ export const authApi = {
   // Native id_token login. `nonce` is the raw value handed to the provider SDK;
   // the server requires the token's nonce claim to match it.
   social: (provider: SocialProvider, id_token: string, nonce?: string) =>
-    http.post<TokenResponse>(
+    http.post<SocialLoginResponse>(
       "/auth/login/social",
       nonce ? { provider, id_token, nonce } : { provider, id_token },
       { auth: false },
@@ -126,11 +127,21 @@ export const authApi = {
     `&client_challenge=${encodeURIComponent(clientChallenge)}` +
     (purpose === "reauth" ? "&purpose=reauth" : ""),
   // After the provider callback, the SPA swaps the one-time login_code for
-  // tokens, proving it is the browser that started the login.
+  // tokens (or a first sign-in's sign-up ticket), proving it is the browser
+  // that started the login.
   socialExchange: (login_code: string, client_verifier: string) =>
-    http.post<TokenResponse>("/auth/social/exchange", { login_code, client_verifier }, { auth: false }),
+    http.post<SocialLoginResponse>("/auth/social/exchange", { login_code, client_verifier }, { auth: false }),
+  /** A first social sign-in's phone step: signs in to the account holding the
+   *  verified number (`is_new_user=false`), or creates one only now. */
+  completeSocialSignup: (signup_token: string, phone: string, phone_verification_token: string, nationality: string) =>
+    http.post<TokenResponse>(
+      "/auth/signup/social/phone",
+      { signup_token, phone, phone_verification_token, nationality },
+      { auth: false },
+    ),
+  /** `email: null` — the account has no real address (shown as not registered). */
   recoverEmail: (verification_token: string, name: string) =>
-    http.post<{ email: string }>("/auth/email/recover", { verification_token, name }, { auth: false }),
+    http.post<{ email: string | null }>("/auth/email/recover", { verification_token, name }, { auth: false }),
   resetVerify: (email: string, phone_verification_token: string) =>
     http.post<{ reset_token: string; expires_at: string }>(
       "/auth/password/reset/verify",
@@ -142,9 +153,7 @@ export const authApi = {
   changePassword: (current_password: string, new_password: string, confirm_new_password: string) =>
     http.post<void>("/auth/password/change", { current_password, new_password, confirm_new_password }),
   changePhone: (phone: string, phone_verification_token: string, nationality?: string) =>
-    // `linked_sign_in`: the number belonged to an existing account and this was
-    // a social sign-up's phone step — sign in to that account with these tokens.
-    http.post<{ phone: string; linked_sign_in?: TokenResponse | null }>("/auth/phone/change", {
+    http.post<{ phone: string }>("/auth/phone/change", {
       phone,
       phone_verification_token,
       nationality,

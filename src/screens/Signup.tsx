@@ -2,8 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "../i18n";
 import { CountrySelect } from "../components/ui/CountrySelect";
-import { Sheet } from "../components/ui/Modal";
-import { PolicyBody } from "./Policy";
+import { PolicySheet } from "./Policy";
 import { authApi } from "../api/endpoints";
 import { useLoginFlow } from "../hooks/loginFlow";
 import { useToast } from "../hooks/toast";
@@ -12,20 +11,14 @@ import { errorMessage } from "../lib/http";
 import { passwordProblem, isEmailLike } from "../lib/validation";
 import { applyPhoneInput, checkPhone, phoneExample } from "../lib/phone";
 import { usePhoneProblemMessage } from "../hooks/phoneProblem";
-import { policyDoc, type PolicyId } from "../lib/policies";
-import {
-  AGREEMENTS,
-  NO_AGREEMENTS,
-  REQUIRED_AGREEMENTS,
-  agreementPayload,
-  type AgreeKey,
-  type Agreements,
-} from "../lib/signupAgreements";
+import type { PolicyId } from "../lib/policies";
+import { AGREEMENTS, agreementPayload } from "../lib/signupAgreements";
 import { Spinner } from "../components/ui/Spinner";
 import { BackChevronIcon, CheckIcon } from "../components/brand/Glyphs";
+import { useAgreements } from "../hooks/useAgreements";
 
 export function Signup() {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const nav = useNavigate();
   const toast = useToast();
   const completeLogin = useLoginFlow();
@@ -39,7 +32,7 @@ export function Signup() {
   const [confirm, setConfirm] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const [agree, setAgree] = useState<Agreements>(NO_AGREEMENTS);
+  const { agree, requiredDone, everyAgreed, toggle, toggleAll } = useAgreements();
   const [policyOpen, setPolicyOpen] = useState<PolicyId | null>(null);
 
   const phoneMessage = usePhoneProblemMessage();
@@ -67,9 +60,6 @@ export function Signup() {
     if (emailV.requested || emailV.verified) emailV.reset();
   }
 
-  const allAgreed = REQUIRED_AGREEMENTS.every((k) => agree[k]);
-  /** "Agree to all" reflects and toggles every row, optional ones included. */
-  const everyAgreed = AGREEMENTS.every((a) => agree[a.key]);
 
   function requestPhone() {
     if (!phone.ok) {
@@ -96,7 +86,7 @@ export function Signup() {
     const pw = passwordProblem(password);
     if (pw) e.password = t(pw);
     if (password !== confirm) e.confirm = t("signup.errConfirm");
-    if (!allAgreed) e.agree = t("signup.errAgree");
+    if (!requiredDone) e.agree = t("signup.errAgree");
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -131,10 +121,6 @@ export function Signup() {
     }
   }
 
-  function toggleAll() {
-    const next = !everyAgreed;
-    setAgree(Object.fromEntries(AGREEMENTS.map((a) => [a.key, next])) as Record<AgreeKey, boolean>);
-  }
 
   return (
     <div className="screen signup">
@@ -208,47 +194,7 @@ export function Signup() {
             {errors.phone && <p className="signup__err">{errors.phone}</p>}
           </div>
 
-          {/* Phone code — rendered ONLY after a code has actually been
-              requested. `phoneV.requested` is the shared hook's gate: it is
-              true only once the server has returned a verification_id, so
-              a failed request leaves the field hidden and the timer off. */}
-          {phoneV.requested && (
-          <div className="signup__field">
-            <label className="signup__label" htmlFor="su-phone-code">
-              {t("findEmail.codeLabel")}
-            </label>
-            <div className="signup__row">
-              <div className="signup__code signup__input--flex">
-                <input
-                  id="su-phone-code"
-                  className="signup__code-input"
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder={t("findEmail.codePlaceholder")}
-                  aria-label={t("signup.phoneCodeLabel")}
-                  value={phoneV.code}
-                  onChange={(e) => phoneV.setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  disabled={!phoneV.requested || phoneV.verified}
-                />
-                {phoneV.countdown && (
-                  <span className="signup__timer" aria-hidden="true">
-                    {phoneV.countdown}
-                  </span>
-                )}
-              </div>
-              <button
-                type="button"
-                className="signup__pill signup__pill--sm"
-                onClick={phoneV.confirmCode}
-                disabled={phoneV.code.length !== 6 || phoneV.confirming || phoneV.verified}
-                aria-label={t("signup.phoneCodeA11y")}
-              >
-                {phoneV.verified ? t("findEmail.checkDone") : t("findEmail.check")}
-              </button>
-            </div>
-            {phoneV.error && <p className="signup__err">{phoneV.error}</p>}
-          </div>
-          )}
+          <CodeField id="su-phone-code" verification={phoneV} label={t("signup.phoneCodeLabel")} confirmLabel={t("signup.phoneCodeA11y")} />
 
           {/* Email */}
           <div className="signup__field">
@@ -287,47 +233,7 @@ export function Signup() {
             {errors.email && <p className="signup__err">{errors.email}</p>}
           </div>
 
-          {/* Email code — rendered ONLY after a code has actually been
-              requested. `emailV.requested` is the shared hook's gate: it is
-              true only once the server has returned a verification_id, so
-              a failed request leaves the field hidden and the timer off. */}
-          {emailV.requested && (
-          <div className="signup__field">
-            <label className="signup__label" htmlFor="su-email-code">
-              {t("findEmail.codeLabel")}
-            </label>
-            <div className="signup__row">
-              <div className="signup__code signup__input--flex">
-                <input
-                  id="su-email-code"
-                  className="signup__code-input"
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder={t("findEmail.codePlaceholder")}
-                  aria-label={t("signup.emailCodeLabel")}
-                  value={emailV.code}
-                  onChange={(e) => emailV.setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  disabled={!emailV.requested || emailV.verified}
-                />
-                {emailV.countdown && (
-                  <span className="signup__timer" aria-hidden="true">
-                    {emailV.countdown}
-                  </span>
-                )}
-              </div>
-              <button
-                type="button"
-                className="signup__pill signup__pill--sm"
-                onClick={emailV.confirmCode}
-                disabled={emailV.code.length !== 6 || emailV.confirming || emailV.verified}
-                aria-label={t("signup.emailCodeA11y")}
-              >
-                {emailV.verified ? t("findEmail.checkDone") : t("findEmail.check")}
-              </button>
-            </div>
-            {emailV.error && <p className="signup__err">{emailV.error}</p>}
-          </div>
-          )}
+          <CodeField id="su-email-code" verification={emailV} label={t("signup.emailCodeLabel")} confirmLabel={t("signup.emailCodeA11y")} />
 
           {/* Password */}
           <div className="signup__field">
@@ -402,7 +308,7 @@ export function Signup() {
                     role="checkbox"
                     aria-checked={checked}
                     aria-label={t(a.label)}
-                    onClick={() => setAgree((s) => ({ ...s, [a.key]: !s[a.key] }))}
+                    onClick={() => toggle(a.key)}
                   >
                     <span className={`signup__check signup__check--pale ${checked ? "is-on" : ""}`} aria-hidden="true">
                       <CheckIcon size={14} color="#9aa2a8" />
@@ -420,13 +326,65 @@ export function Signup() {
         </div>
       </div>
 
-      <Sheet
-        open={policyOpen !== null}
-        onClose={() => setPolicyOpen(null)}
-        title={policyOpen ? policyDoc(language, policyOpen).title : ""}
-      >
-        {policyOpen && <PolicyBody id={policyOpen} />}
-      </Sheet>
+      <PolicySheet id={policyOpen} onClose={() => setPolicyOpen(null)} />
+    </div>
+  );
+}
+
+/**
+ * The 6-digit code row under a phone or email field — rendered ONLY once a
+ * code has actually been requested. `requested` is the verification hook's
+ * gate: it is true only once the server has returned a verification_id, so a
+ * failed request leaves the field hidden and the timer off.
+ */
+function CodeField({
+  id,
+  verification: v,
+  label,
+  confirmLabel,
+}: {
+  id: string;
+  verification: ReturnType<typeof useVerification>;
+  label: string;
+  confirmLabel: string;
+}) {
+  const { t } = useTranslation();
+  if (!v.requested) return null;
+  return (
+    <div className="signup__field">
+      <label className="signup__label" htmlFor={id}>
+        {t("findEmail.codeLabel")}
+      </label>
+      <div className="signup__row">
+        <div className="signup__code signup__input--flex">
+          <input
+            id={id}
+            className="signup__code-input"
+            inputMode="numeric"
+            maxLength={6}
+            placeholder={t("findEmail.codePlaceholder")}
+            aria-label={label}
+            value={v.code}
+            onChange={(e) => v.setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            disabled={!v.requested || v.verified}
+          />
+          {v.countdown && (
+            <span className="signup__timer" aria-hidden="true">
+              {v.countdown}
+            </span>
+          )}
+        </div>
+        <button
+          type="button"
+          className="signup__pill signup__pill--sm"
+          onClick={v.confirmCode}
+          disabled={v.code.length !== 6 || v.confirming || v.verified}
+          aria-label={confirmLabel}
+        >
+          {v.verified ? t("findEmail.checkDone") : t("findEmail.check")}
+        </button>
+      </div>
+      {v.error && <p className="signup__err">{v.error}</p>}
     </div>
   );
 }

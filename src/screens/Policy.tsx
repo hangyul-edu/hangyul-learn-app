@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation, type TranslationKey } from "../i18n";
 import { isPolicyId, policyDoc, TERMS_OF_SERVICE, type PolicyId } from "../lib/policies";
 import { DetailHeader } from "../components/DetailHeader";
+import { Sheet } from "../components/ui/Modal";
 
 /* ------------------------------- detail --------------------------------- */
 /** Email addresses, without swallowing the sentence-ending period after the
@@ -27,6 +28,17 @@ function Linkified({ text }: { text: string }) {
         ),
       )}
     </>
+  );
+}
+
+/** A legal document in a bottom sheet over the screen that cites it (the
+ *  signup agreements, the LINE email consent); closed while `id` is null. */
+export function PolicySheet({ id, onClose }: { id: PolicyId | null; onClose: () => void }) {
+  const { language } = useTranslation();
+  return (
+    <Sheet open={id !== null} onClose={onClose} title={id ? policyDoc(language, id).title : ""}>
+      {id && <PolicyBody id={id} />}
+    </Sheet>
   );
 }
 

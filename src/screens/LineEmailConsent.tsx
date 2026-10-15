@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "../i18n";
-import { Sheet } from "../components/ui/Modal";
 import { LineIcon } from "../components/brand/AuthBrand";
-import { PolicyBody } from "./Policy";
+import { PolicySheet } from "./Policy";
 import { useSocialLogin } from "../hooks/socialLogin";
-import { policyDoc, type PolicyId } from "../lib/policies";
+import type { PolicyId } from "../lib/policies";
 import { Spinner } from "../components/ui/Spinner";
 import { CloseIcon } from "../components/brand/Glyphs";
 
@@ -20,7 +19,7 @@ const PRIVACY_POLICY: PolicyId = "purchase-privacy";
  * consent button leaves for LINE; X goes back without starting a sign-in.
  */
 export function LineEmailConsent() {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const nav = useNavigate();
   const social = useSocialLogin();
   const [policyOpen, setPolicyOpen] = useState(false);
@@ -70,9 +69,7 @@ export function LineEmailConsent() {
         </button>
       </div>
 
-      <Sheet open={policyOpen} onClose={() => setPolicyOpen(false)} title={policyDoc(language, PRIVACY_POLICY).title}>
-        {policyOpen && <PolicyBody id={PRIVACY_POLICY} />}
-      </Sheet>
+      <PolicySheet id={policyOpen ? PRIVACY_POLICY : null} onClose={() => setPolicyOpen(false)} />
     </div>
   );
 }

@@ -1,23 +1,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "../i18n";
-import { Sheet } from "../components/ui/Modal";
-import { PolicyBody } from "./Policy";
+import { PolicySheet } from "./Policy";
 import { authApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
 import { pathForStep } from "../hooks/loginFlow";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
-import { policyDoc, type PolicyId } from "../lib/policies";
-import {
-  AGREEMENTS,
-  NO_AGREEMENTS,
-  REQUIRED_AGREEMENTS,
-  agreementPayload,
-  type Agreements,
-} from "../lib/signupAgreements";
+import type { PolicyId } from "../lib/policies";
+import { AGREEMENTS, agreementPayload } from "../lib/signupAgreements";
 import { Spinner } from "../components/ui/Spinner";
 import { CloseIcon, CheckIcon } from "../components/brand/Glyphs";
+import { useAgreements } from "../hooks/useAgreements";
 
 /**
  * Social signup's terms step (/signup/terms). A first social login creates the
@@ -29,21 +23,15 @@ import { CloseIcon, CheckIcon } from "../components/brand/Glyphs";
  * profile registration → onboarding, as for every new member.
  */
 export function SocialSignupTerms() {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const nav = useNavigate();
   const toast = useToast();
   const { setMe, revokeSession, hardSignOut } = useAuth();
-  const [agree, setAgree] = useState<Agreements>(NO_AGREEMENTS);
+  const { agree, requiredDone, everyAgreed, toggle, toggleAll } = useAgreements();
   const [policyOpen, setPolicyOpen] = useState<PolicyId | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const requiredDone = REQUIRED_AGREEMENTS.every((k) => agree[k]);
-  const everyAgreed = AGREEMENTS.every((a) => agree[a.key]);
 
-  function toggleAll() {
-    const next = !everyAgreed;
-    setAgree(Object.fromEntries(AGREEMENTS.map((a) => [a.key, next])) as Agreements);
-  }
 
   async function submit() {
     if (!requiredDone || busy) return;
@@ -108,7 +96,7 @@ export function SocialSignupTerms() {
                   className="sterms__item"
                   role="checkbox"
                   aria-checked={checked}
-                  onClick={() => setAgree((s) => ({ ...s, [a.key]: !s[a.key] }))}
+                  onClick={() => toggle(a.key)}
                 >
                   <span className={`sterms__mark ${checked ? "is-on" : ""}`} aria-hidden="true">
                     <CheckIcon size={14} />
@@ -139,13 +127,7 @@ export function SocialSignupTerms() {
         </button>
       </div>
 
-      <Sheet
-        open={policyOpen !== null}
-        onClose={() => setPolicyOpen(null)}
-        title={policyOpen ? policyDoc(language, policyOpen).title : ""}
-      >
-        {policyOpen && <PolicyBody id={policyOpen} />}
-      </Sheet>
+      <PolicySheet id={policyOpen} onClose={() => setPolicyOpen(null)} />
     </div>
   );
 }

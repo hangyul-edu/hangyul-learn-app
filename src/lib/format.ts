@@ -95,6 +95,18 @@ const UNAMBIGUOUS_SYMBOL: Record<string, string> = { KRW: "₩", USD: "US$" };
  *  currency is otherwise clear (the purchase screen's plan cards). */
 const NARROW_SYMBOL: Record<string, string> = { KRW: "₩", USD: "$" };
 
+/**
+ * The device's local date as digits: "2026.10.15", "2026/10/15", or with
+ * `shortYear` "26/10/15". Empty for a missing or unparseable timestamp.
+ */
+export function formatYmd(iso: string | null | undefined, sep: "." | "/", { shortYear = false } = {}): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const y = shortYear ? String(d.getFullYear()).slice(2) : String(d.getFullYear());
+  return [y, String(d.getMonth() + 1).padStart(2, "0"), String(d.getDate()).padStart(2, "0")].join(sep);
+}
+
 /** Format a server `*_cents` amount (the currency's minor unit) for display:
  *  "₩9,900", "US$5.99" in every app language. With `narrow` — the purchase
  *  screen's plan cards — "$5.99", and won the way Korean copy writes it,

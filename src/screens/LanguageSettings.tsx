@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from "react";
-import { useBlocker, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../components/ui/kit";
 import { UnsavedChangesModal } from "../components/UnsavedChangesModal";
@@ -12,6 +12,7 @@ import { NetworkError } from "../lib/http";
 import { SUPPORTED_LANGUAGES, normalizeLanguage, type AppLanguage } from "../lib/language";
 import { useI18n } from "../i18n";
 import { DetailHeader } from "../components/DetailHeader";
+import { useUnsavedGuard } from "../hooks/useUnsavedGuard";
 
 
 export function LanguageSettings() {
@@ -80,25 +81,13 @@ export function LanguageSettings() {
   // Unsaved-change guard. Dirty = the pending selection differs from the
   // persisted value (comparing actual values, so reverting to the original
   // clears it; a successful save updates the persisted cache and clears it too).
-  const leavingRef = useRef(false); // set on a deliberate exit (save / 나가기)
   const dirty = pending !== null && persisted !== null && pending !== persisted;
 
   // Block every in-app exit path while dirty — header back, browser/hardware
   // back, swipe-back, and programmatic pop — via the data router. The modal is
   // driven by the blocker's state; the pending navigation is held until the user
   // confirms 나가기.
-  const blocker = useBlocker(
-    useCallback(
-      ({
-        currentLocation,
-        nextLocation,
-      }: {
-        currentLocation: { pathname: string };
-        nextLocation: { pathname: string };
-      }) => dirty && !leavingRef.current && currentLocation.pathname !== nextLocation.pathname,
-      [dirty],
-    ),
-  );
+  const guard = useUnsavedGuard(dirty);
 
   const loading = selected === null;
 
@@ -153,12 +142,9 @@ export function LanguageSettings() {
       </div>
 
       <UnsavedChangesModal
-        open={blocker.state === "blocked"}
-        onContinue={() => blocker.reset?.()}
-        onLeave={() => {
-          leavingRef.current = true; // draft discarded; proceed with the blocked nav
-          blocker.proceed?.();
-        }}
+        open={guard.blocked}
+        onContinue={guard.stay}
+        onLeave={guard.leave}
       />
 
       <SettingsSavedModal
@@ -170,7 +156,7 @@ export function LanguageSettings() {
           // Close once, then return to the previous screen (the current
           // post-save flow). No re-save, no reload; the form is already clean.
           setSavedOpen(false);
-          leavingRef.current = true;
+          guard.allowLeave();
           nav("/profile");
         }}
       />

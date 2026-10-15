@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useBlocker, useParams } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
 import { useSettingsBack } from "../lib/settingsNav";
 import { useTranslation, type TranslationKey } from "../i18n";
 import { useQueryClient } from "@tanstack/react-query";
@@ -13,6 +13,7 @@ import { CONVERSATION_LEVEL_MAX, TOPIK_GRADE_MAX } from "../lib/levels";
 import { Spinner } from "../components/ui/Spinner";
 import { AcctHeader } from "../components/layout/AcctHeader";
 import { useLearningPrefs } from "../api/queries";
+import { useUnsavedGuard } from "../hooks/useUnsavedGuard";
 
 const CFG = {
   conversation: {
@@ -68,7 +69,6 @@ export function TrackSettings() {
   const origRef = useRef<{ level: number; goal: number } | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedOpen, setSavedOpen] = useState(false);
-  const leavingRef = useRef(false); // set when we intentionally leave (save / leave)
   const seqRef = useRef(0);
 
   // Capture the server-confirmed originals once, then seed the draft.
@@ -86,19 +86,8 @@ export function TrackSettings() {
 
   // Block EVERY in-app exit path while dirty (header back, browser/hardware back,
   // swipe-back, programmatic pop) via the data router. The modal is driven by the
-  // blocker's state; a deliberate leave (save / 나가기) sets leavingRef to bypass.
-  const blocker = useBlocker(
-    useCallback(
-      ({
-        currentLocation,
-        nextLocation,
-      }: {
-        currentLocation: { pathname: string };
-        nextLocation: { pathname: string };
-      }) => dirty && !leavingRef.current && currentLocation.pathname !== nextLocation.pathname,
-      [dirty],
-    ),
-  );
+  // blocker's state; a deliberate leave (save / 나가기) is let through.
+  const guard = useUnsavedGuard(dirty);
 
   // Return to the settings list. Never a push: pushing it on top of this page
   // made the list's own Back pop straight back in here, and the two looped with
@@ -120,7 +109,7 @@ export function TrackSettings() {
       qc.setQueryData(["learning-prefs"], res);
       qc.invalidateQueries({ queryKey: ["dashboard"] }); // Home + Custom Learning
       origRef.current = { level: draftLevel, goal: draftGoal }; // clear dirty
-      leavingRef.current = true; // deliberate exit — don't trip the blocker
+      guard.allowLeave(); // deliberate exit — don't trip the blocker
       // Success feedback is the cp_G_01_modals dialog; returning to the list
       // waits for its 확인.
       setSavedOpen(true);
@@ -260,12 +249,9 @@ export function TrackSettings() {
       />
 
       <UnsavedChangesModal
-        open={blocker.state === "blocked"}
-        onContinue={() => blocker.reset?.()}
-        onLeave={() => {
-          leavingRef.current = true; // draft discarded; proceed with the blocked nav
-          blocker.proceed?.();
-        }}
+        open={guard.blocked}
+        onContinue={guard.stay}
+        onLeave={guard.leave}
       />
     </div>
   );

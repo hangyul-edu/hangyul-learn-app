@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from "react";
-import { useBlocker, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "../i18n";
 import type { AvatarKey } from "../components/brand/ProfileAssets";
 import { UnsavedChangesModal } from "../components/UnsavedChangesModal";
@@ -16,6 +16,7 @@ import { Spinner } from "../components/ui/Spinner";
 import { NicknameField, ProfileImagePicker } from "../components/profile/ProfileForm";
 import { useNicknameCheck, useProfileImage } from "../hooks/useProfileForm";
 import { BackChevronIcon } from "../components/brand/Glyphs";
+import { useUnsavedGuard } from "../hooks/useUnsavedGuard";
 
 /**
  * Profile edit ("프로필 변경") — reuses the profile-registration visual system
@@ -54,20 +55,8 @@ export function EditProfile() {
   // Unsaved-changes guard. Block EVERY in-app exit path while there are edits
   // (header back, browser/hardware back, swipe-back, programmatic pop) via the
   // data router; the modal is driven by the blocker's state. A deliberate exit
-  // (successful save, or tapping 나가기) sets leavingRef to bypass the guard.
-  const leavingRef = useRef(false);
-  const blocker = useBlocker(
-    useCallback(
-      ({
-        currentLocation,
-        nextLocation,
-      }: {
-        currentLocation: { pathname: string };
-        nextLocation: { pathname: string };
-      }) => anyChanged && !leavingRef.current && currentLocation.pathname !== nextLocation.pathname,
-      [anyChanged],
-    ),
-  );
+  // (successful save, or tapping 나가기) is let through.
+  const guard = useUnsavedGuard(anyChanged);
 
   async function save() {
     if (!canSave) return;
@@ -80,7 +69,7 @@ export function EditProfile() {
       }
       const updated = await userApi.updateProfile(body);
       setMe(updated);
-      leavingRef.current = true; // saved → deliberate exit, don't trip the guard
+      guard.allowLeave(); // saved → deliberate exit, don't trip the guard
       // AME-006 confirms the save with a modal (2231:24627), not a toast; the
       // navigation happens when the user acknowledges it.
       setResult("saved");
@@ -164,15 +153,12 @@ export function EditProfile() {
       />
 
       <UnsavedChangesModal
-        open={blocker.state === "blocked"}
+        open={guard.blocked}
         title={t("profileSetup.exitTitle")}
         subtitle={t("profileSetup.exitSubtitle")}
         cancelLabel={t("common.cancel")}
-        onContinue={() => blocker.reset?.()}
-        onLeave={() => {
-          leavingRef.current = true; // discard the draft and proceed with the blocked nav
-          blocker.proceed?.();
-        }}
+        onContinue={guard.stay}
+        onLeave={guard.leave}
       />
     </div>
   );

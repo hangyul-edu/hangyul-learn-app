@@ -436,26 +436,6 @@ export interface Banner {
   sort_order: number;
 }
 
-/* ---- Exams ---- */
-export interface ExamSet {
-  exam_set_id: string;
-  title: string;
-  edition: number;
-  year: number;
-  section: "listening" | "reading";
-  level_band: string;
-  access: "free" | "premium";
-  question_count: number;
-  questions?: Quiz[];
-}
-export interface ExamResult {
-  attempt_id: string;
-  exam_set_id: string;
-  score: number;
-  total: number;
-  results: { quiz_id: string; correct: boolean }[];
-}
-
 /* ---- Payment / billing ---- */
 export type MethodKind = "card" | "toss_pay" | "naver_pay";
 /** `toss_intl_card` = an overseas-issued card registered through the app's own form. */

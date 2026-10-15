@@ -17,8 +17,6 @@ import type {
   CancellationReason,
   CouponRedemption,
   DashboardSummary,
-  ExamResult,
-  ExamSet,
   Faq,
   Friend,
   FriendListResponse,
@@ -47,7 +45,6 @@ import type {
   Notice,
   NotificationItem,
   NotificationSection,
-  Page,
   Offers,
   PaymentMethod,
   PaymentMethodList,
@@ -201,8 +198,6 @@ export const dashboardApi = {
 
 /* ----------------------------- Sentences ---------------------------- */
 export const sentenceApi = {
-  list: (params: { level?: number; topic?: string; cursor?: string; limit?: number }) =>
-    http.get<Page<Sentence>>("/sentences", params),
   get: (id: string) => http.get<Sentence>(`/sentences/${id}`),
   audio: (id: string) => http.get<{ url: string }>(`/sentences/${id}/audio`),
   bookmark: (id: string) => http.post<unknown>(`/sentences/${id}/bookmark`),
@@ -257,9 +252,6 @@ export const sentenceApi = {
 
 /* ------------------------------ Quizzes ----------------------------- */
 export const quizApi = {
-  list: (params: { answer_format?: string; level?: number; limit?: number }) =>
-    http.get<{ items: Quiz[] }>("/quizzes", { limit: 20, ...params }),
-  daily: () => http.get<{ date: string; questions: Quiz[] }>("/quizzes/daily"),
   get: (id: string) => http.get<Quiz>(`/quizzes/${id}`),
   // Signed, short-lived CDN URL for a listening question's audio (fetched lazily
   // when the learner plays it, never embedded in the question payload).
@@ -391,13 +383,6 @@ export const studyApi = {
     http.post<TutorAnswer>(`/study-sessions/${sessionId}/activities/${activityId}/tutor`, body),
 };
 
-export const examApi = {
-  list: (params: { section?: string; edition?: number; year?: number } = {}) =>
-    http.get<{ items: ExamSet[] }>("/exams", params),
-  get: (id: string) => http.get<ExamSet>(`/exams/${id}`),
-  submit: (id: string, answers: { quiz_id: string; answer: string }[]) =>
-    http.post<ExamResult>(`/exams/${id}/attempts`, { answers }),
-};
 export const practiceApi = {
   start: (lectureId: string, count: number) =>
     http.post<{ practice_set_id: string; items: Quiz[]; count: number }>(`/lectures/${lectureId}/practice`, { count }),

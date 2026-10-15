@@ -1174,26 +1174,6 @@ export const ko = {
     unsavedLeave: "나가기",
   },
 
-  /** Learn hub (더 배우기). */
-  learn: {
-    title: "학습",
-    conversation: "회화 학습",
-    conversationDesc: "문장을 듣고 따라 말하며 배워요",
-    topik: "TOPIK 학습",
-    topikDesc: "급수별 문제로 실전 감각을",
-    recommendations: "AI 추천 문장",
-    recommendationsDesc: "상황별 문장을 추천받고 대화해요",
-    exams: "TOPIK 기출 모의고사",
-    examsDesc: "실제 기출로 실전 감각 키우기",
-    courses: "강의",
-    coursesDesc: "코스별 영상 강의로 차근차근",
-    saved: "저장 · 복습",
-    savedDesc: "즐겨찾기와 오답을 모아봐요",
-    aiTutor: "AI 튜터와 대화",
-    aiTutorDesc: "원하는 상황의 맞춤 문장 받기",
-    more: "더 배우기",
-  },
-
   /** Personalized learning hub. */
   personalized: {
     title: "맞춤 학습",
@@ -1382,9 +1362,6 @@ export const ko = {
     topikTypePrompt: "✨ 더 집중해서 풀어보고 싶은 문제 유형을 선택해보세요",
     topikGrade: "토픽 {n}급",
     selected: "선택됨",
-    excellent: "훌륭해요! 👏",
-    pointsEarned: "⚡ +{points} 포인트",
-    levelLabel: "레벨 {n}",
     hint: "힌트",
     answerShownAfterTries: "두 번 모두 틀려서 정답을 보여드려요. 정답을 따라 입력해 보세요.",
     topikAnswerShown: "두 번 모두 틀려서 정답을 표시했어요.",
@@ -1409,43 +1386,6 @@ export const ko = {
 
   /** Conversation / TOPIK / practice / exam screens. */
   study: {
-    conversationTitle: "회화 학습",
-    noSentences: "이 레벨엔 문장이 없어요",
-    tryAnotherLevel: "다른 레벨을 선택해 보세요.",
-    prev: "‹ 이전",
-    next: "다음 ›",
-    nextSentence: "다음 문장 →",
-    speak: "따라 말하기",
-    stopRecording: "● 녹음 멈추기",
-    mySpeech: "내가 말한 내용",
-    pronunciation: "발음",
-    pronunciationEval: "발음 평가",
-    translation: "번역",
-    micPermission: "마이크 권한이 필요해요. 브라우저 설정을 확인해 주세요.",
-    practiceMore: "조금 더 연습해요 💪",
-    points: "점",
-    topikTitle: "TOPIK 학습",
-    topikQuestions: "TOPIK 문제",
-    todayQuestion: "📅 오늘의 문제",
-    dailyRefresh: "매일 갱신",
-    questionBank: "문제 은행",
-    all: "전체",
-    todayError: "오늘의 문제를 불러오지 못했어요.",
-    noQuestions: "문제가 없어요",
-    tryAnotherGrade: "다른 급수를 선택해 보세요.",
-    typeMultiple: "객관식",
-    typeShort: "단답형",
-    typeEssay: "서술형",
-    skillReading: "읽기",
-    skillListening: "듣기",
-    skillWriting: "쓰기",
-    quizTitle: "문제 풀기",
-    quizCorrect: "정답이에요! 🎉",
-    quizWrong: "아쉬워요 😢",
-    quizSubmitted: "제출 완료 ✍️",
-    submit: "제출하기",
-    answerPrefix: "정답:",
-    backToList: "목록으로",
     reviewTitle: "복습 문제",
     reviewDesc: "복습 문제로 실력을 더 다져보세요.",
     /** COU-011 (442:9757) / COU-013 (442:9812) — the practice question card. */
@@ -1465,19 +1405,6 @@ export const ko = {
     submitShort: "제출",
     premiumOnly: "프리미엄 전용 기능이에요",
     upgrade: "업그레이드",
-    examTitle: "TOPIK 기출 모의고사",
-    examDesc: "기출 모의고사로 실전을 대비하세요.",
-    examNone: "모의고사가 없어요",
-    examNoItems: "문항이 없어요",
-    examMock: "모의고사",
-    examFree: "무료",
-    examPremium: "프리미엄 전용이에요",
-    examSubmit: "제출하고 채점",
-    examGraded: "채점 완료",
-    gradeSuffix: "{n}급",
-    scoreBadge: "채점 {score}점",
-    correctPct: "정답 {pct}%",
-    examMeta: "{year}년 · {section} · {count}문항 · TOPIK {band}",
   },
 
   /** Courses / lectures. */
@@ -1564,30 +1491,6 @@ export const ko = {
     doneChip: "학습 완료", // 2414:27707
     notDone: "학습 미완료", // 2414:27720
     practiceA11y: "{title} 말하기 연습",
-    quotaRemaining: "오늘 남은 추천: {n}회",
-  },
-
-  /** AI tutor chat. */
-  aiChat: {
-    title: "AI 튜터",
-    titleEmoji: "AI 튜터 🤖",
-    preparing: "대화를 준비하고 있어요…",
-    inputPlaceholder: "메시지를 입력하세요",
-    greeting: "안녕하세요! 한국어 학습을 도와드릴게요. 무엇이든 물어보세요 😊",
-    error: "죄송해요, 답변을 가져오지 못했어요. 잠시 후 다시 시도해 주세요.",
-    startError: "대화를 시작하지 못했어요.", // app-authored
-  },
-
-  /** AI sentence recommendations. */
-  recommend: {
-    title: "AI 추천 문장",
-    heading: "맞춤 문장을 추천해드려요",
-    prompt: "어떤 상황의 문장이 필요하세요?",
-    placeholder: "예: 카페에서 주문하기 (선택)",
-    hint: "원하는 상황을 입력하거나 그냥 추천 버튼을 눌러보세요.",
-    cta: "추천",
-    empty: "추천 결과가 없어요",
-    emptyDesc: "다른 상황으로 다시 시도해 보세요.",
   },
 
   /** Billing history. */

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "../../i18n";
 
-export function TopBar({
+function TopBar({
   title,
   onBack,
   back,

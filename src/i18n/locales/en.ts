@@ -1166,26 +1166,6 @@ export const en: Catalog = {
     unsavedLeave: "Leave",
   },
 
-  /** Learn hub. */
-  learn: {
-    title: "Learn",
-    conversation: "Conversation",
-    conversationDesc: "Listen and repeat to learn sentences",
-    topik: "TOPIK",
-    topikDesc: "Build exam instincts level by level",
-    recommendations: "AI sentence picks",
-    recommendationsDesc: "Get sentences for your situation and practise",
-    exams: "TOPIK mock exams",
-    examsDesc: "Real past papers to prepare for the test",
-    courses: "Classes",
-    coursesDesc: "Step through video lessons course by course",
-    saved: "Saved · Review",
-    savedDesc: "Your bookmarks and missed items in one place",
-    aiTutor: "Chat with the AI tutor",
-    aiTutorDesc: "Get sentences tailored to any situation",
-    more: "Learn more",
-  },
-
   /** Personalized learning hub. */
   personalized: {
     title: "Practice",
@@ -1382,9 +1362,6 @@ export const en: Catalog = {
     topikTypePrompt: "✨ Choose a question type to focus on",
     topikGrade: "TOPIK Lv.{n}", // 1718:32055
     selected: "Selected",
-    excellent: "Excellent! 👏",
-    pointsEarned: "⚡ +{points} points",
-    levelLabel: "Level {n}",
     hint: "Hint",
     answerShownAfterTries: "That was your second try, so here's the answer. Type it in to continue.",
     topikAnswerShown: "That was your second try, so the correct answer is highlighted.",
@@ -1409,43 +1386,6 @@ export const en: Catalog = {
 
   /** Conversation / TOPIK / practice / exam screens. */
   study: {
-    conversationTitle: "Conversation",
-    noSentences: "No sentences at this level",
-    tryAnotherLevel: "Try choosing another level.",
-    prev: "‹ Prev",
-    next: "Next ›",
-    nextSentence: "Next sentence →",
-    speak: "Speak it",
-    stopRecording: "● Stop recording",
-    mySpeech: "What you said",
-    pronunciation: "Pronunciation",
-    pronunciationEval: "Pronunciation score",
-    translation: "Translation",
-    micPermission: "Microphone access is needed. Please check your browser settings.",
-    practiceMore: "A bit more practice 💪",
-    points: " pts",
-    topikTitle: "TOPIK",
-    topikQuestions: "TOPIK questions",
-    todayQuestion: "📅 Today's question",
-    dailyRefresh: "Updated daily",
-    questionBank: "Question bank",
-    all: "All",
-    todayError: "Couldn't load today's question.",
-    noQuestions: "No questions",
-    tryAnotherGrade: "Try choosing another level.",
-    typeMultiple: "Multiple choice",
-    typeShort: "Short answer",
-    typeEssay: "Essay",
-    skillReading: "Reading",
-    skillListening: "Listening",
-    skillWriting: "Writing",
-    quizTitle: "Solve questions",
-    quizCorrect: "Correct! 🎉",
-    quizWrong: "Not quite 😢",
-    quizSubmitted: "Submitted ✍️",
-    submit: "Submit",
-    answerPrefix: "Answer:",
-    backToList: "Back to list",
     reviewTitle: "Review questions",
     reviewDesc: "Sharpen your skills with review questions.",
     /** COU-003 (EN 1464:22035) — the review-count modal. */
@@ -1464,19 +1404,6 @@ export const en: Catalog = {
     submitShort: "Submit",
     premiumOnly: "This is a premium-only feature",
     upgrade: "Upgrade",
-    examTitle: "TOPIK mock exams",
-    examDesc: "Prepare for the real thing with past papers.",
-    examNone: "No mock exams",
-    examNoItems: "No questions",
-    examMock: "Mock exam",
-    examFree: "Free",
-    examPremium: "Premium only",
-    examSubmit: "Submit and grade",
-    examGraded: "Graded",
-    gradeSuffix: "Level {n}",
-    scoreBadge: "Score {score}",
-    correctPct: "{pct}% correct",
-    examMeta: "{year} · {section} · {count} questions · TOPIK {band}",
   },
 
   /** Courses / lectures. */
@@ -1554,30 +1481,6 @@ export const en: Catalog = {
     doneChip: "Done",
     notDone: "Not done",
     practiceA11y: "Speaking practice for {title}",
-    quotaRemaining: "Suggestions left today: {n}",
-  },
-
-  /** AI tutor chat. */
-  aiChat: {
-    title: "AI tutor",
-    titleEmoji: "AI tutor 🤖",
-    preparing: "Getting the conversation ready…",
-    inputPlaceholder: "Type a message",
-    greeting: "Hi! I'm here to help you learn Korean. Ask me anything 😊",
-    error: "Sorry, we couldn't get an answer. Please try again shortly.",
-    startError: "We couldn't start the conversation.", // app-authored
-  },
-
-  /** AI sentence recommendations. */
-  recommend: {
-    title: "AI sentence picks",
-    heading: "We'll suggest sentences for you",
-    prompt: "What situation do you need sentences for?",
-    placeholder: "e.g. ordering at a cafe (optional)",
-    hint: "Describe a situation, or just tap the suggest button.",
-    cta: "Suggest",
-    empty: "No suggestions",
-    emptyDesc: "Try a different situation.",
   },
 
   /** Billing history. */

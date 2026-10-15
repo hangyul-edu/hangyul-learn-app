@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import practiceBand from "../assets/brand/practice-band.svg";
 /* Review-shortcut pill glyphs, exported from TAL-001 (1825:29265 / 1825:29268 /
    1825:29266) rather than redrawn. */
@@ -38,7 +38,11 @@ export function Personalized() {
   const [countKind, setCountKind] = useState<"conversation" | "topik" | null>(null);
   const [pendingSection, setPendingSection] = useState<TopikSection | null>(null);
   const [topikAdditional, setTopikAdditional] = useState(false);
-  const [tab, setTab] = useState(0);
+  // `?track=topik` opens on that track's tab (links from notifications and
+  // from the retired Learn screens); a tab the member picks wins after that.
+  const [params] = useSearchParams();
+  const requestedTrack = params.get("track");
+  const [tab, setTab] = useState<number | null>(null);
 
   function startAdditional(count: AdditionalCount) {
     const kind = countKind;
@@ -91,7 +95,8 @@ export function Personalized() {
         >
           {(d: DashboardSummary) => {
             const tracks = d.tracks;
-            const active: DashboardTrack | undefined = tracks[Math.min(tab, tracks.length - 1)];
+            const shownTab = tab ?? Math.max(0, tracks.findIndex((tr) => tr.category === requestedTrack));
+            const active: DashboardTrack | undefined = tracks[Math.min(shownTab, tracks.length - 1)];
             const target = active?.goal.target ?? 0;
             const cur = active?.goal.current ?? 0;
             const done = !!active && target > 0 && (active.goal.achieved || cur >= target);
@@ -107,7 +112,7 @@ export function Personalized() {
                   <TrackDashboard
                     tracks={tracks}
                     active={active}
-                    tab={tab}
+                    tab={shownTab}
                     onTab={setTab}
                     onSettings={() => nav("/recommend/settings", { state: settingsOrigin("/recommend") })}
                     ratio={ratio}

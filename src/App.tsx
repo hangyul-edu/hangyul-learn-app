@@ -21,10 +21,6 @@ import { Forgot } from "./screens/Forgot";
 import { SetupProfile } from "./screens/SetupProfile";
 import { Onboarding } from "./screens/Onboarding";
 import { Home } from "./screens/Home";
-import { Learn } from "./screens/Learn";
-import { Conversation } from "./screens/Conversation";
-import { Topik } from "./screens/Topik";
-import { QuizPlay } from "./screens/QuizPlay";
 import { Saved } from "./screens/Saved";
 import { League } from "./screens/League";
 import { LeagueHistory } from "./screens/LeagueHistory";
@@ -32,7 +28,6 @@ import { LeagueResult } from "./screens/LeagueResult";
 import { Social } from "./screens/Social";
 import { InviteLanding } from "./screens/InviteLanding";
 import { Notifications } from "./screens/Notifications";
-import { AiChat } from "./screens/AiChat";
 import { Subscription } from "./screens/Subscription";
 import { SubscriptionPurchase } from "./screens/SubscriptionPurchase";
 import { Profile } from "./screens/Profile";
@@ -53,8 +48,6 @@ import { LectureHome } from "./screens/LectureHome";
 import { Lecture } from "./screens/Lecture";
 import { Practice } from "./screens/Practice";
 import { SpeakPractice } from "./screens/SpeakPractice";
-import { Exams, ExamPlay } from "./screens/Exams";
-import { Recommendations } from "./screens/Recommendations";
 import { PersonalizedSettings } from "./screens/PersonalizedSettings";
 import { TrackSettings } from "./screens/TrackSettings";
 import { Personalized } from "./screens/Personalized";
@@ -121,6 +114,25 @@ function AppFrame() {
   );
 }
 
+/**
+ * Addresses of retired screens, and the screen that does their job now.
+ *
+ * The old Learn hub (/learn) and its screens were replaced by 맞춤 학습
+ * (/recommend) and lectures. Their addresses still arrive from notifications
+ * sent before (stored deep links, pushes already on a phone) and from
+ * bookmarks, so each opens its successor rather than falling through to home.
+ */
+export const RETIRED_SCREENS: readonly (readonly [path: string, to: string])[] = [
+  ["/learn", "/recommend"],
+  ["/learn/conversation", "/recommend?track=conversation"],
+  ["/learn/topik", "/recommend?track=topik"],
+  ["/quiz/:quizId", "/recommend?track=topik"],
+  ["/exams/*", "/recommend?track=topik"],
+  ["/recommend/sentences", "/recommend?track=conversation"],
+  // The AI tutor is the chatbot inside lectures.
+  ["/ai", "/courses"],
+];
+
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route element={<AppFrame />}>
@@ -160,7 +172,6 @@ const router = createBrowserRouter(
         {/* Main app with bottom-nav shell (the five bottom-nav tab roots, plus /learn and /social) */}
         <Route element={<RequireAuth><AppShell /></RequireAuth>}>
           <Route path="/home" element={<Home />} />
-          <Route path="/learn" element={<Learn />} />
           <Route path="/courses" element={<LectureHome />} />
           <Route path="/recommend" element={<Personalized />} />
           <Route path="/league" element={<League />} />
@@ -169,13 +180,12 @@ const router = createBrowserRouter(
         </Route>
 
         {/* Detail screens (authenticated, full-screen) */}
-        <Route path="/learn/conversation" element={<RequireAuth><Conversation /></RequireAuth>} />
-        <Route path="/learn/topik" element={<RequireAuth><Topik /></RequireAuth>} />
-        <Route path="/quiz/:quizId" element={<RequireAuth><QuizPlay /></RequireAuth>} />
+        {RETIRED_SCREENS.map(([path, to]) => (
+          <Route key={path} path={path} element={<Navigate to={to} replace />} />
+        ))}
         <Route path="/series/:seriesId" element={<RequireAuth><SeriesPage /></RequireAuth>} />
         {/* Older links to a course open its first series. */}
         <Route path="/courses/:courseId" element={<RequireAuth><CourseRedirect /></RequireAuth>} />
-        <Route path="/recommend/sentences" element={<RequireAuth><Recommendations /></RequireAuth>} />
         <Route path="/recommend/settings" element={<RequireAuth><PersonalizedSettings /></RequireAuth>} />
         <Route path="/recommend/settings/:category" element={<RequireAuth><TrackSettings /></RequireAuth>} />
         <Route path="/session/conversation" element={<RequireAuth><SessionConversation /></RequireAuth>} />
@@ -185,8 +195,6 @@ const router = createBrowserRouter(
         <Route path="/lectures/:lectureId" element={<RequireAuth><Lecture /></RequireAuth>} />
         <Route path="/lectures/:lectureId/practice" element={<RequireAuth><Practice /></RequireAuth>} />
         <Route path="/lectures/:lectureId/speak" element={<RequireAuth><SpeakPractice /></RequireAuth>} />
-        <Route path="/exams" element={<RequireAuth><Exams /></RequireAuth>} />
-        <Route path="/exams/:examId" element={<RequireAuth><ExamPlay /></RequireAuth>} />
         <Route path="/account/payment" element={<RequireAuth><PaymentMethods /></RequireAuth>} />
         <Route path="/account/billing" element={<RequireAuth><Billing /></RequireAuth>} />
         <Route path="/saved" element={<RequireAuth><Saved /></RequireAuth>} />
@@ -197,7 +205,6 @@ const router = createBrowserRouter(
         <Route path="/streak" element={<RequireAuth><Streak /></RequireAuth>} />
         <Route path="/learning-management" element={<RequireAuth><LearningManagement /></RequireAuth>} />
         <Route path="/notifications" element={<RequireAuth><Notifications /></RequireAuth>} />
-        <Route path="/ai" element={<RequireAuth><AiChat /></RequireAuth>} />
         <Route path="/subscription" element={<RequireAuth><Subscription /></RequireAuth>} />
         <Route path="/subscription/start" element={<RequireAuth><SubscriptionPurchase /></RequireAuth>} />
         <Route path="/profile/edit" element={<RequireAuth><EditProfile /></RequireAuth>} />

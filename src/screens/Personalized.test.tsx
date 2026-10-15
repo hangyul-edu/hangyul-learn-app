@@ -27,12 +27,12 @@ const track = (category: "conversation" | "topik", name: string) => ({
   goal: { key: "daily", label: "하루 목표", target: 5, current: 0, achieved: false },
 });
 
-function renderPage() {
+function renderPage(entry = "/recommend") {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <I18nProvider language="ko">
       <QueryClientProvider client={qc}>
-        <MemoryRouter initialEntries={["/recommend"]}>
+        <MemoryRouter initialEntries={[entry]}>
           <Routes>
             <Route path="/recommend" element={<><Personalized /><Loc /></>} />
             <Route path="/session/topik" element={<><div>TOPIK SESSION</div><Loc /></>} />
@@ -53,6 +53,26 @@ beforeEach(() => {
     studied_today: false,
     paywall_required: false,
     tracks: [track("conversation", "회화"), track("topik", "TOPIK")],
+  });
+});
+
+describe("Personalized — opening on a track", () => {
+  it("opens on the first track by default", async () => {
+    renderPage();
+    expect(await screen.findByRole("tab", { name: /회화/ })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("opens on the track named in ?track= (links from notifications and the retired Learn screens)", async () => {
+    renderPage("/recommend?track=topik");
+    expect(await screen.findByRole("tab", { name: "TOPIK" })).toHaveAttribute("aria-selected", "true");
+    // The member's own choice wins after that.
+    await userEvent.click(screen.getByRole("tab", { name: /회화/ }));
+    expect(screen.getByRole("tab", { name: /회화/ })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("falls back to the first track for a track the member does not have", async () => {
+    renderPage("/recommend?track=writing");
+    expect(await screen.findByRole("tab", { name: /회화/ })).toHaveAttribute("aria-selected", "true");
   });
 });
 

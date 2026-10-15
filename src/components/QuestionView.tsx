@@ -29,14 +29,6 @@ export function quizAttemptBody(quiz: Quiz, v: AnswerValue): Record<string, unkn
   return { answer: (v.text ?? "").trim() };
 }
 
-/** Single string answer for exam batch submit (ExamAnswer.answer: str). */
-export function examAnswerString(quiz: Quiz, v: AnswerValue): string {
-  const f = quiz.answer.format;
-  if (f === "single_choice") return v.choiceKey ?? "";
-  if (f === "short_answer") return (v.blanks ?? []).map((b) => b.trim()).join(" / ");
-  return (v.text ?? "").trim();
-}
-
 export function QuestionView({
   quiz,
   value,

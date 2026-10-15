@@ -78,27 +78,6 @@ export function Card({
   return <div className={cls} style={style}>{children}</div>;
 }
 
-/* ---------------- Chip ---------------- */
-export function Chip({
-  active,
-  onClick,
-  children,
-}: {
-  active?: boolean;
-  onClick?: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      className={`chip ${active ? "is-active" : ""} ${onClick ? "" : "chip--static"}`}
-      onClick={onClick}
-    >
-      {children}
-    </button>
-  );
-}
-
 /* ---------------- Badge ---------------- */
 export function Badge({
   children,

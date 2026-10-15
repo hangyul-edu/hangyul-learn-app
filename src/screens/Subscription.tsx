@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation, type TranslationKey } from "../i18n";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -16,6 +16,7 @@ import type { CancellationReason, CouponRedemption, Invoice } from "../lib/types
 import { CancelReasonModal } from "../components/CancelReasonModal";
 import { DetailHeader } from "../components/DetailHeader";
 import { Spinner } from "../components/ui/Spinner";
+import { useLoadMoreSentinel } from "../hooks/useLoadMoreSentinel";
 
 /* ---------------- date helpers (the device's local date, YY/MM/DD) ---------------- */
 function fmtShort(iso?: string | null): string {
@@ -101,18 +102,7 @@ export function Subscription() {
 
   // Load the next page when the sentinel nears the viewport (single flight).
   const sentinel = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = sentinel.current;
-    if (!el) return;
-    const ob = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && inv.hasNextPage && !inv.isFetchingNextPage) inv.fetchNextPage();
-      },
-      { rootMargin: "240px" },
-    );
-    ob.observe(el);
-    return () => ob.disconnect();
-  }, [inv.hasNextPage, inv.isFetchingNextPage, inv.fetchNextPage]);
+  useLoadMoreSentinel(sentinel, { enabled: !!inv.hasNextPage && !inv.isFetchingNextPage, onHit: () => void inv.fetchNextPage(), rootMargin: "240px" }, [inv.hasNextPage, inv.isFetchingNextPage]);
 
   function refresh() {
     qc.invalidateQueries({ queryKey: ["sub-me"] });

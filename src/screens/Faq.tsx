@@ -11,6 +11,7 @@ import { SupportChatButton } from "../components/faq/SupportChatButton";
 import type { Faq as FaqItem } from "../lib/types";
 import icSearch from "../assets/brand/ic-24-search.svg";
 import icChevron from "../assets/brand/ic-16-chevron-gray.svg";
+import { flattenPages } from "../lib/collections";
 
 /** Remembers each list's scroll offset so returning from a detail restores it.
  * Keyed by the URL search string (category / query), which fully identifies a
@@ -24,20 +25,6 @@ function useDebouncedValue<T>(value: T, delay: number): T {
     return () => clearTimeout(t);
   }, [value, delay]);
   return debounced;
-}
-
-/** Flatten paginated FAQ pages, dropping any duplicate ids across pages. */
-function dedupe(pages: { items: FaqItem[] }[] | undefined): FaqItem[] {
-  const seen = new Set<string>();
-  const out: FaqItem[] = [];
-  for (const page of pages ?? []) {
-    for (const item of page.items) {
-      if (seen.has(item.faq_id)) continue;
-      seen.add(item.faq_id);
-      out.push(item);
-    }
-  }
-  return out;
 }
 
 export function Faq() {
@@ -92,7 +79,7 @@ export function Faq() {
   });
 
   const active = mode === "search" ? searchList : categoryList;
-  const items = useMemo(() => dedupe(active.data?.pages), [active.data]);
+  const items = useMemo(() => flattenPages(active.data?.pages, (f) => f.faq_id), [active.data]);
 
   // Restore the saved scroll offset for this list once its content is present.
   const scrollKey = params.toString();

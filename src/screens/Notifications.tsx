@@ -8,6 +8,10 @@ import { useTranslation, type TranslationKey } from "../i18n";
 import type { NotificationGroup, NotificationItem } from "../lib/types";
 import { DetailHeader } from "../components/DetailHeader";
 import { Spinner } from "../components/ui/Spinner";
+import { useLoadMoreSentinel } from "../hooks/useLoadMoreSentinel";
+import { uniqueBy } from "../lib/collections";
+
+const notificationId = (n: NotificationItem) => n.notification_id;
 
 /* -------------------------------- config -------------------------------- */
 type Filter = "all" | NotificationGroup;
@@ -28,19 +32,6 @@ const BADGE_FG: Record<NotificationGroup, string> = {
   announcement: "#133b07",
   social: "#0f0216",
 };
-
-function dedupe(list: NotificationItem[]): NotificationItem[] {
-  const seen = new Set<string>();
-  const out: NotificationItem[] = [];
-  for (const n of list) {
-    if (!seen.has(n.notification_id)) {
-      seen.add(n.notification_id);
-      out.push(n);
-    }
-  }
-  return out;
-}
-
 
 // Pending "mark all read on leave" timer, coordinated at module scope so a
 // StrictMode remount can cancel the fake-unmount's scheduled read-all.
@@ -83,7 +74,7 @@ export function Notifications() {
       try {
         const page = await fetchPage(undefined);
         if (mySeq !== seqRef.current) return;
-        setItems(dedupe(page.items));
+        setItems(uniqueBy(page.items, notificationId));
         setCursor(page.next);
         setMore(page.next ? "idle" : "done");
         setStatus("ready");
@@ -102,7 +93,7 @@ export function Notifications() {
     try {
       const page = await fetchPage(cursor);
       if (mySeq !== seqRef.current) return;
-      setItems((prev) => dedupe([...prev, ...page.items])); // append + dedupe by id
+      setItems((prev) => uniqueBy([...prev, ...page.items], notificationId)); // append + dedupe by id
       setCursor(page.next);
       setMore(page.next ? "idle" : "done");
     } catch {
@@ -112,17 +103,7 @@ export function Notifications() {
     }
   }
 
-  useEffect(() => {
-    const el = sentinel.current;
-    if (!el) return;
-    const ob = new IntersectionObserver(
-      (e) => { if (e[0].isIntersecting && more === "idle") void loadMore(); },
-      { root: scrollRef.current, rootMargin: "300px" },
-    );
-    ob.observe(el);
-    return () => ob.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [more, cursor, items.length]);
+  useLoadMoreSentinel(sentinel, { enabled: more === "idle", onHit: () => void loadMore(), rootRef: scrollRef, rootMargin: "300px" }, [more, cursor, items.length]);
 
   // Mark everything read when the user LEAVES the page — NOT on enter — so the
   // unread highlight stays visible for the whole visit (product policy: there is

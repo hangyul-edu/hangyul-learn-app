@@ -6,6 +6,7 @@ import { gameApi } from "../api/endpoints";
 import { localeFor } from "../lib/format";
 import type { AppLanguage } from "../lib/language";
 import type { PointTransaction } from "../lib/types";
+import { useLoadMoreSentinel } from "../hooks/useLoadMoreSentinel";
 
 type Phase = "loading" | "ready" | "error";
 type More = "idle" | "loading" | "done" | "error";
@@ -202,19 +203,7 @@ export function MyPoints() {
     }
   }
 
-  useEffect(() => {
-    const el = sentinel.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && more === "idle") void loadMore();
-      },
-      { rootMargin: "300px" },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [more, cursor, items.length]);
+  useLoadMoreSentinel(sentinel, { enabled: more === "idle", onHit: () => void loadMore(), rootMargin: "300px" }, [more, cursor, items.length]);
 
   // Gate on the authoritative total so we never flash 0 p (or 0 on error).
   if (bal.isLoading && bal.data === undefined) return <LoadingState />;

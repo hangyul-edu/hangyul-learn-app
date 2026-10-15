@@ -9,6 +9,7 @@ import { useTranslation, type TranslationKey } from "../i18n";
 import { gameApi } from "../api/endpoints";
 import type { LeagueHistoryItem, LeagueHistorySeason } from "../lib/types";
 import { BackChevronIcon } from "../components/brand/Glyphs";
+import { useLoadMoreSentinel } from "../hooks/useLoadMoreSentinel";
 
 type Phase = "loading" | "ready" | "error";
 type More = "idle" | "loading" | "done" | "error";
@@ -215,19 +216,7 @@ export function LeagueHistory() {
   }
 
   // Fetch the next page as the sentinel nears the viewport.
-  useEffect(() => {
-    const el = sentinel.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && more === "idle") void loadMore();
-      },
-      { root: scrollRef.current, rootMargin: "300px" },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [more, cursor, items.length, selectedId]);
+  useLoadMoreSentinel(sentinel, { enabled: more === "idle", onHit: () => void loadMore(), rootRef: scrollRef, rootMargin: "300px" }, [more, cursor, items.length, selectedId]);
 
   const selectedSeason = seasons.data?.seasons.find((s) => s.season_id === selectedId);
 

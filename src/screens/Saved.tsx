@@ -16,6 +16,7 @@ import chipRepeat from "../assets/brand/chip-ic-repeat.svg";
 import chipStar from "../assets/brand/chip-ic-star.svg";
 import { playOn, unlockedAudio } from "../lib/unlockedAudio";
 import { Spinner } from "../components/ui/Spinner";
+import { useLoadMoreSentinel } from "../hooks/useLoadMoreSentinel";
 
 /* ------------------------------- config -------------------------------- */
 // Shared with the review sessions so the tab a session must return to cannot
@@ -306,17 +307,7 @@ export function Saved() {
   }
 
   const sentinel = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = sentinel.current;
-    if (!el) return;
-    const ob = new IntersectionObserver(
-      (e) => { if (e[0].isIntersecting && more === "idle") void loadMore(); },
-      { root: scrollRef.current, rootMargin: "300px" },
-    );
-    ob.observe(el);
-    return () => ob.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [more, cursor, items.length]);
+  useLoadMoreSentinel(sentinel, { enabled: more === "idle", onHit: () => void loadMore(), rootRef: scrollRef, rootMargin: "300px" }, [more, cursor, items.length]);
 
   useEffect(() => () => stopAudio(), []);
 

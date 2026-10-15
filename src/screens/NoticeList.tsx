@@ -7,26 +7,14 @@ import { useNoticesCopy } from "../lib/noticeCopy";
 import { formatNoticeListDate } from "../lib/format";
 import { errorMessage } from "../lib/http";
 import { ErrorState, SkeletonList } from "../components/ui/states";
-import type { NoticeSummary } from "../lib/types";
 import { DetailHeader } from "../components/DetailHeader";
 import noticeNewBadge from "../assets/brand/ic-notice-new.svg";
+import { useLoadMoreSentinel } from "../hooks/useLoadMoreSentinel";
+import { flattenPages } from "../lib/collections";
 
 /** Remembers the list scroll offset per language so returning from a detail
  * restores it. Module-scoped so it survives the screen unmounting. */
 const scrollByLang = new Map<string, number>();
-
-function dedupe(pages: { items: NoticeSummary[] }[] | undefined): NoticeSummary[] {
-  const seen = new Set<string>();
-  const out: NoticeSummary[] = [];
-  for (const page of pages ?? []) {
-    for (const n of page.items) {
-      if (seen.has(n.notice_id)) continue; // preserve server order, drop dupes
-      seen.add(n.notice_id);
-      out.push(n);
-    }
-  }
-  return out;
-}
 
 export function NoticeList() {
   const nav = useNavigate();
@@ -45,7 +33,7 @@ export function NoticeList() {
     getNextPageParam: (last) => last.next_cursor ?? undefined,
   });
 
-  const items = useMemo(() => dedupe(list.data?.pages), [list.data]);
+  const items = useMemo(() => flattenPages(list.data?.pages, (n) => n.notice_id), [list.data]);
 
   // Scroll preservation across the detail round-trip.
   useEffect(() => {
@@ -64,18 +52,7 @@ export function NoticeList() {
 
   // Load the next page when the sentinel scrolls into view.
   const sentinelRef = useRef<HTMLLIElement>(null);
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el || !list.hasNextPage) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting && !list.isFetchingNextPage) list.fetchNextPage();
-      },
-      { rootMargin: "280px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [list.hasNextPage, list.isFetchingNextPage, list.fetchNextPage, list]);
+  useLoadMoreSentinel(sentinelRef, { enabled: !!list.hasNextPage && !list.isFetchingNextPage, onHit: () => void list.fetchNextPage(), rootMargin: "280px" }, [list.hasNextPage, list.isFetchingNextPage]);
 
   // No in-app history (deep link / refresh) → fall back to More rather than
   // popping out of the app.

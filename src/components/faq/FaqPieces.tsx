@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { SkeletonList } from "../ui/states";
 import { DetailHeader } from "../DetailHeader";
+import { useLoadMoreSentinel } from "../../hooks/useLoadMoreSentinel";
 
 /** Shared FAQ header: back arrow left, centered "FAQ" title, no right action. */
 export function FaqHeader({ onBack }: { onBack?: () => void }) {
@@ -32,18 +33,7 @@ export function LoadMoreSentinel({
   onLoadMore: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || !hasNext) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting && !isFetching) onLoadMore();
-      },
-      { rootMargin: "240px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [hasNext, isFetching, onLoadMore]);
+  useLoadMoreSentinel(ref, { enabled: hasNext && !isFetching, onHit: onLoadMore, rootMargin: "240px" }, [hasNext, isFetching]);
 
   if (!hasNext) return null;
   return (

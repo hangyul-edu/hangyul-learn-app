@@ -17,88 +17,34 @@ import { ApiError, errorMessage } from "../lib/http";
 import { checkpointAtResume, dueCheckpoint, isExcluded } from "../lib/lectureCheckpoints";
 import type { LectureCheckpoint, LectureDetail as Lec } from "../lib/types";
 import icClose from "../assets/brand/ic-24-close-white.svg";
-import playerPlay from "../assets/brand/player-play.svg";
-import playerBack5 from "../assets/brand/player-back5.svg";
-import playerFwd5 from "../assets/brand/player-fwd5.svg";
-import playerKnob from "../assets/brand/player-knob.svg";
 import { AskMascot } from "../components/lecture/AskMascot";
 import { useDashboard } from "../api/queries";
-import { mmss } from "../lib/format";
+import { PlayerControls } from "./lecture/PlayerControls";
+import { useLectureStream } from "./lecture/useLectureStream";
+import {
+  HEARTBEAT_SECONDS,
+  pendingSaves,
+  saveOnExit,
+  stashSeriesReward,
+  type CourseRewardState,
+  type LectureEntryState,
+} from "./lecture/progress";
 
 /** Playback speeds the speed chip cycles through, shown as "1x", "1.25x"… */
 const SPEEDS = [1, 1.25, 1.5, 2] as const;
-/** At most this many fresh playback URLs per window before giving up on the stream. */
-const STREAM_REFRESH_LIMIT = 3;
-const STREAM_REFRESH_WINDOW_MS = 5 * 60 * 1000;
 
-/**
- * Seconds of playback between progress heartbeats. The server only counts a
- * lecture as watched when its frontier advances in steps of at most 60s, so
- * completion depends on these arriving while the video plays.
- */
-export const HEARTBEAT_SECONDS = 15;
 /** A saved position this close to the end means the video was watched to the
  * end (finishing saves the full length): the next visit starts over. */
 const RESTART_NEAR_END_SECONDS = 3;
 
-/** Navigation state the course page reads to show COU-021's reward. */
-export type CourseRewardState = { rewardPoints?: number };
-
-/** Set by the series page when it opens a lesson: the player then returns by
- * stepping back instead of pushing the series page again. */
-export type LectureEntryState = { fromSeriesId?: string };
-
-const SERIES_REWARD_KEY = "hangyul.seriesReward:";
-
-// The latest position save per lecture (beat, pause or exit). Reopening the
-// lecture waits for it before reading the lecture back, so a quick close and
-// reopen can never read the position from before the save landed.
-const pendingSaves = new Map<string, Promise<unknown>>();
-
-/** Every position save still in flight has landed (or failed). Pages that
- * read watch history — the series page's 바로 학습하기 — wait for this, or a
- * lesson just closed would not be the one most recently watched yet. */
-export function progressSavesSettled(): Promise<unknown> {
-  return Promise.all([...pendingSaves.values()]);
-}
-
-/** Send a position save and track it; never rejects. */
-function saveOnExit(lectureId: string, seconds: number) {
-  const save = learnApi
-    .progress(lectureId, Math.floor(seconds))
-    .catch(() => undefined)
-    .finally(() => {
-      if (pendingSaves.get(lectureId) === save) pendingSaves.delete(lectureId);
-    });
-  pendingSaves.set(lectureId, save);
-}
-
-/** Hand the just-earned points to the series page we are stepping back to
- * (history.back cannot carry router state). */
-function stashSeriesReward(seriesId: string, points: number) {
-  try {
-    sessionStorage.setItem(SERIES_REWARD_KEY + seriesId, String(points));
-  } catch {
-    // Storage unavailable: the points are paid anyway; only the modal is lost.
-  }
-}
-
-/** The points a lesson handed back to this series page, if any. */
-export function peekSeriesReward(seriesId: string): number {
-  try {
-    return Number(sessionStorage.getItem(SERIES_REWARD_KEY + seriesId)) || 0;
-  } catch {
-    return 0;
-  }
-}
-
-export function clearSeriesReward(seriesId: string) {
-  try {
-    sessionStorage.removeItem(SERIES_REWARD_KEY + seriesId);
-  } catch {
-    // nothing to clear
-  }
-}
+export {
+  HEARTBEAT_SECONDS,
+  clearSeriesReward,
+  peekSeriesReward,
+  progressSavesSettled,
+  type CourseRewardState,
+  type LectureEntryState,
+} from "./lecture/progress";
 
 /**
  * The lecture player — COU-004 (conversation, 230:7011) and COU-005 (TOPIK,
@@ -123,8 +69,6 @@ export function Lecture() {
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<number>(SPEEDS[0]);
   const [exclude, setExclude] = useState(false);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const [premiumLocked, setPremiumLocked] = useState(false);
   const [active, setActive] = useState<LectureCheckpoint | null>(null);
   const [askOpen, setAskOpen] = useState(false);
   const [quitOpen, setQuitOpen] = useState(false);
@@ -147,41 +91,6 @@ export function Lecture() {
   const lastBeatRef = useRef(0);
   // The end-of-video completion is in flight (onEnded can fire twice).
   const finishingRef = useRef(false);
-  // Where to pick up after the signed URL was swapped for a fresh one, and
-  // when recent swaps happened (a stream that keeps failing is not retried
-  // forever).
-  const reloadRef = useRef<{ at: number; play: boolean } | null>(null);
-  const refreshTimesRef = useRef<number[]>([]);
-
-  /**
-   * The stream stopped mid-watch — usually its signed URL ran out. Ask for a
-   * fresh URL and carry on from the same second; the controls come up if the
-   * stream cannot be saved.
-   */
-  function refreshStream() {
-    const now = Date.now();
-    const recent = refreshTimesRef.current.filter((t) => now - t < STREAM_REFRESH_WINDOW_MS);
-    if (recent.length >= STREAM_REFRESH_LIMIT) {
-      refreshTimesRef.current = recent;
-      controls.show();
-      return;
-    }
-    refreshTimesRef.current = [...recent, now];
-    const v = videoRef.current;
-    reloadRef.current = { at: v?.currentTime ?? lastTimeRef.current, play: !!v && !v.paused };
-    learnApi
-      .lectureVideo(lectureId)
-      .then((r) => setVideoUrl(r.video_url))
-      .catch((e) => {
-        reloadRef.current = null;
-        if (e instanceof ApiError && e.status === 402) {
-          setPremiumLocked(true);
-          setVideoUrl(null);
-        }
-        controls.show();
-      });
-  }
-
   const markStudied = useMarkStudied();
 
   // Always read fresh on open — the saved position comes with it — and only
@@ -199,6 +108,15 @@ export function Lecture() {
   });
   // The video waits for that fresh read (cached data shows the title meanwhile).
   const fresh = q.isFetchedAfterMount && !!q.data;
+  const { videoUrl, premiumLocked, playFailed, requestPlay, refreshStream, takeReload } = useLectureStream({
+    lectureId,
+    ready: fresh,
+    position: () => {
+      const v = videoRef.current;
+      return { at: v?.currentTime ?? lastTimeRef.current, play: !!v && !v.paused };
+    },
+    onTrouble: controls.show,
+  });
   // Only to pick the quit confirm's wording: "goal already met" vs "a bit left".
   const dashboard = useDashboard({ enabled: quitOpen });
 
@@ -232,29 +150,6 @@ export function Lecture() {
     return () => window.removeEventListener("keydown", onKey);
   }, [showControls]);
 
-  // Try to fetch a real playback URL; premium content 402s → show the gate.
-  // Once per visit, after the fresh read: a later refetch (window focus) must
-  // not swap the URL and restart the video mid-play.
-  // Any other failure says so with a retry, instead of a black stage forever.
-  const playRequestedRef = useRef(false);
-  const [playFailed, setPlayFailed] = useState(false);
-  function requestPlay() {
-    playRequestedRef.current = true;
-    setPlayFailed(false);
-    learnApi
-      .lecturePlay(lectureId)
-      .then((r) => setVideoUrl(r.video.url))
-      .catch((e) => {
-        if (e instanceof ApiError && e.status === 402) setPremiumLocked(true);
-        else setPlayFailed(true);
-      });
-  }
-  useEffect(() => {
-    if (!fresh || playRequestedRef.current) return;
-    requestPlay();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fresh]);
-
   // Save the position whenever the learner leaves — the X, the system back,
   // switching lecture or app — not only on pause: closing mid-play used to
   // keep only the last 15s beat, or nothing in the first 15 seconds.
@@ -278,12 +173,6 @@ export function Lecture() {
       flush();
     };
   }, [lectureId]);
-
-  /** Fraction of the clip already played, as a percentage of the track. */
-  function pct(l: Lec) {
-    const total = duration || l.duration_seconds || 1;
-    return Math.max(0, Math.min(100, (pos / total) * 100));
-  }
 
   function seek(seconds: number) {
     const next = Math.max(0, seconds);
@@ -448,9 +337,8 @@ export function Lecture() {
                   setDuration(total);
                   // A fresh URL replaced one that ran out: same second, same
                   // playing-or-paused state as before the swap.
-                  const reload = reloadRef.current;
+                  const reload = takeReload();
                   if (reload) {
-                    reloadRef.current = null;
                     v.currentTime = Math.min(reload.at, total);
                     lastTimeRef.current = v.currentTime;
                     if (reload.play) void v.play().catch(() => setPlaying(false));
@@ -572,58 +460,18 @@ export function Lecture() {
                 <AskMascot />
               </button>
 
-            <div className="lecp__controls" {...hoverHold}>
-              <div className="lecp__times">
-                <span>{mmss(pos)}</span>
-                <span>{mmss(duration || l.duration_seconds)}</span>
-              </div>
-              <div className="lecp__track">
-                <span className="lecp__track-fill" style={{ width: `${pct(l)}%` }} />
-                <img className="lecp__knob" src={playerKnob} alt="" aria-hidden="true" style={{ left: `${pct(l)}%` }} />
-                <input
-                  className="lecp__range"
-                  type="range"
-                  min={0}
-                  max={duration || l.duration_seconds}
-                  step={1}
-                  value={pos}
-                  aria-label={t("courses.progress")}
-                  onChange={(e) => seek(Number(e.target.value))}
-                  onPointerDown={() => setScrubbing(true)}
-                  onPointerUp={() => setScrubbing(false)}
-                  onPointerCancel={() => setScrubbing(false)}
-                  onMouseUp={() => void heartbeat(pos)}
-                  onTouchEnd={() => void heartbeat(pos)}
-                />
-              </div>
-
-              <div className="lecp__buttons">
-                <button className="lecp__skip" onClick={() => seek(pos - 5)} aria-label={t("courses.back5")}>
-                  <img src={playerBack5} alt="" aria-hidden="true" />
-                  <span>5</span>
-                </button>
-                <button className="lecp__play" onClick={togglePlay} aria-label={t(playing ? "courses.pause" : "courses.play")}>
-                  {/* ic_64_play: Default (the triangle) while paused, Variant2
-                      (784:52239, two bars) while the video plays. */}
-                  {playing ? (
-                    <span className="lecp__pause" aria-hidden="true">
-                      <span className="lecp__pause-bar lecp__pause-bar--left" />
-                      <span className="lecp__pause-bar lecp__pause-bar--right" />
-                    </span>
-                  ) : (
-                    <img src={playerPlay} alt="" aria-hidden="true" />
-                  )}
-                </button>
-                <button className="lecp__skip lecp__skip--fwd" onClick={() => seek(pos + 5)} aria-label={t("courses.fwd5")}>
-                  <img src={playerFwd5} alt="" aria-hidden="true" />
-                  <span>5</span>
-                </button>
-              </div>
-
-              <button className="lecp__speed" onClick={cycleSpeed} aria-label={t("courses.speedA11y", { rate: String(speed) })}>
-                {speed}x
-              </button>
-            </div>
+            <PlayerControls
+              hoverHold={hoverHold}
+              pos={pos}
+              total={duration || l.duration_seconds}
+              playing={playing}
+              speed={speed}
+              onSeek={seek}
+              onTogglePlay={togglePlay}
+              onCycleSpeed={cycleSpeed}
+              onScrubbing={setScrubbing}
+              onScrubEnd={() => void heartbeat(pos)}
+            />
           </>
         )}
       </div>

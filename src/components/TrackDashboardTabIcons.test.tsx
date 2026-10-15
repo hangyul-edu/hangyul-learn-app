@@ -5,6 +5,11 @@ import { MemoryRouter } from "react-router-dom";
 import { I18nProvider } from "../i18n";
 import { TrackDashboard } from "./TrackDashboard";
 import type { DashboardTrack } from "../lib/types";
+// Compared by the imported asset, not its file name: vite may inline a small
+// SVG as a data: URL, which carries no name.
+import speakingSelected from "../assets/brand/tab-ic-speaking-selected.svg";
+import speakingUnselected from "../assets/brand/tab-ic-speaking-unselected.svg";
+import pencil from "../assets/brand/tab-ic-pencil.svg";
 
 /* The learning-mode tab glyphs, against TAL-001 (Conversation selected) and
    TAL-002 (Conversation unselected).
@@ -69,8 +74,8 @@ describe("learning-mode tab glyphs", () => {
     // TOPIK selected — the TAL-002 state the design pins.
     renderTabs(1);
 
-    expect(glyphSrc(CONVERSATION)).toContain("tab-ic-speaking-unselected");
-    expect(glyphSrc(CONVERSATION)).not.toContain("tab-ic-speaking-selected");
+    expect(glyphSrc(CONVERSATION)).toBe(speakingUnselected);
+    expect(glyphSrc(CONVERSATION)).not.toBe(speakingSelected);
   });
 
   it("uses the orange-stroked Conversation glyph when Conversation IS selected", () => {
@@ -78,8 +83,8 @@ describe("learning-mode tab glyphs", () => {
     // white selected tab.
     renderTabs(0);
 
-    expect(glyphSrc(CONVERSATION)).toContain("tab-ic-speaking-selected");
-    expect(glyphSrc(CONVERSATION)).not.toContain("tab-ic-speaking-unselected");
+    expect(glyphSrc(CONVERSATION)).toBe(speakingSelected);
+    expect(glyphSrc(CONVERSATION)).not.toBe(speakingUnselected);
   });
 
   it("swaps the glyph as the selection moves", async () => {
@@ -105,7 +110,7 @@ describe("learning-mode tab glyphs", () => {
         </MemoryRouter>
       </I18nProvider>,
     );
-    expect(glyphSrc(CONVERSATION)).toContain("tab-ic-speaking-selected");
+    expect(glyphSrc(CONVERSATION)).toBe(speakingSelected);
 
     await user.click(screen.getByRole("tab", { name: TOPIK }));
     expect(current).toBe(1);
@@ -128,7 +133,7 @@ describe("learning-mode tab glyphs", () => {
         </MemoryRouter>
       </I18nProvider>,
     );
-    expect(glyphSrc(CONVERSATION)).toContain("tab-ic-speaking-unselected");
+    expect(glyphSrc(CONVERSATION)).toBe(speakingUnselected);
   });
 
   it("keeps the TOPIK glyph the same in both states", () => {
@@ -140,6 +145,6 @@ describe("learning-mode tab glyphs", () => {
 
     renderTabs(1);
     expect(glyphSrc(TOPIK)).toBe(whenUnselected);
-    expect(whenUnselected).toContain("tab-ic-pencil");
+    expect(whenUnselected).toBe(pencil);
   });
 });

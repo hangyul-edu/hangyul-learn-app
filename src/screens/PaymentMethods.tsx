@@ -1,122 +1,21 @@
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, Sheet } from "../components/ui/Modal";
 import { Button } from "../components/ui/kit";
 import { TextField } from "../components/ui/Field";
 import { SkeletonList } from "../components/ui/states";
-import { NaverPayLogo, TossPayLogo } from "../components/brand/PayBrand";
-import { billingApi, payApi } from "../api/endpoints";
-import { useAuth } from "../hooks/auth";
+import { payApi } from "../api/endpoints";
+import { useMySubscription } from "../api/queries";
 import { useToast } from "../hooks/toast";
-import { ApiError, errorMessage, isNotFound } from "../lib/http";
 import { currencyLabel, currencyMismatchText, paymentErrorMessage } from "../lib/paymentErrors";
 import { InternationalCardSheet } from "../components/InternationalCardSheet";
-import {
-  NOTICE_GUIDANCE_KEY,
-  failureModalKeys,
-  formatRetryAt,
-  noticeReasonKey,
-  retryBlockedKey,
-  retryRefusal,
-} from "../lib/paymentRecovery";
-import {
-  hasReturnParams,
-  parseRegistrationReturn,
-  savePendingRegistration,
-  takePendingRegistration,
-} from "../lib/paymentReturn";
-import {
-  isUserCancel,
-  requestEasyPayBillingAuth,
-  requestTossBillingAuth,
-} from "../lib/tossPayments";
-import { useTranslation, type TranslationKey } from "../i18n";
-import type { MethodProvider, PaymentMethod, PaymentMethodList } from "../lib/types";
+import { useTranslation } from "../i18n";
+import type { PaymentMethod, PaymentMethodList } from "../lib/types";
 import { isPayLaunched } from "../lib/launch";
-import cardArt from "../assets/brand/pm-card-art.svg";
-import trashIcon from "../assets/brand/ic-trash.svg";
-import successIcon from "../assets/brand/ic-modal-success.svg";
-import radioOn from "../assets/brand/pm-radio-on.svg";
-import radioOff from "../assets/brand/pm-radio-off.svg";
-import addPlus from "../assets/brand/pm-add-plus.svg";
 import { DetailHeader } from "../components/DetailHeader";
-import { Spinner } from "../components/ui/Spinner";
-import { useMySubscription } from "../api/queries";
-
-const QK = ["payment-methods"] as const;
-const RECOVERY_QK = ["payment-recovery"] as const;
-const RETURN_URL = () => window.location.origin + "/account/payment";
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-/* Arriving from the purchase screen, a successful registration goes back to
-   it with the plan the member picked. A registration window leaves the app
-   (and its history state) behind, so the way back is kept for this tab
-   across the window, like the pending registration itself. */
-const PURCHASE_PATH = "/subscription/start";
-const RETURN_TO_KEY = "hangyul.pm-return-to.v1";
-type ReturnTo = { from?: string; selectedPlanId?: string | null };
-
-function rememberReturnTo(state: ReturnTo | null): void {
-  try {
-    if (state?.from === PURCHASE_PATH) {
-      sessionStorage.setItem(RETURN_TO_KEY, JSON.stringify({ from: state.from, selectedPlanId: state.selectedPlanId ?? null }));
-    } else {
-      sessionStorage.removeItem(RETURN_TO_KEY);
-    }
-  } catch {
-    /* storage unavailable: the member goes back by hand */
-  }
-}
-
-/** Read and forget where a window's return should lead. */
-function takeReturnTo(): ReturnTo | null {
-  try {
-    const raw = sessionStorage.getItem(RETURN_TO_KEY);
-    sessionStorage.removeItem(RETURN_TO_KEY);
-    return raw ? (JSON.parse(raw) as ReturnTo) : null;
-  } catch {
-    return null;
-  }
-}
-
-/* --------------------------------- icons -------------------------------- */
-/* Group 1410118763 — the 10x12 bin glyph exported from SET-002. */
-const Trash = () => <img src={trashIcon} width={10} height={12} alt="" aria-hidden="true" />;
-/* Group 1410118744 (1988:24838) — the 25px brand disc with its white plus. */
-const Plus = () => <img className="pm__add-plus" src={addPlus} alt="" aria-hidden="true" />;
-/* Group 1410118747 — the 46x27.26 card illustration exported from SET-002.
-   The design uses one mark for every issuer, so `brand` is not consulted. */
-const CardGlyph = () => <img className="pm__thumb" src={cardArt} alt="" aria-hidden="true" />;
-/* Group 1410118751 / 1410118752 — the 15px selected / unselected radio. */
-const Radio = ({ checked }: { checked: boolean }) => (
-  <img className="pm__radio" src={checked ? radioOn : radioOff} alt="" aria-hidden="true" />
-);
-/* SET-005's title opens with a literal "⚠" inside the text run (1492:21673),
-   not a vector layer, so there is no asset to export and the character itself
-   renders as a colour emoji on Apple platforms. This reproduces the glyph as
-   Figma draws it — a solid Brand color 1 triangle measured at 17 x 14.25 in
-   the 4x export of 1488:21639, ink from (15.25, 27.75). */
-const WarnTriangle = () => (
-  <svg className="pm__notice-fail-warn" width="17" height="14.25" viewBox="0 0 17 14.25" fill="none" aria-hidden="true">
-    <path d="M7.42 0.62a1.25 1.25 0 0 1 2.16 0l6.9 11.75a1.25 1.25 0 0 1-1.08 1.88H1.6a1.25 1.25 0 0 1-1.08-1.88L7.42.62Z" fill="#ff6700" />
-    <path d="M8.5 4.35v4.3" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" />
-    <circle cx="8.5" cy="11.05" r="0.9" fill="#fff" />
-  </svg>
-);
-/* Ellipse 1111 + Polygon 18 (1542:23329/23330) — the 60px success badge. */
-const CheckMark = () => <img src={successIcon} alt="" aria-hidden="true" />;
-
-/* -------------------------------- helpers ------------------------------- */
-// The Korean wallets, in display order.
-const EASY_PAY: {
-  provider: MethodProvider;
-  labelKey: TranslationKey;
-  Logo: () => JSX.Element;
-}[] = [
-  { provider: "toss_pay", labelKey: "paymentMethods.tossPay", Logo: TossPayLogo },
-  { provider: "naver_pay", labelKey: "paymentMethods.naverPay", Logo: NaverPayLogo },
-];
+import { AddMethodButton, CardGlyph, EASY_PAY, MethodRow, PaymentResultModal, RecoveryNotice } from "./paymentMethods/parts";
+import { METHODS_QK as QK, useRecoveryRetry } from "./paymentMethods/useRecoveryRetry";
+import { useRegistration } from "./paymentMethods/useRegistration";
 
 function cardName(m: PaymentMethod): string {
   if (m.issuer) return m.issuer;
@@ -128,81 +27,13 @@ function cardName(m: PaymentMethod): string {
    server's _RENEWING_STATES plus the derived `trial_ending`. */
 const RENEWING = new Set(["trial", "trial_ending", "active", "payment_pending", "payment_failed", "grace_period", "suspended"]);
 
-/* The manual registration entry, used only when the provider's window is not
-   configured (local dev with the fake provider): the member pastes the value
-   the window would have returned. */
-type Flow = {
-  title: string;
-  placeholder: string;
-  confirm: (token: string) => Promise<void>;
-};
-
-/* -------------------------------- screen -------------------------------- */
-type ResultModal = { kind: "success" } | { kind: "failure"; failureClass?: string | null } | null;
-
-/** A retry the server refused (retry limits, a method it cannot charge); `message` is the explanation. */
-class RetryRefusedError extends Error {}
-
-/* Non-dismissable payment-result modal (§8/§9/§10): no outside-tap/back close,
-   scroll locked, focus moved to the action button and restored on close. */
-function PaymentResultModal({
-  variant,
-  planName,
-  failureClass,
-  onConfirm,
-}: {
-  variant: "success" | "failure";
-  planName?: string | null;
-  failureClass?: string | null;
-  onConfirm: () => void;
-}) {
-  const { t } = useTranslation();
-  const btnRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    btnRef.current?.focus();
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      previouslyFocused?.focus?.();
-    };
-  }, []);
-  const success = variant === "success";
-  const [l1, l2] = success
-    ? [
-        t("paymentRecovery.successPlanLine", {
-          plan: planName?.trim() || t("paymentMethods.planFallback"),
-        }),
-        t("paymentMethods.paySuccessSub"),
-      ]
-    : (failureModalKeys(failureClass).map((k) => t(k)) as [string, string]);
-  return (
-    <div className="overlay overlay--center pm-result-overlay" role="dialog" aria-modal="true" aria-label={t(success ? "paymentMethods.paySuccessA11y" : "paymentMethods.payFailA11y")}>
-      <div className="pm-result" onClick={(e) => e.stopPropagation()}>
-        <div className={`pm-result__icon ${success ? "is-ok" : "is-fail"}`}>
-          {/* SET-007 draws the failure mark as the ⚠ character, not a vector. */}
-          {success ? <CheckMark /> : <span aria-hidden="true">⚠</span>}
-        </div>
-        <h2 className="pm-result__title">{t(success ? "paymentMethods.paySuccessTitle" : "paymentMethods.payFailTitle")}</h2>
-        <p className="pm-result__desc">{l1}<br />{l2}</p>
-        <button ref={btnRef} className="pm-result__btn" onClick={onConfirm} aria-label={t(success ? "paymentMethods.paySuccessConfirmA11y" : "paymentMethods.payFailConfirmA11y")}>
-          {success ? t("common.confirm") : t("paymentMethods.chooseAnother")}
-        </button>
-      </div>
-    </div>
-  );
-}
-
+/** 결제 수단 관리: methods on file, the primary choice, registration, and
+ * recovering a failed automatic payment. */
 export function PaymentMethods() {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const toast = useToast();
   const qc = useQueryClient();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { bootstrapMe } = useAuth();
   const q = useQuery({ queryKey: QK, queryFn: payApi.methods });
-  const recoveryQ = useQuery({ queryKey: RECOVERY_QK, queryFn: billingApi.recovery });
   const methods = q.data?.methods ?? [];
   const cards = methods.filter((m) => m.kind === "card");
   // The one kind of method this member may add (the server decides it from
@@ -218,12 +49,8 @@ export function PaymentMethods() {
   );
 
   /* --- currency binding: a card charged in one currency pays only plans in it --- */
-  const subQ = useMySubscription();
-  const sub = subQ.data;
+  const sub = useMySubscription().data;
   const liveCurrency = sub && RENEWING.has(sub.status) ? sub.plan_currency?.toUpperCase() ?? null : null;
-  // Arriving from the purchase screen: where to go back to once a method is
-  // registered, and maybe a request to open the overseas-card form at once.
-  const navState = location.state as (ReturnTo & { addCard?: string }) | null;
   const currencyLocked = (m: PaymentMethod) =>
     !!liveCurrency && !!m.billing_currency && m.billing_currency.toUpperCase() !== liveCurrency;
   const methodTag = (m: PaymentMethod): string | null => {
@@ -236,26 +63,13 @@ export function PaymentMethods() {
   };
 
   const [removeTarget, setRemoveTarget] = useState<PaymentMethod | null>(null);
-  const [intlOpen, setIntlOpen] = useState(navState?.addCard === "international");
-  const [flow, setFlow] = useState<Flow | null>(null);
-  const [token, setToken] = useState("");
-  const [starting, setStarting] = useState<string | null>(null);
-  const [confirming, setConfirming] = useState(false);
-  const [resultModal, setResultModal] = useState<ResultModal>(null);
   const cardsRef = useRef<HTMLElement>(null);
   const retryBtnRef = useRef<HTMLButtonElement>(null);
+  const reg = useRegistration();
+  const rec = useRecoveryRetry();
+  const { retry } = rec;
 
   const invalidate = () => qc.invalidateQueries({ queryKey: QK });
-  /** After a registration: back to the purchase screen when that is where the
-   *  member came from. Without a window in between, its history entry is the
-   *  one right behind this (it keeps the plan there), so step back rather than
-   *  stack a second copy its close button would land on. */
-  const backToPurchase = (returnTo: ReturnTo | null, viaWindow = false) => {
-    if (returnTo?.from !== PURCHASE_PATH) return;
-    if (!viaWindow) navigate(-1);
-    else navigate(PURCHASE_PATH, { replace: true, state: { selectedPlanId: returnTo.selectedPlanId ?? null } });
-  };
-  const invalidateRecovery = () => qc.invalidateQueries({ queryKey: RECOVERY_QK });
   const scrollToCards = () => cardsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   /* --- primary selection (optimistic, single-flight, reconciled) --- */
@@ -287,15 +101,6 @@ export function PaymentMethods() {
     }
     setDefault.mutate(m.method_id);
   }
-  // Enter / Space on the row itself picks it; keys pressed on the delete
-  // button inside it bubble up here and must stay that button's own.
-  const rowKeyDown = (m: PaymentMethod) => (e: KeyboardEvent) => {
-    if (e.target !== e.currentTarget) return;
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      selectPrimary(m);
-    }
-  };
 
   /* --- deletion / disconnect --- */
   const remove = useMutation({
@@ -322,98 +127,9 @@ export function PaymentMethods() {
     onError: (e) => toast.error(paymentErrorMessage(e)), // keep the modal open
   });
 
-  /* --- failed-automatic-payment recovery --- */
-  const recovery = recoveryQ.data;
-  // The notice stays up whenever a payment needs fixing; only the button
-  // depends on whether a retry would be accepted now (the retry limits).
-  const showNotice =
-    !recoveryQ.isLoading &&
-    !!recovery?.recovery_required &&
-    !!recovery.outstanding_invoice_id;
-  const canRetryNow = !!recovery?.can_retry_immediately;
-  const retryBlockedText =
-    showNotice && !canRetryNow
-      ? blockedText(recovery?.retry_blocked_reason, recovery?.retry_available_at)
-      : "";
-
-  function blockedText(reason?: string | null, retryAfter?: string | null): string {
-    return t(retryBlockedKey(reason), { time: formatRetryAt(retryAfter, language, t) || "—" });
-  }
   const primaryMethod = methods.find((m) => m.is_default && m.status === "active");
-
-  // Determine the authoritative terminal result: the invoice being paid is the
-  // ONLY success signal; a still-outstanding recovery is a failure; anything
-  // else (e.g. provider timeout → payment_pending) is treated as pending.
-  async function verifyRetry(invoiceId: string): Promise<ResultModal | "pending"> {
-    for (let i = 0; i < 3; i++) {
-      const { invoice } = await billingApi.invoice(invoiceId);
-      if (invoice.status === "paid") return { kind: "success" };
-      if (i < 2) await sleep(300);
-    }
-    const rec = await billingApi.recovery();
-    if (!rec.recovery_required) return { kind: "success" };
-    if (rec.outstanding_invoice_id) return { kind: "failure", failureClass: rec.failure_class };
-    return "pending";
-  }
-
-  const retry = useMutation({
-    mutationFn: async (invoiceId: string): Promise<ResultModal | "pending"> => {
-      try {
-        await billingApi.retryInvoice(invoiceId);
-      } catch (e) {
-        // The previous charge is still being sent to the provider: its
-        // outcome is not known yet, so this is neither a success nor a failure.
-        if (e instanceof ApiError && e.code === "billing.charge_in_progress") return "pending";
-        // Refused by the retry limits (too soon, too many today, attempts
-        // spent) or because this method cannot be charged: explain why,
-        // and re-read the recovery state that drives the button.
-        const refusal = retryRefusal(e);
-        if (refusal) {
-          invalidateRecovery();
-          throw new RetryRefusedError(blockedText(refusal.reason, refusal.retryAfter));
-        }
-        // Already paid (idempotency guard) → verify and treat as recovered.
-        if (e instanceof ApiError && e.status === 409) return verifyRetry(invoiceId);
-        // Outstanding invoice vanished (resolved elsewhere) → refresh & clear.
-        if (isNotFound(e)) {
-          invalidateRecovery();
-          throw new Error("resolved");
-        }
-        throw e;
-      }
-      return verifyRetry(invoiceId);
-    },
-    onSuccess: (result) => {
-      if (result === "pending") {
-        toast.show(t("paymentMethods.checkingResult"));
-        invalidateRecovery();
-        return;
-      }
-      if (result?.kind === "success") {
-        setResultModal({ kind: "success" });
-        // The paid invoice restores premium: the subscription card, the
-        // dashboard's paywall flag and the payment history all changed.
-        for (const key of [["sub-me"], ["dashboard"], ["invoices"], ["invoices-inf"]]) {
-          qc.invalidateQueries({ queryKey: key });
-        }
-      } else if (result?.kind === "failure") {
-        setResultModal({ kind: "failure", failureClass: result.failureClass });
-      }
-      invalidate();
-      invalidateRecovery();
-    },
-    onError: (e) => {
-      const msg = e instanceof RetryRefusedError
-        ? e.message
-        : e instanceof Error && e.message === "resolved"
-          ? t("paymentMethods.alreadyProcessed")
-          : errorMessage(e);
-      toast.error(msg);
-    },
-  });
-
   function doRetry() {
-    if (!showNotice || !canRetryNow || !recovery?.outstanding_invoice_id) return;
+    if (!rec.showNotice || !rec.canRetryNow || !rec.recovery?.outstanding_invoice_id) return;
     // Never charge against a stale method id: wait for a pending primary change.
     if (setDefault.isPending || retry.isPending) return;
     if (!primaryMethod) {
@@ -421,174 +137,22 @@ export function PaymentMethods() {
       scrollToCards();
       return;
     }
-    retry.mutate(recovery.outstanding_invoice_id);
-  }
-
-  async function confirmSuccess() {
-    setResultModal(null);
-    // Reconcile the recovery notice and the wallet, and re-read the profile's
-    // membership. (Premium-gated screens were already refreshed on success.)
-    invalidate();
-    invalidateRecovery();
-    try {
-      await bootstrapMe();
-    } catch {
-      /* entitlement refresh is best-effort; server remains the source of truth */
-    }
+    retry.mutate(rec.recovery.outstanding_invoice_id);
   }
 
   function closeFailure() {
-    setResultModal(null);
-    invalidateRecovery(); // pull any updated failure reason
+    rec.closeFailure();
     scrollToCards();
     retryBtnRef.current?.focus();
   }
 
-  /* --- return from a provider's registration window --- */
-  const handledReturn = useRef(false);
-  useEffect(() => {
-    if (handledReturn.current || !hasReturnParams(location.search)) return;
-    handledReturn.current = true;
-    const search = location.search;
-    // Drop the provider's parameters so a reload does not confirm again.
-    navigate({ pathname: location.pathname }, { replace: true, state: location.state });
-    const returnTo = takeReturnTo();
-    const pending = takePendingRegistration();
-    if (!pending) return;
-    const ret = parseRegistrationReturn(pending, search);
-    if (!ret) return;
-    if (ret.kind === "failed") {
-      // Closing the window is the member's choice, not an error.
-      if (ret.code === "PAY_PROCESS_CANCELED" || ret.code === "USER_CANCEL") return;
-      toast.error(ret.message || t("paymentMethods.registerFailed"));
-      return;
-    }
-    setConfirming(true);
-    const confirm =
-      pending.provider === "toss_pay"
-        ? payApi.tosspayConfirm
-        : pending.provider === "naver_pay"
-          ? payApi.naverpayConfirm
-          : payApi.cardConfirm;
-    confirm(pending.intentId, { authKey: ret.authKey, customerKey: ret.customerKey })
-      .then(() => {
-        toast.success(t("paymentMethods.registered"));
-        invalidate();
-        backToPurchase(returnTo, true);
-      })
-      .catch((e) => toast.error(errorMessage(e)))
-      .finally(() => setConfirming(false));
-    // Runs once per arrival; the handled flag guards StrictMode's re-run.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.search]);
-
-  /* --- registration / connection flows --- */
-  async function start(key: string, open: () => Promise<Flow | null>) {
-    if (starting) return; // prevent duplicate launches
-    setStarting(key);
-    try {
-      setToken("");
-      setFlow(await open());
-    } catch (e) {
-      // e.g. payment_method.currency_mismatch: a KRW method while on a USD plan.
-      toast.error(paymentErrorMessage(e));
-    } finally {
-      setStarting(null);
-    }
-  }
-  /* Korean-issued cards: Toss's hosted billing window (it takes only domestic
-     cards). Overseas cards use the app's own form — InternationalCardSheet. */
-  const startDomesticCard = () =>
-    start("card-domestic", async () => {
-      const res = await payApi.cardIntent(RETURN_URL());
-      if (res.widget.client_key) {
-        // Toss opens its window through the SDK and returns to this page.
-        savePendingRegistration({ provider: "toss_card", intentId: res.intent_id, customerKey: res.customer_key });
-        rememberReturnTo(navState);
-        try {
-          await requestTossBillingAuth({
-            clientKey: res.widget.client_key,
-            customerKey: res.customer_key,
-            successUrl: res.widget.success_url,
-            failUrl: res.widget.fail_url,
-          });
-        } catch (e) {
-          if (isUserCancel(e)) return null; // the member closed the window
-          throw e;
-        }
-        return null;
-      }
-      // No client key (card billing not configured, e.g. local dev with the
-      // fake provider): only the manual entry remains.
-      return {
-        title: t("paymentMethods.domesticCardTitle"),
-        placeholder: t("paymentMethods.authKeyPlaceholder"),
-        confirm: (key) =>
-          payApi.cardConfirm(res.intent_id, { authKey: key, customerKey: res.customer_key }).then(() => undefined),
-      };
-    });
-  /* Toss Pay / Naver Pay: the wallet's own window, opened by Toss's SDK
-     (flowMode DIRECT), returning here like the card window. */
-  const startWallet = (provider: "toss_pay" | "naver_pay") =>
-    start(provider, async () => {
-      const res =
-        provider === "toss_pay" ? await payApi.tosspayIntent(RETURN_URL()) : await payApi.naverpayIntent(RETURN_URL());
-      const confirm = provider === "toss_pay" ? payApi.tosspayConfirm : payApi.naverpayConfirm;
-      if (res.window.client_key) {
-        savePendingRegistration({ provider, intentId: res.intent_id, customerKey: res.customer_key });
-        rememberReturnTo(navState);
-        try {
-          await requestEasyPayBillingAuth({
-            clientKey: res.window.client_key,
-            customerKey: res.customer_key,
-            successUrl: res.window.success_url,
-            failUrl: res.window.fail_url,
-            easyPay: res.window.easy_pay,
-          });
-        } catch (e) {
-          if (isUserCancel(e)) return null;
-          throw e;
-        }
-        return null;
-      }
-      // Not configured on this server (local dev with the fake provider):
-      // only the manual entry remains.
-      return {
-        title: t(provider === "toss_pay" ? "paymentMethods.tossPay" : "paymentMethods.naverPay"),
-        placeholder: t("paymentMethods.authKeyPlaceholder"),
-        confirm: (key) =>
-          confirm(res.intent_id, { authKey: key, customerKey: res.customer_key }).then(() => undefined),
-      };
-    });
-  const startTossPay = () => startWallet("toss_pay");
-  const startNaverPay = () => startWallet("naver_pay");
-
-  const closeIntl = useCallback(() => setIntlOpen(false), []);
-  const intlRegistered = () => {
-    setIntlOpen(false);
-    toast.success(t("paymentMethods.registered"));
-    void qc.invalidateQueries({ queryKey: QK });
-    backToPurchase(navState);
-  };
-
-  async function confirmFlow() {
-    if (!flow || !token.trim() || confirming) return;
-    setConfirming(true);
-    try {
-      await flow.confirm(token.trim());
-      setFlow(null);
-      setToken("");
-      toast.success(t("paymentMethods.registered"));
-      invalidate();
-      backToPurchase(navState);
-    } catch (e) {
-      toast.error(errorMessage(e));
-    } finally {
-      setConfirming(false);
-    }
-  }
-
   const selectDisabled = setDefault.isPending;
+  const addDisabled = !!reg.starting || retry.isPending;
+  const selectionA11y = (name: string, selected: boolean) =>
+    t("paymentMethods.defaultMethodA11y", {
+      name,
+      state: t(selected ? "paymentMethods.selected" : "paymentMethods.notSelected"),
+    });
 
   return (
     <div className="screen pm">
@@ -605,43 +169,16 @@ export function PaymentMethods() {
         ) : (
           <>
             {/* --- Failed automatic payment recovery notice --- */}
-            {showNotice && recovery && (
-              <section className="pm__notice-fail" role="alert" aria-label={t("paymentMethods.failNoticeA11y")}>
-                <div className="pm__notice-fail-head">
-                  <WarnTriangle />
-                  <span className="pm__notice-fail-title">{t("paymentMethods.failNoticeTitle")}</span>
-                </div>
-                <p className="pm__notice-fail-desc">
-                  {t(noticeReasonKey(recovery.failure_class))} {t(NOTICE_GUIDANCE_KEY)}
-                </p>
-                {formatRetryAt(recovery.next_automatic_retry_at, language, t) && (
-                  <p className="pm__notice-fail-retry">
-                    {t("paymentMethods.nextRetry", {
-                      date: formatRetryAt(recovery.next_automatic_retry_at, language, t),
-                    })}
-                  </p>
-                )}
-                {retryBlockedText && (
-                  <p className="pm__notice-fail-blocked" role="status">{retryBlockedText}</p>
-                )}
-                <button
-                  ref={retryBtnRef}
-                  className="pm__pay-now"
-                  onClick={doRetry}
-                  disabled={!canRetryNow || retry.isPending || setDefault.isPending}
-                  aria-label={t("paymentMethods.payNowA11y")}
-                  aria-busy={retry.isPending}
-                >
-                  {retry.isPending ? (
-                    <>
-                      <Spinner size={18} stroke={2} />
-                      {t("paymentMethods.paying")}
-                    </>
-                  ) : (
-                    t("paymentMethods.payNow")
-                  )}
-                </button>
-              </section>
+            {rec.showNotice && rec.recovery && (
+              <RecoveryNotice
+                recovery={rec.recovery}
+                blockedText={rec.retryBlockedText}
+                canRetry={rec.canRetryNow}
+                paying={retry.isPending}
+                busy={setDefault.isPending}
+                onRetry={doRetry}
+                retryBtnRef={retryBtnRef}
+              />
             )}
 
             {/* --- Credit / debit cards --- */}
@@ -653,44 +190,27 @@ export function PaymentMethods() {
                   const locked = currencyLocked(m);
                   const name = tag ? `${m.display_name} ${tag}` : m.display_name;
                   return (
-                  <li key={m.method_id}>
-                    <div
-                      className={`pm__row ${locked ? "pm__row--locked" : ""}`}
-                      role="button"
-                      tabIndex={0}
-                      aria-pressed={m.is_default}
-                      aria-disabled={locked || undefined}
-                      aria-label={
-                        locked
-                          ? t("paymentMethods.currencyLockedA11y", { name })
-                          : t("paymentMethods.defaultMethodA11y", {
-                              name,
-                              state: t(m.is_default ? "paymentMethods.selected" : "paymentMethods.notSelected"),
-                            })
-                      }
-                      onClick={() => selectPrimary(m)}
-                      onKeyDown={rowKeyDown(m)}
-                    >
-                      <Radio checked={m.is_default} />
-                      <CardGlyph />
-                      <div className="pm__row-main">
-                        {/* 1332:22003 sets the name and the masked digits as one
-                            run — no space before the parenthesis. */}
-                        <span className="pm__row-name">{cardName(m)}</span>
-                        {m.masked_card_number && <span className="pm__row-masked">({m.masked_card_number})</span>}
-                        {/* Region + the only currency it can be charged in, so
-                            two cards of the same issuer stay distinguishable. */}
-                        {tag && <span className={`pm__row-tag ${m.card_region === "international" ? "is-intl" : ""}`}>{tag}</span>}
-                      </div>
-                      <button
-                        className="pm__del"
-                        aria-label={t("paymentMethods.deleteA11y", { name: m.display_name })}
-                        onClick={(e) => { e.stopPropagation(); setRemoveTarget(m); }}
+                    <li key={m.method_id}>
+                      <MethodRow
+                        selected={m.is_default}
+                        locked={locked}
+                        label={locked ? t("paymentMethods.currencyLockedA11y", { name }) : selectionA11y(name, m.is_default)}
+                        deleteLabel={t("paymentMethods.deleteA11y", { name: m.display_name })}
+                        onSelect={() => selectPrimary(m)}
+                        onDelete={() => setRemoveTarget(m)}
                       >
-                        <Trash />
-                      </button>
-                    </div>
-                  </li>
+                        <CardGlyph />
+                        <div className="pm__row-main">
+                          {/* 1332:22003 sets the name and the masked digits as one
+                              run — no space before the parenthesis. */}
+                          <span className="pm__row-name">{cardName(m)}</span>
+                          {m.masked_card_number && <span className="pm__row-masked">({m.masked_card_number})</span>}
+                          {/* Region + the only currency it can be charged in, so
+                              two cards of the same issuer stay distinguishable. */}
+                          {tag && <span className={`pm__row-tag ${m.card_region === "international" ? "is-intl" : ""}`}>{tag}</span>}
+                        </div>
+                      </MethodRow>
+                    </li>
                   );
                 })}
               </ul>
@@ -699,75 +219,65 @@ export function PaymentMethods() {
                   number: +82 → a Korean card in Toss's window (KRW); anyone
                   else → an overseas card in our own form (USD). */}
               {registerRegion === "domestic" && (
-                <button className="pm__add" onClick={startDomesticCard} disabled={!!starting || retry.isPending} aria-label={t("paymentMethods.addDomesticA11y")}>
-                  <Plus />
-                  <span className="pm__add-text">
-                    <span className="pm__add-label">{t("paymentMethods.addDomestic")}</span>
-                    <span className="pm__add-sub">{t("paymentMethods.addDomesticSub")}</span>
-                  </span>
-                </button>
+                <AddMethodButton
+                  label={t("paymentMethods.addDomestic")}
+                  sub={t("paymentMethods.addDomesticSub")}
+                  a11yLabel={t("paymentMethods.addDomesticA11y")}
+                  disabled={addDisabled}
+                  onClick={reg.startDomesticCard}
+                />
               )}
               {registerRegion === "international" && (
-                <button className="pm__add" onClick={() => setIntlOpen(true)} disabled={!!starting || retry.isPending} aria-label={t("paymentMethods.addInternationalA11y")}>
-                  <Plus />
-                  <span className="pm__add-text">
-                    <span className="pm__add-label">{t("paymentMethods.addInternational")}</span>
-                    <span className="pm__add-sub">
-                      {t("paymentMethods.addInternationalSub", { currency: currencyLabel(registration?.currency, t) })}
-                    </span>
-                  </span>
-                </button>
+                <AddMethodButton
+                  label={t("paymentMethods.addInternational")}
+                  sub={t("paymentMethods.addInternationalSub", { currency: currencyLabel(registration?.currency, t) })}
+                  a11yLabel={t("paymentMethods.addInternationalA11y")}
+                  disabled={addDisabled}
+                  onClick={reg.openIntl}
+                />
               )}
             </section>
 
             {/* --- Easy payment: Korean wallets, KRW only — for members who
                 register domestic cards, or to see/remove one already on file --- */}
             {easyPay.length > 0 && (
-            <section className="pm__section" aria-label={t("paymentMethods.easyPaySection")}>
-              <h2 className="pm__section-title">{t("paymentMethods.easyPaySection")}</h2>
-              <ul className="pm__list pm__list--ez" role="list">
-                {easyPay.map(({ provider, labelKey, Logo }) => {
-                  const connected = methods.find((m) => m.provider === provider);
-                  const connect = provider === "toss_pay" ? startTossPay : startNaverPay;
-                  return (
-                    <li key={provider}>
-                      {connected ? (
-                        <div
-                          className={`pm__row pm__ez ${currencyLocked(connected) ? "pm__row--locked" : ""}`}
-                          role="button"
-                          tabIndex={0}
-                          aria-pressed={connected.is_default}
-                          aria-disabled={currencyLocked(connected) || undefined}
-                          aria-label={t("paymentMethods.defaultMethodA11y", {
-                            name: t(labelKey),
-                            state: t(connected.is_default ? "paymentMethods.selected" : "paymentMethods.notSelected"),
-                          })}
-                          onClick={() => selectPrimary(connected)}
-                          onKeyDown={rowKeyDown(connected)}
-                        >
-                          <Radio checked={connected.is_default} />
-                          <div className="pm__row-main pm__row-main--logo"><Logo /></div>
-                          <button
-                            className="pm__del"
-                            aria-label={t("paymentMethods.disconnectA11y", { name: t(labelKey) })}
-                            onClick={(e) => { e.stopPropagation(); setRemoveTarget(connected); }}
+              <section className="pm__section" aria-label={t("paymentMethods.easyPaySection")}>
+                <h2 className="pm__section-title">{t("paymentMethods.easyPaySection")}</h2>
+                <ul className="pm__list pm__list--ez" role="list">
+                  {easyPay.map(({ provider, labelKey, Logo }) => {
+                    const connected = methods.find((m) => m.provider === provider);
+                    return (
+                      <li key={provider}>
+                        {connected ? (
+                          <MethodRow
+                            className="pm__ez"
+                            selected={connected.is_default}
+                            locked={currencyLocked(connected)}
+                            label={selectionA11y(t(labelKey), connected.is_default)}
+                            deleteLabel={t("paymentMethods.disconnectA11y", { name: t(labelKey) })}
+                            onSelect={() => selectPrimary(connected)}
+                            onDelete={() => setRemoveTarget(connected)}
                           >
-                            <Trash />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="pm__row pm__row--connect pm__ez">
-                          <div className="pm__row-main pm__row-main--logo"><Logo /></div>
-                          <button className="pm__connect" onClick={connect} disabled={!!starting || retry.isPending} aria-label={t("paymentMethods.connectA11y", { name: t(labelKey) })}>
-                            {t("paymentMethods.connect")}
-                          </button>
-                        </div>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
+                            <div className="pm__row-main pm__row-main--logo"><Logo /></div>
+                          </MethodRow>
+                        ) : (
+                          <div className="pm__row pm__row--connect pm__ez">
+                            <div className="pm__row-main pm__row-main--logo"><Logo /></div>
+                            <button
+                              className="pm__connect"
+                              onClick={() => reg.startWallet(provider as "toss_pay" | "naver_pay")}
+                              disabled={addDisabled}
+                              aria-label={t("paymentMethods.connectA11y", { name: t(labelKey) })}
+                            >
+                              {t("paymentMethods.connect")}
+                            </button>
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
             )}
 
             {/* --- Notice --- */}
@@ -785,20 +295,25 @@ export function PaymentMethods() {
       </div>
 
       {/* --- registration / connection sheet --- */}
-      <Sheet open={!!flow} onClose={() => !confirming && setFlow(null)} title={flow?.title}>
-        <p className="muted" style={{ fontSize: 13, marginBottom: 12 }}>
-          {t("paymentMethods.flowHint")}
-        </p>
-        <TextField label={t("paymentMethods.authValueLabel")} placeholder={flow?.placeholder} value={token} onChange={(e) => setToken(e.target.value)} />
-        <div style={{ height: 12 }} />
-        <Button block loading={confirming} disabled={!token.trim()} onClick={confirmFlow}>{t("paymentMethods.registerDone")}</Button>
+      <Sheet open={!!reg.flow} onClose={reg.closeFlow} title={reg.flow?.title}>
+        <p className="muted pm__flow-hint">{t("paymentMethods.flowHint")}</p>
+        <TextField
+          label={t("paymentMethods.authValueLabel")}
+          placeholder={reg.flow?.placeholder}
+          value={reg.token}
+          onChange={(e) => reg.setToken(e.target.value)}
+        />
+        <div className="pm__flow-gap" />
+        <Button block loading={reg.confirming} disabled={!reg.token.trim()} onClick={reg.confirmFlow}>
+          {t("paymentMethods.registerDone")}
+        </Button>
       </Sheet>
 
       {/* --- overseas-issued card: the app's own form --- */}
       <InternationalCardSheet
-        open={intlOpen && registerRegion === "international"}
-        onClose={closeIntl}
-        onRegistered={intlRegistered}
+        open={reg.intlOpen && registerRegion === "international"}
+        onClose={reg.closeIntl}
+        onRegistered={reg.intlRegistered}
       />
 
       {/* --- deletion / disconnect confirmation --- */}
@@ -818,11 +333,11 @@ export function PaymentMethods() {
         </div>
       </Dialog>
 
-      {resultModal?.kind === "success" && (
-        <PaymentResultModal variant="success" planName={recovery?.plan_name} onConfirm={confirmSuccess} />
+      {rec.resultModal?.kind === "success" && (
+        <PaymentResultModal variant="success" planName={rec.recovery?.plan_name} onConfirm={rec.confirmSuccess} />
       )}
-      {resultModal?.kind === "failure" && (
-        <PaymentResultModal variant="failure" failureClass={resultModal.failureClass} onConfirm={closeFailure} />
+      {rec.resultModal?.kind === "failure" && (
+        <PaymentResultModal variant="failure" failureClass={rec.resultModal.failureClass} onConfirm={closeFailure} />
       )}
 
       {(selectDisabled || retry.isPending) && (

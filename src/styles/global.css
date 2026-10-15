@@ -12020,6 +12020,14 @@ input[type="tel"] {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+/* The manual registration entry (local dev without a provider window). */
+.pm__flow-hint {
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.pm__flow-gap {
+  height: 12px;
+}
 
 /* --------------------- Failed-payment recovery notice ------------------- */
 /* Rectangle 25963 (SET-005 1488:21640 / EN 1488:21660) — 339 wide, so it

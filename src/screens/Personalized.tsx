@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import practiceBand from "../assets/brand/practice-band.svg";
-import chatbotFab from "../assets/brand/chatbot-fab.svg";
 /* Review-shortcut pill glyphs, exported from TAL-001 (1825:29265 / 1825:29268 /
    1825:29266) rather than redrawn. */
 import icRepeat from "../assets/brand/ic-16-repeat.svg";
@@ -13,9 +12,9 @@ import icArrowRight from "../assets/brand/ic-16-arrow-right.svg";
 import { useTranslation } from "../i18n";
 import { Async, SkeletonList } from "../components/ui/states";
 import { ReviewShortcutArt } from "../components/brand/HomeIcons";
-import { DailyLearningSun } from "../components/DailyLearningSun";
 import { TrackDashboard } from "../components/TrackDashboard";
-import { ChatbotBottomSheet } from "../components/ChatbotBottomSheet";
+import { ChatbotLauncher } from "../components/ChatbotLauncher";
+import { StreakChip } from "../components/StreakChip";
 import { TopikPartSelectionModal } from "../components/TopikPartSelectionModal";
 import {
   AdditionalLearningCountModal,
@@ -34,7 +33,6 @@ export function Personalized() {
   // subscription AND for an admin or tester role (the same gate the additional-
   // learning API enforces).
   const entitled = q.data?.paywall_required === false;
-  const [chatOpen, setChatOpen] = useState(false);
   const [topikPartOpen, setTopikPartOpen] = useState(false);
   // Additional-learning flow (only after the daily goal is 100%).
   const [countKind, setCountKind] = useState<"conversation" | "topik" | null>(null);
@@ -70,10 +68,7 @@ export function Personalized() {
         <header className="plearn__header">
           <h1 className="plearn__title">{t("personalized.title")}</h1>
           {q.data && (
-            <button className="plearn__streak" onClick={() => nav("/streak")} aria-label={t("personalized.streakCalendarA11y", { days: q.data.streak_days })}>
-              <DailyLearningSun size={14} />
-              <span>{q.data.streak_days}</span>
-            </button>
+            <StreakChip days={q.data.streak_days} label={t("personalized.streakCalendarA11y", { days: q.data.streak_days })} />
           )}
         </header>
 
@@ -185,11 +180,7 @@ export function Personalized() {
           shared chatbot bottom sheet in place, not a separate route. */}
       {/* Figma TAL-001 Group 1410118481 (1825:29302) — 62px, exported whole
           (ring + character), not redrawn. */}
-      <button className="plearn__fab" onClick={() => setChatOpen(true)} aria-label={t("personalized.chatbotA11y")}>
-        <img className="plearn__fab-art" src={chatbotFab} alt="" aria-hidden="true" />
-      </button>
-
-      <ChatbotBottomSheet open={chatOpen} source="personalized_learning" onClose={() => setChatOpen(false)} />
+      <ChatbotLauncher source="personalized_learning" label={t("personalized.chatbotA11y")} />
 
       <TopikPartSelectionModal
         open={topikPartOpen}

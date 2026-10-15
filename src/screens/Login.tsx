@@ -6,7 +6,7 @@ import { authApi } from "../api/endpoints";
 import { useLoginFlow } from "../hooks/loginFlow";
 import { ApiError, errorMessage } from "../lib/http";
 import { Spinner } from "../components/ui/Spinner";
-import { BackChevronIcon } from "../components/brand/Glyphs";
+import { BackChevronIcon, CheckIcon } from "../components/brand/Glyphs";
 
 /**
  * Login screen — AME-003 (Figma KO 1:3436 / EN 784:50343).
@@ -115,9 +115,7 @@ export function Login() {
               onClick={() => setAutoLogin((v) => !v)}
             >
               <span className={`login__check-box ${autoLogin ? "is-on" : ""}`} aria-hidden="true">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="M5 12.5l4.5 4.5L19 7.5" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <CheckIcon size={16} color="#fff" />
               </span>
               <span className="login__check-label">{t("login.autoLogin")}</span>
             </button>

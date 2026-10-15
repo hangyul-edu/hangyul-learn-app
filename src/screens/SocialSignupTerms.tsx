@@ -17,7 +17,7 @@ import {
   type Agreements,
 } from "../lib/signupAgreements";
 import { Spinner } from "../components/ui/Spinner";
-import { CloseIcon } from "../components/brand/Glyphs";
+import { CloseIcon, CheckIcon } from "../components/brand/Glyphs";
 
 /**
  * Social signup's terms step (/signup/terms). A first social login creates the
@@ -93,7 +93,7 @@ export function SocialSignupTerms() {
           onClick={toggleAll}
         >
           <span className={`sterms__all-mark ${everyAgreed ? "is-on" : ""}`} aria-hidden="true">
-            <Check />
+            <CheckIcon size={14} />
           </span>
           <span className="sterms__all-label">{t("signup.agreeAll")}</span>
         </button>
@@ -111,7 +111,7 @@ export function SocialSignupTerms() {
                   onClick={() => setAgree((s) => ({ ...s, [a.key]: !s[a.key] }))}
                 >
                   <span className={`sterms__mark ${checked ? "is-on" : ""}`} aria-hidden="true">
-                    <Check />
+                    <CheckIcon size={14} />
                   </span>
                   <span className="sterms__label">{t(a.label)}</span>
                 </button>
@@ -147,13 +147,5 @@ export function SocialSignupTerms() {
         {policyOpen && <PolicyBody id={policyOpen} />}
       </Sheet>
     </div>
-  );
-}
-
-function Check() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-      <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   );
 }

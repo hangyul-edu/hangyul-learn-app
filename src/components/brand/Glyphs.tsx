@@ -27,3 +27,12 @@ export function CloseIcon({
     </svg>
   );
 }
+
+/** The rounded check mark of checkboxes, selected options and verdicts. */
+export function CheckIcon({ size = 22, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M5 12.5l4.5 4.5L19 7.5" stroke={color} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}

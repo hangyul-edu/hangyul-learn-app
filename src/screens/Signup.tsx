@@ -22,7 +22,7 @@ import {
   type Agreements,
 } from "../lib/signupAgreements";
 import { Spinner } from "../components/ui/Spinner";
-import { BackChevronIcon } from "../components/brand/Glyphs";
+import { BackChevronIcon, CheckIcon } from "../components/brand/Glyphs";
 
 export function Signup() {
   const { t, language } = useTranslation();
@@ -376,7 +376,7 @@ export function Signup() {
             >
               <span className="signup__agree-label signup__agree-label--all">{t("signup.agreeAll")}</span>
               <span className={`signup__check signup__check--dark ${everyAgreed ? "is-on" : ""}`} aria-hidden="true">
-                <CheckMark />
+                <CheckIcon size={14} color="#fff" />
               </span>
             </button>
 
@@ -405,7 +405,7 @@ export function Signup() {
                     onClick={() => setAgree((s) => ({ ...s, [a.key]: !s[a.key] }))}
                   >
                     <span className={`signup__check signup__check--pale ${checked ? "is-on" : ""}`} aria-hidden="true">
-                      <CheckMark pale />
+                      <CheckIcon size={14} color="#9aa2a8" />
                     </span>
                   </button>
                 </div>
@@ -428,19 +428,5 @@ export function Signup() {
         {policyOpen && <PolicyBody id={policyOpen} />}
       </Sheet>
     </div>
-  );
-}
-
-function CheckMark({ pale }: { pale?: boolean }) {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M5 12.5l4.5 4.5L19 7.5"
-        stroke={pale ? "#9aa2a8" : "#fff"}
-        strokeWidth="2.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
   );
 }

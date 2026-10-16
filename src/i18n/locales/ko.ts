@@ -1360,6 +1360,9 @@ export const ko = {
     customPlaceholder: "✨ 원하는 상황을 입력하면 맞춤 문장을 추천해드려요",
     customInputA11y: "맞춤 문장 상황 입력",
     customSubmitA11y: "맞춤 문장 추천 받기",
+    /** TAL-008 739:46706 / TAL-016 1916:25859 — the tag over a regular member's locked field. */
+    premiumTag: "★ 프리미엄 전용",
+    premiumOnlyNotice: "프리미엄 회원만 이용할 수 있는 기능이에요.",
     topikTypeAria: "TOPIK 문제 유형",
     topikTypeLabel: "[유형{n}] {title}",
     topikTypePrompt: "✨ 더 집중해서 풀어보고 싶은 문제 유형을 선택해보세요",

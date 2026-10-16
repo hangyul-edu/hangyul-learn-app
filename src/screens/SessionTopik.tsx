@@ -10,6 +10,7 @@ import { SaveBookmarkButton } from "../components/SaveBookmarkButton";
 import { LoadingState, ErrorState, Spinner } from "../components/ui/states";
 import { isStudyItem, revealedChoiceKey } from "../lib/studySession";
 import { useTopikSessionCopy } from "../lib/topikSessionCopy";
+import { PremiumLockedField } from "../components/session/PremiumLockedField";
 import { TopikTypeDropdown } from "./sessionTopik/TopikTypeDropdown";
 import { useTopikSession } from "./sessionTopik/useTopikSession";
 
@@ -62,13 +63,17 @@ export function SessionTopik() {
         total={s.progress.total}
         progress={s.progress.ratio}
         panel={
-          <TopikTypeDropdown
-            options={s.typeOptions}
-            value={s.typeCode}
-            open={s.typesOpen}
-            onOpenChange={s.setTypesOpen}
-            onSelect={s.selectType}
-          />
+          s.premium ? (
+            <TopikTypeDropdown
+              options={s.typeOptions}
+              value={s.typeCode}
+              open={s.typesOpen}
+              onOpenChange={s.setTypesOpen}
+              onSelect={s.selectType}
+            />
+          ) : (
+            <PremiumLockedField placeholder={t("session.topikTypePrompt")} />
+          )
         }
         onBack={s.finishOrExit}
         askContext={

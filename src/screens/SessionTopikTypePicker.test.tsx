@@ -18,7 +18,10 @@ vi.mock("../components/SessionChrome", () => ({
 }));
 vi.mock("../components/SessionCompleteModal", () => ({ SessionCompleteModal: () => null }));
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn(), show: vi.fn() }) }));
-vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: "ko" } }) }));
+// The picker is premium-only; a regular member's locked field is in SessionTopik.test.
+vi.mock("../hooks/auth", () => ({
+  useAuth: () => ({ me: { app_language: "ko", membership: { tier: "premium", is_premium: true, expires_at: null } } }),
+}));
 
 const { questions, topikTypes, summary, studyStart } = vi.hoisted(() => ({
   questions: vi.fn(),

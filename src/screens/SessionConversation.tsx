@@ -9,6 +9,8 @@ import { LoadingState, ErrorState } from "../components/ui/states";
 import { isStudyItem } from "../lib/studySession";
 import { AnswerSentenceCard, SolvedSentenceCard } from "../components/session/ConversationCards";
 import { pronunciationMessage } from "./sessionConversation/attempts";
+import { PremiumLockedField } from "../components/session/PremiumLockedField";
+import { useAuth } from "../hooks/auth";
 import { CustomPrompt } from "./sessionConversation/CustomPrompt";
 import { useConversationSession } from "./sessionConversation/useConversationSession";
 
@@ -19,6 +21,8 @@ export function SessionConversation() {
   const reviewCopy = useReviewSessionCopy();
   const s = useConversationSession();
   const { cur, result, isReview } = s;
+  // Customizing the set is premium-only (TAL-008): a regular member sees it locked.
+  const premium = useAuth().me?.membership?.is_premium === true;
 
   const incorrect = !!result && cur != null && !result.correct;
   // The pronunciation panel is voice-only. It stays tied to the attempt history
@@ -39,7 +43,13 @@ export function SessionConversation() {
         correct={s.correctCount}
         total={s.total}
         progress={s.progress}
-        panel={<CustomPrompt value={s.prompt} onChange={s.setPrompt} onSubmit={s.customize} busy={s.busy} />}
+        panel={
+          premium ? (
+            <CustomPrompt value={s.prompt} onChange={s.setPrompt} onSubmit={s.customize} busy={s.busy} />
+          ) : (
+            <PremiumLockedField placeholder={t("session.customPlaceholder")} send />
+          )
+        }
         minimal={isReview}
         onBack={isReview ? s.backToSaved : s.finishOrExit}
         askContext={

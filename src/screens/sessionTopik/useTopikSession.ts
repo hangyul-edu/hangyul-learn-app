@@ -5,6 +5,7 @@ import { useTranslation } from "../../i18n";
 import { quizApi, recApi, studyApi } from "../../api/endpoints";
 import { quizAttemptBody, type AnswerValue } from "../../components/QuestionView";
 import { canSubmitTopik } from "../../components/topik/TopikQuestion";
+import { useAuth } from "../../hooks/auth";
 import { useToast } from "../../hooks/toast";
 import { useRecordDisplayedItem } from "../../hooks/learningActivity";
 import {
@@ -93,7 +94,11 @@ export function useTopikSession() {
   });
   const [typesOpen, setTypesOpen] = useState(false);
 
-  const [typeCode, setTypeCode] = useState<string | null>(null);
+  // The question-type picker is premium-only (TAL-016); a regular member's
+  // session is never scoped to one, even one restored from before a lapse.
+  const premium = useAuth().me?.membership?.is_premium === true;
+  const [typeCode, setTypeCodeRaw] = useState<string | null>(null);
+  const setTypeCode = (code: string | null) => setTypeCodeRaw(premium ? code : null);
   const [items, setItems] = useState<Quiz[] | null>(null);
   const [idx, setIdx] = useState(0);
   // Working answers keyed by quiz_id. The current item's answer is derived from
@@ -258,7 +263,7 @@ export function useTopikSession() {
       setGoalCurrent(snap.goalCurrent ?? topik?.goal.current ?? 0);
       setGoalTarget(snap.goalTarget ?? topik?.goal.target ?? 0);
       setAdditionalCount(snap.additionalCount ?? null);
-      void loadSet(snap.typeCode ?? null, snap);
+      void loadSet(premium ? (snap.typeCode ?? null) : null, snap);
     } else if (snap && snap.section === section) {
       setItems(snap.items);
       setIdx(snap.idx);
@@ -503,6 +508,7 @@ export function useTopikSession() {
   }
 
   function selectType(code: string) {
+    if (!premium) return;
     setTypeCode(code);
     void loadSet(code);
   }
@@ -529,6 +535,7 @@ export function useTopikSession() {
     toggleSave: (q: Quiz) => toggleSaved(q.quiz_id),
     typeOptions: types.data?.items ?? [],
     typeCode,
+    premium,
     typesOpen,
     setTypesOpen,
     selectType,

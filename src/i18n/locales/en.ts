@@ -1350,6 +1350,8 @@ export const en: Catalog = {
     customPlaceholder: "✨ Type your situation, we'll match sentences", // 798:76717
     customInputA11y: "Describe a situation for custom sentences",
     customSubmitA11y: "Get custom sentence suggestions",
+    premiumTag: "★ Premium only", // 798:89229
+    premiumOnlyNotice: "This feature is available to premium members only.",
     topikTypeAria: "TOPIK question types",
     topikTypeLabel: "[Type {n}] {title}",
     /* Deliberately NOT the frame's wording. TAL-015 (1718:32055) draws

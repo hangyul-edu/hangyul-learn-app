@@ -5442,6 +5442,72 @@ textarea.input {
   height: 18.07px;
 }
 
+/* A regular member's locked field — TAL-008 (739:46693) / TAL-016 (1916:25853).
+   The same input box, its contents under the frame's 4px TEXTURE effect (CSS
+   has no grain filter; a light blur reads the same at this size), and the
+   "★ Premium only" tag (739:46705) above it: a 94x20 black r10 pill whose top
+   is 32 above the field and right edge 7 inside it, with a 10px down-pointing
+   tip (740:46708) centred under it. */
+.sess__locked {
+  position: relative;
+}
+.sess__locked-field {
+  justify-content: space-between;
+  color: #adb4ba;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.sess__locked-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* 739:46696 — Medium 10.496 / 19.504, the lock at 13.119. */
+  font-size: 10.496px;
+  line-height: 19.504px;
+  font-weight: 500;
+  filter: blur(0.6px);
+}
+.sess__locked-lock {
+  font-size: 13.119px;
+}
+.sess__locked-send {
+  flex: 0 0 auto;
+  filter: blur(0.6px);
+}
+.sess__locked-tag {
+  position: absolute;
+  top: -32px;
+  right: 7px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 94px;
+  height: 20px;
+  border-radius: 10px;
+  background: #000;
+  /* 739:46706 — Medium 10 / 12.961, #F5C240. */
+  color: #f5c240;
+  font-size: 10px;
+  line-height: 12.961px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.sess__locked-tag::after {
+  content: "";
+  position: absolute;
+  top: 19.5px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-style: solid;
+  border-width: 7.5px 4.33px 0;
+  border-color: #000 transparent transparent;
+}
+
 /* TOPIK dropdown */
 .sess__dropdown {
   position: relative;

@@ -5,11 +5,19 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
 
 vi.mock("../components/SessionChrome", () => ({
-  SessionChrome: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SessionChrome: ({ children, panel }: { children: React.ReactNode; panel?: React.ReactNode }) => (
+    <div>
+      {panel}
+      {children}
+    </div>
+  ),
 }));
 vi.mock("../components/SessionCompleteModal", () => ({ SessionCompleteModal: () => null }));
-vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn() }) }));
-vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: "ko" } }) }));
+const { toastShow, auth } = vi.hoisted(() => ({ toastShow: vi.fn(), auth: { premium: true } }));
+vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn(), show: toastShow }) }));
+vi.mock("../hooks/auth", () => ({
+  useAuth: () => ({ me: { app_language: "ko", membership: { tier: "free", is_premium: auth.premium, expires_at: null } } }),
+}));
 
 const { questions, topikTypes, summary, attempt, audio, recordSession } = vi.hoisted(() => ({
   questions: vi.fn(),
@@ -56,6 +64,7 @@ function renderScreen() {
 beforeEach(() => {
   vi.clearAllMocks();
   sessionStorage.clear();
+  auth.premium = true;
   summary.mockResolvedValue({
     tracks: [{ category: "topik", level: 5, goal: { target: 3, current: 0, achieved: false } }],
   });
@@ -92,5 +101,43 @@ describe("SessionTopik — draft persistence + refresh restore", () => {
     renderScreen();
     await screen.findByRole("textbox");
     expect(questions).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("SessionTopik — the question-type picker is premium-only (TAL-016)", () => {
+  it("shows a premium member the picker", async () => {
+    renderScreen();
+    await screen.findByRole("textbox");
+    expect(screen.getByRole("button", { name: /문제 유형을 선택해보세요/ })).toHaveAttribute("aria-haspopup", "listbox");
+    expect(screen.queryByText("★ 프리미엄 전용")).not.toBeInTheDocument();
+  });
+
+  it("locks it for a regular member, and a tap only explains why", async () => {
+    auth.premium = false;
+    renderScreen();
+    await screen.findByRole("textbox");
+    expect(screen.getByText("★ 프리미엄 전용")).toBeInTheDocument();
+    const field = screen.getByRole("button", { name: /문제 유형을 선택해보세요/ });
+    expect(field).not.toHaveAttribute("aria-haspopup");
+    expect(field).toHaveTextContent("🔒 더 집중해서 풀어보고 싶은 문제 유형을 선택해보세요");
+    await userEvent.click(field);
+    expect(toastShow).toHaveBeenCalledWith("프리미엄 회원만 이용할 수 있는 기능이에요.");
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    expect(questions).toHaveBeenCalledTimes(1);
+    expect(questions.mock.calls[0][0]).not.toHaveProperty("topik_question_type");
+  });
+
+  it("never scopes a restored set to a type for a regular member", async () => {
+    auth.premium = false;
+    sessionStorage.setItem(
+      KEY,
+      JSON.stringify({ section: "writing", items: [WRITING], idx: 0, drafts: {}, correct: [], attempted: [], typeCode: "writing_51_52" }),
+    );
+    renderScreen();
+    await screen.findByRole("textbox");
+    await waitFor(() => {
+      const raw = sessionStorage.getItem(KEY);
+      expect(raw && JSON.parse(raw).typeCode).toBeNull();
+    });
   });
 });

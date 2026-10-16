@@ -17,7 +17,12 @@ export function PlanCard() {
   const nav = useNavigate();
   const sub = useMySubscription();
   const s = sub.data;
-  const subState: "trial" | "paid" | "none" = isTrialStatus(s?.status) ? "trial" : hasLiveSubscription(s) ? "paid" : "none";
+  // "Free trial" only while the trial is actually running (`in_trial`): one
+  // whose access was ended early keeps its lifecycle status `trial` (renewal is
+  // left alone), but the member is not on a free trial any more. Older
+  // payloads without the flag fall back to the status.
+  const inTrial = s?.in_trial ?? isTrialStatus(s?.status);
+  const subState: "trial" | "paid" | "none" = inTrial ? "trial" : hasLiveSubscription(s) ? "paid" : "none";
   const planName = s?.plan_name || t("more.planFallback");
   // MOR-001 prints the date in the app language, not always in Korean.
   const nextBilling = formatLongDate(s?.current_period_end, language);

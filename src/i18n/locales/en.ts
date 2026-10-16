@@ -415,7 +415,7 @@ export const en: Catalog = {
     refund: "Cancellation & Refund Policy", // 784:49781
     businessTitle: "Business Information", // 784:49776
     /** 784:49782 */
-    bizCeo: "CEO: Jaehee Yoo",
+    bizCeo: "CEO: Jaehee Lew",
     bizDivision: "Business Division: Woojun Nam",
     bizEmail: "Email: support@talkhangyul.com",
     bizRegNo: "Business Registration No.: 403-87-03380",

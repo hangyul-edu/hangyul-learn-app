@@ -65,7 +65,7 @@ describe("Terms & Policies list (TRM-001)", () => {
     expect(
       Array.from(footer.querySelectorAll(".pol__biz-line"), (line) => line.textContent),
     ).toEqual([
-      "CEO: Jaehee Yoo",
+      "CEO: Jaehee Lew",
       "Business Division: Woojun Nam",
       "Email: support@talkhangyul.com",
       "Business Registration No.: 403-87-03380",
@@ -231,8 +231,8 @@ describe("catalog shape", () => {
     const text = POLICIES.en["purchase-privacy"].sections
       .flatMap((s) => s.body.flatMap((b) => (typeof b === "string" ? [b] : b.bullets)))
       .join(" ");
-    expect(text).toContain("Jaehee Yoo");
-    expect(text).not.toContain("Yoo Jaehee");
+    expect(text).toContain("Jaehee Lew");
+    expect(text).not.toMatch(/Yoo/);
   });
 
   it("carries no Korean in the English catalog", () => {

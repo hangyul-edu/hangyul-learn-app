@@ -15,7 +15,7 @@ Hangyul is three repositories that work together:
 | Repository | What it is |
 |---|---|
 | **hangyul-learn-app** (this one) | The member web app |
-| [hangyul-admin](https://github.com/hangyul-edu/hangyul-admin) | The admin portal, on its own server at `/admin` |
+| [hangyul-admin](https://github.com/hangyul-edu/hangyul-admin) | The admin portal, on its own domain and server |
 | hangyul-api | The backend API both apps call |
 
 ---
@@ -84,7 +84,7 @@ a phone it fills the screen. The frame is a size container (size things with
 overlays, so dims, sheets and dialogs stay inside it. It hot-reloads on save.
 
 The admin portal is not part of this app or its server: it runs on its own
-(`npm run dev` in hangyul-admin → http://localhost:5174/admin).
+(`npm run dev` in hangyul-admin → http://localhost:5174).
 
 ---
 

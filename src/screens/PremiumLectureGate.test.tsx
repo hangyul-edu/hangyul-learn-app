@@ -55,6 +55,7 @@ import { Practice } from "./Practice";
 import { ApiError } from "../lib/http";
 
 const NOTICE = "프리미엄 구독이 필요한 강의예요\n프리미엄에서 모든 강의를 볼 수 있어요 ✨";
+const PRACTICE_NOTICE = "추가 문제 연습은 프리미엄 전용 기능이에요\n프리미엄에서 강의별 문제를 더 풀어보세요 ✨";
 const refused = () => new ApiError(402, "subscription_required", "Premium membership required to open this lecture.");
 
 function Where() {
@@ -110,6 +111,7 @@ const series = (resumeId: string | null) => ({
     lesson("F1", "track_conversation", "free"),
     lesson("P1", "track_conversation", "premium"),
     lesson("PT", "track_topik", "premium"),
+    lesson("FT", "track_topik", "free"),
   ],
   resume: resumeId ? { lecture_id: resumeId, position_seconds: 30 } : null,
 });
@@ -125,15 +127,20 @@ beforeEach(() => {
 
 describe("series page: a premium lesson is blocked before it opens", () => {
   it.each([
-    ["the lesson", "강의 P1"],
-    ["its speaking practice", "강의 P1 말하기 연습"],
-    ["a TOPIK lesson's question practice", "강의 PT 문제 연습"],
-    ["바로 학습하기 onto a premium lesson", "바로 학습하기"],
-  ])("%s shows the notice and stays on the series", async (_label, name) => {
+    ["the lesson", "강의 P1", NOTICE],
+    ["its speaking practice", "강의 P1 말하기 연습", NOTICE],
+    ["바로 학습하기 onto a premium lesson", "바로 학습하기", NOTICE],
+    // The notebook's extra AI practice is premium on every lecture: its own
+    // wording, on a free lecture too, so the lecture is never said to be locked.
+    ["a premium TOPIK lesson's extra practice", "강의 PT 문제 연습", PRACTICE_NOTICE],
+    ["a free TOPIK lesson's extra practice", "강의 FT 문제 연습", PRACTICE_NOTICE],
+  ])("%s shows the notice and stays on the series", async (_label, name, notice) => {
     renderAt(["/series/S1"]);
     const target = (await screen.findAllByRole("button", { name }))[0];
     fireEvent.click(target);
-    expect(api.show).toHaveBeenCalledWith(NOTICE, "notice");
+    expect(api.show).toHaveBeenCalledWith(notice, "notice");
+    expect(api.show).toHaveBeenCalledTimes(1);
+    expect(api.start).not.toHaveBeenCalled();
     expect(screen.getByRole("list", { name: "SERIES" })).toBeInTheDocument();
     expect(api.lecture).not.toHaveBeenCalled();
     expect(api.speakPractice).not.toHaveBeenCalled();
@@ -144,6 +151,23 @@ describe("series page: a premium lesson is blocked before it opens", () => {
     renderAt(["/series/S1"]);
     fireEvent.click((await screen.findAllByRole("button", { name: "강의 F1" }))[0]);
     await waitFor(() => expect(api.lecture).toHaveBeenCalledWith("F1", "ko"));
+    expect(api.show).not.toHaveBeenCalled();
+  });
+
+  it("a free TOPIK lesson itself still opens for a free member", async () => {
+    api.lecture.mockReturnValue(new Promise(() => {}));
+    renderAt(["/series/S1"]);
+    fireEvent.click((await screen.findAllByRole("button", { name: "강의 FT" }))[0]);
+    await waitFor(() => expect(api.lecture).toHaveBeenCalledWith("FT", "ko"));
+    expect(api.show).not.toHaveBeenCalled();
+  });
+
+  it("a premium member opens a TOPIK lesson's extra practice", async () => {
+    api.auth.premium = true;
+    api.lecture.mockReturnValue(new Promise(() => {}));
+    renderAt(["/series/S1"]);
+    fireEvent.click(await screen.findByRole("button", { name: "강의 FT 문제 연습" }));
+    expect(await screen.findByText("몇 문제 풀어볼까요?")).toBeInTheDocument();
     expect(api.show).not.toHaveBeenCalled();
   });
 
@@ -159,15 +183,35 @@ describe("series page: a premium lesson is blocked before it opens", () => {
 
 describe("a direct link the server refuses leaves with the same notice", () => {
   it.each([
-    ["the lecture page", "/lectures/P1"],
-    ["speaking practice", "/lectures/P1/speak"],
-    ["question practice", "/lectures/PT/practice"],
-  ])("%s opened first goes to the lecture tab", async (_label, path) => {
+    ["the lecture page", "/lectures/P1", NOTICE],
+    ["speaking practice", "/lectures/P1/speak", NOTICE],
+    ["a premium lecture's extra practice", "/lectures/PT/practice", PRACTICE_NOTICE],
+  ])("%s opened first goes to the lecture tab", async (_label, path, notice) => {
     renderAt([path]);
     expect(await screen.findByTestId("where")).toHaveTextContent("/courses");
-    expect(api.show).toHaveBeenCalledWith(NOTICE, "notice");
+    expect(api.show).toHaveBeenCalledWith(notice, "notice");
     expect(api.show).toHaveBeenCalledTimes(1);
     expect(api.lecturePlay).not.toHaveBeenCalled();
+    expect(api.start).not.toHaveBeenCalled();
+  });
+
+  it("a free lecture's extra practice opened by link leaves without the picker", async () => {
+    api.lecture.mockResolvedValue({ ...lesson("FT", "track_topik", "free"), checkpoints: [], my_playback: null });
+    renderAt(["/series/S1", "/lectures/FT/practice"]);
+    expect(await screen.findByRole("list", { name: "SERIES" })).toBeInTheDocument();
+    expect(api.show).toHaveBeenCalledWith(PRACTICE_NOTICE, "notice");
+    expect(screen.queryByText("몇 문제 풀어볼까요?")).not.toBeInTheDocument();
+    expect(api.start).not.toHaveBeenCalled();
+  });
+
+  it("a practice set the server refuses (a membership that just lapsed) leaves too", async () => {
+    api.auth.premium = true;
+    api.lecture.mockResolvedValue({ ...lesson("FT", "track_topik", "free"), checkpoints: [], my_playback: null });
+    api.start.mockRejectedValue(refused());
+    renderAt(["/series/S1", "/lectures/FT/practice"]);
+    fireEvent.click(await screen.findByRole("button", { name: "시작할게요!" }));
+    expect(await screen.findByRole("list", { name: "SERIES" })).toBeInTheDocument();
+    expect(api.show).toHaveBeenCalledWith(PRACTICE_NOTICE, "notice");
   });
 
   it("opened from another page, it goes back there", async () => {

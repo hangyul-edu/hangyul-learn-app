@@ -5,6 +5,7 @@ import { canSubmitTopik } from "../../components/topik/TopikQuestion";
 import { quizAttemptBody, type AnswerValue } from "../../components/QuestionView";
 import { useToast } from "../../hooks/toast";
 import { useRecordDisplayedItem } from "../../hooks/learningActivity";
+import { isSubscriptionRequired } from "../../hooks/premiumLecture";
 import { errorMessage } from "../../lib/http";
 import type { Quiz, QuizAttemptResult } from "../../lib/types";
 import { randomUuid } from "../../lib/uuid";
@@ -20,6 +21,7 @@ export function useQuestionReview(quizId: string) {
   const qc = useQueryClient();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [error, setError] = useState(false);
+  const [locked, setLocked] = useState(false);
   const [value, setValue] = useState<AnswerValue>({});
   const [result, setResult] = useState<QuizAttemptResult | null>(null);
   // The option key of the MOST RECENT submitted-wrong answer (rendered coral).
@@ -81,7 +83,13 @@ export function useQuestionReview(quizId: string) {
           }
         }
       })
-      .catch(() => !cancelled && setError(true));
+      .catch((e) => {
+        if (cancelled) return;
+        // A premium lecture's question without premium access (saved during a
+        // trial, or a link): the screen leaves with the notice, not an error.
+        if (isSubscriptionRequired(e)) setLocked(true);
+        else setError(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -187,6 +195,7 @@ export function useQuestionReview(quizId: string) {
   return {
     quiz,
     error,
+    locked,
     value,
     handleChange,
     result,

@@ -61,7 +61,7 @@ vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: toastError, success
 const PREMIUM = { tier: "premium", is_premium: true, expires_at: null } as const;
 const FREE = { tier: "free", is_premium: false, expires_at: null } as const;
 let mockMe: { app_language: string; membership?: typeof PREMIUM | typeof FREE } = { app_language: "ko", membership: PREMIUM };
-vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: mockMe }) }));
+vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: mockMe }), useAuthOptional: () => ({ me: mockMe }) }));
 
 vi.mock("../api/endpoints", () => ({
   recApi: { sentences: recSentences },

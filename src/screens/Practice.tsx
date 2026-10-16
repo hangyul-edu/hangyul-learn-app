@@ -3,18 +3,17 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "../i18n";
 import { useQuery } from "@tanstack/react-query";
 import { Screen } from "../components/layout/Screen";
-import { Button } from "../components/ui/kit";
 import { ConfirmDialog } from "../components/ui/Modal";
 import { DetailHeader } from "../components/DetailHeader";
 import { AskMascot } from "../components/lecture/AskMascot";
-import { EmptyState, LoadingState } from "../components/ui/states";
+import { LoadingState } from "../components/ui/states";
 import { AskAiSheet } from "../components/AskAiSheet";
 import { QuestionCard } from "../components/lecture/QuestionCard";
 import { learnApi, practiceApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { useRecordDisplayedItem } from "../hooks/learningActivity";
-import { isSubscriptionRequired, useLeaveLockedLecture } from "../hooks/premiumLecture";
-import { ApiError, errorMessage } from "../lib/http";
+import { isSubscriptionRequired, useLeaveLockedLecture, usePremiumLectureGate } from "../hooks/premiumLecture";
+import { errorMessage } from "../lib/http";
 import type { Quiz } from "../lib/types";
 
 /**
@@ -53,10 +52,14 @@ export function Practice() {
     enabled: !!lectureId,
     retry: (n, e) => !isSubscriptionRequired(e) && n < 2,
   });
-  // A premium lecture's practice reached by a direct link: the server refuses
-  // the lecture (402), so leave with the subscription notice, as the series
-  // page's tap would have.
-  useLeaveLockedLecture(isSubscriptionRequired(lecture.error));
+  // The extra AI question practice is premium on every lecture. Reached by a
+  // direct link without premium access — known from the member, or from the
+  // server refusing the lecture (402) or the practice set — the screen leaves
+  // with the practice notice, as the series page's tap would have, before the
+  // count picker is ever usable.
+  const gate = usePremiumLectureGate();
+  const refused = gate.withoutPremium || locked || isSubscriptionRequired(lecture.error);
+  useLeaveLockedLecture(refused, "practice");
 
   const current = items?.[idx];
   // The practice question on screen counts as study (streak + learning day +
@@ -69,7 +72,7 @@ export function Practice() {
       const res = await practiceApi.start(lectureId, n);
       setItems(res.items);
     } catch (e) {
-      if (e instanceof ApiError && e.status === 402) setLocked(true);
+      if (isSubscriptionRequired(e)) setLocked(true);
       else toast.error(errorMessage(e));
     } finally {
       setStarting(false);
@@ -88,12 +91,8 @@ export function Practice() {
     goTo(0);
   }
 
-  if (locked)
-    return (
-      <Screen title={t("study.reviewTitle")} back>
-        <EmptyState emoji="👑" title={t("study.premiumOnly")} text={t("study.reviewDesc")} action={<Button onClick={() => nav("/subscription")}>{t("study.upgrade")}</Button>} />
-      </Screen>
-    );
+  // Leaving (see useLeaveLockedLecture above): nothing to show meanwhile.
+  if (refused) return <Screen title={t("study.reviewTitle")} back><LoadingState /></Screen>;
 
   if (!items || !current)
     return (

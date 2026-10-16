@@ -9,16 +9,20 @@ vi.mock("../components/SessionChrome", () => ({
 }));
 vi.mock("../components/SessionCompleteModal", () => ({ SessionCompleteModal: () => null }));
 
-const { recSentences, get, blankAttempt, blankHint, speechAttempt, summary } = vi.hoisted(() => ({
+const { recSentences, get, blankAttempt, blankHint, speechAttempt, summary, toastShow } = vi.hoisted(() => ({
   recSentences: vi.fn(),
   get: vi.fn(),
   blankAttempt: vi.fn(),
   blankHint: vi.fn(),
   speechAttempt: vi.fn(),
   summary: vi.fn(),
+  toastShow: vi.fn(),
 }));
-vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn() }) }));
-vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: "ko" } }) }));
+vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn(), show: toastShow }) }));
+vi.mock("../hooks/auth", () => ({
+  useAuth: () => ({ me: { app_language: "ko" } }),
+  useAuthOptional: () => ({ me: { app_language: "ko" } }),
+}));
 vi.mock("../api/endpoints", () => ({
   recApi: { sentences: recSentences },
   sentenceApi: {
@@ -37,6 +41,7 @@ vi.mock("../api/endpoints", () => ({
 
 import { SessionConversation } from "./SessionConversation";
 import { I18nProvider } from "../i18n";
+import { ApiError } from "../lib/http";
 
 const SENTENCE = {
   sentence_id: "sen_thanks_01",
@@ -136,5 +141,17 @@ describe("SessionConversation — saved-sentence review mode", () => {
 
     expect(await screen.findByText("다시 생각해보세요")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "완료" })).not.toBeInTheDocument();
+  });
+});
+
+describe("SessionConversation review — a premium lecture's sentence without premium access", () => {
+  it("goes back to the saved list with the subscription notice instead of an error", async () => {
+    get.mockRejectedValue(new ApiError(402, "subscription_required", "premium lecture content"));
+    renderReview();
+    expect(await screen.findByText("SAVED LIST")).toBeInTheDocument();
+    expect(toastShow).toHaveBeenCalledWith(
+      "프리미엄 구독이 필요한 강의예요\n프리미엄에서 모든 강의를 볼 수 있어요 ✨",
+      "notice",
+    );
   });
 });

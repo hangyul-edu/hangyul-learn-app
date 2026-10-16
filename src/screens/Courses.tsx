@@ -160,9 +160,12 @@ export function SeriesPage() {
                       lesson={l}
                       onOpen={() => openLesson(l.access, `/lectures/${l.lecture_id}`)}
                       onPractice={() =>
-                        gate.open(l.access, () =>
-                          nav(`/lectures/${l.lecture_id}/${l.track_id === "track_topik" ? "practice" : "speak"}`),
-                        )
+                        l.track_id === "track_topik"
+                          ? // The notebook's extra AI question practice is
+                            // premium on every lecture, free ones included.
+                            gate.openPractice(() => nav(`/lectures/${l.lecture_id}/practice`))
+                          : // The mic's checkpoint sentences follow the lecture.
+                            gate.open(l.access, () => nav(`/lectures/${l.lecture_id}/speak`))
                       }
                     />
                   ))}

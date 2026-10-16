@@ -11,6 +11,7 @@ import { AnswerSentenceCard, SolvedSentenceCard } from "../components/session/Co
 import { pronunciationMessage } from "./sessionConversation/attempts";
 import { PremiumLockedField } from "../components/session/PremiumLockedField";
 import { useAuth } from "../hooks/auth";
+import { useLeaveLockedLecture } from "../hooks/premiumLecture";
 import { CustomPrompt } from "./sessionConversation/CustomPrompt";
 import { useConversationSession } from "./sessionConversation/useConversationSession";
 
@@ -23,6 +24,9 @@ export function SessionConversation() {
   const { cur, result, isReview } = s;
   // Customizing the set is premium-only (TAL-008): a regular member sees it locked.
   const premium = useAuth().me?.membership?.is_premium === true;
+  // A saved premium-lecture sentence under review, refused without premium
+  // access: back to the saved list (or the link's origin) with the notice.
+  useLeaveLockedLecture(s.locked, "lecture", "/saved");
 
   const incorrect = !!result && cur != null && !result.correct;
   // The pronunciation panel is voice-only. It stays tied to the attempt history

@@ -45,6 +45,7 @@ import {
 import type { Sentence, SpeechAttempt, StudyAttemptResult, StudySession } from "../../lib/types";
 import { randomUuid } from "../../lib/uuid";
 import { withKey, withoutEntry, withoutKey } from "../../lib/collections";
+import { isSubscriptionRequired } from "../../hooks/premiumLecture";
 import { blankToSpeech, type AttemptMode, type HintStage } from "./attempts";
 
 /**
@@ -113,6 +114,8 @@ export function useConversationSession() {
   const attemptSeq = useRef(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
+  // The review item is a premium lecture's, refused without premium access.
+  const [locked, setLocked] = useState(false);
   // The adaptive session behind this set (reviewed content, graded on the
   // server, customizable, with the grounded tutor). Null when the set came
   // from the legacy recommender — the fallback when no reviewed content fits.
@@ -198,8 +201,11 @@ export function useConversationSession() {
       setItems([s]);
       setIdx(0);
       setSaved({ [s.sentence_id]: !!s.bookmarked });
-    } catch {
-      setError(true);
+    } catch (e) {
+      // A premium lecture's checkpoint sentence without premium access (saved
+      // during a trial, or a link): the screen leaves with the notice instead.
+      if (isSubscriptionRequired(e)) setLocked(true);
+      else setError(true);
     } finally {
       setBusy(false);
     }
@@ -640,6 +646,7 @@ export function useConversationSession() {
   return {
     copy,
     isReview,
+    locked,
     level,
     study,
     cur,

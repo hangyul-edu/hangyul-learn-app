@@ -25,8 +25,12 @@ function SavedProbe() {
   const marker = (loc.state as { marker?: string } | null)?.marker ?? "fresh";
   return <div>SAVED[{marker}]</div>;
 }
-vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn() }) }));
-vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: { app_language: "ko" } }) }));
+const { toastShow } = vi.hoisted(() => ({ toastShow: vi.fn() }));
+vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn(), show: toastShow }) }));
+vi.mock("../hooks/auth", () => ({
+  useAuth: () => ({ me: { app_language: "ko" } }),
+  useAuthOptional: () => ({ me: { app_language: "ko" } }),
+}));
 
 const { get, attempt, bookmark, unbookmark, audio, recordActivity } = vi.hoisted(() => ({
   get: vi.fn(),
@@ -43,6 +47,7 @@ vi.mock("../api/endpoints", () => ({
 
 import { SessionReview } from "./SessionReview";
 import { I18nProvider } from "../i18n";
+import { ApiError } from "../lib/http";
 
 const QUIZ = {
   quiz_id: "q1",
@@ -331,5 +336,17 @@ describe("SessionReview — saved TOPIK question", () => {
     const radios = await screen.findAllByRole("radio");
     for (const r of radios) expect(r).toHaveAttribute("aria-checked", "false");
     expect(screen.getByRole("button", { name: "제출" })).toBeDisabled();
+  });
+});
+
+describe("SessionReview — a premium lecture's question without premium access", () => {
+  it("goes back to the saved list with the subscription notice instead of an error", async () => {
+    get.mockRejectedValue(new ApiError(402, "subscription_required", "premium lecture content"));
+    renderReview();
+    expect(await screen.findByText("SAVED[origin]")).toBeInTheDocument();
+    expect(toastShow).toHaveBeenCalledWith(
+      "프리미엄 구독이 필요한 강의예요\n프리미엄에서 모든 강의를 볼 수 있어요 ✨",
+      "notice",
+    );
   });
 });

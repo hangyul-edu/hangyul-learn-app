@@ -13,6 +13,7 @@ import { useReviewSessionCopy } from "../lib/reviewSessionCopy";
 import { useTopikSessionCopy } from "../lib/topikSessionCopy";
 import { Spinner } from "../components/ui/Spinner";
 import { useQuestionReview } from "./sessionReview/useQuestionReview";
+import { useLeaveLockedLecture } from "../hooks/premiumLecture";
 
 /**
  * Single-item review session for a saved TOPIK question. Reuses the TOPIK
@@ -37,6 +38,7 @@ export function SessionReview() {
   const {
     quiz,
     error,
+    locked,
     value,
     handleChange,
     result,
@@ -54,6 +56,9 @@ export function SessionReview() {
     saved,
     toggleSave,
   } = useQuestionReview(quizId);
+  // A premium lecture's checkpoint question without premium access: back to
+  // the saved list (or where the link came from) with the lecture notice.
+  useLeaveLockedLecture(locked, "lecture", "/saved");
 
   const askContext = !quiz
     ? null

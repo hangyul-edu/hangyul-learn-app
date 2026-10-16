@@ -1389,7 +1389,6 @@ export const en: Catalog = {
   /** Conversation / TOPIK / practice / exam screens. */
   study: {
     reviewTitle: "Review questions",
-    reviewDesc: "Sharpen your skills with review questions.",
     /** COU-003 (EN 1464:22035) — the review-count modal. */
     solvePrompt: "Try this question", // EN 784:58688
     tryAgain: "Try again!", // EN 784:58746
@@ -1404,8 +1403,6 @@ export const en: Catalog = {
     questionCount: "{n} questions",
     preparing: "Preparing your questions…",
     submitShort: "Submit",
-    premiumOnly: "This is a premium-only feature",
-    upgrade: "Upgrade",
   },
 
   /** Courses / lectures. */
@@ -1428,6 +1425,7 @@ export const en: Catalog = {
     done: "Done",
     progress: "Progress",
     premiumRequired: "This lecture needs a Premium subscription\nGo Premium to watch every lecture ✨", // cp_G_03_toast 784:63104 style
+    practicePremiumRequired: "Extra question practice is Premium only\nGo Premium for more practice ✨",
     videoLoadError: "Couldn't load the video.", // app-authored
     /** COU-002 (EN 2397:26192) — the lesson row's completion chip and CTA. */
     /** COU-004 (EN 784:55155) — the video player's chrome. */

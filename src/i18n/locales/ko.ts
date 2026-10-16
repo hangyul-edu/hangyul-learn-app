@@ -1396,7 +1396,6 @@ export const ko = {
   /** Conversation / TOPIK / practice / exam screens. */
   study: {
     reviewTitle: "복습 문제",
-    reviewDesc: "복습 문제로 실력을 더 다져보세요.",
     /** COU-011 (442:9757) / COU-013 (442:9812) — the practice question card. */
     solvePrompt: "문제를 풀어보세요", // 1718:24772
     tryAgain: "다시 풀어보세요", // 1718:24826
@@ -1412,8 +1411,6 @@ export const ko = {
     questionCount: "{n}문제",
     preparing: "문제를 준비하고 있어요…",
     submitShort: "제출",
-    premiumOnly: "프리미엄 전용 기능이에요",
-    upgrade: "업그레이드",
   },
 
   /** Courses / lectures. */
@@ -1439,6 +1436,9 @@ export const ko = {
     /** cp_G_03_toast (744:46726) — a premium lecture or its practice tapped
      *  without premium access; app-authored copy in the toast's two-line form. */
     premiumRequired: "프리미엄 구독이 필요한 강의예요\n프리미엄에서 모든 강의를 볼 수 있어요 ✨",
+    /** The same toast for the TOPIK lesson's extra AI question practice, which
+     *  is premium even on a free lecture — so it names the feature, not the lecture. */
+    practicePremiumRequired: "추가 문제 연습은 프리미엄 전용 기능이에요\n프리미엄에서 강의별 문제를 더 풀어보세요 ✨",
     videoLoadError: "영상을 불러오지 못했어요.", // app-authored
     /** COU-002 (2414:27684) — the lesson row's completion chip and CTA. */
     /** COU-004 (230:7011) — the video player's chrome. */

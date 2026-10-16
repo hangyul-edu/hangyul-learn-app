@@ -5445,9 +5445,11 @@ textarea.input {
 /* A regular member's locked field — TAL-008 (739:46693) / TAL-016 (1916:25853).
    The same input box, its contents under the frame's 4px TEXTURE effect (CSS
    has no grain filter; a light blur reads the same at this size), and the
-   "★ Premium only" tag (739:46705) above it: a 94x20 black r10 pill whose top
-   is 32 above the field and right edge 7 inside it, with a 10px down-pointing
-   tip (740:46708) centred under it. */
+   "★ Premium only" tag (739:46705) raised over it only for a moment after a
+   tap: a 94x20 black r10 pill, right edge 7 inside the field, with a 10px
+   down-pointing tip (740:46708) centred under it. The frames put it 32 above
+   the field, across the page title; it sits 23 above instead, in the gap
+   under the top nav, its tip just over the field's top edge. */
 .sess__locked {
   position: relative;
 }
@@ -5480,9 +5482,10 @@ textarea.input {
 }
 .sess__locked-tag {
   position: absolute;
-  top: -32px;
+  top: -23px;
   right: 7px;
   z-index: 1;
+  animation: sess-locked-tag-in 0.15s ease-out;
   display: grid;
   place-items: center;
   width: 94px;
@@ -5506,6 +5509,17 @@ textarea.input {
   border-style: solid;
   border-width: 7.5px 4.33px 0;
   border-color: #000 transparent transparent;
+}
+@keyframes sess-locked-tag-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sess__locked-tag {
+    animation: none;
+  }
 }
 
 /* TOPIK dropdown */

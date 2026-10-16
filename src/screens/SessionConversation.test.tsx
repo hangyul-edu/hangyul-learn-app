@@ -847,18 +847,19 @@ describe("SessionConversation — adaptive session", () => {
     await waitFor(() => expect(toastShow).toHaveBeenCalledWith("어떤 상황을 원하는지 조금 더 알려 주세요."));
   });
 
-  it("a regular member sees the request field locked and a tap only explains why (TAL-008)", async () => {
+  it("a regular member sees the request field locked; a tap raises the premium tag (TAL-008)", async () => {
     mockMe = { app_language: "ko", membership: FREE };
     renderScreen();
     await screen.findByText(/덕분에 잘/);
     expect(screen.queryByLabelText("맞춤 문장 상황 입력")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "맞춤 문장 추천 받기" })).not.toBeInTheDocument();
-    expect(screen.getByText("★ 프리미엄 전용")).toBeInTheDocument();
     const field = screen.getByRole("button", { name: /원하는 상황을 입력하면/ });
     expect(field).toHaveTextContent("🔒 원하는 상황을 입력하면 맞춤 문장을 추천해드려요");
     expect(field).not.toHaveTextContent("✨");
+    expect(screen.queryByText("★ 프리미엄 전용")).not.toBeInTheDocument();
     await userEvent.click(field);
-    expect(toastShow).toHaveBeenCalledWith("프리미엄 회원만 이용할 수 있는 기능이에요.");
+    expect(screen.getByText("★ 프리미엄 전용")).toBeInTheDocument();
+    expect(toastShow).not.toHaveBeenCalled();
     expect(study.customize).not.toHaveBeenCalled();
   });
 

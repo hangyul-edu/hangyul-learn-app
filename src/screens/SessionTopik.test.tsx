@@ -112,16 +112,17 @@ describe("SessionTopik — the question-type picker is premium-only (TAL-016)", 
     expect(screen.queryByText("★ 프리미엄 전용")).not.toBeInTheDocument();
   });
 
-  it("locks it for a regular member, and a tap only explains why", async () => {
+  it("locks it for a regular member, and a tap only raises the premium tag", async () => {
     auth.premium = false;
     renderScreen();
     await screen.findByRole("textbox");
-    expect(screen.getByText("★ 프리미엄 전용")).toBeInTheDocument();
+    expect(screen.queryByText("★ 프리미엄 전용")).not.toBeInTheDocument();
     const field = screen.getByRole("button", { name: /문제 유형을 선택해보세요/ });
     expect(field).not.toHaveAttribute("aria-haspopup");
     expect(field).toHaveTextContent("🔒 더 집중해서 풀어보고 싶은 문제 유형을 선택해보세요");
     await userEvent.click(field);
-    expect(toastShow).toHaveBeenCalledWith("프리미엄 회원만 이용할 수 있는 기능이에요.");
+    expect(screen.getByText("★ 프리미엄 전용")).toBeInTheDocument();
+    expect(toastShow).not.toHaveBeenCalled();
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
     expect(questions).toHaveBeenCalledTimes(1);
     expect(questions.mock.calls[0][0]).not.toHaveProperty("topik_question_type");

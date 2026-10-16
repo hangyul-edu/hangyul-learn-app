@@ -13,6 +13,7 @@ import { QuestionCard } from "../components/lecture/QuestionCard";
 import { learnApi, practiceApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { useRecordDisplayedItem } from "../hooks/learningActivity";
+import { isSubscriptionRequired, useLeaveLockedLecture } from "../hooks/premiumLecture";
 import { ApiError, errorMessage } from "../lib/http";
 import type { Quiz } from "../lib/types";
 
@@ -50,7 +51,12 @@ export function Practice() {
     queryKey: ["lecture", lectureId, language],
     queryFn: () => learnApi.lecture(lectureId, language),
     enabled: !!lectureId,
+    retry: (n, e) => !isSubscriptionRequired(e) && n < 2,
   });
+  // A premium lecture's practice reached by a direct link: the server refuses
+  // the lecture (402), so leave with the subscription notice, as the series
+  // page's tap would have.
+  useLeaveLockedLecture(isSubscriptionRequired(lecture.error));
 
   const current = items?.[idx];
   // The practice question on screen counts as study (streak + learning day +

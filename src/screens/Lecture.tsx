@@ -13,6 +13,7 @@ import { learnApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { useMarkStudied } from "../hooks/learningActivity";
 import { useAutoHideControls } from "../hooks/useAutoHideControls";
+import { isSubscriptionRequired, useLeaveLockedLecture } from "../hooks/premiumLecture";
 import { ApiError, errorMessage } from "../lib/http";
 import { checkpointAtResume, dueCheckpoint, isExcluded } from "../lib/lectureCheckpoints";
 import type { LectureCheckpoint, LectureDetail as Lec } from "../lib/types";
@@ -105,6 +106,8 @@ export function Lecture() {
     },
     staleTime: 0,
     refetchOnMount: "always",
+    // A refusal (402) is final: no retries, the page leaves at once.
+    retry: (n, e) => !isSubscriptionRequired(e) && n < 2,
   });
   // The video waits for that fresh read (cached data shows the title meanwhile).
   const fresh = q.isFetchedAfterMount && !!q.data;
@@ -117,6 +120,11 @@ export function Lecture() {
     },
     onTrouble: controls.show,
   });
+  // A premium lecture without premium access (a direct link, a notification,
+  // a membership that lapsed): the server refuses the lecture or its video,
+  // and the page leaves with the subscription notice instead of opening.
+  const refused = isSubscriptionRequired(q.error) || premiumLocked;
+  useLeaveLockedLecture(refused);
   // Only to pick the quit confirm's wording: "goal already met" vs "a bit left".
   const dashboard = useDashboard({ enabled: quitOpen });
 
@@ -323,7 +331,7 @@ export function Lecture() {
           video opens playing with the controls hidden; tapping or clicking the
           picture shows them, and tapping it while they are up hides them. */}
       <div className="lecp__stage" onClick={controls.toggle}>
-        <Async loading={q.isLoading} error={q.error} data={q.data} onRetry={() => q.refetch()}>
+        <Async loading={q.isLoading} error={refused ? null : q.error} data={q.data} onRetry={() => q.refetch()}>
           {(lecture: Lec) =>
             videoUrl ? (
               <StreamVideo
@@ -392,13 +400,7 @@ export function Lecture() {
                   refreshStream();
                 }}
               />
-            ) : premiumLocked ? (
-              <div className="lecp__gate">
-                <div className="lecp__gate-emoji">👑</div>
-                <div className="lecp__gate-title">{t("courses.premiumLecture")}</div>
-                <Button size="sm" onClick={() => nav("/subscription")}>{t("study.upgrade")}</Button>
-              </div>
-            ) : playFailed ? (
+            ) : playFailed && !premiumLocked ? (
               <div className="lecp__gate" role="alert">
                 <div className="lecp__gate-title">{t("courses.videoLoadError")}</div>
                 <Button size="sm" onClick={requestPlay}>{t("common.retry")}</Button>

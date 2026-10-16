@@ -12,6 +12,7 @@ import { SpeakingCard } from "../components/lecture/SpeakingCard";
 import type { SpeakingOutcome } from "../components/lecture/SpeakingCard";
 import { learnApi, sentenceApi } from "../api/endpoints";
 import { useRecordDisplayedItem } from "../hooks/learningActivity";
+import { isSubscriptionRequired, useLeaveLockedLecture } from "../hooks/premiumLecture";
 import { errorMessage } from "../lib/http";
 
 /**
@@ -38,8 +39,14 @@ export function SpeakPractice() {
   const [quitOpen, setQuitOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
 
-  const lecture = useQuery({ queryKey: ["lecture", lectureId, language], queryFn: () => learnApi.lecture(lectureId, language) });
-  const items = useQuery({ queryKey: ["speak-practice", lectureId], queryFn: () => learnApi.speakPractice(lectureId) });
+  // A refusal (402: a premium lecture without premium access) is final.
+  const retry = (n: number, e: unknown) => !isSubscriptionRequired(e) && n < 2;
+  const lecture = useQuery({ queryKey: ["lecture", lectureId, language], queryFn: () => learnApi.lecture(lectureId, language), retry });
+  const items = useQuery({ queryKey: ["speak-practice", lectureId], queryFn: () => learnApi.speakPractice(lectureId), retry });
+  // A premium lecture's checkpoint sentences reached by a direct link: leave
+  // with the subscription notice, as the series page's tap would have.
+  const refused = isSubscriptionRequired(lecture.error) || isSubscriptionRequired(items.error);
+  useLeaveLockedLecture(refused);
   const sentenceId = items.data?.items[idx]?.sentence_id;
   const sentence = useQuery({
     queryKey: ["sentence", sentenceId],
@@ -62,7 +69,7 @@ export function SpeakPractice() {
     go(0);
   }
 
-  const body = items.isPending ? (
+  const body = items.isPending || refused ? (
     <LoadingState />
   ) : items.isError ? (
     <EmptyState emoji="😢" title={errorMessage(items.error)} />

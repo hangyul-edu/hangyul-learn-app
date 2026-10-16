@@ -14,6 +14,7 @@ import type { CourseRewardState, LectureEntryState } from "./Lecture";
 import icCheck from "../assets/brand/ic-16-check.svg";
 import icBack from "../assets/brand/ic-topnav-back.svg";
 import { mmss } from "../lib/format";
+import { usePremiumLectureGate } from "../hooks/premiumLecture";
 
 /** mm:ss — COU-002 prints every lesson's length as a zero-padded clock. */
 // The lecture tab (LectureHome) is the catalog browser; this file holds the
@@ -104,8 +105,12 @@ export function SeriesPage() {
   useEffect(() => clearSeriesReward(seriesId), [seriesId]);
 
   // Lessons opened from here step back to this entry when the player closes.
+  // A premium lesson (or its practice) never opens without premium access:
+  // the tap shows the subscription notice instead.
+  const gate = usePremiumLectureGate();
   const entry: LectureEntryState = { fromSeriesId: seriesId };
-  const openLesson = (path: string) => nav(path, { state: entry });
+  const openLesson = (access: Lecture["access"] | undefined, path: string) =>
+    gate.open(access, () => nav(path, { state: entry }));
 
   function closeReward() {
     setReward(0);
@@ -134,7 +139,15 @@ export function SeriesPage() {
                 <div className="cdet__hero">
                   {s.thumbnail_url && <img className="cdet__hero-img" src={s.thumbnail_url} alt={s.title} />}
                   {resume && (
-                    <button className="cdet__cta" onClick={() => openLesson(`/lectures/${resume.lecture_id}`)}>
+                    <button
+                      className="cdet__cta"
+                      onClick={() =>
+                        openLesson(
+                          lessons.find((l) => l.lecture_id === resume.lecture_id)?.access,
+                          `/lectures/${resume.lecture_id}`,
+                        )
+                      }
+                    >
                       {t("courses.startNow")}
                     </button>
                   )}
@@ -145,9 +158,11 @@ export function SeriesPage() {
                     <LessonRow
                       key={l.lecture_id}
                       lesson={l}
-                      onOpen={() => openLesson(`/lectures/${l.lecture_id}`)}
+                      onOpen={() => openLesson(l.access, `/lectures/${l.lecture_id}`)}
                       onPractice={() =>
-                        nav(`/lectures/${l.lecture_id}/${l.track_id === "track_topik" ? "practice" : "speak"}`)
+                        gate.open(l.access, () =>
+                          nav(`/lectures/${l.lecture_id}/${l.track_id === "track_topik" ? "practice" : "speak"}`),
+                        )
                       }
                     />
                   ))}

@@ -13893,9 +13893,6 @@ input[type="tel"] {
   color: #ffffff;
   text-align: center;
 }
-.lecp__gate-emoji {
-  font-size: 34px;
-}
 .lecp__gate-title {
   font-family: var(--font-body);
   font-weight: 700;

@@ -1436,7 +1436,9 @@ export const ko = {
     resume: "이어보기",
     done: "완료",
     progress: "진행률",
-    premiumLecture: "프리미엄 강의",
+    /** cp_G_03_toast (744:46726) — a premium lecture or its practice tapped
+     *  without premium access; app-authored copy in the toast's two-line form. */
+    premiumRequired: "프리미엄 구독이 필요한 강의예요\n프리미엄에서 모든 강의를 볼 수 있어요 ✨",
     videoLoadError: "영상을 불러오지 못했어요.", // app-authored
     /** COU-002 (2414:27684) — the lesson row's completion chip and CTA. */
     /** COU-004 (230:7011) — the video player's chrome. */

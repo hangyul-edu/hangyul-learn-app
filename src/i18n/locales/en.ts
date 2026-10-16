@@ -1427,7 +1427,7 @@ export const en: Catalog = {
     resume: "Resume",
     done: "Done",
     progress: "Progress",
-    premiumLecture: "Premium class",
+    premiumRequired: "This lecture needs a Premium subscription\nGo Premium to watch every lecture ✨", // cp_G_03_toast 784:63104 style
     videoLoadError: "Couldn't load the video.", // app-authored
     /** COU-002 (EN 2397:26192) — the lesson row's completion chip and CTA. */
     /** COU-004 (EN 784:55155) — the video player's chrome. */

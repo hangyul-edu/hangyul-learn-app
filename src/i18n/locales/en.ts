@@ -414,17 +414,12 @@ export const en: Catalog = {
     privacy: "Privacy Policy", // 926:19316
     refund: "Cancellation & Refund Policy", // 784:49781
     businessTitle: "Business Information", // 784:49776
-    /**
-     * 784:49782. The mail-order registration number is taken from the Korean
-     * frame (1:1599): the English frame still carries a 2019 Gangnam number,
-     * which contradicts the Dobong address on the same card.
-     */
-    bizCeo: "CEO: JaeHee Lew",
-    bizEmail: "Email address: support@talkhangyul.com",
-    bizRegNo: "Business Registration Number: 403-87-03380",
-    bizAddress: "Address: 39, Uicheon-ro 38-gil, Dobong-gu, Seoul, Republic of Korea",
-    bizMailOrder: "Mail-Order Sales Business Registration No.: 2026-Seoul Dobong-0542",
-    bizPhone: "Contact: +82-10-3560-8679",
+    /** 784:49782 */
+    bizCeo: "CEO: Jaehee Yoo",
+    bizDivision: "Business Division: Woojun Nam",
+    bizEmail: "Email: support@talkhangyul.com",
+    bizRegNo: "Business Registration No.: 403-87-03380",
+    bizMailOrder: "E-Commerce Permit No.: 2026-Seoul Dobong-0542",
     bizCopyright: "Copyright © 2025 HanGyul. All Rights Reserved.",
     effectiveDate: "Effective {date}",
   },

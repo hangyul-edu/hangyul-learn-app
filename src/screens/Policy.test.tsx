@@ -42,9 +42,17 @@ describe("Terms & Policies list (TRM-001)", () => {
     ["이용약관", "개인정보처리 방침", "구독 해지 및 환불 정책"].forEach((label) =>
       expect(screen.getByRole("button", { name: label })).toBeInTheDocument(),
     );
-    expect(screen.getByText("사업자 정보")).toBeInTheDocument();
-    expect(screen.getByText("대표이사: 유재희")).toBeInTheDocument();
-    expect(screen.getByText(/Copyright © 2025 HanGyul/)).toBeInTheDocument();
+    const footer = screen.getByRole("region", { name: "사업자 정보" });
+    expect(
+      Array.from(footer.querySelectorAll(".pol__biz-line"), (line) => line.textContent),
+    ).toEqual([
+      "대표이사: 유재희",
+      "사업부문: 남우준",
+      "이메일: support@talkhangyul.com",
+      "사업자등록번호: 403-87-03380",
+      "통신판매업 신고번호: 제2026-서울도봉-0542호",
+      "Copyright © 2025 HanGyul. All Rights Reserved.",
+    ]);
   });
 
   it("lists the same three items in English", () => {
@@ -53,7 +61,17 @@ describe("Terms & Policies list (TRM-001)", () => {
     ["Terms of Service", "Privacy Policy", "Cancellation & Refund Policy"].forEach((label) =>
       expect(screen.getByRole("button", { name: label })).toBeInTheDocument(),
     );
-    expect(screen.getByText("Business Information")).toBeInTheDocument();
+    const footer = screen.getByRole("region", { name: "Business Information" });
+    expect(
+      Array.from(footer.querySelectorAll(".pol__biz-line"), (line) => line.textContent),
+    ).toEqual([
+      "CEO: Jaehee Yoo",
+      "Business Division: Woojun Nam",
+      "Email: support@talkhangyul.com",
+      "Business Registration No.: 403-87-03380",
+      "E-Commerce Permit No.: 2026-Seoul Dobong-0542",
+      "Copyright © 2025 HanGyul. All Rights Reserved.",
+    ]);
   });
 });
 
@@ -213,7 +231,7 @@ describe("catalog shape", () => {
     const text = POLICIES.en["purchase-privacy"].sections
       .flatMap((s) => s.body.flatMap((b) => (typeof b === "string" ? [b] : b.bullets)))
       .join(" ");
-    expect(text).toContain("JaeHee Lew");
+    expect(text).toContain("Jaehee Yoo");
     expect(text).not.toContain("Yoo Jaehee");
   });
 

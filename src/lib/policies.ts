@@ -745,10 +745,10 @@ const EN: Record<PolicyId, PolicyDoc> = {
       {
         heading: "9. Privacy Officer",
         body: [
-          // The frame romanises 유재희 as "Yoo Jaehee"; the business-info card
-          // spells the same person "JaeHee Lew", which is the spelling used
-          // everywhere else in English, so it wins here too.
-          "Privacy Officer: JaeHee Lew Contact: support@talkhangyul.com or in-app chat support via Channel Talk",
+          // The frame writes 유재희 surname-first ("Yoo Jaehee"); the
+          // business-info card (TRM-001) has "Jaehee Yoo", used here too so
+          // the English pages name the same person the same way.
+          "Privacy Officer: Jaehee Yoo Contact: support@talkhangyul.com or in-app chat support via Channel Talk",
         ],
       },
     ],

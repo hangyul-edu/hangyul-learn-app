@@ -436,11 +436,10 @@ export const ko = {
     businessTitle: "사업자 정보", // 1:1614
     /** 175:7490 — the design sets this as one block; kept per line here. */
     bizCeo: "대표이사: 유재희",
+    bizDivision: "사업부문: 남우준",
     bizEmail: "이메일: support@talkhangyul.com",
     bizRegNo: "사업자등록번호: 403-87-03380",
-    bizAddress: "주소: 서울특별시 도봉구 우이천로38길 39",
-    bizMailOrder: "통신판매업 신고번호 : 제2026-서울도봉-0542호",
-    bizPhone: "전화번호 : 010-3560-8679",
+    bizMailOrder: "통신판매업 신고번호: 제2026-서울도봉-0542호",
     bizCopyright: "Copyright © 2025 HanGyul. All Rights Reserved.",
     effectiveDate: "시행일 {date}",
   },

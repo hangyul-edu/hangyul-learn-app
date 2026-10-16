@@ -103,14 +103,13 @@ const LIST_ITEMS: { id: PolicyId; label: TranslationKey }[] = [
   { id: "refund", label: "policy.refund" },
 ];
 
-/** The seven business-information lines Figma TRM-001 lists, in its order. */
+/** The six business-information lines Figma TRM-001 lists, in its order. */
 const BUSINESS_LINES: TranslationKey[] = [
   "policy.bizCeo",
+  "policy.bizDivision",
   "policy.bizEmail",
   "policy.bizRegNo",
-  "policy.bizAddress",
   "policy.bizMailOrder",
-  "policy.bizPhone",
   "policy.bizCopyright",
 ];
 

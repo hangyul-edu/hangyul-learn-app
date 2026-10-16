@@ -2549,10 +2549,8 @@ textarea.input {
 }
 /* Rectangle 5038 — Gray 1 at 50%, 298 tall, pinned to the bottom. */
 .pol__biz {
-  /* 27 top and 27 bottom: TRM-001 (1:1599) sets the band 514..812 with its
-     title box at 541 and the last body line ending on 785. Relying on the
-     min-height alone gave the clearance in Korean but none in English, where
-     two lines wrap and the copyright ran flush to the bottom edge. */
+  /* 27 top: TRM-001 (1:1599) sets the band 514..812 with its title box at
+     541. The 27 bottom keeps the last line off the edge if a line wraps. */
   margin-top: auto;
   min-height: 298px;
   background: rgba(244, 246, 246, 0.5);

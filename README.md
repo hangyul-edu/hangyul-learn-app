@@ -15,7 +15,7 @@ Hangyul is three repositories that work together:
 | Repository | What it is |
 |---|---|
 | **hangyul-learn-app** (this one) | The member web app |
-| [hangyul-admin](https://github.com/hangyul-edu/hangyul-admin) | The admin portal, served at `/admin` |
+| [hangyul-admin](https://github.com/hangyul-edu/hangyul-admin) | The admin portal, on its own server at `/admin` |
 | hangyul-api | The backend API both apps call |
 
 ---
@@ -52,9 +52,7 @@ cp .env.example .env
 | Variable | Purpose | Default |
 |---|---|---|
 | `VITE_API_BASE_URL` | Backend base URL used by the app. **Leave empty for local dev** → the app calls `/api`, which the Vite dev server proxies to the backend (no CORS). Set it to the real origin for production builds, e.g. `https://api.hangyul.app`. | *(empty → `/api`)* |
-| `VITE_DEV_BACKEND` | Where the dev proxy forwards `/api` (dev only). | `http://127.0.0.1:8000` |
-| `VITE_DEV_ADMIN` | Where the dev server forwards `/admin` — the admin portal's own dev server (dev only). | `http://localhost:5174` |
-| `VITE_CHANNEL_TALK_PLUGIN_KEY` | ChannelTalk web SDK plugin key. When set, the messenger boots at startup and the FAQ support button opens it. | *(empty → SDK not loaded)* |
+| `VITE_DEV_BACKEND` | Where the dev proxy forwards `/api` (dev only). | `http://127.0.0.1:8000` || `VITE_CHANNEL_TALK_PLUGIN_KEY` | ChannelTalk web SDK plugin key. When set, the messenger boots at startup and the FAQ support button opens it. | *(empty → SDK not loaded)* |
 
 ### Setting the backend API base URL
 
@@ -85,9 +83,8 @@ a phone it fills the screen. The frame is a size container (size things with
 `cqw`/`cqh`, not `vw`/`vh`) and the containing block of `position: fixed`
 overlays, so dims, sheets and dialogs stay inside it. It hot-reloads on save.
 
-**http://localhost:5173/admin** opens the admin portal, which this dev server
-forwards to the portal's own dev server: run `npm run dev` in `hangyul-admin`
-as well (port 5174) when you need it.
+The admin portal is not part of this app or its server: it runs on its own
+(`npm run dev` in hangyul-admin → http://localhost:5174/admin).
 
 ---
 
@@ -253,7 +250,7 @@ a single-box deployment. The API must in turn list the deployed origin in
 ```
 hangyul-learn-app/
 ├─ index.html
-├─ vite.config.ts          # dev server: /api → backend, /admin → admin dev server
+├─ vite.config.ts          # dev server + /api → backend proxy
 ├─ .env.example
 └─ src/
    ├─ main.tsx             # providers: QueryClient, I18n, Toast, Auth

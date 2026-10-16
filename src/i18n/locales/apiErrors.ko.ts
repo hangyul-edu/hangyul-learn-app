@@ -33,6 +33,8 @@ export const apiErrorsKo = {
     "user_not_found": "계정을 찾을 수 없어요.",
     "email_already_registered": "이미 가입된 이메일이에요. 가입할 때 사용한 방법으로 로그인해 주세요.",
     "phone_already_registered": "이미 다른 계정에 등록된 휴대폰 번호예요.",
+    "phone_country_locked": "가입할 때 등록한 국가의 번호로만 변경할 수 있어요.",
+    "nationality_locked": "국가는 가입 후에는 변경할 수 없어요.",
     "nickname_already_taken": "이미 사용 중인 닉네임이에요.",
     "nickname_check_required": "닉네임 중복 확인을 다시 해 주세요.",
     "password_mismatch": "비밀번호가 일치하지 않아요.",

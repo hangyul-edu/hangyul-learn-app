@@ -149,8 +149,11 @@ export const authApi = {
     http.post<void>("/auth/password/reset", { reset_token, new_password, new_password_confirmation }, { auth: false }),
   changePassword: (current_password: string, new_password: string, confirm_new_password: string) =>
     http.post<void>("/auth/password/change", { current_password, new_password, confirm_new_password }),
+  /** `nationality` is recorded only on an account without one; the server
+   *  refuses another country's number (`phone_country_locked`) or another
+   *  nationality (`nationality_locked`) — both are fixed at sign-up. */
   changePhone: (phone: string, phone_verification_token: string, nationality?: string) =>
-    http.post<{ phone: string }>("/auth/phone/change", {
+    http.post<{ phone: string; nationality?: string | null }>("/auth/phone/change", {
       phone,
       phone_verification_token,
       nationality,

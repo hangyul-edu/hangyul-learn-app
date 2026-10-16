@@ -137,6 +137,9 @@ export const ko = {
     phoneTitle: "휴대폰번호 변경",
     phoneLabel: "휴대폰번호",
     phoneSame: "현재 사용 중인 번호와 같아요",
+    /** The country is fixed at sign-up (TRM-002 제5조); app-authored. */
+    phoneOtherCountry: "가입할 때 등록한 국가({country} {dial})의 번호로만 변경할 수 있어요",
+    phoneCountryA11y: "국가 {name}, 가입 후에는 변경할 수 없어요", // app-authored (a11y)
     phoneChanged: "휴대폰 번호를 변경했어요",
     phoneBlockedA11y: "인증을 완료하면 번호를 변경할 수 있어요",
     emailTitle: "이메일 변경",

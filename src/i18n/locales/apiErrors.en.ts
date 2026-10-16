@@ -27,6 +27,8 @@ export const apiErrorsEn: ApiErrorCatalog = {
     "user_not_found": "We couldn't find the account.",
     "email_already_registered": "This email is already registered. Sign in the way you signed up.",
     "phone_already_registered": "This phone number is already registered to another account.",
+    "phone_country_locked": "You can only change to a number from the country you signed up with.",
+    "nationality_locked": "Your country can't be changed after sign-up.",
     "nickname_already_taken": "That nickname is already taken.",
     "nickname_check_required": "Please check the nickname's availability again.",
     "password_mismatch": "The passwords don't match.",

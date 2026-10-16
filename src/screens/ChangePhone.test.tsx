@@ -1,7 +1,8 @@
 /**
- * Changing the phone number: any country, the account's nationality as the
- * starting country, and a reason when the number is refused (the request
- * button used to just stay disabled, and non-Korean numbers were only
+ * Changing the phone number: the account's country is fixed at sign-up, so
+ * MOR-003 shows it as information (a flag, not a picker) and only a number of
+ * that country is accepted; and a reason when the number is refused (the
+ * request button used to just stay disabled, and non-Korean numbers were only
  * length-checked).
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -10,7 +11,9 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 
-const { me } = vi.hoisted(() => ({ me: { current: null as null | { phone: string; nationality: string | null } } }));
+const { me } = vi.hoisted(() => ({
+  me: { current: null as null | { phone: string | null; nationality: string | null } },
+}));
 vi.mock("../api/endpoints", () => ({ authApi: { startPhone: vi.fn(), confirmPhone: vi.fn(), changePhone: vi.fn() } }));
 vi.mock("../hooks/auth", () => ({ useAuth: () => ({ me: me.current, setMe: vi.fn() }) }));
 const { toastError, toastSuccess } = vi.hoisted(() => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
@@ -45,18 +48,45 @@ beforeEach(() => {
 });
 
 describe("ChangePhone", () => {
-  it("starts on the account's nationality and applies that country's rules", async () => {
+  it("shows the account's country as information and applies that country's rules", async () => {
     me.current = { phone: "+819012345678", nationality: "JP" };
     const user = userEvent.setup();
     renderScreen();
-    expect(screen.getByRole("button", { name: "Select country, currently Japan" })).toBeInTheDocument();
+    const country = screen.getByRole("img", { name: "Country Japan, can't be changed after sign-up" });
+    expect(country).toHaveTextContent("🇯🇵");
+    expect(country.closest("button")).toBeNull();
+    // No picker anywhere on the screen.
+    expect(screen.queryByRole("button", { name: /select country/i })).not.toBeInTheDocument();
+    await user.click(country);
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
     await user.type(phoneField(), "080-1234-5678");
     await user.click(requestCode());
     expect(api.startPhone).toHaveBeenCalledWith("+818012345678", "change_phone");
   });
 
-  it("falls back to Korea for an unknown nationality", () => {
+  it("takes the number's country when the nationality is unknown", () => {
     me.current = { phone: "+821099998888", nationality: "ZZ" };
+    renderScreen();
+    expect(screen.getByRole("img", { name: "Country South Korea, can't be changed after sign-up" })).toBeInTheDocument();
+  });
+
+  it("refuses a number from another country before any SMS", async () => {
+    const user = userEvent.setup();
+    renderScreen();
+    // A pasted international number no longer moves the country.
+    await user.click(phoneField());
+    await user.paste("+44 7911 123456");
+    await user.click(requestCode());
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "You can only change to a number from the country you signed up with (South Korea +82)",
+    );
+    expect(screen.getByRole("img", { name: /^Country South Korea/ })).toBeInTheDocument();
+    expect(api.startPhone).not.toHaveBeenCalled();
+    expect(document.querySelector(".pchg__submit")).toBeDisabled();
+  });
+
+  it("lets an account without a number or country pick its first one", () => {
+    me.current = { phone: null, nationality: null };
     renderScreen();
     expect(screen.getByRole("button", { name: "Select country, currently South Korea" })).toBeInTheDocument();
   });
@@ -116,15 +146,16 @@ describe("ChangePhone", () => {
   });
 
   it("drops the billing data read for the old number once the change is saved", async () => {
-    // The calling code decides the currency (+82 → KRW, else USD), which card
-    // may be registered and what a running subscription renews at next, so
-    // nothing cached for the old number may stay.
+    // The calling code decides the currency (+82 → KRW, else USD) and which
+    // card may be registered. A replacement stays in its country, but nothing
+    // cached for the old number is kept (an account's first number can move
+    // both).
     api.confirmPhone.mockResolvedValue({ verification_token: "tok" });
-    api.changePhone.mockResolvedValue({ phone: "+14155550123" });
+    api.changePhone.mockResolvedValue({ phone: "+14155550123", nationality: "US" });
     const qc = new QueryClient();
     const invalidate = vi.spyOn(qc, "invalidateQueries");
     const user = userEvent.setup();
-    me.current = { phone: "+821099998888", nationality: "US" };
+    me.current = { phone: "+12015550100", nationality: "US" };
     renderScreen(qc);
     await user.type(phoneField(), "415-555-0123");
     await user.click(requestCode());

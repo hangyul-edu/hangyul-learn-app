@@ -130,6 +130,8 @@ export const en: Catalog = {
     phoneTitle: "Change Phone Number",
     phoneLabel: "Phone",
     phoneSame: "That's already your current number",
+    phoneOtherCountry: "You can only change to a number from the country you signed up with ({country} {dial})",
+    phoneCountryA11y: "Country {name}, can't be changed after sign-up",
     phoneChanged: "Your phone number has been changed",
     phoneBlockedA11y: "Verify your number to change it",
     emailTitle: "Change Email",

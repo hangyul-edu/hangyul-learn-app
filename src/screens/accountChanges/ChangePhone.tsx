@@ -10,7 +10,17 @@ import { clearPendingSignup, loadPendingSignup } from "../../hooks/socialSignup"
 import { useToast } from "../../hooks/toast";
 import { countdownLabel } from "../../hooks/verification";
 import { ApiError, errorMessage } from "../../lib/http";
-import { DEFAULT_PHONE_COUNTRY, applyPhoneInput, checkPhone, isPhoneCountry, phoneExample } from "../../lib/phone";
+import {
+  DEFAULT_PHONE_COUNTRY,
+  applyPhoneInput,
+  checkPhone,
+  countryName,
+  hasCallingCodeOf,
+  phoneCountry,
+  phoneExample,
+  registeredPhoneCountry,
+  sanitizePhoneInput,
+} from "../../lib/phone";
 import { usePhoneProblemMessage } from "../../hooks/phoneProblem";
 import { CountrySelect } from "../../components/ui/CountrySelect";
 import { Spinner } from "../../components/ui/Spinner";
@@ -26,6 +36,13 @@ import { CodeTimer, useOtpClock } from "./otp";
  * or country invalidates a prior verification proof. The countdown is derived
  * from the server `expires_at` timestamp (survives re-renders/backgrounding).
  *
+ * The country is fixed at sign-up, with or without a subscription (Terms of
+ * Service, Articles 5 and 7; the server refuses another one with
+ * `phone_country_locked`). So on a change MOR-003 shows it as a flag only —
+ * information, not a picker — and a number from another country is refused
+ * here before any SMS. Only a number being set for the first time (sign-up,
+ * or an account without a country yet) gets the picker.
+ *
  * `mode="setup"` is social signup's phone step (/setup/phone): a member who
  * signed in with a provider that gave no phone number verifies one before
  * using the app. Same SMS flow and API; a one-line intro asks for the number
@@ -33,7 +50,7 @@ import { CodeTimer, useOtpClock } from "./otp";
  * saving continues to the next signup step instead of going back.
  */
 export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" | "signup" }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const nav = useNavigate();
   const qc = useQueryClient();
   const toast = useToast();
@@ -47,9 +64,9 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" | "
   const setup = mode === "setup" || signup;
   const [pending] = useState(() => (signup ? loadPendingSignup() : null));
 
-  const [country, setCountry] = useState<string>(
-    isPhoneCountry(me?.nationality) ? me.nationality : DEFAULT_PHONE_COUNTRY,
-  );
+  // The account's country, when it has one: fixed, so shown, never picked.
+  const fixedCountry = signup ? null : registeredPhoneCountry(me?.nationality, me?.phone);
+  const [country, setCountry] = useState<string>(fixedCountry ?? DEFAULT_PHONE_COUNTRY);
   const [phoneErr, setPhoneErr] = useState<string | null>(null);
   // A refused code, shown under the code field until the member types again.
   const [codeErr, setCodeErr] = useState<string | null>(null);
@@ -67,7 +84,10 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" | "
 
   const phone = useMemo(() => checkPhone(country, localPhone), [country, localPhone]);
   const e164 = phone.ok ? phone.e164 : "";
-  const phoneValid = phone.ok;
+  // A complete international number from another country ("+44 …").
+  const otherCountry = !!fixedCountry && phone.ok && !hasCallingCodeOf(fixedCountry, phone.e164);
+  const phoneValid = phone.ok && !otherCountry;
+  const fixedName = fixedCountry ? countryName(fixedCountry, language) : "";
   const sameAsCurrent = !setup && phone.ok && !!me?.phone && e164 === me.phone;
 
   const verified = !!token && verifiedFor === e164;
@@ -89,6 +109,10 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" | "
     if (sending || (vid && resendIn > 0)) return;
     if (!phone.ok) {
       setPhoneErr(phoneMessage(country, phone.problem));
+      return;
+    }
+    if (otherCountry) {
+      setPhoneErr(t("accountChanges.phoneOtherCountry", { country: fixedName, dial: phoneCountry(fixedCountry).dial }));
       return;
     }
     if (sameAsCurrent) {
@@ -161,10 +185,11 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" | "
     }
     try {
       const res = await authApi.changePhone(e164, token!, country);
-      if (me) setMe({ ...me, phone: res.phone ?? e164, nationality: country });
-      // The number's calling code decides the billing currency, which card
-      // the member may register and — from the next billing date — what a
-      // running subscription renews at: drop what was read for the old one.
+      if (me) setMe({ ...me, phone: res.phone ?? e164, nationality: res.nationality ?? country });
+      // The number's calling code decides the billing currency and which
+      // card the member may register. A replacement stays in its country, but
+      // an account's first number can move both (from the next billing date
+      // for a running subscription): drop what was read for the old one.
       for (const key of [["payment-methods"], ["sub-offers"], ["sub-me"], INTL_OPTIONS_QK]) {
         void qc.invalidateQueries({ queryKey: key });
       }
@@ -239,15 +264,29 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" | "
           {/* Phone number */}
           <div className="acct__label" id="pchg-phone-label">{t("accountChanges.phoneLabel")}</div>
           <div className="pchg__row">
-            <CountrySelect
-              value={country}
-              onChange={(c) => {
-                setCountry(c);
-                setPhoneErr(null);
-                resetVerification();
-              }}
-              className="pchg__country"
-            />
+            {fixedCountry ? (
+              // MOR-003 2065:25108: the country as information — a flag on
+              // Gray 1, no chevron, nothing to tap.
+              <span
+                className="pchg__country pchg__country--fixed"
+                role="img"
+                aria-label={t("accountChanges.phoneCountryA11y", { name: fixedName })}
+              >
+                <span className="signup__country-flag" aria-hidden="true">
+                  {phoneCountry(fixedCountry).flag}
+                </span>
+              </span>
+            ) : (
+              <CountrySelect
+                value={country}
+                onChange={(c) => {
+                  setCountry(c);
+                  setPhoneErr(null);
+                  resetVerification();
+                }}
+                className="pchg__country"
+              />
+            )}
             <input
               className={`pchg__phone ${phoneErr ? "is-error" : ""}`}
               type="tel"
@@ -259,10 +298,15 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" | "
               aria-describedby={phoneErr ? "pchg-phone-err" : undefined}
               value={localPhone}
               onChange={(e) => {
-                // A pasted "+44 …" moves the picker to that country.
+                // A pasted "+44 …" moves the picker to that country — unless
+                // the country is fixed: then it stays as typed, and is refused.
                 const next = applyPhoneInput(country, e.target.value);
-                setCountry(next.country);
-                setLocalPhone(next.input);
+                if (fixedCountry && next.country !== fixedCountry) {
+                  setLocalPhone(sanitizePhoneInput(e.target.value));
+                } else {
+                  setCountry(next.country);
+                  setLocalPhone(next.input);
+                }
                 setPhoneErr(null);
                 resetVerification();
               }}

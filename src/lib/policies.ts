@@ -151,6 +151,7 @@ const KO: Record<PolicyId, PolicyDoc> = {
               "이용자는 회사가 정한 절차에 따라 회원가입을 완료한 후 서비스를 이용할 수 있습니다.",
               "이용자는 자신의 계정 정보를 타인에게 양도하거나 공유할 수 없습니다.",
               "계정 도용 또는 부정 이용이 발생한 경우 즉시 회사에 통보해야 합니다.",
+              "회원가입 시 등록한 휴대폰 번호의 국가는 변경할 수 없으며, 번호 변경은 동일 국가 내에서만 가능합니다.",
             ],
           },
         ],
@@ -174,9 +175,9 @@ const KO: Record<PolicyId, PolicyDoc> = {
           {
             bullets: [
               "프리미엄 플랜의 이용 요금은 서비스 내 안내된 금액에 따르며, 회사는 사전 공지 후 요금을 변경할 수 있습니다.",
-              "결제는 이용자가 등록한 신용카드·체크카드, 토스페이 등의 간편결제수단, 또는 App Store·Google Play의 인앱결제를 통해 이루어집니다.",
+              "결제는 이용자가 등록한 신용카드·체크카드 또는 토스페이 등의 간편결제수단을 통해 이루어집니다.",
               "연간 구독은 결제일로부터 12개월치 요금이 일괄 청구되며, 월간 구독은 매월 결제일에 자동 청구됩니다.",
-              "요금은 이용자가 등록한 휴대폰 번호의 국가에 따라 원화(KRW) 또는 미국 달러(USD)로 책정되며, 해당 통화로 청구됩니다. 등록 휴대폰 번호의 국가가 변경되는 경우, 다음 결제일부터 변경된 국가 기준의 요금이 적용됩니다.",
+              "요금은 이용자가 등록한 휴대폰 번호의 국가에 따라 원화(KRW) 또는 미국 달러(USD)로 책정되며, 해당 통화로 청구됩니다. 등록한 휴대폰 번호의 국가는 가입 이후 변경할 수 없습니다.",
               "미성년자가 법정대리인의 동의 없이 결제한 경우, 법정대리인은 해당 결제를 취소할 수 있습니다.",
             ],
           },
@@ -193,7 +194,6 @@ const KO: Record<PolicyId, PolicyDoc> = {
               "연간 구독은 결제일로부터 7일 이내 미사용 시 전액 환불되며, 그 외 결제일로부터 30일 이내에는 결제 금액에서 월간 구독 정상가 1개월분을 공제한 잔액이 환불됩니다. 결제일로부터 30일 초과 시 환불이 불가합니다.",
               "결제 오류 또는 이중결제 발생 시 앱 내 채널톡 채팅 상담으로 접수하면 확인 후 전액 환불 처리됩니다.",
               "회사의 귀책 사유로 서비스가 장기 중단된 경우, 중단 기간에 해당하는 요금을 일할 계산하여 환불합니다.",
-              "App Store·Google Play를 통해 결제한 경우, 구독 해지와 환불은 해당 스토어의 정책과 절차에 따라 처리됩니다.",
             ],
           },
         ],
@@ -289,7 +289,7 @@ const KO: Record<PolicyId, PolicyDoc> = {
         heading: "1. 수집하는 개인정보 항목",
         body: [
           "한귤 앱은 원활한 서비스 제공을 위해 다음과 같은 최소한의 정보를 수집합니다.",
-          "회원가입 시: 이름(닉네임), 이메일 주소, 비밀번호, 서비스 이용 기록.",
+          "회원가입 시: 이름(닉네임), 이메일 주소, 비밀번호, 휴대폰 번호, 서비스 이용 기록.",
           "학습 서비스 이용 시: 학습 기록(진도율, 오답 기록, 퀴즈 점수), 발음 연습을 위한 음성 데이터(일시적 수집 후 파기).",
           "결제 시: 결제 수단 정보(카드사명, 카드 번호 일부), 결제 내역, 거래 기록.",
           "자동 수집 정보: 서비스 이용 기록, 접속 로그, 쿠키, 기기 정보(OS, IP 주소) 등.",
@@ -301,7 +301,7 @@ const KO: Record<PolicyId, PolicyDoc> = {
           "수집된 개인정보는 오직 다음의 목적으로만 이용됩니다.",
           "서비스 제공: 학습 콘텐츠 제공, 진도 관리, 맞춤형 학습 추천.",
           "회원 관리: 본인 확인, 서비스 이용 약관 위반 행위 제재, 공지사항 전달.",
-          "결제 및 환불 처리: 구독 결제, 환불, 결제 오류 처리.",
+          "결제 및 환불 처리: 구독 결제, 환불, 결제 오류 처리, 휴대폰 번호 국가에 따른 요금 통화 결정.",
           "학습 환경 개선: 사용 패턴 분석을 통한 서비스 기능 개선 및 신규 서비스 개발.",
           "고객 지원: 문의 및 불만 사항 처리.",
           "AI 서비스 개선: 발음 피드백, AI 질문 응답 등 AI 기반 기능 제공 및 품질 향상을 위해 이용자의 음성 데이터 및 학습 데이터가 익명화 처리 후 활용될 수 있습니다. 이용자는 해당 활용에 대해 서비스 가입 시 동의하며, 언제든지 support@talkhangyul.com을 통해 동의를 철회할 수 있습니다.",
@@ -381,7 +381,7 @@ const KO: Record<PolicyId, PolicyDoc> = {
       {
         heading: "3. 7일 무료 체험",
         body: [
-          "구독 시작 전 7일간 프리미엄 플랜의 모든 기능을 무료로 체험할 수 있습니다. 무료 체험 시작 시 신용카드 등록이 필요하며, 체험 종료 당일 선택한 플랜으로 자동 결제됩니다. 체험 기간 내 취소 시 요금이 청구되지 않습니다.",
+          "구독 시작 전 7일간 프리미엄 플랜의 모든 기능을 무료로 체험할 수 있습니다. 무료 체험 시작 시 결제 수단 등록이 필요하며, 체험 종료 당일 선택한 플랜으로 자동 결제됩니다. 체험 기간 내 취소 시 요금이 청구되지 않습니다.",
         ],
       },
       {
@@ -409,7 +409,7 @@ const KO: Record<PolicyId, PolicyDoc> = {
               "월간 구독 결제일로부터 7일 초과 후 단순 변심에 의한 환불 요청",
               "연간 구독 결제일로부터 30일 초과 후 환불 요청",
               "계정 공유, 어뷰징 등 이용약관 위반으로 서비스 이용이 제한된 경우",
-              "7일 무료 체험 종료 후 자동 결제된 건(체험 기간 내 미취소)",
+              "7일 무료 체험 종료 후 자동 결제되어 서비스를 이용한 건(체험 기간 내 미취소)",
             ],
           },
         ],
@@ -550,6 +550,7 @@ const EN: Record<PolicyId, PolicyDoc> = {
               "Users may access the Service after completing registration in accordance with the Company's procedures.",
               "Users may not transfer or share their account credentials with others.",
               "In the event of unauthorized access or misuse of an account, users must notify the Company immediately.",
+              "The country of the mobile phone number registered at sign-up cannot be changed. Phone number changes are only permitted within the same country.",
             ],
           },
         ],
@@ -573,9 +574,9 @@ const EN: Record<PolicyId, PolicyDoc> = {
           {
             bullets: [
               "Premium Plan fees are as stated within the Service, and the Company may adjust pricing with prior notice.",
-              "Payments are processed via credit card, debit card, simple payment methods (such as Toss Pay) registered by the user, or in-app purchase through the App Store or Google Play.",
+              "Payments are processed via credit card, debit card, or simple payment methods (such as Toss Pay) registered by the user.",
               "Annual subscriptions are billed in full for 12 months from the billing date. Monthly subscriptions are billed automatically on the same date each month.",
-              "Fees are set in Korean Won (KRW) or US Dollars (USD) based on the country of the user's registered phone number and are charged in that currency. If the country of the registered phone number changes, fees based on the new country will apply from the next billing date. However, for payments made through the App Store or Google Play, fees are based on the country and currency registered with the respective store.",
+              "Fees are set in KRW or USD depending on the country of the mobile phone number registered by the user, and are charged in that currency. The country of the registered mobile phone number cannot be changed after sign-up.",
               "If a minor completes a payment without consent from a legal guardian, the legal guardian may cancel the transaction.",
             ],
           },
@@ -592,7 +593,6 @@ const EN: Record<PolicyId, PolicyDoc> = {
               "Annual subscriptions are fully refunded if requested within 7 days of the billing date with no usage. For any other refund request made within 30 days of the billing date, one month at the monthly standard price is deducted from the amount paid and the remaining balance is refunded. No refund is available more than 30 days after the billing date.",
               "Payment errors or duplicate charges may be submitted via in-app Channel Talk chat support and will be fully refunded upon verification.",
               "In the event of a prolonged service outage due to the Company's fault, fees corresponding to the outage period will be refunded on a pro-rata basis.",
-              "For payments made through the App Store or Google Play, subscription cancellation and refunds are handled according to the respective store's policies and procedures.",
             ],
           },
         ],
@@ -688,7 +688,7 @@ const EN: Record<PolicyId, PolicyDoc> = {
         heading: "1. Personal Information Collected",
         body: [
           "HanGyul collects the following minimum information necessary to provide our services.",
-          "Upon registration: Name (nickname), email address, password, service usage records.",
+          "At registration: Name (nickname), email address, password, phone number, and service usage records.",
           "During learning services: Learning records (progress rate, incorrect answers, quiz scores), voice data for pronunciation practice (collected temporarily and deleted immediately after use).",
           "Upon payment: Payment method information (card issuer, partial card number), payment history, transaction records.",
           "Automatically collected: Service usage logs, access logs, cookies, device information (OS, IP address), etc.",
@@ -700,7 +700,7 @@ const EN: Record<PolicyId, PolicyDoc> = {
           "Collected personal information is used solely for the following purposes.",
           "Service provision: Delivering learning content, managing progress, providing personalized learning recommendations.",
           "Member management: Identity verification, enforcement of Terms of Service violations, delivery of notices.",
-          "Payment and refund processing: Subscription billing, refunds, and payment error resolution.",
+          "Payment and refund processing: Subscription billing, refunds, handling payment errors, and determining the billing currency based on the country of the user's phone number.",
           "Service improvement: Analyzing usage patterns to improve features and develop new services.",
           "Customer support: Handling inquiries and complaints.",
           "AI Service Improvement: To provide and improve AI-based features such as pronunciation feedback and AI Q&A, users' voice and learning data may be used after anonymization. Users consent to this use upon signing up and may withdraw consent at any time by contacting support@talkhangyul.com.",
@@ -749,9 +749,10 @@ const EN: Record<PolicyId, PolicyDoc> = {
       {
         heading: "9. Privacy Officer",
         body: [
-          // The frame romanises 유재희 as "Yoo Jaehee"; the business-info card
-          // (TRM-001) spells the same person "Jaehee Lew", which wins here too
-          // so the English pages name the same person the same way.
+          // The frame now writes 유재희 surname-first, "Lew Jaehee"; the
+          // business-info card (TRM-001) writes the same person "Jaehee Lew",
+          // the name order this app uses, so the English pages name them the
+          // same way.
           "Privacy Officer: Jaehee Lew Contact: support@talkhangyul.com or in-app chat support via Channel Talk",
         ],
       },
@@ -777,7 +778,7 @@ const EN: Record<PolicyId, PolicyDoc> = {
       {
         heading: "3. 7-Day Free Trial",
         body: [
-          "A 7-day free trial of all Premium Plan features is available before your subscription begins. A credit card is required to start the free trial. On the day the trial ends, automatic billing for the selected plan will occur. No charge will be made if cancelled within the trial period.",
+          "A 7-day free trial of all Premium Plan features is available before your subscription begins. A payment method is required to start the free trial. On the day the trial ends, automatic billing for the selected plan will occur. No charge will be made if cancelled within the trial period.",
         ],
       },
       {
@@ -805,7 +806,7 @@ const EN: Record<PolicyId, PolicyDoc> = {
               "Refund requests due to a change of mind made more than 7 days after the monthly subscription billing date",
               "Refund requests made more than 30 days after the annual subscription billing date",
               "Cases where service access has been restricted due to violations of the Terms of Service, including account sharing or abuse",
-              "Automatic billing that occurred after the 7-day free trial ended due to failure to cancel within the trial period",
+              "Automatic billing that occurred after the 7-day free trial ended, where the service has since been used (not cancelled within the trial period)",
             ],
           },
         ],

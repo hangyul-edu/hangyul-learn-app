@@ -182,6 +182,28 @@ export function applyPhoneInput(country: string, raw: string): { country: string
   return { country, input: sanitizePhoneInput(raw) };
 }
 
+/**
+ * The country an account's phone number belongs to, which is fixed at sign-up
+ * (Terms of Service, Articles 5 and 7): the nationality the sign-up picker
+ * recorded, else — on an account from before the picker — its number's
+ * country. Null for an account with neither, whose first number sets it.
+ */
+export function registeredPhoneCountry(
+  nationality: string | null | undefined,
+  phone: string | null | undefined,
+): CountryCode | null {
+  if (isPhoneCountry(nationality)) return nationality;
+  const country = phone ? parsePhoneNumberFromString(phone)?.country : undefined;
+  return isPhoneCountry(country) ? country : null;
+}
+
+/** Whether `e164` has `country`'s calling code — "the same country" as the
+ *  picker and the server count it (a Canadian number on 🇺🇸 is +1 too). */
+export function hasCallingCodeOf(country: string, e164: string): boolean {
+  const parsed = parsePhoneNumberFromString(e164);
+  return !!parsed && `+${parsed.countryCallingCode}` === phoneCountry(country).dial;
+}
+
 /** A country's name in `language` (`Intl.DisplayNames`), or its ISO code
  *  where the runtime lacks region names. */
 export function countryName(code: string, language: string): string {

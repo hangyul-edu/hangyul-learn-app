@@ -8025,6 +8025,20 @@ textarea.input {
 .pchg__country:active {
   transform: scale(0.97);
 }
+/* The country once it is fixed (every change of an existing number): MOR-003
+   inputField 2065:25108 as the frame now draws it — Gray 1 (#F4F6F6), r10, no
+   border, no chevron, the 24x16 flag 15px in. Information only: no pointer, no
+   press feedback. */
+.pchg__country--fixed {
+  justify-content: flex-start;
+  padding-left: 15px;
+  border: none;
+  background: var(--gray-1, #f4f6f6);
+  cursor: default;
+}
+.pchg__country--fixed:active {
+  transform: none;
+}
 .pchg__phone {
   /* inputField 2065:25112 — Gray 1 fill, r12, 16/14 padding, Body 6 in black.
      Both frames state the 178 outright (KO 2065:25112, EN 2065:25235), so it is

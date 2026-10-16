@@ -87,9 +87,13 @@ describe("Terms of Service detail (TRM-002)", () => {
     expect(screen.getByText("한귤 운영팀 드림")).toBeInTheDocument();
     // 제2조 is a bullet list in the frame, not running prose.
     expect(screen.getByText(/"계정"이란 이용자가 서비스 이용을 위해/)).toBeInTheDocument();
+    // The country of the phone number is fixed at sign-up (제5조, 제7조), and
+    // the store-payment clauses are gone from the current frame.
     expect(
-      screen.getByText("App Store·Google Play를 통해 결제한 경우, 구독 해지와 환불은 해당 스토어의 정책과 절차에 따라 처리됩니다."),
+      screen.getByText("회원가입 시 등록한 휴대폰 번호의 국가는 변경할 수 없으며, 번호 변경은 동일 국가 내에서만 가능합니다."),
     ).toBeInTheDocument();
+    expect(screen.getByText(/등록한 휴대폰 번호의 국가는 가입 이후 변경할 수 없습니다\.$/)).toBeInTheDocument();
+    expect(screen.queryByText(/App Store|Google Play|다음 결제일부터 변경된 국가/)).not.toBeInTheDocument();
     expect(screen.getByText("이 약관은 2026년 10월 26일부터 시행합니다.")).toBeInTheDocument();
   });
 
@@ -102,7 +106,15 @@ describe("Terms of Service detail (TRM-002)", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Supplementary Provision" })).toBeInTheDocument();
     expect(screen.getByText("HanGyul Team")).toBeInTheDocument();
-    expect(screen.getByText(/based on the country and currency registered with the respective store\./)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "The country of the mobile phone number registered at sign-up cannot be changed. Phone number changes are only permitted within the same country.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/The country of the registered mobile phone number cannot be changed after sign-up\.$/),
+    ).toBeInTheDocument();
+    expect(container.textContent ?? "").not.toMatch(/App Store|Google Play|fees based on the new country/);
     expect(
       screen.getByText("These Terms of Service shall take effect as of [October 26, 2026]."),
     ).toBeInTheDocument();
@@ -169,6 +181,15 @@ describe("Cancellation & Refund Policy detail (TRM-004)", () => {
     expect(screen.getByText("월간 구독 결제일로부터 7일 초과 후 단순 변심에 의한 환불 요청").tagName).toBe("LI");
   });
 
+  it("follows the current frame: any payment method starts a trial, and an auto-charge is final once used", () => {
+    renderFlow("/policy/refund");
+    expect(screen.getByText(/무료 체험 시작 시 결제 수단 등록이 필요하며/)).toBeInTheDocument();
+    expect(screen.queryByText(/신용카드 등록이 필요/)).not.toBeInTheDocument();
+    expect(
+      screen.getByText("7일 무료 체험 종료 후 자동 결제되어 서비스를 이용한 건(체험 기간 내 미취소)").tagName,
+    ).toBe("LI");
+  });
+
   it("renders the English frame's copy with no Korean left behind", () => {
     const { container } = renderFlow("/policy/refund", "en");
     expect(screen.getByRole("heading", { name: "Cancellation & Refund Policy" })).toBeInTheDocument();
@@ -180,6 +201,8 @@ describe("Cancellation & Refund Policy detail (TRM-004)", () => {
     expect(screen.getByText(/paying \$95\.88 .*\$82\.89 is refunded\./)).toBeInTheDocument();
     // The frame runs "receipt.Refunds" together; the app keeps the space.
     expect(screen.getByText(/of receipt\. Refunds are returned/)).toBeInTheDocument();
+    expect(screen.getByText(/A payment method is required to start the free trial\./)).toBeInTheDocument();
+    expect(screen.getByText(/where the service has since been used \(not cancelled within the trial period\)/)).toBeInTheDocument();
     expect(container.textContent ?? "").not.toMatch(HANGUL);
   });
 });

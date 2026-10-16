@@ -24,6 +24,7 @@ export function ChatSheetView({
   onSend,
   onClose,
   dataSource,
+  limitNotice = null,
 }: {
   messages: ChatMessage[];
   loading: boolean;
@@ -37,6 +38,9 @@ export function ChatSheetView({
   onClose: () => void;
   /** Identifies the surface that opened the sheet (for analytics / e2e). */
   dataSource?: string;
+  /** The day's question limit while the limit-reached notice is up (see
+   *  lib/aiQuestionLimit), else null. */
+  limitNotice?: number | null;
 }) {
   const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -69,6 +73,15 @@ export function ChatSheetView({
             <CloseIcon size={28} color="#111" weight={2} />
           </button>
         </header>
+
+        {/* The free plan's questions are used up (744:48051 KO / 784:55468 EN):
+            over the top of the sheet, under the title. */}
+        {limitNotice != null && (
+          <div className="askai__limit" role="alert">
+            <p className="askai__limit-line">{t("chat.limitReached", { limit: limitNotice })}</p>
+            <p className="askai__limit-line">{t("chat.limitUpsell")}</p>
+          </div>
+        )}
 
         <div className="askai__messages" ref={scrollRef}>
           {messages.map((m) =>

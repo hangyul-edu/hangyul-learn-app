@@ -9,6 +9,8 @@ vi.mock("../api/endpoints", () => ({
 
 import { aiApi } from "../api/endpoints";
 import { ChatbotBottomSheet } from "./ChatbotBottomSheet";
+import { ApiError } from "../lib/http";
+import { AI_LIMIT_NOTICE_MS } from "../lib/aiQuestionLimit";
 
 const api = aiApi as unknown as Record<string, ReturnType<typeof vi.fn>>;
 const msg = (id: string, role: string, content: string) => ({ message_id: id, role, content, created_at: "" });
@@ -60,5 +62,37 @@ describe("ChatbotBottomSheet (shared page chatbot)", () => {
     expect(screen.getByRole("dialog")).toHaveAttribute("data-source", "lecture");
     await userEvent.click(screen.getByRole("button", { name: "물어보기 창 닫기" }));
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe("ChatbotBottomSheet — the daily question limit (744:48051 / 784:55468)", () => {
+  const dailyLimit = () => new ApiError(429, "rate_limited", "", { reason: "ai_daily_limit", limit: 5 });
+
+  it("blocks the 6th question with the notice at the top, keeps the draft, and hides it after a while", async () => {
+    api.sendMessage.mockRejectedValue(dailyLimit());
+    render(<I18nProvider language="en"><ChatbotBottomSheet open source="lecture" onClose={() => {}} /></I18nProvider>);
+    const input = screen.getByPlaceholderText("Type a message.");
+    await userEvent.type(input, "one more");
+    const send = screen.getByRole("button", { name: "Send message" });
+    await waitFor(() => expect(send).toBeEnabled());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    await userEvent.click(send);
+    const notice = await screen.findByRole("alert");
+    expect(notice).toHaveTextContent("You can ask up to 5 questions today");
+    expect(notice).toHaveTextContent("Upgrade to Premium for unlimited questions✨");
+    expect(notice.parentElement).toHaveClass("askai__sheet");
+    expect(input).toHaveValue("one more");
+    await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument(), { timeout: AI_LIMIT_NOTICE_MS + 1000 });
+  });
+
+  it("any other failure is still an error, not the limit notice", async () => {
+    api.sendMessage.mockRejectedValue(new ApiError(429, "rate_limited", "", { reason: "something_else" }));
+    render(<I18nProvider language="ko"><ChatbotBottomSheet open source="lecture" onClose={() => {}} /></I18nProvider>);
+    await userEvent.type(screen.getByPlaceholderText("채팅을 입력하세요."), "질문");
+    const send = screen.getByRole("button", { name: "메시지 보내기" });
+    await waitFor(() => expect(send).toBeEnabled());
+    await userEvent.click(send);
+    await waitFor(() => expect(api.sendMessage).toHaveBeenCalled());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

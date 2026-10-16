@@ -379,7 +379,13 @@ export const studyApi = {
     http.post<StudyCustomization>(`/study-sessions/${sessionId}/customizations`, body),
   complete: (sessionId: string) => http.post<StudySession>(`/study-sessions/${sessionId}/complete`),
   abandon: (sessionId: string) => http.post<StudySession>(`/study-sessions/${sessionId}/abandon`),
-  askTutor: (sessionId: string, activityId: string, body: { question: string; client_request_id: string; language: "ko" | "en" }) =>
+  /** One of the free plan's daily chatbot questions unless `automatic` (the
+   *  app's own hint request after a wrong answer). */
+  askTutor: (
+    sessionId: string,
+    activityId: string,
+    body: { question: string; client_request_id: string; language: "ko" | "en"; automatic?: boolean },
+  ) =>
     http.post<TutorAnswer>(`/study-sessions/${sessionId}/activities/${activityId}/tutor`, body),
 };
 

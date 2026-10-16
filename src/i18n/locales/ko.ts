@@ -1388,6 +1388,9 @@ export const ko = {
     send: "메시지 보내기",
     loading: "답변을 불러오는 중",
     disclaimer: "AI 답변은 완벽하지 않거나 실수할 수 있어요. 참고용으로 활용해주세요.",
+    /** 744:48051 — the free plan's questions are used up. */
+    limitReached: "오늘 AI 질문은 {limit}개까지 가능해요",
+    limitUpsell: "프리미엄에서는 제한 없이 질문할 수 있어요✨",
   },
 
   /** Conversation / TOPIK / practice / exam screens. */

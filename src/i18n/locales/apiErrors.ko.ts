@@ -239,7 +239,7 @@ export const apiErrorsKo = {
     "topik_no_writing": "TOPIK I(1~2급)에는 쓰기 영역이 없어요. 듣기나 읽기를 선택해 주세요.",
 
     // AI
-    "ai_daily_limit": "오늘 무료로 보낼 수 있는 AI 메시지 {limit}개를 모두 사용했어요. 구독하면 제한 없이 대화할 수 있어요.",
+    "ai_daily_limit": "오늘 AI 질문은 {limit}개까지 가능해요. 프리미엄에서는 제한 없이 질문할 수 있어요.",
     "content_blocked": "보낼 수 없는 내용이 포함되어 있어요. 내용을 바꿔 다시 시도해 주세요.",
     "off_task_prompt": "문장 추천에 쓸 수 없는 요청이에요. 연습하고 싶은 문장을 설명해 주세요. (예: 대학교에서 쓸 수 있는 표현)",
     "prompt_too_long": "요청은 {max}자까지 입력할 수 있어요.",

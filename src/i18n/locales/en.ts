@@ -1382,6 +1382,8 @@ export const en: Catalog = {
     send: "Send message",
     loading: "Loading the answer",
     disclaimer: "AI answers aren't perfect and can make mistakes. Please use them as a reference.",
+    limitReached: "You can ask up to {limit} questions today", // 784:55468
+    limitUpsell: "Upgrade to Premium for unlimited questions✨",
   },
 
   /** Conversation / TOPIK / practice / exam screens. */

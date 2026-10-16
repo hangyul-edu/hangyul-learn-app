@@ -3,6 +3,7 @@ import { useTranslation } from "../i18n";
 import { aiApi } from "../api/endpoints";
 import { ChatSheetView } from "./ChatSheetView";
 import { errorMessage } from "../lib/http";
+import { aiDailyLimit, useAiLimitNotice } from "../lib/aiQuestionLimit";
 import type { ChatMessage } from "../lib/types";
 
 /**
@@ -40,6 +41,7 @@ export function ChatbotBottomSheet({
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const limitNotice = useAiLimitNotice();
   const started = useRef(false);
   const alive = useRef(true);
 
@@ -85,7 +87,11 @@ export function ChatbotBottomSheet({
       setMessages((m) => [...m, res.user_message, res.assistant_message]);
     } catch (e) {
       // Keep the draft so the user can retry without re-typing (no duplicate).
-      if (alive.current) setError(errorMessage(e));
+      if (!alive.current) return;
+      // The day's free questions are used up: the notice says so, not an error.
+      const limit = aiDailyLimit(e);
+      if (limit != null) limitNotice.show(limit);
+      else setError(errorMessage(e));
     } finally {
       if (alive.current) setSending(false);
     }
@@ -106,6 +112,7 @@ export function ChatbotBottomSheet({
       onSend={() => void send()}
       onClose={onClose}
       dataSource={source}
+      limitNotice={limitNotice.limit}
     />
   );
 }

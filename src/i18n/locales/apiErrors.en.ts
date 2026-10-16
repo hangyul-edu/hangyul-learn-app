@@ -233,7 +233,7 @@ export const apiErrorsEn: ApiErrorCatalog = {
     "topik_no_writing": "TOPIK I (levels 1–2) has no writing section. Choose listening or reading.",
 
     // AI
-    "ai_daily_limit": "You've used today's {limit} free AI messages. Subscribe to chat without limits.",
+    "ai_daily_limit": "You can ask up to {limit} questions today. Upgrade to Premium for unlimited questions.",
     "content_blocked": "That contains something we can't send. Please change it and try again.",
     "off_task_prompt": "That can't be used for sentence recommendations. Describe the sentences you'd like to practise (e.g. expressions I can use at university).",
     "prompt_too_long": "Requests can be up to {max} characters.",

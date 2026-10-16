@@ -6675,6 +6675,36 @@ textarea.input {
   display: grid;
   place-items: center;
 }
+/* The limit-reached notice (cp_G_03_toast — 744:48051 KO / 784:55468 EN):
+   centred over the sheet 51px under its top edge (1942:28725), black at 85%,
+   r9, 8/9 vertical padding, two centred Body 8 lines (SemiBold 14 / 20). The
+   KO frame is 300 wide; the EN copy is longer and hugs at 320. */
+.askai__limit {
+  position: absolute;
+  top: 51px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  box-sizing: border-box;
+  width: max-content;
+  min-width: 300px;
+  max-width: calc(100% - 32px);
+  padding: 8px 10px 9px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.85);
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+  color: #fff;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  pointer-events: none;
+  animation: fade 0.2s;
+}
+.askai__limit-line {
+  margin: 0;
+}
 /* 한귤AI message group — normal-flow stack so heights always add up and
    messages never overlap: an avatar + name header row, then the cream bubble
    below (left edge aligned under the name). */

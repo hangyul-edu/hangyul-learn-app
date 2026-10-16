@@ -3,6 +3,7 @@ import { useTranslation } from "../i18n";
 import { aiApi, studyApi } from "../api/endpoints";
 import { ChatSheetView } from "./ChatSheetView";
 import { errorMessage } from "../lib/http";
+import { aiDailyLimit, useAiLimitNotice } from "../lib/aiQuestionLimit";
 import { isApiCode } from "../lib/studySession";
 import { randomUuid } from "../lib/uuid";
 import type { ChatMessage, TutorAnswer } from "../lib/types";
@@ -54,6 +55,7 @@ function ChatbotAskSheet({ open, context, onClose }: { open: boolean; context: A
   const [sendError, setSendError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const limitNotice = useAiLimitNotice();
   const started = useRef(false);
   const alive = useRef(true);
 
@@ -74,13 +76,23 @@ function ChatbotAskSheet({ open, context, onClose }: { open: boolean; context: A
   async function startThread() {
     if (context.autoExplain) setLoading(true);
     setInitError(null);
+    const ctx: Record<string, unknown> = {
+      kind: context.contextKind,
+      [ID_FIELD[context.contextKind as keyof typeof ID_FIELD]]: context.contextId,
+      reason: context.autoExplain ? "explain_mistake" : "explain_item",
+    };
     try {
-      const ctx: Record<string, unknown> = {
-        kind: context.contextKind,
-        [ID_FIELD[context.contextKind as keyof typeof ID_FIELD]]: context.contextId,
-        reason: context.autoExplain ? "explain_mistake" : "explain_item",
-      };
-      const res = await aiApi.startConversation({ context: ctx, auto_assistant_reply: context.autoExplain });
+      let res;
+      try {
+        res = await aiApi.startConversation({ context: ctx, auto_assistant_reply: context.autoExplain });
+      } catch (e) {
+        // The day's free questions are used up, so the automatic explanation
+        // is refused: say so, and open the chat without it.
+        const limit = aiDailyLimit(e);
+        if (limit == null || !alive.current) throw e;
+        limitNotice.show(limit);
+        res = await aiApi.startConversation({ context: ctx, auto_assistant_reply: false });
+      }
       if (!alive.current) return;
       setConvId(res.conversation.conversation_id);
       if (res.first_assistant_message) setMessages([res.first_assistant_message]);
@@ -113,7 +125,10 @@ function ChatbotAskSheet({ open, context, onClose }: { open: boolean; context: A
       setMessages((m) => [...m, res.user_message, res.assistant_message]);
     } catch (e) {
       // Keep the draft so the learner can send it again without re-typing.
-      if (alive.current) setSendError(errorMessage(e));
+      if (!alive.current) return;
+      const limit = aiDailyLimit(e);
+      if (limit != null) limitNotice.show(limit);
+      else setSendError(errorMessage(e));
     } finally {
       if (alive.current) setSending(false);
     }
@@ -136,6 +151,7 @@ function ChatbotAskSheet({ open, context, onClose }: { open: boolean; context: A
       onSend={() => void send()}
       onClose={onClose}
       dataSource="session"
+      limitNotice={limitNotice.limit}
     />
   );
 }
@@ -160,6 +176,7 @@ function TutorSheet({ open, context, onClose }: { open: boolean; context: AskCon
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [turnsLeft, setTurnsLeft] = useState<number | null>(null);
+  const limitNotice = useAiLimitNotice();
   const started = useRef(false);
   const alive = useRef(true);
 
@@ -170,12 +187,15 @@ function TutorSheet({ open, context, onClose }: { open: boolean; context: AskCon
     };
   }, []);
 
-  async function ask(question: string): Promise<boolean> {
+  /** `automatic`: the app's own hint request, not one of the learner's
+   *  daily free questions (the server still refuses it once they're spent). */
+  async function ask(question: string, automatic = false): Promise<boolean> {
     try {
       const res = await studyApi.askTutor(context.sessionId!, context.contextId, {
         question,
         client_request_id: randomUuid(),
         language: language === "ko" ? "ko" : "en",
+        ...(automatic ? { automatic: true } : {}),
       });
       if (!alive.current) return false;
       setMessages((m) => [...m, line("user", question), line("assistant", tutorReply(res))]);
@@ -184,6 +204,11 @@ function TutorSheet({ open, context, onClose }: { open: boolean; context: AskCon
       return true;
     } catch (e) {
       if (!alive.current) return false;
+      const limit = aiDailyLimit(e);
+      if (limit != null) {
+        limitNotice.show(limit);
+        return false;
+      }
       setError(
         isApiCode(e, "tutor.turn_limit")
           ? t("session.tutorLimit")
@@ -200,7 +225,7 @@ function TutorSheet({ open, context, onClose }: { open: boolean; context: AskCon
   // an explanation; otherwise the learner asks first.
   async function autoAsk() {
     setLoading(true);
-    await ask(t("session.tutorAutoQuestion"));
+    await ask(t("session.tutorAutoQuestion"), true);
     if (alive.current) setLoading(false);
   }
 
@@ -236,6 +261,7 @@ function TutorSheet({ open, context, onClose }: { open: boolean; context: AskCon
       onSend={() => void send()}
       onClose={onClose}
       dataSource="session"
+      limitNotice={limitNotice.limit}
     />
   );
 }

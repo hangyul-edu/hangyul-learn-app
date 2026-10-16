@@ -87,6 +87,10 @@ describe("Terms of Service detail (TRM-002)", () => {
     expect(screen.getByText("한귤 운영팀 드림")).toBeInTheDocument();
     // 제2조 is a bullet list in the frame, not running prose.
     expect(screen.getByText(/"계정"이란 이용자가 서비스 이용을 위해/)).toBeInTheDocument();
+    expect(
+      screen.getByText("App Store·Google Play를 통해 결제한 경우, 구독 해지와 환불은 해당 스토어의 정책과 절차에 따라 처리됩니다."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("이 약관은 2026년 10월 26일부터 시행합니다.")).toBeInTheDocument();
   });
 
   it("renders the English frame's copy with no Korean left behind", () => {
@@ -98,6 +102,10 @@ describe("Terms of Service detail (TRM-002)", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Supplementary Provision" })).toBeInTheDocument();
     expect(screen.getByText("HanGyul Team")).toBeInTheDocument();
+    expect(screen.getByText(/based on the country and currency registered with the respective store\./)).toBeInTheDocument();
+    expect(
+      screen.getByText("These Terms of Service shall take effect as of [October 26, 2026]."),
+    ).toBeInTheDocument();
     expect(container.textContent ?? "").not.toMatch(HANGUL);
   });
 });
@@ -149,16 +157,16 @@ describe("Cancellation & Refund Policy detail (TRM-004)", () => {
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
 
-  it("states the annual deduction against the undiscounted regular price", () => {
-    // §5 deducts at the *regular* monthly price for a short usage period, and
-    // only falls back to the discounted annual rate from two months on — the
-    // two figures differing is the rule, not a typo.
+  it("deducts one regular month in the currency paid from an annual refund", () => {
     renderFlow("/policy/refund");
-    expect(screen.getByText("이용 기간이 1개월 이내인 경우: 월 정상가($12.99) 공제")).toBeInTheDocument();
+    expect(screen.getByText("공제 금액: 원화 결제 시 22,000원, 달러 결제 시 $12.99")).toBeInTheDocument();
+    expect(screen.getByText(/144,000원\) 결제 후 20일째.*122,000원이 환불됩니다/)).toBeInTheDocument();
+    // The frame starts this example with a stray space; it is not carried over.
     expect(
-      screen.getByText("이용 기간이 2개월 이상인 경우: 이용한 개월 수 × 연간 약정가($7.99) 공제"),
+      screen.getByText("예시: 연간 구독($95.88) 결제 후 20일째 환불 요청 시, $12.99를 공제한 $82.89가 환불됩니다."),
     ).toBeInTheDocument();
-    expect(screen.getByText(/50일째 환불 요청 시.*\$7\.99 × 2 = \$15\.98/)).toBeInTheDocument();
+    // §6 lists the non-refundable cases as bullets, not one run-on paragraph.
+    expect(screen.getByText("월간 구독 결제일로부터 7일 초과 후 단순 변심에 의한 환불 요청").tagName).toBe("LI");
   });
 
   it("renders the English frame's copy with no Korean left behind", () => {
@@ -167,9 +175,11 @@ describe("Cancellation & Refund Policy detail (TRM-004)", () => {
     expect(screen.getByRole("heading", { name: "1. General Principles" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "9. Policy Updates" })).toBeInTheDocument();
     expect(
-      screen.getByText("If the usage period is within 1 month: the monthly standard price ($12.99) is deducted."),
+      screen.getByText("Deduction amount: ₩22,000 for KRW payments, $12.99 for USD payments"),
     ).toBeInTheDocument();
-    expect(screen.getByText(/day 50 .*\$7\.99 × 2 = \$15\.98/)).toBeInTheDocument();
+    expect(screen.getByText(/paying \$95\.88 .*\$82\.89 is refunded\./)).toBeInTheDocument();
+    // The frame runs "receipt.Refunds" together; the app keeps the space.
+    expect(screen.getByText(/of receipt\. Refunds are returned/)).toBeInTheDocument();
     expect(container.textContent ?? "").not.toMatch(HANGUL);
   });
 });

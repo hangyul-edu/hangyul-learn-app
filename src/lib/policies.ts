@@ -174,9 +174,9 @@ const KO: Record<PolicyId, PolicyDoc> = {
           {
             bullets: [
               "프리미엄 플랜의 이용 요금은 서비스 내 안내된 금액에 따르며, 회사는 사전 공지 후 요금을 변경할 수 있습니다.",
-              "결제는 이용자가 등록한 신용카드·체크카드 또는 토스페이 등의 간편결제수단을 통해 이루어집니다.",
+              "결제는 이용자가 등록한 신용카드·체크카드, 토스페이 등의 간편결제수단, 또는 App Store·Google Play의 인앱결제를 통해 이루어집니다.",
               "연간 구독은 결제일로부터 12개월치 요금이 일괄 청구되며, 월간 구독은 매월 결제일에 자동 청구됩니다.",
-              "모든 요금은 USD 기준이며, 결제 시 환율에 따라 원화로 청구됩니다.",
+              "요금은 이용자가 등록한 휴대폰 번호의 국가에 따라 원화(KRW) 또는 미국 달러(USD)로 책정되며, 해당 통화로 청구됩니다. 등록 휴대폰 번호의 국가가 변경되는 경우, 다음 결제일부터 변경된 국가 기준의 요금이 적용됩니다.",
               "미성년자가 법정대리인의 동의 없이 결제한 경우, 법정대리인은 해당 결제를 취소할 수 있습니다.",
             ],
           },
@@ -190,9 +190,10 @@ const KO: Record<PolicyId, PolicyDoc> = {
               "구독 해지는 언제든지 신청할 수 있으며, 해지 후 현재 구독 기간 종료일까지 서비스를 이용할 수 있습니다.",
               "환불은 원결제 수단으로만 처리되며, 세부 환불 기준은 서비스 내 환불 정책에 따릅니다.",
               "월간 구독은 결제일로부터 7일 이내 미사용 시 전액 환불되며, 7일 초과 시 환불이 불가합니다.",
-              "연간 구독은 결제일로부터 7일 이내 미사용 시 전액 환불, 30일 이내에는 미사용 개월 수에 월정액을 곱한 금액이 환불되며, 30일 초과 시 환불이 불가합니다.",
+              "연간 구독은 결제일로부터 7일 이내 미사용 시 전액 환불되며, 그 외 결제일로부터 30일 이내에는 결제 금액에서 월간 구독 정상가 1개월분을 공제한 잔액이 환불됩니다. 결제일로부터 30일 초과 시 환불이 불가합니다.",
               "결제 오류 또는 이중결제 발생 시 앱 내 채널톡 채팅 상담으로 접수하면 확인 후 전액 환불 처리됩니다.",
               "회사의 귀책 사유로 서비스가 장기 중단된 경우, 중단 기간에 해당하는 요금을 일할 계산하여 환불합니다.",
+              "App Store·Google Play를 통해 결제한 경우, 구독 해지와 환불은 해당 스토어의 정책과 절차에 따라 처리됩니다.",
             ],
           },
         ],
@@ -274,7 +275,7 @@ const KO: Record<PolicyId, PolicyDoc> = {
       },
       {
         heading: "부칙",
-        body: ["이 약관은 2026년 6월 29일부터 시행합니다."],
+        body: ["이 약관은 2026년 10월 26일부터 시행합니다."],
       },
     ],
     closing: "한귤 운영팀 드림",
@@ -392,23 +393,25 @@ const KO: Record<PolicyId, PolicyDoc> = {
       {
         heading: "5. 연간 구독 환불",
         body: [
-          "결제일로부터 7일 이내 미사용 시 전액 환불됩니다.",
-          "7일이 지난 시점부터는 이용한 기간만큼 공제 후 잔액이 환불됩니다.",
-          {
-            // 1개월 이내는 할인 전 월 정상가로, 2개월 이상은 연간 약정가로 공제.
-            bullets: [
-              "이용 기간이 1개월 이내인 경우: 월 정상가($12.99) 공제",
-              "이용 기간이 2개월 이상인 경우: 이용한 개월 수 × 연간 약정가($7.99) 공제",
-            ],
-          },
-          "예시: 연간 구독 결제 후 20일째 환불 요청 시, 1개월 이용으로 간주하여 $12.99 공제 후 잔액이 환불됩니다.",
-          "예시: 연간 구독 결제 후 50일째 환불 요청 시, 2개월 이용으로 간주하여 $7.99 × 2 = $15.98 공제 후 잔액이 환불됩니다.",
+          "결제일로부터 7일 이내 미사용 시 전액 환불됩니다. 그 외 결제일로부터 30일 이내에 환불을 요청하는 경우, 월간 구독 정상가 1개월분을 공제한 후 잔액이 환불됩니다. 공제 금액은 결제한 통화를 기준으로 적용됩니다.",
+          { bullets: ["공제 금액: 원화 결제 시 22,000원, 달러 결제 시 $12.99"] },
+          // The frame indents the second example with a stray leading space.
+          "예시: 연간 구독(144,000원) 결제 후 20일째 환불 요청 시, 22,000원을 공제한 122,000원이 환불됩니다.",
+          "예시: 연간 구독($95.88) 결제 후 20일째 환불 요청 시, $12.99를 공제한 $82.89가 환불됩니다.",
+          "결제일로부터 30일이 지나면 환불이 불가하며, 구독 기간 종료일까지 서비스를 이용할 수 있습니다.",
         ],
       },
       {
         heading: "6. 환불이 되지 않는 경우",
         body: [
-          "결제일로부터 7일 초과 후 단순 변심에 의한 환불 요청. 연간 구독 결제일로부터 30일 초과 후 환불 요청. 계정 공유, 어뷰징 등 이용약관 위반으로 서비스 이용이 제한된 경우. 7일 무료 체험 종료 후 자동 결제된 건(체험 기간 내 미취소).",
+          {
+            bullets: [
+              "월간 구독 결제일로부터 7일 초과 후 단순 변심에 의한 환불 요청",
+              "연간 구독 결제일로부터 30일 초과 후 환불 요청",
+              "계정 공유, 어뷰징 등 이용약관 위반으로 서비스 이용이 제한된 경우",
+              "7일 무료 체험 종료 후 자동 결제된 건(체험 기간 내 미취소)",
+            ],
+          },
         ],
       },
       {
@@ -570,9 +573,9 @@ const EN: Record<PolicyId, PolicyDoc> = {
           {
             bullets: [
               "Premium Plan fees are as stated within the Service, and the Company may adjust pricing with prior notice.",
-              "Payments are processed via credit card, debit card, or simple payment methods (such as Toss Pay) registered by the user.",
+              "Payments are processed via credit card, debit card, simple payment methods (such as Toss Pay) registered by the user, or in-app purchase through the App Store or Google Play.",
               "Annual subscriptions are billed in full for 12 months from the billing date. Monthly subscriptions are billed automatically on the same date each month.",
-              "All fees are denominated in USD and billed in Korean Won based on the applicable exchange rate at the time of payment.",
+              "Fees are set in Korean Won (KRW) or US Dollars (USD) based on the country of the user's registered phone number and are charged in that currency. If the country of the registered phone number changes, fees based on the new country will apply from the next billing date. However, for payments made through the App Store or Google Play, fees are based on the country and currency registered with the respective store.",
               "If a minor completes a payment without consent from a legal guardian, the legal guardian may cancel the transaction.",
             ],
           },
@@ -586,9 +589,10 @@ const EN: Record<PolicyId, PolicyDoc> = {
               "Subscriptions may be cancelled at any time. Following cancellation, the Service remains accessible until the end of the current subscription period.",
               "Refunds are processed to the original payment method only. Detailed refund criteria are governed by the Refund Policy within the Service.",
               "Monthly subscriptions are fully refunded if requested within 7 days of the billing date with no usage. No refund is available after 7 days.",
-              "Annual subscriptions are fully refunded if requested within 7 days of the billing date with no usage. Within 30 days, a partial refund is issued based on unused months multiplied by the monthly rate. No refund is available after 30 days.",
+              "Annual subscriptions are fully refunded if requested within 7 days of the billing date with no usage. For any other refund request made within 30 days of the billing date, one month at the monthly standard price is deducted from the amount paid and the remaining balance is refunded. No refund is available more than 30 days after the billing date.",
               "Payment errors or duplicate charges may be submitted via in-app Channel Talk chat support and will be fully refunded upon verification.",
               "In the event of a prolonged service outage due to the Company's fault, fees corresponding to the outage period will be refunded on a pro-rata basis.",
+              "For payments made through the App Store or Google Play, subscription cancellation and refunds are handled according to the respective store's policies and procedures.",
             ],
           },
         ],
@@ -670,7 +674,7 @@ const EN: Record<PolicyId, PolicyDoc> = {
       },
       {
         heading: "Supplementary Provision",
-        body: ["These Terms of Service shall take effect as of June 29, 2026."],
+        body: ["These Terms of Service shall take effect as of [October 26, 2026]."],
       },
     ],
     closing: "HanGyul Team",
@@ -785,23 +789,25 @@ const EN: Record<PolicyId, PolicyDoc> = {
       {
         heading: "5. Annual Subscription Refunds",
         body: [
-          "If unused, a full refund is provided within 7 days of the payment date. After 7 days, the amount used is deducted and the remaining balance is refunded.",
-          {
-            // Under a month deducts the undiscounted monthly price; two months
-            // or more deducts at the annual plan rate.
-            bullets: [
-              "If the usage period is within 1 month: the monthly standard price ($12.99) is deducted.",
-              "If the usage period is 2 months or more: the number of months used × the annual plan price ($7.99) is deducted.",
-            ],
-          },
-          "Example: If a refund is requested on day 20 after paying for an annual subscription, 1 month of usage is assumed, and $12.99 is deducted before refunding the remaining balance.",
-          "Example: If a refund is requested on day 50 after paying for an annual subscription, 2 months of usage is assumed, and $7.99 × 2 = $15.98 is deducted before refunding the remaining balance.",
+          "A full refund is available if requested within 7 days of the billing date with no usage. For any other refund request made within 30 days of the billing date, one month at the monthly standard price is deducted and the remaining balance is refunded. The deduction is applied in the currency of the original payment.",
+          { bullets: ["Deduction amount: ₩22,000 for KRW payments, $12.99 for USD payments"] },
+          // The frame indents the second example with a stray leading space.
+          "Example: If a refund is requested on day 20 after paying ₩144,000 for an annual subscription, ₩22,000 is deducted and ₩122,000 is refunded.",
+          "Example: If a refund is requested on day 20 after paying $95.88 for an annual subscription, $12.99 is deducted and $82.89 is refunded.",
+          "No refund is available more than 30 days after the billing date. The service remains accessible until the end of the subscription period.",
         ],
       },
       {
         heading: "6. Non-Refundable Cases",
         body: [
-          "Refund requests made more than 7 days after the billing date due to a change of mind. Refund requests made more than 30 days after the annual subscription billing date. Cases where service access has been restricted due to violations of the Terms of Service, including account sharing or abuse. Automatic billing that occurred after the 7-day free trial ended due to failure to cancel within the trial period.",
+          {
+            bullets: [
+              "Refund requests due to a change of mind made more than 7 days after the monthly subscription billing date",
+              "Refund requests made more than 30 days after the annual subscription billing date",
+              "Cases where service access has been restricted due to violations of the Terms of Service, including account sharing or abuse",
+              "Automatic billing that occurred after the 7-day free trial ended due to failure to cancel within the trial period",
+            ],
+          },
         ],
       },
       {

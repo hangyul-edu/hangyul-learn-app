@@ -6928,6 +6928,13 @@ textarea.input {
 .askai__input::placeholder {
   color: #adb4ba;
 }
+/* No focus ring: the browser's default outline drew a blue frame round the
+   whole composer. The caret and the typed text show where input goes. */
+.askai__input:focus,
+.askai__input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
 .askai__send {
   position: absolute;
   right: 12px;

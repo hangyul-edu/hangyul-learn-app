@@ -4,6 +4,7 @@ import { HangyulAiMessage } from "./HangyulAiMessage";
 import type { ChatMessage } from "../lib/types";
 import { Spinner } from "./ui/Spinner";
 import { CloseIcon } from "./brand/Glyphs";
+import icChatSend from "../assets/brand/ic-chat-send.svg";
 
 /**
  * Presentational shell for the 물어보기 chatbot bottom sheet — the single shared
@@ -148,9 +149,9 @@ export function ChatSheetView({
             {sending ? (
               <Spinner size={18} stroke={2} />
             ) : (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M12 20V5M6 11l6-6 6 6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              /* Group 3873 (744:48278) — the exported 13x12 arrow (14.5x13.5
+                 with its stroke), centred in the 30x30 button. */
+              <img className="askai__send-ic" src={icChatSend} alt="" aria-hidden="true" width={14.5} height={13.5} />
             )}
           </button>
         </div>

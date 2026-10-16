@@ -6684,7 +6684,9 @@ textarea.input {
   top: 51px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 2;
+  /* Over the first 한귤AI avatar it overlaps (1942:28725 paints it on top);
+     the avatar is z-index 3 in the same stacking context. */
+  z-index: 5;
   box-sizing: border-box;
   width: max-content;
   min-width: 300px;
@@ -6939,6 +6941,11 @@ textarea.input {
   cursor: pointer;
   display: grid;
   place-items: center;
+}
+.askai__send-ic {
+  display: block;
+  width: 14.5px;
+  height: 13.5px;
 }
 .askai__send:disabled {
   opacity: 0.45;

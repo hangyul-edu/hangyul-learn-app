@@ -162,9 +162,10 @@ export function ChangePhone({ mode = "change" }: { mode?: "change" | "setup" | "
     try {
       const res = await authApi.changePhone(e164, token!, country);
       if (me) setMe({ ...me, phone: res.phone ?? e164, nationality: country });
-      // The number's calling code decides the billing currency and which
-      // card the member may register: drop what was read for the old one.
-      for (const key of [["payment-methods"], ["sub-offers"], INTL_OPTIONS_QK]) {
+      // The number's calling code decides the billing currency, which card
+      // the member may register and — from the next billing date — what a
+      // running subscription renews at: drop what was read for the old one.
+      for (const key of [["payment-methods"], ["sub-offers"], ["sub-me"], INTL_OPTIONS_QK]) {
         void qc.invalidateQueries({ queryKey: key });
       }
       if (setup) {

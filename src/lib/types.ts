@@ -817,8 +817,8 @@ export interface MySubscription {
    *  signing up again, even though this account's trial_started is false. */
   trial_available?: boolean;
   in_trial?: boolean;
-  /** Currency the subscription is billed in ("KRW" / "USD"), fixed when it
-   *  started; null without a plan. */
+  /** Currency the next renewal is billed in ("KRW" / "USD"). It follows the
+   *  phone number's country from the next billing date; null without a plan. */
   plan_currency?: string | null;
   /** What each renewal charges, in minor units of `plan_currency`. */
   renewal_amount_cents?: number | null;

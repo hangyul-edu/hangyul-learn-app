@@ -116,8 +116,9 @@ describe("ChangePhone", () => {
   });
 
   it("drops the billing data read for the old number once the change is saved", async () => {
-    // The calling code decides the currency (+82 → KRW, else USD) and which
-    // card may be registered, so nothing cached for the old number may stay.
+    // The calling code decides the currency (+82 → KRW, else USD), which card
+    // may be registered and what a running subscription renews at next, so
+    // nothing cached for the old number may stay.
     api.confirmPhone.mockResolvedValue({ verification_token: "tok" });
     api.changePhone.mockResolvedValue({ phone: "+14155550123" });
     const qc = new QueryClient();
@@ -135,7 +136,9 @@ describe("ChangePhone", () => {
     await waitFor(() => expect(api.changePhone).toHaveBeenCalled());
     const keys = invalidate.mock.calls.map(([f]) => JSON.stringify(f?.queryKey));
     expect(keys).toEqual(
-      expect.arrayContaining(['["payment-methods"]', '["sub-offers"]', '["intl-card-options"]']),
+      expect.arrayContaining([
+        '["payment-methods"]', '["sub-offers"]', '["sub-me"]', '["intl-card-options"]',
+      ]),
     );
   });
 });

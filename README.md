@@ -224,24 +224,40 @@ VITE_API_BASE_URL=https://your-backend npm run build   # type-checks, then bundl
 npm run preview                                        # serve the built dist locally
 ```
 
-The build output is static files in `dist/` — deploy them to any static
-host (Netlify, Vercel, S3+CloudFront, Nginx…). Configure the host to **serve
-`index.html` for unknown routes** (SPA fallback) so client-side routing works on
-refresh/deep-links. The admin portal is built and deployed from its own
-repository (hangyul-admin); the API can also serve both builds itself (see
-`docs/architecture.md` in hangyul-api).
+The build output is static files in `dist/`. The app is deployed on its own
+**Vercel** project, calling the API (hangyul-api, on AWS) cross-origin; the
+admin portal is a separate Vercel project (hangyul-admin).
 
-**Vercel** is covered by the checked-in `vercel.json` (Root Directory: the
-repository root): it maps every route to `index.html`. Vercel checks the
-filesystem before applying rewrites, so hashed `/assets/*` files still serve
-normally. Without it a deep link like `/faq` 404s on refresh.
+### Vercel project
 
-Remember that `VITE_*` values are **inlined at build time**: changing one in the
-host's dashboard requires a fresh build (redeploy with the build cache cleared),
-not just a restart. Set `VITE_API_BASE_URL` explicitly for any host that is not
-also serving the API — the `/api` default only resolves through the dev proxy or
-a single-box deployment. The API must in turn list the deployed origin in
-`CORS_ALLOW_ORIGINS` (see hangyul-api's `.env.example`).
+| Setting | Value |
+|---|---|
+| Git repository | `hangyul-edu/hangyul-learn-app` |
+| Root Directory | the repository root |
+| Framework preset | Vite — `vercel.json` sets build `npm run build`, output `dist`, and the SPA rewrite (every route → `index.html`; real files such as `/assets/*` are served first) |
+| Node.js | 20.19+ or 22.12+ (`engines` in `package.json`) |
+| `VITE_API_BASE_URL` | **Required.** The API's https URL, no `/api` suffix, e.g. `https://api.talkhangyul.com`. A Vercel build without an https value fails on purpose: the `/api` default would call this app's own domain |
+| `VITE_CHANNEL_TALK_PLUGIN_KEY` | Optional — the ChannelTalk plugin key (empty → no messenger) |
+| Domain | the member app's domain, e.g. `talkhangyul.com` |
+
+`VITE_*` values are **inlined at build time**: changing one requires a fresh
+build (redeploy with the build cache cleared), not just a restart.
+
+### What the API needs to know about this app
+
+Set on the API (hangyul-api's `.env.example` / `docs/deployment.md`):
+
+| API setting | Value | Why |
+|---|---|---|
+| `CORS_ALLOW_ORIGINS` | this app's origin(s), e.g. `https://talkhangyul.com,https://www.talkhangyul.com` | The browser calls the API cross-origin (Bearer token, no cookies) |
+| `SOCIAL_WEB_APP_URL` | this app's origin | Social login lands on `/auth/complete` here; card registration windows return to `/account/payment` here |
+
+Social-provider consoles register the API's callback
+(`https://<api-domain>/auth/social/<provider>/callback`), not this app.
+
+Any other static host works the same way: build with `VITE_API_BASE_URL`, and
+**serve `index.html` for unknown routes** (SPA fallback) so deep links work on
+refresh.
 
 ---
 

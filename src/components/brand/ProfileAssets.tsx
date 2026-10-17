@@ -35,6 +35,15 @@ const CHAR_META = {
   AVATAR_03: { bg: "#E7EAF2", w: 57.5421, h: 40.2419, rotate: 0, dx: -0.19, dy: 0 },
 } as const;
 
+/* Where Figma LEG-010 (KO 1:4259 / EN 798:77164) puts each character's box:
+   its centre's offset from the circle's centre, as a fraction of the circle —
+   measured on the 50px rows and the 60 / 80px podium, which agree. */
+const LEG010_OFFSET: Record<keyof typeof CHAR_META, readonly [number, number]> = {
+  AVATAR_01: [-0.0063, 0.0016],
+  AVATAR_02: [-0.0014, 0.059],
+  AVATAR_03: [0.002, 0.0135],
+};
+
 /** The artwork URL for a character (for callers that place it themselves). */
 export function characterArtSrc(variant: AvatarKey) {
   return CHAR_ART[variant];
@@ -50,11 +59,23 @@ export function characterArtSrc(variant: AvatarKey) {
  * leaves the character itself visibly low / high-and-right. `dx`/`dy` above are
  * the measured offsets negated; they are quoted at the 80px picker size and
  * scale with the frame.
+ *
+ * `placement: "leg010"` uses where the Friend League frame puts each box
+ * instead, which is up to ~2px from the ink centre (the champion's character
+ * sits 4.7px below the circle's centre there).
  */
-export function characterArtStyle(variant: AvatarKey, frame = 80): CSSProperties {
+export function characterArtStyle(
+  variant: AvatarKey,
+  frame = 80,
+  placement: "ink" | "leg010" = "ink",
+): CSSProperties {
   const m = CHAR_META[variant];
   const k = frame / 80;
-  const t = [`translate(${(m.dx * k).toFixed(3)}px, ${(m.dy * k).toFixed(3)}px)`];
+  const [dx, dy] =
+    placement === "leg010"
+      ? [LEG010_OFFSET[variant][0] * frame, LEG010_OFFSET[variant][1] * frame]
+      : [m.dx * k, m.dy * k];
+  const t = [`translate(${dx.toFixed(3)}px, ${dy.toFixed(3)}px)`];
   if (m.rotate) t.push(`rotate(${m.rotate}deg)`);
   return {
     width: m.w * k,

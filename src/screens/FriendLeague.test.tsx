@@ -85,8 +85,9 @@ describe("Friend League screen", () => {
     expect(within(place(3)).getByText("Beam")).toBeInTheDocument();
     for (const rank of [1, 2, 3]) {
       expect(place(rank).querySelector(`.fl__block--r${rank} .fl__block-rank`)?.textContent).toBe(String(rank));
-      // The darker right-hand face from the LEG-010 export.
-      expect(place(rank).querySelector(".fl__strip")).toBeInTheDocument();
+      // LEG-010's blocks are flat colours now: no darker right-hand strip.
+      expect(place(rank).querySelector(".fl__strip")).toBeNull();
+      expect(place(rank).querySelector(".fl__block img")).toBeNull();
     }
     // Each place is announced with its rank, name and points.
     expect(place(2)).toHaveAttribute("aria-label", expect.stringContaining("Hoa"));
@@ -117,6 +118,11 @@ describe("Friend League screen", () => {
     expect(document.querySelector(".fl__decor")).toBeNull();
     expect(document.querySelectorAll(".fl__drop")).toHaveLength(4);
     expect(document.querySelector(".fl__platform")).toBeInTheDocument();
+    // Each character sits where LEG-010 puts it: the champion's AVATAR_02 box
+    // 5.9% of the circle below its centre (4.72px at 80), Hoa's AVATAR_01
+    // almost centred — not the profile picker's ink centring.
+    expect(avatar(1).querySelector("img")?.style.transform).toBe("translate(-0.112px, 4.720px) rotate(3.77deg)");
+    expect(avatar(2).querySelector("img")?.style.transform).toBe("translate(-0.378px, 0.096px)");
   });
 
   it('writes "-" for a friend who has never been in a league', async () => {
@@ -129,6 +135,20 @@ describe("Friend League screen", () => {
     const rows = within(list).getAllByRole("listitem");
     expect(within(rows[5]).getByText("-")).toBeInTheDocument();
     expect(within(rows[5]).queryByText(/리그/)).toBeNull();
+  });
+
+  it("names a friend without a nickname generically, on the podium and in the list", async () => {
+    // The server sends null until the friend picks a nickname (it used to send
+    // their internal user id, which the screen then printed).
+    api.friendRankings.mockResolvedValue({
+      ...full,
+      entries: [full.entries[0], { ...full.entries[1], nickname: null }, ...full.entries.slice(2)],
+    });
+    renderFriend();
+    const list = await screen.findByRole("list", { name: "친구 리그 순위" });
+    expect(within(document.querySelector(".fl__place--r2") as HTMLElement).getByText("회원")).toBeInTheDocument();
+    expect(within(within(list).getAllByRole("listitem")[1]).getByText("회원")).toBeInTheDocument();
+    expect(screen.queryByText("u2")).toBeNull();
   });
 
   it("renders the full ranking list with league subtitle and points-as-P", async () => {

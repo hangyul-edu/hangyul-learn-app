@@ -15121,30 +15121,6 @@ input[type="tel"] {
 .fl__block.is-empty {
   background: #ecedf0;
 }
-/* The darker right-hand face ("Intersect"), placed as exported. */
-.fl__strip {
-  position: absolute;
-  display: block;
-  max-width: none;
-}
-.fl__block--r1 .fl__strip {
-  left: 55px;
-  top: 0;
-  width: 21px;
-  height: 132.642px;
-}
-.fl__block--r2 .fl__strip {
-  left: 57px;
-  top: 0.26px;
-  width: 21px;
-  height: 87.113px;
-}
-.fl__block--r3 .fl__strip {
-  left: 69px;
-  top: 0.21px;
-  width: 21px;
-  height: 66.776px;
-}
 /* Rank: white ExtraBold 30/35; name: SemiBold 14/20 — both centred on the
    x the frame gives them (not quite the block's centre). */
 .fl__block-rank,
@@ -15223,10 +15199,22 @@ input[type="tel"] {
   left: 231px;
   top: 118px;
 }
-/* 2nd/3rd carry btn_profileimg's drop-shadow; the champion's has none. */
+/* Podium shadows, as LEG-010 draws them. A character or photo on 2nd/3rd is
+   btn_profileimg: 0/4/4 (EN 798:77401). The no-picture disc there is the
+   larger default-profile instance: a 1.667px Gray 3 ring and 0/6.667/6.667
+   (KO 396:17189). The champion's group carries 0/6.667/6.667 too (396:17163,
+   one level above the circle, where it had been missed). */
 .fl__podium-avatar--r2 > *,
 .fl__podium-avatar--r3 > * {
   box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+}
+.fl__podium-avatar--r1 > *,
+.fl__podium-avatar--r2 > .rank-avatar-char--none,
+.fl__podium-avatar--r3 > .rank-avatar-char--none {
+  box-shadow: 0 6.667px 6.667px rgba(0, 0, 0, 0.25);
+}
+.fl__podium-avatar > .rank-avatar-char--none {
+  border: 1.667px solid #dbdddf;
 }
 .fl__drops {
   position: absolute;
@@ -15264,8 +15252,11 @@ input[type="tel"] {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  /* Keeps the viewer-row band (z-index -1) above the page background. */
+  isolation: isolate;
 }
 .fl__row {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -15275,14 +15266,21 @@ input[type="tel"] {
   background: none;
   border: none;
 }
-.fl__row.is-me {
-  /* LEG-010 highlights the viewer's row in #FFDBC1 — Brand 1 at 20% over the
-     cream page, the same treatment the Pro tab uses — and bleeds it to both
-     page edges. This was an inset #FFF7E0 pill, which is the odd colour in the
-     lower half of the friend list. */
+.fl__row.is-me::before {
+  /* LEG-010 highlights the viewer's row with Rectangle 25848 (396:17230):
+     Brand 1 at 20% over the cream page, 60 tall from 3px above the 50px row
+     to 7px below it, bled to both page edges. Drawn as a band behind the row
+     rather than the row's own background, which was only 50 tall: the avatar
+     filled it edge to edge and its shadow spilled out under it. */
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -3px;
+  bottom: -7px;
+  left: -6px;
+  right: -6px;
   background: rgba(255, 103, 0, 0.2);
-  margin: 0 -6px;
-  padding: 0 26px;
+  pointer-events: none;
 }
 .fl__row-main {
   display: flex;
@@ -15298,9 +15296,6 @@ input[type="tel"] {
   font-weight: 700;
   line-height: 16.195px;
   color: var(--ink-3);
-}
-.fl__row.is-me .fl__row-no {
-  color: var(--brand-600);
 }
 .fl__row-avatar {
   flex-shrink: 0;
@@ -15335,7 +15330,15 @@ input[type="tel"] {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 3px;
+}
+/* The medal is a column of its own in LEG-010 (437:8396 / 8401 / 8406): x=286
+   on every row whatever the points' width, 16.5px down the row (16 / 17 / 17).
+   It used to sit 3px before the points, 2–5px right of Figma and 2–3px high.
+   Anchored from the row's right edge, which is where the points end. */
+.fl__row .rank-medal {
+  position: absolute;
+  right: 66px;
+  top: 16.5px;
 }
 .fl__row-pts {
   flex-shrink: 0;
@@ -18142,10 +18145,13 @@ input[type="tel"] {
 .optioncard .optioncard__body {
   flex: 1;
 }
+/* The glyph box of Group 1410118219 (8601:64558): inset 18.75% top, 21.08%
+   bottom, 25% / 24.89% sides — so its centre is 1.16% ABOVE the disc's centre.
+   It had been pushed 4% of its own height down instead, 1.8px low at 50px. */
 .rank-avatar__placeholder {
   width: 50.11%;
   height: 60.17%;
-  transform: translateY(4%);
+  transform: translateY(-1.93%);
 }
 .home-ic {
   display: block;

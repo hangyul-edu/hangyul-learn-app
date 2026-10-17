@@ -60,8 +60,17 @@ export function MedalIcon({ size = 22 }: { rank?: number; size?: number }) {
   );
 }
 
-/** Real avatar for a ranking row: uploaded photo → character → initial fallback. */
-export function RankAvatar({ entry, size = 50 }: { entry: AvatarSubject; size?: number }) {
+/** Real avatar for a ranking row: uploaded photo → character → initial fallback.
+ *  `placement="leg010"` places a character where the Friend League frame does. */
+export function RankAvatar({
+  entry,
+  size = 50,
+  placement = "ink",
+}: {
+  entry: AvatarSubject;
+  size?: number;
+  placement?: "ink" | "leg010";
+}) {
   if (entry.profile_image_type === "CUSTOM" && entry.profile_image_url) {
     return <Avatar url={entry.profile_image_url} name={entry.nickname} size={size} />;
   }
@@ -76,7 +85,7 @@ export function RankAvatar({ entry, size = 50 }: { entry: AvatarSubject; size?: 
         {/* Ink-centred and per-character sized, exactly as the AME-006 picker
             does it — a single `fill` percentage mis-scales two of the three
             characters and leaves them visibly off-centre. */}
-        <img src={characterArtSrc(key)} alt="" style={characterArtStyle(key, size)} />
+        <img src={characterArtSrc(key)} alt="" style={characterArtStyle(key, size, placement)} />
       </span>
     );
   }
@@ -91,7 +100,7 @@ export function RankAvatar({ entry, size = 50 }: { entry: AvatarSubject; size?: 
 export function DefaultProfile({ size = 50 }: { size?: number }) {
   return (
     <span
-      className="rank-avatar-char"
+      className="rank-avatar-char rank-avatar-char--none"
       style={{ width: size, height: size, background: "var(--border)" }}
       aria-hidden="true"
     >

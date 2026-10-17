@@ -13,9 +13,6 @@ import drop1232 from "../assets/brand/fl-podium-drop1232.svg";
 import drop1233 from "../assets/brand/fl-podium-drop1233.svg";
 import drop1235 from "../assets/brand/fl-podium-drop1235.svg";
 import drop1236 from "../assets/brand/fl-podium-drop1236.svg";
-import strip1 from "../assets/brand/fl-podium-strip1.svg";
-import strip2 from "../assets/brand/fl-podium-strip2.svg";
-import strip3 from "../assets/brand/fl-podium-strip3.svg";
 
 /** "Green League" / "Green 리그" — the suffix differs per language. */
 const useTierLabel = () => {
@@ -66,10 +63,10 @@ function FriendLeagueEmptyState({ onAdd }: { onAdd: () => void }) {
    the screen so every piece keeps the frame's coordinates (frame y minus the
    92px status bar + tab row):
    - the three blocks overlap, 1st on top — 2nd 86x98 #FFD166 at (72,165),
-     1st 76x145 #FF9900 at (150,118), 3rd 90x77 #A8DADC at (213,186) — each
-     with its darker right-hand strip (the Figma "Intersect" exports), on a
-     261x17 #D9D9D9 base at (57,253);
-   - the champion's 80px avatar at (148,30) with the four orange drops;
+     1st 76x145 #FF9900 at (150,118), 3rd 90x77 #A8DADC at (213,186) — flat
+     colours with a 0/4/4 shadow, on a 261x17 #D9D9D9 base at (57,253) (the
+     darker right-hand strips of an earlier version are gone from the frame);
+   - the champion's 80px avatar at (148,30), shadowed, with the four orange drops;
    - the 2nd and 3rd friends' own 60px avatars standing on their blocks at
      (84,98) and (231,118). The EN frame shows them with each friend's
      character; the KO frame's grey discs are the same avatar with no picture
@@ -104,8 +101,6 @@ function Drop({ drop }: { drop: (typeof DROPS)[number] }) {
   );
 }
 
-const STRIPS = { 1: strip1, 2: strip2, 3: strip3 } as const;
-
 function PodiumPlace({ entry, rank }: { entry: RankingEntry | undefined; rank: 1 | 2 | 3 }) {
   // The user's own avatar comes from /users/me, not from the standings row.
   const me = useAuthOptional()?.me ?? null;
@@ -118,12 +113,11 @@ function PodiumPlace({ entry, rank }: { entry: RankingEntry | undefined; rank: 1
   return (
     <div className={`fl__place fl__place--r${rank}`} aria-label={t("friendLeague.podiumA11y", { rank, name, points: entry.points })}>
       <span className={`fl__block fl__block--r${rank}`} aria-hidden="true">
-        <img className="fl__strip" src={STRIPS[rank]} alt="" />
         <span className="fl__block-rank">{rank}</span>
         <span className="fl__block-name">{name}</span>
       </span>
       <span className={`fl__podium-avatar fl__podium-avatar--r${rank}`} aria-hidden="true">
-        <RankAvatar entry={withSelfProfile(entry, me)} size={rank === 1 ? 80 : 60} />
+        <RankAvatar entry={withSelfProfile(entry, me)} size={rank === 1 ? 80 : 60} placement="leg010" />
       </span>
     </div>
   );
@@ -174,7 +168,7 @@ function FriendRow({ entry, meId }: { entry: RankingEntry; meId?: string }) {
       <span className="fl__row-main">
         <span className="fl__row-no">{entry.rank}</span>
         <span className="fl__row-avatar">
-          <RankAvatar entry={withSelfProfile(entry, me)} size={50} />
+          <RankAvatar entry={withSelfProfile(entry, me)} size={50} placement="leg010" />
         </span>
         <span className="fl__row-text">
           <span className="fl__row-name">{name}</span>

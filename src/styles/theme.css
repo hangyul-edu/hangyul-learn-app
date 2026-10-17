@@ -202,6 +202,24 @@ a {
   color: var(--brand-500);
   text-decoration: none;
 }
+/* No focus ring on anything tapped or clicked: buttons, links, tabs, cards
+   and switches show their own pressed / selected states (as the designs draw
+   them), and the browser's ring, or a ring of our own, drew an extra frame
+   round them after a tap, e.g. a modal's autofocused button. Text fields keep
+   their designed focus borders, which are not outlines. */
+button:focus,
+a:focus,
+[role="button"]:focus,
+[role="tab"]:focus,
+[role="switch"]:focus,
+[role="option"]:focus,
+[role="menuitem"]:focus,
+[tabindex]:focus,
+summary:focus,
+input[type="checkbox"]:focus,
+input[type="radio"]:focus {
+  outline: none;
+}
 ::selection {
   background: var(--brand-100);
 }

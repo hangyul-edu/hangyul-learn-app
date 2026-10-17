@@ -2170,8 +2170,7 @@ textarea.input {
 .country-select__trigger {
   transition: border-color 0.14s;
 }
-.country-select__trigger[aria-expanded="true"],
-.country-select__trigger:focus-visible {
+.country-select__trigger[aria-expanded="true"] {
   border-color: #ff6700;
 }
 .signup__country-flag {
@@ -10561,11 +10560,6 @@ input[type="tel"] {
   cursor: default;
   opacity: 0.5;
 }
-.clset__handle:focus-visible {
-  outline: 2px solid var(--brand-500, #ff6700);
-  outline-offset: -3px;
-  border-radius: 10px;
-}
 .clset__body {
   flex: 1;
   min-width: 0;
@@ -11792,7 +11786,6 @@ input[type="tel"] {
   transition: border-color 0.15s, background 0.15s;
 }
 .pm__row:active { background: #f9f9fa; }
-.pm__row:focus-visible { outline: 2px solid var(--brand-500, #ff6700); outline-offset: 2px; }
 .pm__row--connect { cursor: default; justify-content: space-between; }
 
 /* Easy-pay (간편 결제) cards: spacious white cards with large brand logos, per
@@ -11978,7 +11971,6 @@ input[type="tel"] {
 }
 .pm__connect:active { background: #fff7e0; }
 .pm__connect:disabled { opacity: 0.5; cursor: default; }
-.pm__connect:focus-visible { outline: 2px solid var(--brand-500, #ff6700); outline-offset: 2px; }
 
 /* Notice box. */
 /* Rectangle 5038 (1990:24822) — 341x173 at x=17, i.e. 7.5 wider than the
@@ -12607,7 +12599,6 @@ input[type="tel"] {
 }
 .lang__card.is-selected:active { background: rgba(255, 103, 0, 0.08); }
 .lang__card:disabled { opacity: 0.6; cursor: default; }
-.lang__card:focus-visible { outline: 2px solid var(--brand-500, #ff6700); outline-offset: 2px; }
 
 /* Bottom action — cp_C_01_primaryBtn in the 98px bottom bar. */
 .lang__foot {
@@ -13853,10 +13844,6 @@ input[type="tel"] {
   color: #ffffff;
   white-space: nowrap;
 }
-.lecp__mute input:focus-visible + .lecp__switch {
-  outline: 2px solid #ffffff;
-  outline-offset: 2px;
-}
 .lecp__switch {
   /* cp_D_07_switch (230:7049) — a 40x21 r10.5 track, Brand 1 when on. */
   position: relative;
@@ -15006,10 +14993,6 @@ input[type="tel"] {
   font-weight: 700;
   color: #fff;
   cursor: pointer;
-}
-.llc__cta:focus-visible {
-  outline: 2px solid var(--brand-500, #ff6700);
-  outline-offset: 2px;
 }
 .llc__cta:disabled {
   opacity: 0.6;
@@ -16694,10 +16677,6 @@ input[type="tel"] {
   font-size: 15px;
   line-height: 20.3px;
 }
-.faq__support:focus-visible {
-  outline: 3px solid rgba(249, 115, 22, 0.4);
-  outline-offset: 2px;
-}
 /* Keep the floating button clear of the on-screen keyboard while searching. */
 .faq--searching .faq__support { display: none; }
 
@@ -17028,7 +17007,6 @@ input[type="tel"] {
   z-index: 1;
 }
 .attn__close:active { opacity: 0.6; }
-.attn__close:focus-visible { outline: 2px solid var(--brand-400); outline-offset: 2px; border-radius: 50%; }
 
 /* Illustration: the dashed ring with the tangerine centred and the points
    badge over its top-right. */
@@ -17125,7 +17103,6 @@ input[type="tel"] {
   transition: transform 0.08s ease, background 0.15s;
 }
 .attn__confirm:active { transform: scale(0.99); background: var(--brand-600); }
-.attn__confirm:focus-visible { outline: 3px solid var(--brand-200); outline-offset: 2px; }
 
 /* Respect reduced-motion: drop the scale/entrance animation. */
 @media (prefers-reduced-motion: reduce) {

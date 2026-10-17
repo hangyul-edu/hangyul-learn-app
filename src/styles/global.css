@@ -8027,11 +8027,12 @@ textarea.input {
 }
 /* The country once it is fixed (every change of an existing number): MOR-003
    inputField 2065:25108 as the frame now draws it — Gray 1 (#F4F6F6), r10, no
-   border, no chevron, the 24x16 flag 15px in. Information only: no pointer, no
-   press feedback. */
+   border, no chevron, the 24x16 flag centred (15px either side). The flag is
+   an emoji whose width isn't 24px, so it is centred rather than inset 15px.
+   Information only: no pointer, no press feedback. */
 .pchg__country--fixed {
-  justify-content: flex-start;
-  padding-left: 15px;
+  justify-content: center;
+  padding: 0;
   border: none;
   background: var(--gray-1, #f4f6f6);
   cursor: default;

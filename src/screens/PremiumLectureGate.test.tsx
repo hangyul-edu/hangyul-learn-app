@@ -125,6 +125,21 @@ beforeEach(() => {
   api.speakPractice.mockRejectedValue(refused());
 });
 
+describe("series page: the Free chip", () => {
+  it("marks the free lessons for a member without premium access", async () => {
+    renderAt(["/series/S1"]);
+    await screen.findByRole("list", { name: "SERIES" });
+    expect(document.querySelectorAll(".cdet__free")).toHaveLength(2);
+  });
+
+  it("is hidden for a premium member, to whom every lesson is open", async () => {
+    api.auth.premium = true;
+    renderAt(["/series/S1"]);
+    await screen.findByRole("list", { name: "SERIES" });
+    expect(screen.queryByText("Free")).not.toBeInTheDocument();
+  });
+});
+
 describe("series page: a premium lesson is blocked before it opens", () => {
   it.each([
     ["the lesson", "강의 P1", NOTICE],

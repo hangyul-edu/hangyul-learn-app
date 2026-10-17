@@ -26,16 +26,28 @@ import { usePremiumLectureGate } from "../hooks/premiumLecture";
  * A full-bleed 375x249 cover with the 242x46 "바로 학습하기" straddling its
  * bottom edge, then 77-tall lesson rows on an 87 pitch: a 70px thumbnail
  * carrying the Free chip and the play glyph, the title + length, a completion
- * chip and the speaking-practice mic.
+ * chip and the speaking-practice mic. The Free chip is for members without
+ * premium access only: to a premium member every lesson is open, so it says
+ * nothing (the lecture tab's series cards do the same).
  */
-function LessonRow({ lesson, onOpen, onPractice }: { lesson: Lecture; onOpen: () => void; onPractice: () => void }) {
+function LessonRow({
+  lesson,
+  showFree,
+  onOpen,
+  onPractice,
+}: {
+  lesson: Lecture;
+  showFree: boolean;
+  onOpen: () => void;
+  onPractice: () => void;
+}) {
   const { t } = useTranslation();
   const topik = lesson.track_id === "track_topik";
   return (
     <li className="cdet__row">
       <button className="cdet__thumb" onClick={onOpen} aria-label={lesson.title}>
         {lesson.thumbnail_url && <img className="cdet__thumb-img" src={lesson.thumbnail_url} alt="" />}
-        {lesson.access === "free" && <span className="cdet__free">Free</span>}
+        {showFree && lesson.access === "free" && <span className="cdet__free">Free</span>}
         <img className="cdet__play" src={coursePlay} alt="" aria-hidden="true" />
       </button>
       <button className="cdet__main" onClick={onOpen}>
@@ -158,6 +170,7 @@ export function SeriesPage() {
                     <LessonRow
                       key={l.lecture_id}
                       lesson={l}
+                      showFree={gate.withoutPremium}
                       onOpen={() => openLesson(l.access, `/lectures/${l.lecture_id}`)}
                       onPractice={() =>
                         l.track_id === "track_topik"

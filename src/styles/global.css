@@ -15227,6 +15227,12 @@ input[type="tel"] {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Vectors 1232–1236 drop-shadow (1.862, 0.931), radius 0.745, 13% black. Figma
+     casts it on the page, down and to the right for every drop, however the
+     drop is turned. Inside the exported SVG it turned with the drop (one of
+     them by -170deg), so the shadows pointed every which way. Applied here, on
+     the unturned box; drop-shadow's blur is the SVG's stdDeviation. */
+  filter: drop-shadow(1.862px 0.931px 0.372px rgba(0, 0, 0, 0.13));
 }
 .fl__drop-turn {
   position: relative;

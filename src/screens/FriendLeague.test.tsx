@@ -231,6 +231,31 @@ describe("Friend League screen", () => {
     expect(screen.queryByText("친구 리그에 참가할 친구가 없어요")).not.toBeInTheDocument();
   });
 
+  it("shows a shared rank as the server gives it, on the podium and in the list", async () => {
+    // Hai and Hoa tie for 1st; Beam and Taro tie for 3rd (1, 1, 3, 3, 5).
+    api.friendRankings.mockResolvedValue({
+      ...full,
+      entries: [
+        entry(1, "u1", "Hai", "golden", 2000),
+        entry(1, "u2", "Hoa", "orange", 2000),
+        entry(3, "u3", "Beam", "orange", 1000),
+        entry(3, "me", "Taro", "yellow", 1000),
+        entry(5, "u5", "Yuta", "yellow", 200),
+      ],
+      me: entry(3, "me", "Taro", "yellow", 1000),
+    });
+    renderFriend();
+    const list = await screen.findByRole("list", { name: "친구 리그 순위" });
+    // The blocks keep their places; the numbers on them are the friends' ranks.
+    const block = (place: number) => document.querySelector(`.fl__place--r${place} .fl__block-rank`)?.textContent;
+    expect([block(1), block(2), block(3)]).toEqual(["1", "1", "3"]);
+    expect(document.querySelector(".fl__place--r2")).toHaveAttribute("aria-label", expect.stringContaining("1위"));
+    const rows = within(list).getAllByRole("listitem");
+    expect(rows.map((row) => row.querySelector(".fl__row-no")?.textContent)).toEqual(["1", "1", "3", "3", "5"]);
+    // Everyone ranked 3rd or better has a medal, ties included.
+    expect(rows.map((row) => row.querySelectorAll(".rank-medal").length)).toEqual([1, 1, 1, 1, 0]);
+  });
+
   it("supports a 2-participant fallback (no rank-3 podium)", async () => {
     api.friendRankings.mockResolvedValue({ ...full, entries: full.entries.slice(0, 2), me: full.entries[1] });
     renderFriend();

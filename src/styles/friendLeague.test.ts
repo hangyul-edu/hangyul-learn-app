@@ -62,6 +62,15 @@ describe("Friend League stylesheet (LEG-010)", () => {
     expect(rule(".fl__row .rank-medal")).toMatchObject({ position: "absolute", right: "66px", top: "16.5px" });
   });
 
+  it("casts the drops' shadow down and right on the page, not turned with each drop", () => {
+    // On the unturned box, not inside the SVGs (which are rotated).
+    expect(rule(".fl__drop").filter).toBe("drop-shadow(1.862px 0.931px 0.372px rgba(0, 0, 0, 0.13))");
+    for (const drop of ["1232", "1233", "1235", "1236"]) {
+      const svg = readFileSync(`src/assets/brand/fl-podium-drop${drop}.svg`, "utf8");
+      expect(svg).not.toContain("filter");
+    }
+  });
+
   it("insets the no-picture glyph as the component does", () => {
     expect(rule(".rank-avatar__placeholder").transform).toBe("translateY(-1.93%)");
   });

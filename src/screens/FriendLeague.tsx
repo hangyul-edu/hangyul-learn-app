@@ -73,10 +73,13 @@ function FriendLeagueEmptyState({ onAdd }: { onAdd: () => void }) {
      (DefaultProfile), not decoration. */
 const DROPS = [
   // node, src, wrapper box, inner box + transform, img inset — as exported.
-  { id: "1233", src: drop1233, box: [228, 20, 21.422, 22.577], inner: [18.236, 19.666, "scaleY(-1) rotate(-169.83deg)"], inset: "-1.18% -15.57% -9.7% -1.28%" },
+  // The two mirrored drops turn first and then flip, as Figma composes them
+  // (rotate, then scale). Written flip-first, as they were, they turned the
+  // opposite way and both teardrops pointed wrong.
+  { id: "1233", src: drop1233, box: [228, 20, 21.422, 22.577], inner: [18.236, 19.666, "rotate(-169.83deg) scaleY(-1)"], inset: "-1.18% -15.57% -9.7% -1.28%" },
   { id: "1232", src: drop1232, box: [126, 35, 13.964, 15.36], inner: null, inset: "-1.51% -20.33% -12.42% -1.67%" },
   { id: "1236", src: drop1236, box: [126.3, 65.95, 13.805, 13.264], inner: [10.418, 11.236, "rotate(-72.88deg)"], inset: "-2.06% -27.25% -16.99% -2.24%" },
-  { id: "1235", src: drop1235, box: [226, 96, 21.443, 20.462], inner: [16.774, 18.089, "scaleY(-1) rotate(-76.79deg)"], inset: "-1.28% -16.93% -10.55% -1.39%" },
+  { id: "1235", src: drop1235, box: [226, 96, 21.443, 20.462], inner: [16.774, 18.089, "rotate(-76.79deg) scaleY(-1)"], inset: "-1.28% -16.93% -10.55% -1.39%" },
 ] as const;
 
 function Drop({ drop }: { drop: (typeof DROPS)[number] }) {
@@ -110,10 +113,16 @@ function PodiumPlace({ entry, rank }: { entry: RankingEntry | undefined; rank: 1
     return <span className={`fl__block fl__block--r${rank} is-empty`} aria-hidden="true" />;
   }
   const name = displayName(entry, t("home.defaultNickname"));
+  // `rank` is the block (where on the podium); the number on it is the
+  // friend's own rank, which equal scores share — two friends tied for first
+  // both read 1.
   return (
-    <div className={`fl__place fl__place--r${rank}`} aria-label={t("friendLeague.podiumA11y", { rank, name, points: entry.points })}>
+    <div
+      className={`fl__place fl__place--r${rank}`}
+      aria-label={t("friendLeague.podiumA11y", { rank: entry.rank, name, points: entry.points })}
+    >
       <span className={`fl__block fl__block--r${rank}`} aria-hidden="true">
-        <span className="fl__block-rank">{rank}</span>
+        <span className="fl__block-rank">{entry.rank}</span>
         <span className="fl__block-name">{name}</span>
       </span>
       <span className={`fl__podium-avatar fl__podium-avatar--r${rank}`} aria-hidden="true">

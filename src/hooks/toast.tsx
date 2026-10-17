@@ -97,7 +97,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`hg-toast ${t.kind !== "default" ? `hg-toast--${t.kind}` : ""} ${t.icon ? "" : "hg-toast--plain"}`}
+            // A one-line notice is cp_G_03_toast's one-line variant (335x37,
+            // 784:51628); a notice with a line break keeps the two-line one.
+            className={`hg-toast ${t.kind !== "default" ? `hg-toast--${t.kind}` : ""} ${t.icon ? "" : "hg-toast--plain"} ${t.kind === "notice" && !t.message.includes("\n") ? "hg-toast--line" : ""}`}
           >
             {t.icon && (
               <span className="hg-toast__icon">

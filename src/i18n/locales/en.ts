@@ -988,6 +988,11 @@ export const en: Catalog = {
     // LEG-013 (1815:24869) wording.
     modalTitle: "Remove {name} as a friend?",
     modalDesc: "No notification will be sent",
+    /* Sent-request cancel confirmation — cp_G_01_modals 1827:24601. */
+    cancelModalTitle: "Cancel your request to {name}?",
+    cancelModalDesc: "Your request to them will be removed",
+    cancelModalBack: "Back",
+    cancelModalConfirm: "Cancel Request",
     toastAccepted: "You're now friends with {name}!",
     toastRejected: "Request rejected",
     toastCancelled: "Request cancelled",

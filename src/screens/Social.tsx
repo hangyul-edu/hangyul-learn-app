@@ -7,6 +7,7 @@ import { Dialog } from "../components/ui/Modal";
 import { ErrorState, SkeletonList } from "../components/ui/states";
 import { RankAvatar } from "../components/brand/RankBits";
 import { AddFriendSheet, IncomingFriendRequestSheet } from "../components/social/AddFriendSheet";
+import { CancelRequestDialog } from "../components/social/CancelRequestDialog";
 import { friendApi } from "../api/endpoints";
 import { useToast } from "../hooks/toast";
 import { errorMessage } from "../lib/http";
@@ -164,14 +165,21 @@ export function Social() {
 
   const refreshAll = useRefreshSocial();
 
-  async function act(id: string, fn: () => Promise<unknown>, done: string, plain = false) {
+  async function act(
+    id: string,
+    fn: () => Promise<unknown>,
+    done: string,
+    style: "success" | "plain" | "notice" = "success",
+  ) {
     // One request per row at a time (duplicate taps are dropped).
     await run(id, async () => {
       try {
         await fn();
         // `plain` uses the icon-less charcoal snackbar (same as the invite-copy
-        // confirmation) — e.g. the "…님과 친구가 되었어요!" acceptance message.
-        if (plain) toast.show(done, "default", { icon: false });
+        // confirmation) — e.g. the "…님과 친구가 되었어요!" acceptance message;
+        // `notice` is the cp_G_03_toast bar at the bottom of the screen.
+        if (style === "plain") toast.show(done, "default", { icon: false });
+        else if (style === "notice") toast.show(done, "notice");
         else toast.success(done);
         refreshAll();
       } catch (e) {
@@ -187,6 +195,17 @@ export function Social() {
     if (!deleteTarget) return;
     await act(deleteTarget.user_id, () => friendApi.remove(deleteTarget.user_id), copy.toastRemoved);
     setDeleteTarget(null);
+  }
+
+  // A sent request is cancelled only once the confirmation says so; the
+  // charcoal notice (cp_G_03_toast) then says it was.
+  const [cancelTarget, setCancelTarget] = useState<FriendRequest | null>(null);
+  const cancelling = cancelTarget ? busy.has(cancelTarget.request_id) : false;
+  async function confirmCancel() {
+    if (!cancelTarget) return;
+    const { request_id } = cancelTarget;
+    await act(request_id, () => friendApi.cancel(request_id), copy.toastCancelled, "notice");
+    setCancelTarget(null);
   }
 
   const activeQuery = tab === "friends" ? friends : tab === "received" ? received : sent;
@@ -254,7 +273,7 @@ export function Social() {
                   onOpen={() => setIncomingId(r.request_id)}
                   actions={[
                     { label: copy.reject, onClick: () => act(r.request_id, () => friendApi.reject(r.request_id), copy.toastRejected) },
-                    { label: copy.accept, primary: true, onClick: () => act(r.request_id, () => friendApi.accept(r.request_id), copy.toastAccepted(nameOf(r, t)), true) },
+                    { label: copy.accept, primary: true, onClick: () => act(r.request_id, () => friendApi.accept(r.request_id), copy.toastAccepted(nameOf(r, t)), "plain") },
                   ]}
                 />
               ))}
@@ -270,7 +289,7 @@ export function Social() {
                 req={r}
                 copy={copy}
                 busy={busy.has(r.request_id)}
-                actions={[{ label: copy.cancel, onClick: () => act(r.request_id, () => friendApi.cancel(r.request_id), copy.toastCancelled) }]}
+                actions={[{ label: copy.cancel, onClick: () => setCancelTarget(r) }]}
               />
             ))}
           </ul>
@@ -296,6 +315,13 @@ export function Social() {
           </Button>
         </div>
       </Dialog>
+
+      <CancelRequestDialog
+        name={cancelTarget ? nameOf(cancelTarget, t) : null}
+        busy={cancelling}
+        onBack={() => setCancelTarget(null)}
+        onConfirm={confirmCancel}
+      />
 
       <AddFriendSheet open={addOpen} onClose={() => setAddOpen(false)} />
       <IncomingFriendRequestSheet

@@ -138,11 +138,27 @@ describe("AddFriendSheet", () => {
     resolve();
   });
 
-  it("cancels a pending outgoing request by its request id", async () => {
+  it("cancels a pending outgoing request by its request id, only once confirmed", async () => {
     api.recommendations.mockResolvedValue({ recommendations: [rec("b", "Bob", "request_sent", "req-b")] });
     wrap(<AddFriendSheet open onClose={() => {}} />);
     await userEvent.click(await screen.findByRole("button", { name: "요청 취소" }));
+    const dialog = await screen.findByRole("dialog", { name: "Bob님에게 보낸 요청을 취소할까요?" });
+    expect(api.cancel).not.toHaveBeenCalled();
+    await userEvent.click(within(dialog).getByRole("button", { name: "요청 취소" }));
     await waitFor(() => expect(api.cancel).toHaveBeenCalledWith("req-b"));
+    expect((await screen.findByText("요청을 취소했어요")).closest(".hg-toast")).toHaveClass(
+      "hg-toast--notice",
+      "hg-toast--line",
+    );
+  });
+
+  it("돌아가기 leaves a sent request alone", async () => {
+    api.recommendations.mockResolvedValue({ recommendations: [rec("b", "Bob", "request_sent", "req-b")] });
+    wrap(<AddFriendSheet open onClose={() => {}} />);
+    await userEvent.click(await screen.findByRole("button", { name: "요청 취소" }));
+    await userEvent.click(within(await screen.findByRole("dialog", { name: /Bob님에게/ })).getByRole("button", { name: "돌아가기" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /Bob님에게/ })).not.toBeInTheDocument());
+    expect(api.cancel).not.toHaveBeenCalled();
   });
 
   it("shows the no-recommendations panel and an invitation-link button", async () => {

@@ -23,6 +23,7 @@ import { DEFAULT_PHONE_COUNTRY, applyPhoneInput, hashPhone, isLikelyPhone, phone
 import { getContactPhoneHashes } from "../../lib/contacts";
 import type { RecommendedUser } from "../../lib/types";
 import { InfoBox, SearchIcon, SheetHeader, nameOf } from "./sheetParts";
+import { CancelRequestDialog } from "./CancelRequestDialog";
 
 export { IncomingFriendRequestSheet } from "./IncomingFriendRequestSheet";
 
@@ -83,6 +84,14 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
   const [result, setResult] = useState<RecommendedUser | "none" | null>(null);
   const { busy, run } = useBusyKeys();
   const [sharing, setSharing] = useState(false);
+  const { t } = useTranslation();
+  const [cancelTarget, setCancelTarget] = useState<RecommendedUser | null>(null);
+  async function confirmCancel() {
+    const target = cancelTarget;
+    if (!target?.request_id) return;
+    await act(target.user_id, () => friendApi.cancel(target.request_id!), copy.requestCancelled, true);
+    setCancelTarget(null);
+  }
 
   const recs = useQuery({
     queryKey: ["friend-recommendations"],
@@ -106,11 +115,13 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
     if (result && result !== "none") void runSearch();
   }
 
-  async function act(userId: string, fn: () => Promise<unknown>, done: string) {
+  async function act(userId: string, fn: () => Promise<unknown>, done: string, notice = false) {
     const ran = await run(userId, async () => {
       try {
         await fn();
-        toast.success(done);
+        // `notice`: the cp_G_03_toast bar at the bottom of the screen.
+        if (notice) toast.show(done, "notice");
+        else toast.success(done);
       } catch (e) {
         toast.error(errorMessage(e));
       }
@@ -159,7 +170,8 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
       case "none":
         return { text: copy.sendRequest, onClick: () => act(u.user_id, () => friendApi.request(u.user_id), copy.requestSent) };
       case "request_sent":
-        return { text: copy.cancelRequest, onClick: () => u.request_id && act(u.user_id, () => friendApi.cancel(u.request_id!), copy.requestCancelled) };
+        // Confirmed first (CancelRequestDialog), never cancelled on the first tap.
+        return { text: copy.cancelRequest, onClick: () => u.request_id && setCancelTarget(u) };
       case "request_received":
         return { text: copy.accept, primary: true, onClick: () => u.request_id && act(u.user_id, () => friendApi.accept(u.request_id!), copy.requestAccepted) };
       case "friends":
@@ -281,6 +293,13 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
           </Button>
         )}
       </div>
+      {/* Inside the sheet so it stacks above it and shares its frame. */}
+      <CancelRequestDialog
+        name={cancelTarget ? nameOf(cancelTarget, t("home.defaultNickname")) : null}
+        busy={cancelTarget ? busy.has(cancelTarget.user_id) : false}
+        onBack={() => setCancelTarget(null)}
+        onConfirm={confirmCancel}
+      />
     </Sheet>
   );
 }

@@ -191,11 +191,30 @@ describe("Friend Management (Social)", () => {
     expect(await screen.findByRole("dialog", { name: "친구 추가" })).toBeInTheDocument();
   });
 
-  it("sent tab: cancel calls the cancel API (not reject/remove)", async () => {
+  it("sent tab: cancelling asks first, and only 요청 취소 cancels (not reject/remove)", async () => {
     renderSocial();
     await userEvent.click(await screen.findByRole("tab", { name: "보낸 요청 1" }));
     await userEvent.click(await screen.findByRole("button", { name: "취소" }));
+    // cp_G_01_modals 1827:24590: nothing is cancelled on the first tap.
+    const dialog = await screen.findByRole("dialog", { name: "Yuki님에게 보낸 요청을 취소할까요?" });
+    expect(within(dialog).getByText("상대방에게 보낸 신청이 사라져요.")).toBeInTheDocument();
+    expect(api.cancel).not.toHaveBeenCalled();
+
+    // 돌아가기 → nothing happens, the dialog closes.
+    await userEvent.click(within(dialog).getByRole("button", { name: "돌아가기" }));
+    expect(api.cancel).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+
+    // 요청 취소 → cancelled, then the charcoal notice (cp_G_03_toast) says so.
+    await userEvent.click(screen.getByRole("button", { name: "취소" }));
+    await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "요청 취소" }));
     await waitFor(() => expect(api.cancel).toHaveBeenCalledWith("s1"));
+    expect(api.cancel).toHaveBeenCalledTimes(1);
+    const notice = await screen.findByText("요청을 취소했어요");
+    // cp_G_03_toast, one-line variant (784:51628): icon-less.
+    expect(notice.closest(".hg-toast")).toHaveClass("hg-toast--notice", "hg-toast--line", "hg-toast--plain");
+    expect(notice.closest(".hg-toast")).not.toHaveClass("hg-toast--success");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(api.reject).not.toHaveBeenCalled();
     expect(api.remove).not.toHaveBeenCalled();
   });

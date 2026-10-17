@@ -1005,6 +1005,11 @@ export const ko = {
     listError: "목록을 불러오지 못했어요.",
     modalTitle: "{name}님을 친구에서 삭제할까요?",
     modalDesc: "상대방에게 알림은 가지 않습니다.",
+    /* Sent-request cancel confirmation — cp_G_01_modals 1827:24590. */
+    cancelModalTitle: "{name}님에게 보낸 요청을 취소할까요?",
+    cancelModalDesc: "상대방에게 보낸 신청이 사라져요.",
+    cancelModalBack: "돌아가기",
+    cancelModalConfirm: "요청 취소",
     toastAccepted: "{name}님과 친구가 되었어요!",
     toastRejected: "요청을 거절했어요",
     toastCancelled: "요청을 취소했어요",

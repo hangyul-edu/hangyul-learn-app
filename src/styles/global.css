@@ -608,6 +608,18 @@ textarea.input {
     bottom: calc((100dvh - var(--app-h)) / 2 + 24px);
   }
 }
+/* On a screen with the bottom tab bar, a notice sits 12px above the bar
+   rather than over it: the 85% black bar used to cover the tabs, their icons
+   showing through. (Figma places it 23px from the foot only on screens
+   without the bar.) */
+:root:has(.bottomnav) .hg-toast-wrap {
+  bottom: calc(var(--nav-total) + 12px);
+}
+@media (min-width: 620px) {
+  :root:has(.bottomnav) .hg-toast-wrap {
+    bottom: calc((100dvh - var(--app-h)) / 2 + var(--nav-total) + 12px);
+  }
+}
 .hg-toast {
   pointer-events: auto;
   display: flex;
@@ -661,6 +673,14 @@ textarea.input {
   font-weight: 600;
   font-size: 14px;
   line-height: 20px;
+}
+/* cp_G_03_toast, one-line variant (784:51628, main 1:729): 335 wide — the
+   screen less its 20px gutters — and 37 tall, 8/9 padding, text centred. */
+.hg-toast--notice.hg-toast--line {
+  width: 335px;
+  min-height: 37px;
+  padding: 8px 50px 9px;
+  white-space: normal;
 }
 .hg-toast__icon {
   font-size: 16px;

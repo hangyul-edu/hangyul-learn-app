@@ -11170,16 +11170,26 @@ input[type="tel"] {
   border-radius: 6px;
 }
 .lechome__level {
-  /* Figma node 2658:26100 — Gray 5 @ 50%, r6, Medium 8 / 16.5 */
+  /* The series' level chip — Figma 2658:26100 (and every COU-001 card, KO and
+     EN): a 55x15 box 3px in and 4px up from the art's bottom-left corner,
+     Gray 5 @ 50%, r6, Medium 8 centred. The box grows rather than clip if a
+     word ever runs wider. */
   position: absolute;
-  bottom: 6px;
-  left: 6px;
+  bottom: 4px;
+  left: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 55px;
+  height: 15px;
+  padding: 0 4px;
+  box-sizing: border-box;
   background: rgba(119, 128, 136, 0.5);
   color: var(--ink-inverse);
   font-size: 8px;
-  line-height: 16.5px;
+  line-height: 1;
   font-weight: 500;
-  padding: 3px 4px;
+  white-space: nowrap;
   border-radius: 6px;
 }
 .lechome__err {

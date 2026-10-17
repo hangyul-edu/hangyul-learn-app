@@ -1435,6 +1435,11 @@ export const ko = {
     chatbotA11y: "AI 챗봇과 자유롭게 대화하기",
     resume: "이어보기",
     done: "완료",
+    /** A series card's level for screen readers; the chip itself prints the
+     *  English word in every language, as 2658:26020 draws it. */
+    levelBeginner: "초급",
+    levelIntermediate: "중급",
+    levelAdvanced: "고급",
     progress: "진행률",
     /** cp_G_03_toast (744:46726) — a premium lecture or its practice tapped
      *  without premium access; app-authored copy in the toast's two-line form. */

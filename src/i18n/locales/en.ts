@@ -1425,6 +1425,9 @@ export const en: Catalog = {
     chatbotA11y: "Chat freely with the AI chatbot",
     resume: "Resume",
     done: "Done",
+    levelBeginner: "Beginner",
+    levelIntermediate: "Intermediate",
+    levelAdvanced: "Advanced",
     progress: "Progress",
     premiumRequired: "This lecture needs a Premium subscription\nGo Premium to watch every lecture ✨", // cp_G_03_toast 784:63104 style
     practicePremiumRequired: "Extra question practice is Premium only\nGo Premium for more practice ✨",

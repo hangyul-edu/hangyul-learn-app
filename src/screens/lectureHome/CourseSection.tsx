@@ -1,11 +1,26 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "../../i18n";
-import type { Course, SeriesSummary } from "../../lib/types";
+import type { Course, SeriesLevel, SeriesSummary } from "../../lib/types";
+
+/** The level chip's text: the English word in every app language, as COU-001
+ *  draws it (KO 2658:26020 and EN 2407:27217 alike). */
+const LEVEL_CHIP: Record<SeriesLevel, string> = {
+  beginner: "Beginner",
+  intermediate: "Intermediate",
+  advanced: "Advanced",
+};
+const LEVEL_A11Y = {
+  beginner: "courses.levelBeginner",
+  intermediate: "courses.levelIntermediate",
+  advanced: "courses.levelAdvanced",
+} as const;
 
 /**
  * COU-001's series card (2658:26081…): the series' own key art with the Free
- * badge, opening its lesson list (COU-002). The progress marker sits in the
- * badge slot the design gives the level, since series carry no level.
+ * badge at the top and the series' level chip (set in the admin) at the
+ * bottom, opening its lesson list (COU-002). Progress (resume / done) is not
+ * drawn on the card — the design has the level there — and is read out with
+ * the card's name instead.
  */
 function SeriesCard({ series, isPremium }: { series: SeriesSummary; isPremium: boolean }) {
   const { t } = useTranslation();
@@ -13,11 +28,15 @@ function SeriesCard({ series, isPremium }: { series: SeriesSummary; isPremium: b
   const showFree = !isPremium && series.has_free_lesson;
   const done = series.lesson_count > 0 && series.completed_lesson_count >= series.lesson_count;
   const marker = done ? t("courses.done") : series.started ? t("courses.resume") : null;
+  const level = series.level ? LEVEL_CHIP[series.level] : null;
+  const label = [series.title, series.level ? t(LEVEL_A11Y[series.level]) : null, marker]
+    .filter(Boolean)
+    .join(", ");
   return (
     <button
       className="lechome__card"
       onClick={() => nav(`/series/${series.series_id}`)}
-      aria-label={`${series.title}${marker ? `, ${marker}` : ""}${showFree ? t("courses.freeSuffix") : ""}`}
+      aria-label={`${label}${showFree ? t("courses.freeSuffix") : ""}`}
     >
       {/* Figma's cards are the key art alone — the series' name is drawn
           into it. The name stays in the button's label, and is printed on
@@ -31,7 +50,7 @@ function SeriesCard({ series, isPremium }: { series: SeriesSummary; isPremium: b
           </div>
         )}
         {showFree && <span className="lechome__free" aria-hidden="true">Free</span>}
-        {marker && <span className="lechome__level" aria-hidden="true">{marker}</span>}
+        {level && <span className="lechome__level" aria-hidden="true">{level}</span>}
       </div>
     </button>
   );

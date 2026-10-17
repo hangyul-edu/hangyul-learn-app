@@ -394,6 +394,9 @@ export interface Course {
   series?: SeriesSummary[];
 }
 
+/** A series' level as its COU-001 card shows it, set in the admin. */
+export type SeriesLevel = "beginner" | "intermediate" | "advanced";
+
 /** A series card on the course list (COU-001). */
 export interface SeriesSummary {
   series_id: string;
@@ -402,6 +405,8 @@ export interface SeriesSummary {
   description: string;
   /** The series' own key art — the card and the COU-002 header. */
   thumbnail_url: string | null;
+  /** The card's level chip; null (or absent from an older server) = no chip. */
+  level?: SeriesLevel | null;
   lesson_count: number;
   completed_lesson_count: number;
   started: boolean;

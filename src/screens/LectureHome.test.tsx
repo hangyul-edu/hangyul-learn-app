@@ -135,7 +135,7 @@ describe("LectureHome — courses and their series (COU-001)", () => {
     expect(screen.queryByLabelText(/KOREAN SURVIVAL KIT/)).toBeNull();
   });
 
-  it("shows resume/completed markers from the series' progress", async () => {
+  it("reads out resume/completed from the series' progress without drawing it on the card", async () => {
     courses.mockResolvedValue(
       page([
         course("C1", "Speak Korean Instantly", "track_conversation", [
@@ -145,10 +145,34 @@ describe("LectureHome — courses and their series (COU-001)", () => {
         ]),
       ]),
     );
-    renderPage();
+    const { container } = renderPage();
     await screen.findByLabelText(/Series fresh/);
     expect(screen.getByLabelText(/Series resume, 이어보기/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Series done, 완료/)).toBeInTheDocument();
+    // The chip at the bottom of the art is the level's (COU-001), not progress.
+    expect(container.querySelector(".lechome__level")).toBeNull();
+  });
+
+  it("shows each series' level chip in English, as the design draws it in every language", async () => {
+    courses.mockResolvedValue(
+      page([
+        course("C1", "Speak Korean Instantly", "track_conversation", [
+          series("b", { level: "beginner" }),
+          series("i", { level: "intermediate", started: true }),
+          series("a", { level: "advanced", has_free_lesson: false }),
+          series("none", { level: null }),
+        ]),
+      ]),
+    );
+    const { container } = renderPage();
+    await screen.findByLabelText(/Series b/);
+    const chips = [...container.querySelectorAll(".lechome__level")].map((c) => c.textContent);
+    expect(chips).toEqual(["Beginner", "Intermediate", "Advanced"]);
+    // Screen readers hear it in the app's language, with progress and Free after it.
+    expect(screen.getByLabelText("Series b, 초급, 무료 강의")).toBeInTheDocument();
+    expect(screen.getByLabelText("Series i, 중급, 이어보기, 무료 강의")).toBeInTheDocument();
+    expect(screen.getByLabelText("Series a, 고급")).toBeInTheDocument();
+    expect(screen.getByLabelText("Series none, 무료 강의")).toBeInTheDocument();
   });
 
   it("tags a series with a free lesson for a member without premium access", async () => {

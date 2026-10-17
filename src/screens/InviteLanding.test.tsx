@@ -68,6 +68,9 @@ describe("InviteLanding", () => {
     await waitFor(() => expect(api.accept).toHaveBeenCalledWith("r1"));
     await waitFor(() => expect(qc.getQueryState(["friends"])?.isInvalidated).toBe(true));
     expect(qc.getQueryState(["friend-requests-received"])?.isInvalidated).toBe(true);
+    // The named bottom notice (cp_G_03_toast), as everywhere a request is accepted.
+    const notice = await screen.findByText("Beam님과 친구가 되었어요!");
+    expect(notice.closest(".hg-toast")).toHaveClass("hg-toast--notice", "hg-toast--line");
   });
 
   it("shows a friendly message for an invalid/expired token", async () => {

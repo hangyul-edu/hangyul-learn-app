@@ -55,12 +55,14 @@ export function IncomingFriendRequestSheet({
     [request, t],
   );
 
-  async function respond(fn: () => Promise<unknown>, done: string, plain = false) {
+  async function respond(fn: () => Promise<unknown>, done: string, notice = false) {
     if (busy || !requestId) return;
     setBusy(true);
     try {
       await fn();
-      if (plain) toast.show(done, "default", { icon: false });
+      // `notice`: the bottom notice (cp_G_03_toast) — "{name}님과 친구가
+      // 되었어요!" after an accept, as Figma 1825:33388 / 1825:33392 show it.
+      if (notice) toast.show(done, "notice");
       else toast.success(done);
       onClose();
     } catch (e) {

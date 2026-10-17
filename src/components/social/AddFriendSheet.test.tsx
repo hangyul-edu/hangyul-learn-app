@@ -124,6 +124,16 @@ describe("AddFriendSheet", () => {
     expect(within(deeRow).queryByRole("button")).not.toBeInTheDocument();
   });
 
+  it("accepting a recommendation names the new friend in the bottom notice", async () => {
+    api.accept.mockResolvedValue({});
+    api.recommendations.mockResolvedValue({ recommendations: [rec("c", "Cara", "request_received", "req-c")] });
+    wrap(<AddFriendSheet open onClose={() => {}} />);
+    await userEvent.click(await screen.findByRole("button", { name: "수락" }));
+    await waitFor(() => expect(api.accept).toHaveBeenCalledWith("req-c"));
+    const notice = await screen.findByText("Cara님과 친구가 되었어요!");
+    expect(notice.closest(".hg-toast")).toHaveClass("hg-toast--notice", "hg-toast--line");
+  });
+
   it("sends exactly one request and blocks duplicate taps", async () => {
     let resolve!: () => void;
     api.request.mockReturnValue(new Promise<void>((r) => { resolve = () => r(); }));
@@ -260,7 +270,8 @@ describe("IncomingFriendRequestSheet", () => {
     expect(api.accept).toHaveBeenCalledTimes(1);
     resolve();
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    // Named success toast using the requester's fetched nickname.
-    expect(await screen.findByText("Beam님과 친구가 되었어요!")).toBeInTheDocument();
+    // Named bottom notice (cp_G_03_toast) using the requester's fetched nickname.
+    const notice = await screen.findByText("Beam님과 친구가 되었어요!");
+    expect(notice.closest(".hg-toast")).toHaveClass("hg-toast--notice", "hg-toast--line");
   });
 });

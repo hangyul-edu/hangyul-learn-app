@@ -34,12 +34,14 @@ export function InviteLanding() {
     retry: false,
   });
 
-  async function run(fn: () => Promise<unknown>, doneMsg: string) {
+  async function run(fn: () => Promise<unknown>, doneMsg: string, notice = false) {
     if (busy) return;
     setBusy(true);
     try {
       await fn();
-      toast.success(doneMsg);
+      // `notice`: the bottom notice (cp_G_03_toast), as after an accept.
+      if (notice) toast.show(doneMsg, "notice");
+      else toast.success(doneMsg);
       setDone(true);
       // The Social screen's lists and the friend league (same keys it refreshes
       // after its own actions) now include this request / friendship.
@@ -92,7 +94,17 @@ export function InviteLanding() {
                   <Button block onClick={() => nav("/social")}>{t("invite.goToFriends")}</Button>
                 </>
               ) : inviter.relationship === "request_received" && inviter.request_id ? (
-                <Button block loading={busy} onClick={() => run(() => friendApi.accept(inviter.request_id as string), t("invite.accepted"))}>
+                <Button
+                  block
+                  loading={busy}
+                  onClick={() =>
+                    run(
+                      () => friendApi.accept(inviter.request_id as string),
+                      t("friends.toastAccepted", { name: inviter.nickname ?? t("home.defaultNickname") }),
+                      true,
+                    )
+                  }
+                >
                   {t("invite.accept")}
                 </Button>
               ) : inviter.relationship === "request_sent" ? (

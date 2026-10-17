@@ -157,8 +157,10 @@ describe("Friend Management (Social)", () => {
     await userEvent.click(await screen.findByRole("tab", { name: "받은 요청 1" }));
     await userEvent.click(await screen.findByRole("button", { name: "수락" }));
     await waitFor(() => expect(api.accept).toHaveBeenCalledWith("r1"));
-    // Dynamic name from the request item (fixture nickname "Hana").
-    expect(await screen.findByText("Hana님과 친구가 되었어요!")).toBeInTheDocument();
+    // Dynamic name from the request item (fixture nickname "Hana"), in the
+    // bottom notice (cp_G_03_toast, Figma 1825:33388).
+    const notice = await screen.findByText("Hana님과 친구가 되었어요!");
+    expect(notice.closest(".hg-toast")).toHaveClass("hg-toast--notice", "hg-toast--line");
   });
 
   it("rejecting a request calls the reject API", async () => {
@@ -239,6 +241,10 @@ describe("Friend Management (Social)", () => {
     const modal = (await screen.findByText("Tara님을 친구에서 삭제할까요?")).closest(".dialog") as HTMLElement;
     await userEvent.click(within(modal).getByRole("button", { name: "삭제" }));
     await waitFor(() => expect(api.remove).toHaveBeenCalledWith("f1"));
+    // Then the bottom notice, in the same style as an accept's (cp_G_03_toast).
+    const notice = await screen.findByText("친구를 삭제했어요");
+    expect(notice.closest(".hg-toast")).toHaveClass("hg-toast--notice", "hg-toast--line");
+    expect(notice.closest(".hg-toast")).not.toHaveClass("hg-toast--success");
   });
 
   it("blocks duplicate taps on an action (only one request)", async () => {

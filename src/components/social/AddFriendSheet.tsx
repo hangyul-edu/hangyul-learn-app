@@ -52,7 +52,6 @@ function useAddCopy() {
     notFoundSub: t("addFriend.notFoundSub"),
     requestSent: t("addFriend.requestSent"),
     requestCancelled: t("addFriend.requestCancelled"),
-    requestAccepted: t("addFriend.requestAccepted"),
     linkCopied: t("addFriend.linkCopied"),
     linkCopyFailed: t("addFriend.linkCopyFailed"),
     ctaState: (name: string, rel: string) =>
@@ -173,7 +172,18 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
         // Confirmed first (CancelRequestDialog), never cancelled on the first tap.
         return { text: copy.cancelRequest, onClick: () => u.request_id && setCancelTarget(u) };
       case "request_received":
-        return { text: copy.accept, primary: true, onClick: () => u.request_id && act(u.user_id, () => friendApi.accept(u.request_id!), copy.requestAccepted) };
+        return {
+          text: copy.accept,
+          primary: true,
+          onClick: () =>
+            u.request_id &&
+            act(
+              u.user_id,
+              () => friendApi.accept(u.request_id!),
+              t("friends.toastAccepted", { name: nameOf(u, t("home.defaultNickname")) }),
+              true,
+            ),
+        };
       case "friends":
         return { text: copy.friendsLabel, muted: true, onClick: undefined };
     }

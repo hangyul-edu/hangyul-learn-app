@@ -193,7 +193,7 @@ export function Social() {
   const removing = deleteTarget ? busy.has(deleteTarget.user_id) : false;
   async function confirmRemove() {
     if (!deleteTarget) return;
-    await act(deleteTarget.user_id, () => friendApi.remove(deleteTarget.user_id), copy.toastRemoved);
+    await act(deleteTarget.user_id, () => friendApi.remove(deleteTarget.user_id), copy.toastRemoved, "notice");
     setDeleteTarget(null);
   }
 
@@ -273,7 +273,7 @@ export function Social() {
                   onOpen={() => setIncomingId(r.request_id)}
                   actions={[
                     { label: copy.reject, onClick: () => act(r.request_id, () => friendApi.reject(r.request_id), copy.toastRejected) },
-                    { label: copy.accept, primary: true, onClick: () => act(r.request_id, () => friendApi.accept(r.request_id), copy.toastAccepted(nameOf(r, t)), "plain") },
+                    { label: copy.accept, primary: true, onClick: () => act(r.request_id, () => friendApi.accept(r.request_id), copy.toastAccepted(nameOf(r, t)), "notice") },
                   ]}
                 />
               ))}

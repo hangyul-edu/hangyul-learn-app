@@ -27,6 +27,13 @@ export function blankToSpeech(blank: BlankAttempt): SpeechAttempt {
  * server's already-localized tips; falls back to a safe localized message so a
  * raw provider/API error is never surfaced to the learner. */
 export function pronunciationMessage(attempt: SpeechAttempt, copy: SessionConversationCopy): string {
+  // Something else entirely was said: pronunciation advice would mislead.
+  if (attempt.feedback_code === "unrelated_speech") return copy.unrelatedSpeech;
   const tip = attempt.tips?.find((line) => line.trim().length > 0);
-  return tip?.trim() || copy.pronunciationFallback;
+  if (tip?.trim()) return tip.trim();
+  // No provider tip: at least show what the recognizer heard, so the
+  // learner knows whether to speak more clearly or say something else.
+  const heard = attempt.transcription?.trim();
+  if (heard && !attempt.correct) return copy.heardAs(heard);
+  return copy.pronunciationFallback;
 }

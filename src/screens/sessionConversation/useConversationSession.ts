@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "../../i18n";
-import { recApi, sentenceApi, studyApi } from "../../api/endpoints";
+import { recApi, sentenceApi, studyApi, speechApi } from "../../api/endpoints";
 import { hasBlank } from "../../components/session/FillSentence";
 import { useToast } from "../../hooks/toast";
 import { useRecordDisplayedItem } from "../../hooks/learningActivity";
@@ -14,7 +14,8 @@ import {
   useTrackGoal,
   type StudyRef,
 } from "../../hooks/studySessionFlow";
-import { useVoiceRecorder } from "../../hooks/useVoiceRecorder";
+import { useSpeechInput } from "../../hooks/useSpeechInput";
+import type { SpokenTake } from "../../lib/speech";
 import {
   clearConversationSession,
   readConversationSession,
@@ -22,7 +23,8 @@ import {
   type ConversationSessionSnapshot,
 } from "../../lib/conversationSessionSnapshot";
 import { errorMessage } from "../../lib/http";
-import { needsRetake, speechErrorMessage, type RecordingInfo } from "../../lib/recording";
+import { needsRetake, speechErrorMessage } from "../../lib/recording";
+import { resolveMessage } from "../../i18n/current";
 import { useSavedReturn } from "../../lib/savedReturn";
 import { useSessionConversationCopy } from "../../lib/sessionConversationCopy";
 import {
@@ -134,11 +136,18 @@ export function useConversationSession() {
   // The sentence the take was started for — bound at start, so a take is
   // always graded against the item the learner was actually reading.
   const recordingForRef = useRef<Sentence | null>(null);
-  const recorder = useVoiceRecorder({
-    onRecorded: (audio, take) => {
+  const recorder = useSpeechInput({
+    purpose: "sentence",
+    context: { source: attemptSource },
+    onSpoken: (spoken) => {
       const sentence = recordingForRef.current;
-      if (sentence) void gradeRecording(sentence, audio, take);
+      if (sentence) void gradeRecording(sentence, spoken);
     },
+    // A live take in which the agent heard nothing: the same line the server
+    // sends for a silent recording, and no attempt.
+    onNothingHeard: () => toast.error(resolveMessage("speechError.noSpeech")),
+    // Heard but not transcribed: a technical failure, not a wrong answer.
+    onFailed: () => toast.error(copy.evaluationError),
     onUnavailable: () => toast.error(copy.micPermission),
   });
 
@@ -338,10 +347,11 @@ export function useConversationSession() {
     const closedNow = isClosedStatus(res.activity_status);
     if (closedNow) setClosed((c) => withKey(c, key));
     if (!res.correct && closedNow) {
+      // The answer is shown; the learner practises it in whichever input
+      // mode they are in — spoken practice is checked on the device too.
       setMissed((m) => withKey(m, key));
       setRevealed((m) => ({ ...m, [key]: revealedBlankAnswer(res.reveal) }));
       setHintStage((m) => ({ ...m, [key]: "answer" }));
-      setKeyboard(true);
       toast.show(t("session.answerShownAfterTries"));
     }
     record(studyToSpeech(res, s.activity_id, typedText), s, mode);
@@ -535,11 +545,14 @@ export function useConversationSession() {
   // Grade one recorded take of the current sentence. Voice fill-in-the-blank
   // accepts the missing phrase OR the full completed sentence; a sentence with
   // no blank is scored as a plain speech attempt.
-  async function gradeRecording(sentence: Sentence, audio: Blob, take: RecordingInfo) {
+  async function gradeRecording(sentence: Sentence, spoken: SpokenTake) {
+    // What goes to the server: the live transcript's id, or the recording.
+    const heard = spoken.transcript ?? spoken.audio;
     if (isStudyItem(sentence) && study) {
-      // A closed activity takes no more graded answers; practice is typed.
+      // A closed activity takes no more graded answers: a spoken re-answer is
+      // practice, checked on the device against the revealed key, never credited.
       if (closed.has(sentence.sentence_id)) {
-        setKeyboard(true);
+        await practiceByVoice(sentence, spoken);
         return;
       }
       setScoring(true);
@@ -548,8 +561,8 @@ export function useConversationSession() {
         const res = await studyApi.voiceAttempt(
           study.sessionId,
           sentence.activity_id,
-          audio,
-          take,
+          heard,
+          spoken.take,
           (reqIdRef.current ??= randomUuid()),
         );
         if (seq === attemptSeq.current) onStudyResult(res, sentence, "voice", res.transcription ?? "");
@@ -570,8 +583,9 @@ export function useConversationSession() {
         ? blankToSpeech(
             await sentenceApi.blankAttempt(sentence.sentence_id, {
               inputMode: "voice",
-              audio,
-              take,
+              audio: spoken.audio,
+              take: spoken.take,
+              transcript: spoken.transcript,
               clientRequestId: (reqIdRef.current ??= randomUuid()),
               source: attemptSource,
               reviewSessionId: isReview ? reviewSessionIdRef.current : undefined,
@@ -579,8 +593,8 @@ export function useConversationSession() {
           )
         : await sentenceApi.speechAttempt(
             sentence.sentence_id,
-            audio,
-            take,
+            heard,
+            spoken.take,
             attemptSource,
             isReview ? reviewSessionIdRef.current : undefined,
           );
@@ -590,6 +604,40 @@ export function useConversationSession() {
       // A technical failure is not a wrong answer: keep the item and show a
       // localized retryable message, never the raw provider error. Silence or
       // an unreadable take gets its own line, so the learner knows to retake.
+      if (seq === attemptSeq.current) toast.error(needsRetake(e) ? speechErrorMessage(e) : copy.retryMessage);
+    } finally {
+      setScoring(false);
+    }
+  }
+
+  /** Spoken practice of a closed activity: what was heard, checked locally like typed practice. */
+  async function practiceByVoice(sentence: StudySentence, spoken: SpokenTake) {
+    setScoring(true);
+    const seq = ++attemptSeq.current;
+    try {
+      const heardText = spoken.transcript
+        ? spoken.transcript.text
+        : (await speechApi.transcribe(spoken.audio, spoken.take)).text;
+      if (seq !== attemptSeq.current) return;
+      if (!heardText.trim()) {
+        toast.error(resolveMessage("speechError.noSpeech"));
+        return;
+      }
+      const ok = practiceSentenceCorrect(sentence.reveal, heardText);
+      record(
+        {
+          attempt_id: `${sentence.activity_id}:practice`,
+          correct: ok,
+          transcription: heardText,
+          target_text: sentence.korean,
+          pronunciation_score: ok ? 100 : 0,
+          feedback_code: ok ? "correct" : "missed_words",
+          points_earned: 0,
+        },
+        sentence,
+        "voice",
+      );
+    } catch (e) {
       if (seq === attemptSeq.current) toast.error(needsRetake(e) ? speechErrorMessage(e) : copy.retryMessage);
     } finally {
       setScoring(false);

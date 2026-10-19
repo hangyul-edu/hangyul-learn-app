@@ -202,6 +202,56 @@ export interface Page<T> {
   next_cursor: string | null;
   has_more: boolean;
 }
+/** Whether the microphone can be streamed live (LiveKit + STT agent), and which recognizer transcribes. */
+export interface SpeechAvailability {
+  realtime_available: boolean;
+  livekit_configured: boolean;
+  agent_online: boolean;
+  provider: SpeechProviderInfo;
+  data_topic: string;
+}
+export interface SpeechProviderInfo {
+  provider: string;
+  model?: string;
+  requested?: string;
+  reason?: string;
+  is_fallback?: boolean;
+}
+/** A live speech session: the LiveKit room to join and the token for it. */
+export interface SpeechSessionOpened {
+  session_id: string;
+  room: string;
+  url: string;
+  token: string;
+  identity: string;
+  data_topic: string;
+  expires_at: string;
+  provider: SpeechProviderInfo;
+  agent_online: boolean;
+}
+export interface PracticeTranscription {
+  text: string;
+  provider: string;
+  model: string;
+  latency_ms: number;
+  audio_duration_ms: number;
+  no_speech: boolean;
+}
+export interface SpeechTranscriptView {
+  transcript_id: string;
+  session_id: string;
+  seq: number;
+  text: string;
+  status: "ok" | "no_speech" | "failed";
+  error: string | null;
+  provider: string;
+  model: string;
+  confidence: number;
+  latency_ms: number;
+  audio_duration_ms: number;
+  created_at: string;
+  consumed_at: string | null;
+}
 export interface SpeechAttempt {
   attempt_id: string;
   correct: boolean;

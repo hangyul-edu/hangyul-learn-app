@@ -2,9 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "../../i18n";
 import { sentenceApi } from "../../api/endpoints";
 import { useToast } from "../../hooks/toast";
-import { useVoiceRecorder } from "../../hooks/useVoiceRecorder";
+import { useSpeechInput } from "../../hooks/useSpeechInput";
 import { errorMessage } from "../../lib/http";
 import { needsRetake, speechErrorMessage } from "../../lib/recording";
+import { isUnrelatedSpeech } from "../../lib/speech";
+import { resolveMessage } from "../../i18n/current";
 import { SaveBookmarkButton } from "../SaveBookmarkButton";
 import type { Sentence } from "../../lib/types";
 import { Button } from "../ui/kit";
@@ -14,7 +16,12 @@ import icRetry from "../../assets/brand/ic-24-retry.svg";
 import icChevron from "../../assets/brand/ic-card-chevron.svg";
 import { playOn, unlockedAudio } from "../../lib/unlockedAudio";
 
-export type SpeakingOutcome = "prompt" | "correct" | "wrong";
+/**
+ * `error` — the take could not be graded (the server or the network failed):
+ * not a wrong reading, so it never counts against the learner; the card asks
+ * to try again.
+ */
+export type SpeakingOutcome = "prompt" | "correct" | "wrong" | "error";
 
 /**
  * How long a take listens before it is graded: long enough to read the
@@ -68,6 +75,7 @@ export function SpeakingCard({
   const { t } = useTranslation();
   const toast = useToast();
   const [outcome, setOutcome] = useState<SpeakingOutcome>("prompt");
+  const [unrelated, setUnrelated] = useState(false);
   const [scoring, setScoring] = useState(false);
   const [micBlocked, setMicBlocked] = useState(false);
   const [saved, setSaved] = useState(!!sentence.bookmarked);
@@ -84,8 +92,10 @@ export function SpeakingCard({
     outcomeRef.current?.(next);
   }, []);
 
-  const recorder = useVoiceRecorder({
-    onRecorded: async (audio, recording) => {
+  const recorder = useSpeechInput({
+    purpose: "sentence",
+    context: { sentence_id: sentence.sentence_id, source: "lecture" },
+    onSpoken: async (spoken) => {
       if (discardRef.current) {
         discardRef.current = false;
         return;
@@ -93,15 +103,30 @@ export function SpeakingCard({
       setScoring(true);
       try {
         const take = sentenceRef.current;
-        const attempt = await sentenceApi.speechAttempt(take.sentence_id, audio, recording, "lecture");
-        if (take.sentence_id === sentenceRef.current.sentence_id) settle(attempt.correct ? "correct" : "wrong");
+        // The server grades what was said — the live transcript by id, or
+        // the recording it transcribes — never the fact that audio arrived.
+        const attempt = await sentenceApi.speechAttempt(
+          take.sentence_id,
+          spoken.transcript ?? spoken.audio,
+          spoken.take,
+          "lecture",
+        );
+        if (take.sentence_id !== sentenceRef.current.sentence_id) return;
+        setUnrelated(!attempt.correct && isUnrelatedSpeech(attempt.feedback_code));
+        settle(attempt.correct ? "correct" : "wrong");
       } catch (e) {
         toast.error(speechErrorMessage(e));
         // Silence or an unreadable take was not graded: let them record again.
-        if (!needsRetake(e)) settle("wrong");
+        // A failed grading (server / network) is not a wrong reading either.
+        if (!needsRetake(e)) settle("error");
       } finally {
         setScoring(false);
       }
+    },
+    onNothingHeard: () => toast.error(resolveMessage("speechError.noSpeech")),
+    onFailed: () => {
+      toast.error(t("sessionConversation.evaluationError"));
+      settle("error");
     },
     onUnavailable: () => setMicBlocked(true),
   });
@@ -123,6 +148,7 @@ export function SpeakingCard({
   // Each new sentence starts fresh and listens straight away.
   useEffect(() => {
     setOutcome("prompt");
+    setUnrelated(false);
     setSaved(!!sentence.bookmarked);
     void listen();
     return () => {
@@ -153,6 +179,7 @@ export function SpeakingCard({
   }
 
   function retry() {
+    setUnrelated(false);
     setOutcome("prompt");
     outcomeRef.current?.("prompt");
     void listen();
@@ -170,11 +197,17 @@ export function SpeakingCard({
   }
 
   const title = t(
-    outcome === "correct" ? "courses.speakPerfect" : outcome === "wrong" ? "courses.speakAgain" : "courses.speakPrompt",
+    outcome === "correct"
+      ? "courses.speakPerfect"
+      : outcome === "wrong"
+        ? "courses.speakAgain"
+        : outcome === "error"
+          ? "courses.speakError"
+          : "courses.speakPrompt",
   );
 
   return (
-    <div className={`lspk lspk--${outcome}`} role="group" aria-label={title}>
+    <div className={`lspk lspk--${outcome === "error" ? "wrong" : outcome}`} role="group" aria-label={title}>
       <div className="lspk__head">
         <h2 className="lspk__title">{title}</h2>
         <SaveBookmarkButton
@@ -224,6 +257,7 @@ export function SpeakingCard({
       </div>
       {sentence.romanization && <p className="lspk__roman">[{sentence.romanization}]</p>}
       <p className="lspk__trans">{sentence.translation}</p>
+      {outcome === "wrong" && unrelated && <p className="lspk__note">{t("courses.speakUnrelated")}</p>}
       </div>
 
       {outcome !== "prompt" && (
@@ -234,7 +268,11 @@ export function SpeakingCard({
       )}
 
       <p className="sr-only" aria-live="polite">
-        {scoring ? t("courses.scoringA11y") : recorder.recording ? t("courses.listeningA11y") : ""}
+        {scoring || recorder.phase === "processing"
+          ? t("courses.scoringA11y")
+          : recorder.recording
+            ? t("courses.listeningA11y")
+            : ""}
       </p>
 
       {micBlocked && (

@@ -8,8 +8,11 @@ const { attempt, speechAttempt, recorder } = vi.hoisted(() => ({
     start: vi.fn(() => Promise.resolve()),
     stop: vi.fn(),
     recording: false,
+    phase: "idle",
+    mode: "upload",
     options: null as null | {
-      onRecorded: (b: Blob, take: { filename: string; durationMs: number }) => Promise<void> | void;
+      onSpoken: (spoken: { audio?: Blob; take?: { filename: string; durationMs: number }; transcript?: { transcriptIds: string[]; text: string; status: string; latencyMs: number; provider: string } }) => Promise<void> | void;
+      onNothingHeard?: () => void;
       onUnavailable: () => void;
     },
   },
@@ -19,8 +22,8 @@ vi.mock("../../api/endpoints", () => ({
   sentenceApi: { speechAttempt, audio: vi.fn(), bookmark: vi.fn(), unbookmark: vi.fn() },
 }));
 vi.mock("../../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn() }) }));
-vi.mock("../../hooks/useVoiceRecorder", () => ({
-  useVoiceRecorder: (options: typeof recorder.options) => {
+vi.mock("../../hooks/useSpeechInput", () => ({
+  useSpeechInput: (options: typeof recorder.options) => {
     recorder.options = options;
     return recorder;
   },
@@ -104,12 +107,44 @@ describe("SpeakingCard", () => {
     expect(screen.getByText("따라해보세요!")).toBeInTheDocument();
     await waitFor(() => expect(recorder.start).toHaveBeenCalled());
     await act(async () => {
-      await recorder.options!.onRecorded(new Blob(["x"]), TAKE);
+      await recorder.options!.onSpoken({ audio: new Blob(["x"]), take: TAKE });
     });
 
     expect(speechAttempt).toHaveBeenCalledWith("s1", expect.any(Blob), TAKE, "lecture");
     expect(screen.getByText("완벽해요!")).toBeInTheDocument();
     expect(onOutcome).toHaveBeenLastCalledWith("correct");
+  });
+
+  it("submits a live transcript by id and grades on the server's verdict, not on hearing speech", async () => {
+    const onOutcome = vi.fn();
+    speechAttempt.mockResolvedValue({ correct: false, feedback_code: "unrelated_speech" });
+    ko(<SpeakingCard sentence={SENTENCE} onOutcome={onOutcome} onMicDeclined={vi.fn()} />);
+    await waitFor(() => expect(recorder.start).toHaveBeenCalled());
+    const transcript = { transcriptIds: ["trn_1"], text: "감사합니다", status: "ok", latencyMs: 1200, provider: "whisper_local" };
+    await act(async () => {
+      await recorder.options!.onSpoken({ transcript });
+    });
+
+    expect(speechAttempt).toHaveBeenCalledWith("s1", transcript, undefined, "lecture");
+    expect(onOutcome).toHaveBeenLastCalledWith("wrong");
+    expect(screen.getByText("다시 한 번 말해보세요!")).toBeInTheDocument();
+    expect(screen.getByText("다른 말을 한 것 같아요. 위 문장을 읽어 주세요.")).toBeInTheDocument();
+  });
+
+  it("treats a failed grading as an error to retry, never as a wrong reading", async () => {
+    const onOutcome = vi.fn();
+    speechAttempt.mockRejectedValue(new ApiError(503, "speech_recognition_unavailable", "down"));
+    ko(<SpeakingCard sentence={SENTENCE} onOutcome={onOutcome} onMicDeclined={vi.fn()} />);
+    await waitFor(() => expect(recorder.start).toHaveBeenCalled());
+    await act(async () => {
+      await recorder.options!.onSpoken({ audio: new Blob(["x"]), take: TAKE });
+    });
+
+    expect(onOutcome).toHaveBeenLastCalledWith("error");
+    expect(onOutcome).not.toHaveBeenCalledWith("wrong");
+    expect(screen.getByText("채점하지 못했어요. 다시 시도해 주세요.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /다시하기/ }));
+    await waitFor(() => expect(recorder.start).toHaveBeenCalledTimes(2));
   });
 
   it("does not count a silent take as wrong", async () => {
@@ -118,7 +153,7 @@ describe("SpeakingCard", () => {
     ko(<SpeakingCard sentence={SENTENCE} onOutcome={onOutcome} onMicDeclined={vi.fn()} />);
     await waitFor(() => expect(recorder.start).toHaveBeenCalled());
     await act(async () => {
-      await recorder.options!.onRecorded(new Blob(["x"]), TAKE);
+      await recorder.options!.onSpoken({ audio: new Blob(["x"]), take: TAKE });
     });
 
     expect(onOutcome).not.toHaveBeenCalledWith("wrong");
@@ -141,7 +176,7 @@ describe("SpeakingCard", () => {
     ko(<SpeakingCard sentence={SENTENCE} onMicDeclined={vi.fn()} />);
     await waitFor(() => expect(recorder.start).toHaveBeenCalledTimes(1));
     await act(async () => {
-      await recorder.options!.onRecorded(new Blob(["x"]), TAKE);
+      await recorder.options!.onSpoken({ audio: new Blob(["x"]), take: TAKE });
     });
     expect(screen.getByText("다시 한 번 말해보세요!")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /다시하기/ }));

@@ -821,6 +821,8 @@ export const en: Catalog = {
     keyboardMode: "Keyboard Mode", // 798:76717
     pronunciationTitle: "Pronunciation accuracy",
     pronunciationFallback: "Try saying it a little more clearly.",
+    unrelatedSpeech: "That sounded like something else. Please repeat the sentence above.",
+    heardAs: "We heard: “{text}”",
     scoreA11y: "Pronunciation accuracy: {percent} percent",
     evaluationError: "We couldn't score that. Please try again shortly.",
     micPermission: "Microphone access is needed. Please check your browser settings.",
@@ -1368,7 +1370,7 @@ export const en: Catalog = {
     topikGrade: "TOPIK Lv.{n}", // 1718:32055
     selected: "Selected",
     hint: "Hint",
-    answerShownAfterTries: "That was your second try, so here's the answer. Type it in to continue.",
+    answerShownAfterTries: "That was your second try, so here's the answer. Say or type it to continue.",
     topikAnswerShown: "That was your second try, so the correct answer is highlighted.",
     topikAnswerRevealedTitle: "Here's the correct answer",
     customApplied: "The rest of your set now matches your request.",
@@ -1444,6 +1446,8 @@ export const en: Catalog = {
     speakPerfect: "Perfect!", // EN 784:50165
     speakAgain: "Try again!", // EN 784:50221
     speakRetry: "Retry",
+    speakError: "We couldn't score that. Please try again.",
+    speakUnrelated: "That sounded like something else. Please read the sentence above.",
     listenA11y: "Listen to the sentence",
     listeningA11y: "Listening. Repeat the sentence.",
     scoringA11y: "Checking your pronunciation.",

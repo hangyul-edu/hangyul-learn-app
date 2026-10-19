@@ -851,6 +851,8 @@ export const ko = {
     keyboardMode: "키보드 모드",
     pronunciationTitle: "발음 정확도",
     pronunciationFallback: "조금 더 또렷하게 말해보세요.",
+    unrelatedSpeech: "다른 말을 한 것 같아요. 위 문장을 따라 말해 주세요.", // app-authored
+    heardAs: "이렇게 들렸어요: “{text}”", // app-authored
     scoreA11y: "발음 정확도 {percent} 퍼센트",
     evaluationError: "채점하지 못했어요. 잠시 후 다시 시도해 주세요.",
     micPermission: "마이크 권한이 필요해요. 브라우저 설정을 확인해 주세요.",
@@ -1375,7 +1377,7 @@ export const ko = {
     topikGrade: "토픽 {n}급",
     selected: "선택됨",
     hint: "힌트",
-    answerShownAfterTries: "두 번 모두 틀려서 정답을 보여드려요. 정답을 따라 입력해 보세요.",
+    answerShownAfterTries: "두 번 모두 틀려서 정답을 보여드려요. 정답을 따라 말하거나 입력해 보세요.",
     topikAnswerShown: "두 번 모두 틀려서 정답을 표시했어요.",
     topikAnswerRevealedTitle: "정답을 확인해 보세요",
     customApplied: "요청에 맞게 남은 문장을 바꿨어요.",
@@ -1461,6 +1463,8 @@ export const ko = {
     speakPerfect: "완벽해요!",
     speakAgain: "다시 한 번 말해보세요!",
     speakRetry: "다시하기",
+    speakError: "채점하지 못했어요. 다시 시도해 주세요.", // app-authored
+    speakUnrelated: "다른 말을 한 것 같아요. 위 문장을 읽어 주세요.", // app-authored
     listenA11y: "문장 듣기",
     listeningA11y: "듣고 있어요. 문장을 따라 말해보세요.",
     scoringA11y: "발음을 확인하고 있어요.",

@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { SkeletonList } from "../components/ui/states";
 import { ChatbotLauncher } from "../components/ChatbotLauncher";
 import { StreakChip } from "../components/StreakChip";
-import { BannerCarousel } from "./lectureHome/BannerCarousel";
+import { FeatureCarousel } from "./lectureHome/FeatureCarousel";
 import { CourseSection } from "./lectureHome/CourseSection";
 import { learnApi } from "../api/endpoints";
 import { useDashboard } from "../api/queries";
@@ -54,7 +54,7 @@ export function LectureHome() {
           />
         </header>
 
-        <BannerCarousel />
+        <FeatureCarousel />
 
         <div className="lechome__filters" role="tablist" aria-label={t("courses.trackFilter")}>
           {(

@@ -4534,7 +4534,7 @@ textarea.input {
 }
 
 /* Non-subscriber promotion banner */
-.home__promo {
+.home__upsell {
   display: flex;
   align-items: center;
   /* Figma cp_G_03_toast (node 1825:26630): text runs 14→304 and the 12px
@@ -4552,7 +4552,7 @@ textarea.input {
   /* cp_G_03_toast (1825:26630) carries fill + radius and NO effect — sampling
      MAI-001 below it reads 0.000 alpha at every depth. Was 0 4px 2px .25. */
 }
-.home__promo-text {
+.home__upsell-text {
   flex: 1;
   text-align: left;
   color: var(--ink-inverse);
@@ -4561,7 +4561,7 @@ textarea.input {
   font-size: 14px;
   line-height: 20px;
 }
-.home__promo-hl {
+.home__upsell-hl {
   color: var(--brand-300); /* Figma #FFD04A */
   font-weight: 600;
 }
@@ -4619,7 +4619,7 @@ textarea.input {
 }
 
 /* Streak banner — 1:3789, 335x74 at (20, 101), r12, Sub color 4. */
-.strk__banner {
+.strk__callout {
   position: relative;
   display: flex;
   align-items: center;
@@ -4632,7 +4632,7 @@ textarea.input {
   box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
   overflow: hidden;
 }
-.strk__banner-text {
+.strk__callout-text {
   /* Body 8 — SemiBold 14 / 20, tracking -0.07 */
   flex: 1;
   margin: 0;
@@ -4652,13 +4652,13 @@ textarea.input {
    stdDeviation 2 / black 25% shadow inside its own viewBox. Drawing it at 50
    squeezed the glyph to 43 and left it 8px short; re-adding the shadow in CSS
    doubled it. So: natural 58x58, pinned to the slot's top-left minus 4. */
-.strk__banner-sun {
+.strk__callout-sun {
   position: relative;
   flex-shrink: 0;
   width: 50px;
   height: 50px;
 }
-.strk__banner-sun > * {
+.strk__callout-sun > * {
   position: absolute;
   top: 0;
   left: -4px;
@@ -10876,7 +10876,7 @@ input[type="tel"] {
   position: relative;
   background: #fff8f1;
 }
-.lechome__banners {
+.lechome__features {
   display: flex;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
@@ -10885,7 +10885,7 @@ input[type="tel"] {
      scroller, so the card's shadow is not clipped. */
   padding: 14px 0 15.333px;
 }
-.lechome__banners::-webkit-scrollbar {
+.lechome__features::-webkit-scrollbar {
   display: none;
 }
 .lechome__slide {
@@ -10895,7 +10895,7 @@ input[type="tel"] {
   scroll-snap-align: start;
   scroll-snap-stop: always;
 }
-.lechome__banner {
+.lechome__feature {
   /* The card keeps 335:178.667 at any width (178.667 tall at 375). */
   aspect-ratio: 335 / 178.667;
   border-radius: 4px;
@@ -10907,22 +10907,22 @@ input[type="tel"] {
   padding: 0;
   position: relative;
 }
-.lechome__banner.is-link {
+.lechome__feature.is-link {
   cursor: pointer;
 }
-.lechome__banner-img {
+.lechome__feature-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
-.lechome__banner-skeleton {
+.lechome__feature-skeleton {
   /* The loaded band's exact box (14 + card + 15.333), so nothing shifts on load. */
   position: relative;
   background: #fff8f1;
   padding: 14px 20px 15.333px;
 }
-.lechome__banner-skeleton::before {
+.lechome__feature-skeleton::before {
   content: "";
   display: block;
   aspect-ratio: 335 / 178.667;
@@ -10956,7 +10956,7 @@ input[type="tel"] {
 /* COU-001 empty (2498:26026): the same 208-tall band, #EEF2F3 at 40%, with
    "표시할 배너가 없어요" centred — so the page below does not shift when banners
    are absent. 375:208, the loaded band's size at the frame's width. */
-.lechome__banner-empty {
+.lechome__feature-empty {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -10965,7 +10965,7 @@ input[type="tel"] {
   padding: 0 24px;
   background: rgba(238, 242, 243, 0.4);
 }
-.lechome__banner-empty-text {
+.lechome__feature-empty-text {
   margin: 0;
   color: #8a94a6;
   font-weight: 500;
@@ -13106,7 +13106,7 @@ input[type="tel"] {
   /* Warm off-white, not pure #fff. */
   color: #fff2e6;
 }
-.lgg__banner {
+.lgg__callout {
   /* Figma LEG-004 Group 1410118218 — 135.43x217 at (209, 0), overhanging the
      205px orange band. The export bleeds ~9.3px each side for its own shadow,
      so the 154-wide image is offset back by that much. Fixed px, not the old
@@ -13127,7 +13127,7 @@ input[type="tel"] {
   z-index: 1;
   width: 154px;
 }
-.lgg__banner-art {
+.lgg__callout-art {
   display: block;
   width: 100%;
   height: auto;
@@ -14478,7 +14478,7 @@ input[type="tel"] {
   margin: 0 -16px;
   padding: 0 6px 0 36px;
 }
-.lh__banner {
+.lh__callout {
   /* Group 1410118688 — 119x180. A flex item now, so the 36 comes from the row's
      padding and the title can never be laid on top of it. */
   flex: 0 0 119px;

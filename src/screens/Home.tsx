@@ -163,10 +163,10 @@ export function Home() {
 
                 {/* Non-subscriber promotion */}
                 {d.paywall_required && (
-                  <button className="home__promo" onClick={() => nav("/subscription/start")}>
-                    <span className="home__promo-text">
+                  <button className="home__upsell" onClick={() => nav("/subscription/start")}>
+                    <span className="home__upsell-text">
                       {t("home.promoQuestion")}{" "}
-                      <b className="home__promo-hl">{t("home.promoCta")}</b>
+                      <b className="home__upsell-hl">{t("home.promoCta")}</b>
                     </span>
                     <TopNavChevron tone="gold" />
                   </button>

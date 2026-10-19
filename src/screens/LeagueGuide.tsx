@@ -106,7 +106,7 @@ export function LeagueGuideSheet({ onClose }: { onClose: () => void }) {
                 ))}
               </p>
             </div>
-            <div className="lgg__banner" aria-hidden="true">
+            <div className="lgg__callout" aria-hidden="true">
               <GuideBanner />
             </div>
           </section>

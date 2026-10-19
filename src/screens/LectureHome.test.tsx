@@ -208,7 +208,7 @@ describe("LectureHome — banner carousel (COU-001)", () => {
     summary.mockResolvedValue({ streak_days: 3, studied_today: true, paywall_required: paywallRequired });
     const { container } = renderPage();
     const carousel = await screen.findByRole("region", { name: "배너" });
-    await waitFor(() => expect(container.querySelectorAll(".lechome__banner")).toHaveLength(2));
+    await waitFor(() => expect(container.querySelectorAll(".lechome__feature")).toHaveLength(2));
     expect(carousel).toHaveAttribute("aria-roledescription", "carousel");
     expect(screen.getByLabelText(/배너 b1/)).toBeInTheDocument();
   });
@@ -217,10 +217,10 @@ describe("LectureHome — banner carousel (COU-001)", () => {
     // Regression: the cards sat edge to edge in one padded track, so the next
     // banner peeked in beside the current one.
     const { container } = renderPage();
-    await waitFor(() => expect(container.querySelectorAll(".lechome__banner")).toHaveLength(2));
-    const slides = [...container.querySelectorAll(".lechome__banners > .lechome__slide")];
+    await waitFor(() => expect(container.querySelectorAll(".lechome__feature")).toHaveLength(2));
+    const slides = [...container.querySelectorAll(".lechome__features > .lechome__slide")];
     expect(slides).toHaveLength(2);
-    for (const slide of slides) expect(slide.querySelectorAll(".lechome__banner")).toHaveLength(1);
+    for (const slide of slides) expect(slide.querySelectorAll(".lechome__feature")).toHaveLength(1);
     // The dots sit over the band (laid on the card's foot), one per banner.
     const dots = container.querySelectorAll(".lechome__carousel > .lechome__dots .lechome__dot");
     expect(dots).toHaveLength(2);
@@ -235,7 +235,7 @@ describe("LectureHome — banner carousel (COU-001)", () => {
       Object.defineProperty(HTMLElement.prototype, "clientWidth", {
         configurable: true,
         get(this: HTMLElement) {
-          return this.classList.contains("lechome__banners") ? width : 0;
+          return this.classList.contains("lechome__features") ? width : 0;
         },
       });
       Element.prototype.scrollTo = function (this: Element, opts?: ScrollToOptions | number) {
@@ -248,8 +248,8 @@ describe("LectureHome — banner carousel (COU-001)", () => {
 
     async function band() {
       const { container } = renderPage();
-      await waitFor(() => expect(container.querySelector(".lechome__banners")).toBeInTheDocument());
-      const el = container.querySelector(".lechome__banners") as HTMLDivElement;
+      await waitFor(() => expect(container.querySelector(".lechome__features")).toBeInTheDocument());
+      const el = container.querySelector(".lechome__features") as HTMLDivElement;
       const dots = () => [...container.querySelectorAll(".lechome__dot")].map((d) => d.classList.contains("is-active"));
       return { el, dots };
     }
@@ -283,14 +283,14 @@ describe("LectureHome — banners and empty states", () => {
     const { container } = renderPage();
     expect(await screen.findByText("표시할 배너가 없어요")).toBeInTheDocument();
     expect(await screen.findByLabelText(/KOREAN SURVIVAL KIT/)).toBeInTheDocument();
-    expect(container.querySelector(".lechome__banners")).not.toBeInTheDocument();
+    expect(container.querySelector(".lechome__features")).not.toBeInTheDocument();
   });
 
   it("banners + no courses: carousel stays, course empty view", async () => {
     courses.mockResolvedValue(page([]));
     const { container } = renderPage();
     expect(await screen.findByText("아직 등록된 강의가 없어요")).toBeInTheDocument();
-    expect(container.querySelector(".lechome__banners")).toBeInTheDocument();
+    expect(container.querySelector(".lechome__features")).toBeInTheDocument();
     expect(screen.queryByText("표시할 배너가 없어요")).not.toBeInTheDocument();
   });
 
@@ -306,14 +306,14 @@ describe("LectureHome — banners and empty states", () => {
     banners.mockReturnValue(new Promise(() => {})); // pending
     const { container } = renderPage();
     await screen.findByLabelText(/KOREAN SURVIVAL KIT/); // courses settle
-    expect(container.querySelector(".lechome__banner-skeleton")).toBeInTheDocument();
+    expect(container.querySelector(".lechome__feature-skeleton")).toBeInTheDocument();
     expect(screen.queryByText("표시할 배너가 없어요")).not.toBeInTheDocument();
   });
 
   it("course loading does not flash the empty copy", async () => {
     courses.mockReturnValue(new Promise(() => {})); // pending
     const { container } = renderPage();
-    await waitFor(() => expect(container.querySelector(".lechome__banners")).toBeInTheDocument());
+    await waitFor(() => expect(container.querySelector(".lechome__features")).toBeInTheDocument());
     expect(screen.queryByText("아직 등록된 강의가 없어요")).not.toBeInTheDocument();
     expect(container.querySelector(".lechome__course-empty")).not.toBeInTheDocument();
   });
@@ -323,7 +323,7 @@ describe("LectureHome — banners and empty states", () => {
     const { container } = renderPage();
     expect(await screen.findByLabelText(/KOREAN SURVIVAL KIT/)).toBeInTheDocument();
     expect(screen.queryByText("표시할 배너가 없어요")).not.toBeInTheDocument();
-    expect(container.querySelector(".lechome__banners")).not.toBeInTheDocument();
+    expect(container.querySelector(".lechome__features")).not.toBeInTheDocument();
   });
 
   it("course error shows retry, not the empty copy", async () => {
@@ -354,7 +354,7 @@ describe("LectureHome — banners and empty states", () => {
       fireEvent.click(pic);
       fireEvent.keyDown(pic, { key: "Enter" });
       expect(screen.queryByTestId("where")).not.toBeInTheDocument();
-      expect(container.querySelector(".lechome__banner")).toBe(pic);
+      expect(container.querySelector(".lechome__feature")).toBe(pic);
     },
   );
 
@@ -362,7 +362,7 @@ describe("LectureHome — banners and empty states", () => {
     banners.mockResolvedValue({ banners: [banner("only")] });
     const { container } = renderPage();
     await screen.findByLabelText(/KOREAN SURVIVAL KIT/);
-    expect(container.querySelector(".lechome__banners")).toBeInTheDocument();
+    expect(container.querySelector(".lechome__features")).toBeInTheDocument();
     expect(container.querySelector(".lechome__dot")).not.toBeInTheDocument();
   });
 

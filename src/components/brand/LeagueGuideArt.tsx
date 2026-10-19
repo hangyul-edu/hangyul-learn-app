@@ -23,7 +23,7 @@ import rewardReviewArt from "../../assets/brand/league-reward-review.svg";
  * 135.43x217 sitting at x=208 and overhanging the orange band.
  */
 export function GuideBanner() {
-  return <img className="lgg__banner-art" src={guideBannerArt} alt="" aria-hidden="true" />;
+  return <img className="lgg__callout-art" src={guideBannerArt} alt="" aria-hidden="true" />;
 }
 
 /* ------------------------------ citrus badge ---------------------------- */

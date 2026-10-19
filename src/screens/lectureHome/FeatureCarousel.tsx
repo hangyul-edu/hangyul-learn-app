@@ -22,7 +22,7 @@ function bannerPath(b: Banner): string | null {
 }
 
 /** COU-001's banner band: one banner a slide, auto-rotating, swipeable. */
-export function BannerCarousel() {
+export function FeatureCarousel() {
   const { t } = useTranslation();
   const nav = useNavigate();
   const q = useQuery({ queryKey: ["banners"], queryFn: bannerApi.list, staleTime: 60_000 });
@@ -123,19 +123,19 @@ export function BannerCarousel() {
   // keeps the banner slot's height so the page below doesn't shift). Only a
   // populated success renders the carousel — so no auto-slide timer, dots, swipe
   // handlers, or image elements exist when the list is empty.
-  if (q.isLoading) return <div className="lechome__banner-skeleton" aria-hidden="true" />;
+  if (q.isLoading) return <div className="lechome__feature-skeleton" aria-hidden="true" />;
   if (q.isError) return null;
   if (banners.length === 0)
     return (
-      <div className="lechome__banner-empty">
-        <p className="lechome__banner-empty-text">{t("courses.noBanners")}</p>
+      <div className="lechome__feature-empty">
+        <p className="lechome__feature-empty-text">{t("courses.noBanners")}</p>
       </div>
     );
 
   return (
     <section className="lechome__carousel" aria-roledescription="carousel" aria-label={t("courses.bannerAria")}>
       <div
-        className="lechome__banners"
+        className="lechome__features"
         ref={trackRef}
         onScroll={onScroll}
         // Touch is tracked with touch events: a pan fires pointercancel while
@@ -156,7 +156,7 @@ export function BannerCarousel() {
           return (
           <div key={b.banner_id} className="lechome__slide">
             <div
-              className={`lechome__banner ${link ? "is-link" : ""}`}
+              className={`lechome__feature ${link ? "is-link" : ""}`}
               role={link ? "button" : "img"}
               tabIndex={link ? 0 : -1}
               aria-label={t("courses.bannerItemA11y", { alt: b.alt_text, i: i + 1, total: banners.length })}
@@ -170,7 +170,7 @@ export function BannerCarousel() {
               {/* The part of the image the admin chose; without one, the
                   image is cover-cropped around its centre. */}
               <img
-                className="lechome__banner-img"
+                className="lechome__feature-img"
                 src={b.image_url}
                 alt=""
                 loading={i === 0 ? "eager" : "lazy"}

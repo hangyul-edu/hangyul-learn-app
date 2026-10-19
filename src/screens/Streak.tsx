@@ -109,8 +109,8 @@ export function Streak() {
           <LearningSectionHeader current="streak" />
 
           {/* Streak summary banner — copy + sun both key off today's study state. */}
-          <div className={`strk__banner${studiedToday ? "" : " strk__banner--inactive"}`}>
-            <p className="strk__banner-text">
+          <div className={`strk__callout${studiedToday ? "" : " strk__callout--inactive"}`}>
+            <p className="strk__callout-text">
               {studiedToday ? (
                 <>
                   {t("streak.litTitle")}
@@ -127,7 +127,7 @@ export function Streak() {
             </p>
             {/* 58, not 50: home-sun.svg's viewBox includes the baked shadow, and
                 HMA-001 draws it bleeding 4px past the 50x50 slot on each side. */}
-            <span className="strk__banner-sun">
+            <span className="strk__callout-sun">
               <DailyLearningSun size={58} />
             </span>
           </div>

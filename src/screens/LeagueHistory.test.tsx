@@ -204,7 +204,7 @@ describe("League History screen", () => {
   it("renders the decorative hanging banner and a circular tier icon per row", async () => {
     renderScreen();
     await screen.findByText("04.27~05.03");
-    expect(document.querySelector(".lh__banner")).toBeInTheDocument();
+    expect(document.querySelector(".lh__callout")).toBeInTheDocument();
     // One circular tier icon per row.
     expect(document.querySelectorAll(".lh__rows .lh__tier")).toHaveLength(2);
   });

@@ -83,7 +83,7 @@ function rowAria(
 /* -------------------------------- art ----------------------------------- */
 /** Season banner — Figma's own `Group 1410118688` (393:16605), 119x180. */
 function SeasonBanner() {
-  return <img className="lh__banner" src={lhBanner} alt="" aria-hidden="true" />;
+  return <img className="lh__callout" src={lhBanner} alt="" aria-hidden="true" />;
 }
 
 /** The user's league badge for that period — the official citrus tier image,

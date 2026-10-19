@@ -42,7 +42,7 @@ describe("Regular League guide sheet", () => {
     expect(within(dialog).getByText(/전 세계 학습자들과 경쟁하며/)).toBeInTheDocument();
     expect(within(dialog).getByText(/도전할수록 더 빠르게 성장할 수 있어요/)).toBeInTheDocument();
     // Banner illustration on the right of the hero.
-    expect(dialog.querySelector(".lgg__banner .lgg__banner-art")).toBeInTheDocument();
+    expect(dialog.querySelector(".lgg__callout .lgg__callout-art")).toBeInTheDocument();
   });
 
   it("renders the schedule card with the authoritative season copy", () => {

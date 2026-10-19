@@ -91,7 +91,7 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
   async function confirmCancel() {
     const target = cancelTarget;
     if (!target?.request_id) return;
-    await act(target.user_id, () => friendApi.cancel(target.request_id!), copy.requestCancelled, true);
+    await act(target.user_id, () => friendApi.cancel(target.request_id!), copy.requestCancelled);
     setCancelTarget(null);
   }
 
@@ -117,13 +117,13 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
     if (result && result !== "none") void runSearch();
   }
 
-  async function act(userId: string, fn: () => Promise<unknown>, done: string, notice = false) {
+  async function act(userId: string, fn: () => Promise<unknown>, done: string) {
     const ran = await run(userId, async () => {
       try {
         await fn();
-        // `notice`: the cp_G_03_toast bar at the bottom of the screen.
-        if (notice) toast.show(done, "notice");
-        else toast.success(done);
+        // The cp_G_03_toast bar at the bottom of the screen, as after every
+        // friend action (Social's accept / reject / cancel / remove).
+        toast.show(done, "notice");
       } catch (e) {
         toast.error(errorMessage(e));
       }
@@ -184,7 +184,6 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
               u.user_id,
               () => friendApi.accept(u.request_id!),
               t("friends.toastAccepted", { name: nameOf(u, t("home.defaultNickname")) }),
-              true,
             ),
         };
       case "friends":
@@ -219,6 +218,9 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
               const next = applyPhoneInput(country, e.target.value);
               setCountry(next.country);
               setPhone(next.input);
+              // The result belonged to the number as searched; editing it
+              // brings the suggestions back until the next search.
+              setResult(null);
             }}
             onKeyDown={(e) => e.key === "Enter" && runSearch()}
           />
@@ -259,48 +261,51 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
           </div>
         )}
 
-        {/* Contact recommendations */}
-        <div className="afs__section">
-          <div className="afs__section-head">
-            <h3 className="afs__section-title">{copy.suggested}</h3>
-            <p className="afs__section-sub">{copy.suggestedSub}</p>
+        {/* Contact recommendations — LEG-020 (1816:25317): a search result
+            takes their place rather than stacking above them. */}
+        {result === null && (
+          <div className="afs__section">
+            <div className="afs__section-head">
+              <h3 className="afs__section-title">{copy.suggested}</h3>
+              <p className="afs__section-sub">{copy.suggestedSub}</p>
+            </div>
+            {recs.isLoading && !recs.data ? (
+              <div className="afs__recs">
+                <SkeletonList rows={2} height={60} />
+              </div>
+            ) : recommendations.length === 0 ? (
+              <div className="afs__panel afs__panel--empty">
+                <p className="afs__panel-title">{copy.noRecommendations}</p>
+              </div>
+            ) : (
+              <ul className="afs__recs" role="list">
+                {recommendations.map((u) => {
+                  const action = cta(u);
+                  return (
+                    <li key={u.user_id} className="afs__rec" aria-label={copy.ctaState(shownName(u), u.relationship)}>
+                      <RankAvatar entry={u} size={44} />
+                      <span className="afs__rec-name">{shownName(u)}</span>
+                      {u.relationship === "friends" ? (
+                        <span className="afs__friends-tag afs__friends-tag--pill">{copy.friendsLabel}</span>
+                      ) : (
+                        <button
+                          className={`afs__rec-cta ${action.primary ? "afs__rec-cta--primary" : ""}`}
+                          disabled={busy.has(u.user_id)}
+                          onClick={action.onClick}
+                        >
+                          {action.text}
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
-          {recs.isLoading && !recs.data ? (
-            <div className="afs__recs">
-              <SkeletonList rows={2} height={60} />
-            </div>
-          ) : recommendations.length === 0 ? (
-            <div className="afs__panel afs__panel--empty">
-              <p className="afs__panel-title">{copy.noRecommendations}</p>
-            </div>
-          ) : (
-            <ul className="afs__recs" role="list">
-              {recommendations.map((u) => {
-                const action = cta(u);
-                return (
-                  <li key={u.user_id} className="afs__rec" aria-label={copy.ctaState(shownName(u), u.relationship)}>
-                    <RankAvatar entry={u} size={44} />
-                    <span className="afs__rec-name">{shownName(u)}</span>
-                    {u.relationship === "friends" ? (
-                      <span className="afs__friends-tag afs__friends-tag--pill">{copy.friendsLabel}</span>
-                    ) : (
-                      <button
-                        className={`afs__rec-cta ${action.primary ? "afs__rec-cta--primary" : ""}`}
-                        disabled={busy.has(u.user_id)}
-                        onClick={action.onClick}
-                      >
-                        {action.text}
-                      </button>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
+        )}
 
         {/* Invite link — shown when there is nothing better to suggest */}
-        {!recs.isLoading && recommendations.length === 0 && (
+        {result === null && !recs.isLoading && recommendations.length === 0 && (
           <Button block loading={sharing} onClick={shareInvite} aria-label={copy.inviteAria}>
             {copy.invite}
           </Button>

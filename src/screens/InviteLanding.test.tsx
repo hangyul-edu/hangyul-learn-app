@@ -51,6 +51,9 @@ describe("InviteLanding", () => {
     expect(await screen.findByText("Beam")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "친구 신청" }));
     await waitFor(() => expect(api.request).toHaveBeenCalledWith("u1"));
+    // The same bottom notice as every other friend action.
+    const notice = await screen.findByText("친구 신청을 보냈어요");
+    expect(notice.closest(".hg-toast")).toHaveClass("hg-toast--notice", "hg-toast--line");
   });
 
   it("accepting refreshes the friend lists the Social screen shows", async () => {

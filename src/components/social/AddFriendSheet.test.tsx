@@ -210,6 +210,35 @@ describe("AddFriendSheet", () => {
     expect(card.textContent).not.toMatch(/\d{3,}/); // no raw phone digits in the card
   });
 
+  it("shows a search result in place of the suggestions, which return once the number is edited", async () => {
+    api.recommendations.mockResolvedValue({ recommendations: [rec("a", "Ann", "none")] });
+    api.searchPhone.mockResolvedValue({ user: rec("x", "Beam", "none") });
+    wrap(<AddFriendSheet open onClose={() => {}} />);
+    expect(await screen.findByText("Ann")).toBeInTheDocument();
+
+    const input = screen.getByLabelText("전화번호로 친구 찾기");
+    await userEvent.type(input, "01012345678");
+    await userEvent.click(screen.getByRole("button", { name: "검색" }));
+    expect(await screen.findByText("Beam")).toBeInTheDocument();
+    expect(screen.queryByText("Ann")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "추천 친구" })).not.toBeInTheDocument();
+
+    await userEvent.type(input, "{backspace}");
+    expect(screen.queryByText("Beam")).not.toBeInTheDocument();
+    expect(screen.getByText("Ann")).toBeInTheDocument();
+  });
+
+  it("confirms a sent request with the same bottom notice as the other friend actions", async () => {
+    api.searchPhone.mockResolvedValue({ user: rec("x", "Beam", "none") });
+    wrap(<AddFriendSheet open onClose={() => {}} />);
+    await userEvent.type(screen.getByLabelText("전화번호로 친구 찾기"), "01012345678");
+    await userEvent.click(screen.getByRole("button", { name: "검색" }));
+    await userEvent.click(await screen.findByRole("button", { name: "친구 신청" }));
+
+    const notice = await screen.findByText("친구 신청을 보냈어요");
+    expect(notice.closest(".hg-toast")).toHaveClass("hg-toast--notice", "hg-toast--line");
+  });
+
   it("shows a distinct not-found state for an unmatched number", async () => {
     api.searchPhone.mockResolvedValue({ user: null });
     wrap(<AddFriendSheet open onClose={() => {}} />);

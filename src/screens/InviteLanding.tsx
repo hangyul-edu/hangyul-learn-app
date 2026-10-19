@@ -34,14 +34,13 @@ export function InviteLanding() {
     retry: false,
   });
 
-  async function run(fn: () => Promise<unknown>, doneMsg: string, notice = false) {
+  async function run(fn: () => Promise<unknown>, doneMsg: string) {
     if (busy) return;
     setBusy(true);
     try {
       await fn();
-      // `notice`: the bottom notice (cp_G_03_toast), as after an accept.
-      if (notice) toast.show(doneMsg, "notice");
-      else toast.success(doneMsg);
+      // The bottom notice (cp_G_03_toast), as after every friend action.
+      toast.show(doneMsg, "notice");
       setDone(true);
       // The Social screen's lists and the friend league (same keys it refreshes
       // after its own actions) now include this request / friendship.
@@ -101,7 +100,6 @@ export function InviteLanding() {
                     run(
                       () => friendApi.accept(inviter.request_id as string),
                       t("friends.toastAccepted", { name: inviter.nickname ?? t("home.defaultNickname") }),
-                      true,
                     )
                   }
                 >

@@ -14599,6 +14599,33 @@ input[type="tel"] {
 .lh__pad {
   padding: 12px;
 }
+.lh__empty {
+  /* LEG-009 (empty view) 3714:28101 KO / 3714:27380 EN — the card keeps its
+     full 560 (seven 80px row slots) and the copy sits in the third slot: the
+     title is centred 192 below the card's top and the body 233.5. */
+  min-height: 560px;
+  padding: 179px 20px 0;
+  text-align: center;
+}
+.lh__empty-title {
+  /* Heading 8 — SemiBold 18 / 25.2, black. */
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 25.2px;
+  color: #000000;
+}
+.lh__empty-desc {
+  /* Body 6 — Medium 15 / 22.3, Gray 5; the line break is part of the copy. */
+  margin: 7px 0 0;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 22.3px;
+  color: #778088;
+  white-space: pre-line;
+}
 .lh__rows {
   list-style: none;
   margin: 0;

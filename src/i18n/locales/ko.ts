@@ -1059,8 +1059,8 @@ export const ko = {
   leagueHistory: {
     title: "리그 히스토리",
     ongoing: "진행 중",
-    emptyTitle: "이 시즌의 리그 기록이 없어요",
-    emptyDesc: "참여한 리그 기록이 생기면 여기에 표시됩니다.",
+    emptyTitle: "아직 리그 기록이 없어요",
+    emptyDesc: "리그를 완료하면\n여기에 기록이 쌓여요.",
     seasonError: "시즌 정보를 불러오지 못했어요.",
     listError: "리그 기록을 불러오지 못했어요.",
     loadMore: "다시 불러오기",

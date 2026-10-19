@@ -181,8 +181,10 @@ describe("League History screen", () => {
   it("shows the empty state for a season with no records", async () => {
     api.leagueHistory.mockResolvedValue({ season: seasonsResp.seasons[1], next_cursor: null, items: [] });
     renderScreen();
-    expect(await screen.findByText("이 시즌의 리그 기록이 없어요")).toBeInTheDocument();
-    expect(screen.getByText("참여한 리그 기록이 생기면 여기에 표시됩니다.")).toBeInTheDocument();
+    const empty = await screen.findByRole("status");
+    expect(empty).toHaveTextContent("아직 리그 기록이 없어요");
+    expect(empty).toHaveTextContent("리그를 완료하면 여기에 기록이 쌓여요.", { normalizeWhitespace: true });
+    expect(screen.queryByRole("list", { name: "리그 기록" })).not.toBeInTheDocument();
   });
 
   it("shows a retryable error when the list fails to load", async () => {

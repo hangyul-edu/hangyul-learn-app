@@ -1044,8 +1044,8 @@ export const en: Catalog = {
   leagueHistory: {
     title: "League History",
     ongoing: "In Progress",
-    emptyTitle: "No league history for this season",
-    emptyDesc: "Your league records will appear here once you participate.",
+    emptyTitle: "No league history yet",
+    emptyDesc: "Your records will show up here\nonce you finish a league.",
     seasonError: "Couldn't load seasons.",
     listError: "Couldn't load league history.",
     loadMore: "Load more",

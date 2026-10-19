@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { EmptyState, ErrorState, LoadingState, SkeletonList, Spinner } from "../components/ui/states";
+import { ErrorState, LoadingState, SkeletonList, Spinner } from "../components/ui/states";
 import { CitrusBadge } from "../components/brand/LeagueGuideArt";
 import { TIER_META, type LeagueTier } from "../lib/league";
 import lhBanner from "../assets/brand/lh-season-banner.svg";
@@ -284,7 +284,12 @@ export function LeagueHistory() {
               ) : phase === "error" ? (
                 <ErrorState message={copy.listError} onRetry={() => setReloadKey((k) => k + 1)} />
               ) : items.length === 0 ? (
-                <EmptyState emoji="🗂️" title={copy.emptyTitle} text={copy.emptyDesc} />
+                // LEG-009 (empty view) 3714:28101 / 3714:27380 — no art, just
+                // the two lines centred in the card's third row slot.
+                <div className="lh__empty" role="status">
+                  <p className="lh__empty-title">{copy.emptyTitle}</p>
+                  <p className="lh__empty-desc">{copy.emptyDesc}</p>
+                </div>
               ) : (
                 <>
                   <ul className="lh__rows" role="list" aria-label={copy.listAria}>

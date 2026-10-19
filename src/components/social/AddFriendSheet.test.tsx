@@ -206,8 +206,11 @@ describe("AddFriendSheet", () => {
     await userEvent.click(screen.getByRole("button", { name: "검색" }));
 
     const card = (await screen.findByText("Beam")).closest(".afs__result") as HTMLElement;
-    expect(within(card).getByRole("button", { name: "친구 신청" })).toBeInTheDocument();
     expect(card.textContent).not.toMatch(/\d{3,}/); // no raw phone digits in the card
+    // LEG-020: the card is avatar + name; its action is the sheet's bottom button.
+    expect(within(card).queryByRole("button")).not.toBeInTheDocument();
+    const action = screen.getByRole("button", { name: "친구 신청" });
+    expect(card.nextElementSibling).toBe(action);
   });
 
   it("shows a search result in place of the suggestions, which return once the number is edited", async () => {

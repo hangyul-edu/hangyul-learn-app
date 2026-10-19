@@ -16120,9 +16120,6 @@ input[type="tel"] {
   font-weight: 800;
   color: var(--ink);
 }
-.afs__result .btn {
-  margin-top: 4px;
-}
 .afs__friends-tag {
   font-size: 14px;
   font-weight: 700;

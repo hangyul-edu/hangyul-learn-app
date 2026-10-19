@@ -242,13 +242,17 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
             <p className="afs__panel-sub">{copy.notFoundSub}</p>
           </div>
         )}
+        {/* LEG-020 (1816:25317): the card holds only the avatar and name; its
+            action is the sheet's bottom button, in the invite link's slot
+            (the suggestions and invite are hidden while a result shows). */}
         {result && result !== "none" && (
-          <div className="afs__result" aria-label={copy.ctaState(shownName(result), result.relationship)}>
-            <RankAvatar entry={result} size={72} />
-            <div className="afs__result-name">{shownName(result)}</div>
-            {result.relationship === "friends" ? (
-              <div className="afs__friends-tag">{copy.friendsLabel}</div>
-            ) : (
+          <>
+            <div className="afs__result" aria-label={copy.ctaState(shownName(result), result.relationship)}>
+              <RankAvatar entry={result} size={60} />
+              <div className="afs__result-name">{shownName(result)}</div>
+              {result.relationship === "friends" && <div className="afs__friends-tag">{copy.friendsLabel}</div>}
+            </div>
+            {result.relationship !== "friends" && (
               <Button
                 block
                 variant={cta(result).muted ? "secondary" : "primary"}
@@ -258,7 +262,7 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
                 {cta(result).text}
               </Button>
             )}
-          </div>
+          </>
         )}
 
         {/* Contact recommendations — LEG-020 (1816:25317): a search result

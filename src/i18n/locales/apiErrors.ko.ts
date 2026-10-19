@@ -237,7 +237,6 @@ export const apiErrorsKo = {
     "audio_too_long": "녹음이 너무 길어요. {seconds}초 안에 말해 주세요.",
     "daily_goal_premium": "일일 목표를 늘리려면 무료 체험이나 구독이 필요해요.",
     "lesson_incomplete": "강의를 마친 뒤에 연습 문제를 만들 수 있어요.",
-    "generation_empty": "연습 문제를 만들지 못했어요. 다시 시도해 주세요.",
     "topik_no_writing": "TOPIK I(1~2급)에는 쓰기 영역이 없어요. 듣기나 읽기를 선택해 주세요.",
 
     // AI

@@ -231,7 +231,6 @@ export const apiErrorsEn: ApiErrorCatalog = {
     "audio_too_long": "That recording is too long. Please keep it under {seconds} seconds.",
     "daily_goal_premium": "A free trial or subscription is needed to raise your daily goal.",
     "lesson_incomplete": "Finish the lesson to create practice questions.",
-    "generation_empty": "We couldn't create practice questions. Please try again.",
     "topik_no_writing": "TOPIK I (levels 1–2) has no writing section. Choose listening or reading.",
 
     // AI

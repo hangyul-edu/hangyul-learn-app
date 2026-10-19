@@ -16103,6 +16103,39 @@ input[type="tel"] {
   font-size: 13px;
   color: var(--ink-3);
 }
+/* Phone search not-found card — 2382:25016 / 2382:24958: white, 1px Gray 2
+   border, corners 8, 138 tall, the two lines centred in it (title centre at
+   57, message at 82). */
+.afs__notfound {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 138px;
+  margin-top: 14px;
+  padding: 24px 8px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-align: center;
+}
+.afs__notfound-title {
+  /* SemiBold 16 / 25.2, black. */
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 25.2px;
+  color: #000000;
+}
+.afs__notfound-sub {
+  /* Body 9 — Medium 14 / 21.5, Gray 5. */
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 21.5px;
+  color: #778088;
+}
 /* Phone search result card */
 .afs__result {
   display: flex;

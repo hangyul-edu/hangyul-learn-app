@@ -247,7 +247,12 @@ describe("AddFriendSheet", () => {
     wrap(<AddFriendSheet open onClose={() => {}} />);
     await userEvent.type(screen.getByLabelText("전화번호로 친구 찾기"), "01099998888");
     await userEvent.click(screen.getByRole("button", { name: "검색" }));
-    expect(await screen.findByText("해당 전화번호로 가입한 사용자를 찾을 수 없어요")).toBeInTheDocument();
+    const card = (await screen.findByText("일치하는 사용자가 없어요")).closest(".afs__notfound") as HTMLElement;
+    expect(card).toHaveTextContent("번호를 다시 확인해 주세요");
+    // The bottom Friend Request button stays, disabled; the suggestions are gone.
+    expect(card.nextElementSibling).toBe(screen.getByRole("button", { name: "친구 신청" }));
+    expect(screen.getByRole("button", { name: "친구 신청" })).toBeDisabled();
+    expect(screen.queryByRole("heading", { name: "추천 친구" })).not.toBeInTheDocument();
   });
 
   it("renders English chrome for an English user", async () => {

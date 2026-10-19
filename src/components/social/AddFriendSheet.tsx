@@ -236,11 +236,18 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
         </div>
 
         {/* Phone search result / not-found */}
+        {/* Not found — 2382:24916 KO / 2382:24973 EN: the message card, then the
+            bottom Friend Request button shown disabled. */}
         {result === "none" && (
-          <div className="afs__panel afs__panel--empty">
-            <p className="afs__panel-title">{copy.notFoundTitle}</p>
-            <p className="afs__panel-sub">{copy.notFoundSub}</p>
-          </div>
+          <>
+            <div className="afs__notfound" role="status">
+              <p className="afs__notfound-title">{copy.notFoundTitle}</p>
+              <p className="afs__notfound-sub">{copy.notFoundSub}</p>
+            </div>
+            <Button block disabled>
+              {copy.sendRequest}
+            </Button>
+          </>
         )}
         {/* LEG-020 (1816:25317): the card holds only the avatar and name; its
             action is the sheet's bottom button, in the invite link's slot

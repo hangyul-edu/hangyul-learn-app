@@ -52,7 +52,8 @@ cp .env.example .env
 | Variable | Purpose | Default |
 |---|---|---|
 | `VITE_API_BASE_URL` | Backend base URL used by the app. **Leave empty for local dev** → the app calls `/api`, which the Vite dev server proxies to the backend (no CORS). Set it to the real origin for production builds, e.g. `https://api.hangyul.app`. | *(empty → `/api`)* |
-| `VITE_DEV_BACKEND` | Where the dev proxy forwards `/api` (dev only). | `http://127.0.0.1:8000` || `VITE_CHANNEL_TALK_PLUGIN_KEY` | ChannelTalk web SDK plugin key. When set, the messenger boots at startup and the FAQ support button opens it. | *(empty → SDK not loaded)* |
+| `VITE_DEV_BACKEND` | Where the dev proxy forwards `/api` (dev only). | `http://127.0.0.1:8000` |
+| `VITE_CHANNEL_TALK_PLUGIN_KEY` | ChannelTalk web SDK plugin key. When set, the messenger boots at startup and the FAQ support button opens it. | *(empty → SDK not loaded)* |
 
 ### Setting the backend API base URL
 
@@ -315,7 +316,9 @@ loading/error/retry/caching, and central token/refresh handling in `lib/http.ts`
 - Check the backend is running: `curl http://127.0.0.1:8000/subscriptions/plans`
   should return JSON.
 - Check the browser Network tab for the failing request's status and the JSON
-  `code`/`detail` (the app surfaces `detail` as a friendly toast).
+  `code`/`detail`. The app never shows `detail`: it maps `code` to its own
+  catalog wording (`src/i18n/locales/apiErrors.*.ts`), with a generic
+  message by status for an unmapped code.
 - Verify `VITE_DEV_BACKEND` matches where uvicorn is listening.
 
 **Verification code never arrives**

@@ -66,7 +66,6 @@ export function activityToSentence(a: StudyActivity, level: number): StudySenten
     translation?: string;
     translation_language?: string;
     romanization?: string | null;
-    has_audio?: boolean;
     blanks?: { index: number; start?: number; length?: number }[];
   };
   return {
@@ -87,7 +86,6 @@ export function activityToSentence(a: StudyActivity, level: number): StudySenten
     translation_language: c.translation_language,
     romanization: c.romanization ?? null,
     level,
-    has_audio: !!c.has_audio && !!a.sentence_id,
   };
 }
 

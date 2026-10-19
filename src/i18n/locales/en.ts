@@ -998,7 +998,6 @@ export const en: Catalog = {
     toastRemoved: "Friend removed",
     /** 1816:24155 / 1816:24265 — "Requested 5h ago", "Requested 30m ago". */
     requestAge: "Requested {age}",
-    addFriendCta: "+ Add Friend",
   },
 
   /** Relative time shared by friend requests and other lists. */

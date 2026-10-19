@@ -172,7 +172,6 @@ export interface Sentence {
   romanization?: string | null;
   level: number;
   topic?: string | null;
-  has_audio?: boolean;
   status?: string;
   attempt_count?: number;
   bookmarked?: boolean;

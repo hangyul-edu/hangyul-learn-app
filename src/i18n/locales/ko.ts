@@ -1014,7 +1014,6 @@ export const ko = {
     toastCancelled: "요청을 취소했어요",
     toastRemoved: "친구를 삭제했어요",
     requestAge: "{age} 요청",
-    addFriendCta: "+ 친구 추가",
   },
 
   /** Relative time shared by friend requests and other lists. */

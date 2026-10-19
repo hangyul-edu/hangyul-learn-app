@@ -339,7 +339,8 @@ export function Social() {
 /**
  * Shared, centered empty state for every Friend Management tab — same heading /
  * body styles and vertical placement as the Friends tab. `onAdd` adds the
- * compact outlined t("friends.addFriendCta") button (Friends + Sent tabs); Received omits it.
+ * compact outlined add button (`copy.add` / `copy.addShort`; Friends + Sent
+ * tabs); Received omits it.
  */
 function FmEmpty({
   title,

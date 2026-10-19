@@ -85,9 +85,6 @@
   align-items: flex-start;
   gap: 10px;
 }
-.row--between {
-  justify-content: space-between;
-}
 .spacer {
   flex: 1;
 }
@@ -99,15 +96,6 @@
 }
 .center {
   text-align: center;
-}
-.section-title {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 17px;
-  margin: 4px 2px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 .eyebrow {
   text-transform: uppercase;
@@ -331,47 +319,6 @@
   transform: scale(0.985);
 }
 
-/* list rows */
-.listrow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 13px 14px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  font-family: inherit;
-  color: inherit;
-  transition: background 0.12s, transform 0.08s;
-}
-.listrow:active {
-  transform: scale(0.99);
-  background: var(--surface-2);
-}
-.listrow__main {
-  flex: 1;
-  min-width: 0;
-}
-.listrow__title {
-  font-weight: 700;
-  font-size: 14.5px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.listrow__sub {
-  color: var(--ink-2);
-  font-size: 12.5px;
-  margin-top: 2px;
-}
-.listrow__chev {
-  color: var(--ink-3);
-  font-size: 18px;
-}
-
 /* ============================ Chips / badges ============================ */
 .chip {
   /* Figma comp_btn_choiceChip_round (node 935:20007) — outlined, r24,
@@ -398,9 +345,6 @@
   color: #ff7327;
   font-weight: 600;
   letter-spacing: -0.42px;
-}
-.chip--static {
-  cursor: default;
 }
 .chiprow {
   display: flex;
@@ -1474,18 +1418,6 @@ textarea.input {
   100% {
     background-position: 0 50%;
   }
-}
-
-/* ============================ Misc utilities ============================ */
-.big-num {
-  font-family: var(--font-display);
-  font-weight: 900;
-  line-height: 1;
-}
-.hangul-lg {
-  font-family: var(--font-display);
-  font-weight: 900;
-  letter-spacing: -0.02em;
 }
 
 /* ============================ Auth landing (single-screen) ============================ */

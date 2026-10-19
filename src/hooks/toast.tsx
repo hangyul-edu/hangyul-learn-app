@@ -1,9 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
-import { errorMessage } from "../lib/http";
-
-/** `notice`: Figma cp_G_03_toast — icon-less, centred, may span two lines. */
+/** `notice`: Figma cp_G_03_toast — icon-less and centred, in its one-line
+ *  (335x37) or, for a message with a line break, two-line (300x57) variant. */
 type ToastKind = "default" | "success" | "error" | "notice";
 interface ToastOptions {
   /** Show the leading status icon (default true; pass false for a clean message). */
@@ -78,8 +77,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Stable across renders, so `useToastError`'s callback (and any effect that
-  // lists the toast API) does not change identity whenever a toast appears.
+  // Stable across renders, so an effect or callback that lists the toast API
+  // does not change identity whenever a toast appears.
   const value = useMemo<ToastCtx>(
     () => ({
       show,
@@ -118,16 +117,4 @@ export function useToast(): ToastCtx {
   const c = useContext(Ctx);
   if (!c) throw new Error("useToast must be used within ToastProvider");
   return c;
-}
-
-/**
- * Report a failed request to the user.
- *
- * Every mutation surfaces a failure the same way — the server's message when
- * it sent one, a safe fallback otherwise — so screens pass this straight to
- * `onError` instead of repeating the closure.
- */
-export function useToastError(): (error: unknown) => void {
-  const toast = useToast();
-  return useCallback((error: unknown) => toast.error(errorMessage(error)), [toast]);
 }

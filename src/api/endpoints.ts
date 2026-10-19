@@ -627,7 +627,9 @@ export const settingsApi = {
 };
 
 export const bannerApi = {
-  list: () => http.get<{ banners: Banner[] }>("/banners"),
+  // Served at /home-cards: ad blockers block request URLs that say "banner",
+  // which would leave the Classes carousel empty for those members.
+  list: () => http.get<{ banners: Banner[] }>("/home-cards"),
 };
 
 /* ------------------------------ Support ----------------------------- */

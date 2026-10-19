@@ -7,6 +7,7 @@ import { useToast } from "../../hooks/toast";
 import { useRecordDisplayedItem } from "../../hooks/learningActivity";
 import { isSubscriptionRequired } from "../../hooks/premiumLecture";
 import { errorMessage } from "../../lib/http";
+import { QUIZ_REVIEW_DRAFT_PREFIX } from "../../lib/learningDrafts";
 import type { Quiz, QuizAttemptResult } from "../../lib/types";
 import { randomUuid } from "../../lib/uuid";
 
@@ -47,7 +48,7 @@ export function useQuestionReview(quizId: string) {
   // same item after a restart collides on the key and is not re-awarded.
   const reviewSessionId = useRef(randomUuid());
 
-  const draftKey = `hangyul.review.quiz.${quizId}`;
+  const draftKey = `${QUIZ_REVIEW_DRAFT_PREFIX}${quizId}`;
 
   // Fetch the exact saved question (never generate/replace). Keyed on the URL id
   // so a refresh restores the same item. Every (re)initialization starts fully

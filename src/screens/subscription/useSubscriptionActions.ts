@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { subApi } from "../../api/endpoints";
 import type { VoucherSuccess } from "../../components/VoucherSuccessModal";
+import { useAuth } from "../../hooks/auth";
 import { useToast } from "../../hooks/toast";
 import { useTranslation, type Translate } from "../../i18n";
 import { formatYmd } from "../../lib/format";
@@ -35,6 +36,7 @@ export function useSubscriptionActions() {
   const { t } = useTranslation();
   const toast = useToast();
   const qc = useQueryClient();
+  const { bootstrapMe } = useAuth();
   const [busy, setBusy] = useState(false);
   const [voucherOpen, setVoucherOpen] = useState(false);
   const [voucherCode, setVoucherCode] = useState(""); // controlled; survives the fail-modal swap
@@ -48,6 +50,10 @@ export function useSubscriptionActions() {
     qc.invalidateQueries({ queryKey: ["sub-me"] });
     qc.invalidateQueries({ queryKey: ["dashboard"] });
     qc.invalidateQueries({ queryKey: ["invoices-inf"] });
+    // Premium gates read the profile's membership: re-read it too, or a new
+    // grant stays treated as free until a reload (best-effort; the server
+    // stays the source of truth).
+    void bootstrapMe().catch(() => undefined);
   }
 
   // Redemption is server-authoritative: one POST validates and applies (active

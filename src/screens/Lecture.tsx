@@ -213,10 +213,10 @@ export function Lecture() {
     saveOnExit(lectureId, seconds);
     try {
       await pendingSaves.get(lectureId);
-      // The catalog's started/done markers come from the progress just written.
-      // (This screen's own ["lecture", id] is left alone: refetching it would
-      // re-request the playback URL and reload the video mid-play.)
-      void qc.invalidateQueries({ queryKey: ["lectures"] });
+      // The series page's started/done markers come from the progress just
+      // written. (This screen's own ["lecture", id] is left alone: refetching
+      // it would re-request the playback URL and reload the video mid-play.)
+      void qc.invalidateQueries({ queryKey: ["series"] });
     } catch {
       // The next beat carries the position again.
     }
@@ -265,7 +265,7 @@ export function Lecture() {
       void qc.invalidateQueries({ queryKey: ["dashboard"] });
       void qc.invalidateQueries({ queryKey: ["course"] });
       void qc.invalidateQueries({ queryKey: ["courses"] });
-      void qc.invalidateQueries({ queryKey: ["lectures"] });
+      void qc.invalidateQueries({ queryKey: ["series"] });
     } catch (e) {
       // 409: skipped through rather than watched — nothing to celebrate.
       if (!(e instanceof ApiError && e.status === 409)) toast.error(errorMessage(e));

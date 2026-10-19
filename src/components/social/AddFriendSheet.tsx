@@ -84,6 +84,9 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
   const { busy, run } = useBusyKeys();
   const [sharing, setSharing] = useState(false);
   const { t } = useTranslation();
+  // A member without a nickname (the server never sends a non-friend's
+  // account name) is shown by the default name, as elsewhere in social.
+  const shownName = (u: RecommendedUser) => nameOf(u, t("home.defaultNickname"));
   const [cancelTarget, setCancelTarget] = useState<RecommendedUser | null>(null);
   async function confirmCancel() {
     const target = cancelTarget;
@@ -164,7 +167,7 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
   }
 
   const cta = (u: RecommendedUser) => {
-    const label = nameOf(u, "");
+    const label = shownName(u);
     switch (u.relationship) {
       case "none":
         return { text: copy.sendRequest, onClick: () => act(u.user_id, () => friendApi.request(u.user_id), copy.requestSent) };
@@ -238,9 +241,9 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
           </div>
         )}
         {result && result !== "none" && (
-          <div className="afs__result" aria-label={copy.ctaState(nameOf(result, ""), result.relationship)}>
+          <div className="afs__result" aria-label={copy.ctaState(shownName(result), result.relationship)}>
             <RankAvatar entry={result} size={72} />
-            <div className="afs__result-name">{nameOf(result, "")}</div>
+            <div className="afs__result-name">{shownName(result)}</div>
             {result.relationship === "friends" ? (
               <div className="afs__friends-tag">{copy.friendsLabel}</div>
             ) : (
@@ -275,9 +278,9 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
               {recommendations.map((u) => {
                 const action = cta(u);
                 return (
-                  <li key={u.user_id} className="afs__rec" aria-label={copy.ctaState(nameOf(u, ""), u.relationship)}>
+                  <li key={u.user_id} className="afs__rec" aria-label={copy.ctaState(shownName(u), u.relationship)}>
                     <RankAvatar entry={u} size={44} />
-                    <span className="afs__rec-name">{nameOf(u, "")}</span>
+                    <span className="afs__rec-name">{shownName(u)}</span>
                     {u.relationship === "friends" ? (
                       <span className="afs__friends-tag afs__friends-tag--pill">{copy.friendsLabel}</span>
                     ) : (

@@ -5,7 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 
 /* -------------------------------- mocks --------------------------------- */
-const { plans, mine, billing, paymentMethods, startTrial, subscribe, toastShow, toastError } = vi.hoisted(() => ({
+const { plans, mine, billing, paymentMethods, startTrial, subscribe, toastShow, toastError, bootstrapMe } = vi.hoisted(() => ({
+  bootstrapMe: vi.fn(async () => ({})),
   plans: vi.fn(),
   mine: vi.fn(),
   billing: vi.fn(),
@@ -31,6 +32,7 @@ vi.mock("../api/endpoints", () => ({
   payApi: { methods: paymentMethods },
 }));
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: toastError, success: vi.fn(), show: toastShow }) }));
+vi.mock("../hooks/auth", () => ({ useAuth: () => ({ bootstrapMe }) }));
 
 import { SubscriptionPurchase } from "./SubscriptionPurchase";
 import { I18nProvider } from "../i18n";
@@ -280,6 +282,8 @@ describe("SubscriptionPurchase", () => {
     await waitFor(() => expect(startTrial).toHaveBeenCalledWith("p_year", YEAR_QUOTE));
     expect(subscribe).not.toHaveBeenCalled();
     await waitFor(() => expect(screen.getByText("MANAGE")).toBeInTheDocument());
+    // The profile's membership drives the premium gates: it is re-read.
+    expect(bootstrapMe).toHaveBeenCalled();
   });
 
   it("paid CTA (ineligible) calls the paid endpoint, never the trial one", async () => {

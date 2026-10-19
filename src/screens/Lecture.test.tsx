@@ -158,12 +158,13 @@ describe("Lecture player", () => {
     // never marked done and its +100P never paid.
     lecture.mockResolvedValue(detail(null));
     const { container, qc } = renderLecture();
-    qc.setQueryData(["lectures", "all"], { items: [] });
+    // The series page the lesson's done marker shows on.
+    qc.setQueryData(["series", "S1", "ko"], { lectures: [] });
     const video = await loadedVideo(container);
     fireEvent.ended(video);
     await waitFor(() => expect(completeLecture).toHaveBeenCalledWith("L1"));
     expect(progress).toHaveBeenCalledWith("L1", 300);
-    expect(qc.getQueryState(["lectures", "all"])?.isInvalidated).toBe(true);
+    expect(qc.getQueryState(["series", "S1", "ko"])?.isInvalidated).toBe(true);
 
     // COU-009, then 계속하기 → the course page with the points for COU-021.
     expect(await screen.findByText("끝까지 다 봤어요 👏")).toBeInTheDocument();

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "../../i18n";
 import { QuestionView, QuizAudio, isAnswered, quizAttemptBody } from "../QuestionView";
 import type { AnswerValue } from "../QuestionView";
@@ -7,6 +7,7 @@ import { useToast } from "../../hooks/toast";
 import { errorMessage } from "../../lib/http";
 import { sanitizeHtml } from "../../lib/sanitizeHtml";
 import type { Quiz, QuizAttemptResult } from "../../lib/types";
+import { randomUuid } from "../../lib/uuid";
 import icAlert from "../../assets/brand/ic-24-alert.svg";
 import icBookplus from "../../assets/brand/ic-24-bookplus.svg";
 import icBookmarkOn from "../../assets/brand/ic-24-bookmark-filled.svg";
@@ -29,6 +30,7 @@ export function QuestionCard({
   onDone,
   onWrong,
   onSolved,
+  learningSessionId,
 }: {
   quiz: Quiz;
   /** `lecture` attempts skip the daily goal, like every lecture-derived attempt. */
@@ -39,6 +41,8 @@ export function QuestionCard({
   onWrong?: (result: QuizAttemptResult) => void;
   /** The question is answered (right, or a writing answer recorded); 다음 now shows. */
   onSolved?: () => void;
+  /** The practice set's id (`custom` only): credits each question once per set. */
+  learningSessionId?: string;
 }) {
   const { t } = useTranslation();
   const toast = useToast();
@@ -49,8 +53,11 @@ export function QuestionCard({
   const [attempts, setAttempts] = useState(0);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(!!quiz.bookmarked);
+  const inFlightRef = useRef(false);
+  const requestRef = useRef<{ answer: string; id: string } | null>(null);
 
   useEffect(() => {
+    requestRef.current = null;
     setValue({});
     setRejected(null);
     setResult(null);
@@ -69,9 +76,20 @@ export function QuestionCard({
   const single = quiz.answer.format === "single_choice";
 
   async function submit() {
+    if (inFlightRef.current) return; // a double tap is one submission
+    inFlightRef.current = true;
     setBusy(true);
+    // One key per submission, reused only when the same answer is resent
+    // after a failure: the server then replays instead of crediting twice.
+    if (requestRef.current?.answer !== answerKey) requestRef.current = { answer: answerKey, id: randomUuid() };
     try {
-      const r = await quizApi.attempt(quiz.quiz_id, { ...quizAttemptBody(quiz, value), source });
+      const r = await quizApi.attempt(quiz.quiz_id, {
+        ...quizAttemptBody(quiz, value),
+        source,
+        client_request_id: requestRef.current.id,
+        learning_session_id: learningSessionId,
+      });
+      requestRef.current = null;
       setAttempts((n) => n + 1);
       setResult(r);
       if (r.correct === false) {
@@ -83,6 +101,7 @@ export function QuestionCard({
     } catch (e) {
       toast.error(errorMessage(e));
     } finally {
+      inFlightRef.current = false;
       setBusy(false);
     }
   }

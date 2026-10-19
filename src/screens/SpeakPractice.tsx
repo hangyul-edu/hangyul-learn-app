@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "../i18n";
 import { Screen } from "../components/layout/Screen";
 import { ConfirmDialog } from "../components/ui/Modal";
-import { EmptyState, LoadingState } from "../components/ui/states";
+import { EmptyState, ErrorState, LoadingState } from "../components/ui/states";
 import { DetailHeader } from "../components/DetailHeader";
 import { AskMascot } from "../components/lecture/AskMascot";
 import { AskAiSheet } from "../components/AskAiSheet";
@@ -95,6 +95,8 @@ export function SpeakPractice() {
             prev={idx > 0 ? () => go(idx - 1) : undefined}
             next={idx < total - 1 ? () => go(idx + 1) : undefined}
           />
+        ) : sentence.isError ? (
+          <ErrorState message={errorMessage(sentence.error)} onRetry={() => void sentence.refetch()} />
         ) : (
           <LoadingState />
         )}

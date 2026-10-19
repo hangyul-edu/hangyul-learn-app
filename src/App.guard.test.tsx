@@ -20,7 +20,7 @@ function landOn(path: string, me: Partial<Me>): string {
   const { unmount } = render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
-        {["/home", "/setup/phone", "/signup/terms", "/setup/profile"].map((p) => (
+        {["/home", "/setup/phone", "/signup/terms", "/setup/profile", "/setup/onboarding"].map((p) => (
           <Route key={p} path={p} element={page} />
         ))}
       </Routes>
@@ -53,6 +53,19 @@ describe("RequireAuth — social signup order", () => {
   it("sends an existing account that agreed long ago but has no phone straight to the phone step", () => {
     expect(landOn("/home", { terms_agreement_pending: false, phone_verification_pending: true, nickname: "me" }))
       .toBe("/setup/phone");
+  });
+});
+
+describe("RequireAuth — onboarding", () => {
+  it("sends a member with a profile but no onboarding to onboarding, even on a cold start", () => {
+    // Regression: a stored session opened /home directly, skipping onboarding
+    // (and with it the attendance check-in, which waits for it).
+    expect(landOn("/home", { nickname: "me", onboarding_completed: false })).toBe("/setup/onboarding");
+    expect(landOn("/setup/onboarding", { nickname: "me", onboarding_completed: false })).toBe("/setup/onboarding");
+  });
+
+  it("lets an onboarded member through", () => {
+    expect(landOn("/home", { nickname: "me", onboarding_completed: true })).toBe("/home");
   });
 });
 

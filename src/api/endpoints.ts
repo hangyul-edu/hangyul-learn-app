@@ -1,7 +1,6 @@
 import { http } from "../lib/http";
 import { API_BASE_URL } from "../lib/config";
 import { randomUuid } from "../lib/uuid";
-import { deviceTimeZone } from "../lib/timezone";
 import { activeLanguage } from "../lib/language";
 import { recordingFilename, type RecordingInfo } from "../lib/recording";
 import type {
@@ -43,7 +42,6 @@ import type {
   SessionFinalizeResult,
   NicknameCheck,
   Notice,
-  NotificationItem,
   NotificationSection,
   Offers,
   PaymentMethod,
@@ -580,10 +578,12 @@ export const friendApi = {
 
 /* --------------------------- Notifications -------------------------- */
 export const notifApi = {
+  // No `tz`: the server buckets sections in the synced device timezone, and a
+  // zone it cannot resolve (e.g. ICU's "Etc/Unknown") would fail the whole list.
   list: (params: { group?: string; cursor?: string }) =>
-    http.get<{ sections?: NotificationSection[]; items?: NotificationItem[]; unread_count?: number; next_cursor?: string | null }>(
+    http.get<{ sections?: NotificationSection[]; unread_count?: number; next_cursor?: string | null }>(
       "/notifications",
-      { limit: 30, tz: deviceTimeZone(), ...params },
+      { limit: 30, ...params },
     ),
   /** Open the inbox → mark every notification read (clears the bell badge). */
   readAll: () => http.post<void>("/notifications/read-all"),

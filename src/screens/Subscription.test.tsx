@@ -5,7 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { ApiError } from "../lib/http";
 
-const { mine, invoices, redeemCoupon, cancel } = vi.hoisted(() => ({
+const { mine, invoices, redeemCoupon, cancel, bootstrapMe } = vi.hoisted(() => ({
+  bootstrapMe: vi.fn(async () => ({})),
   mine: vi.fn(),
   invoices: vi.fn(),
   redeemCoupon: vi.fn(),
@@ -16,6 +17,7 @@ vi.mock("../api/endpoints", () => ({
   billingApi: { invoices },
 }));
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn(), show: vi.fn() }) }));
+vi.mock("../hooks/auth", () => ({ useAuth: () => ({ bootstrapMe }) }));
 
 import { Subscription } from "./Subscription";
 import { I18nProvider } from "../i18n";
@@ -163,6 +165,8 @@ describe("Subscription — coupon redemption", () => {
     await submitCode("ABCD-1234-EFGH");
     await waitFor(() => expect(redeemCoupon).toHaveBeenCalledWith("ABCD-1234-EFGH"));
     expect(await screen.findByText("2026.09.01~2026.10.01")).toBeInTheDocument();
+    // The grant changes membership, which the premium gates read from the profile.
+    expect(bootstrapMe).toHaveBeenCalled();
   });
 
   it("keeps the code entry open (not 'invalid code') when the attempt cap is hit", async () => {

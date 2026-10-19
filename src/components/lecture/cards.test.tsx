@@ -62,7 +62,7 @@ describe("QuestionCard", () => {
     fireEvent.click(screen.getByRole("radio", { name: /동안/ }));
     fireEvent.click(screen.getByRole("button", { name: "제출" }));
     expect(await screen.findByText("다시 풀어보세요")).toBeInTheDocument();
-    expect(attempt).toHaveBeenCalledWith("q1", { answer: "2", source: "lecture" });
+    expect(attempt).toHaveBeenCalledWith("q1", { answer: "2", source: "lecture", client_request_id: expect.any(String) });
     // COU-013: the rejected pick cannot be resubmitted.
     expect(screen.getByRole("button", { name: "제출" })).toBeDisabled();
 
@@ -71,6 +71,25 @@ describe("QuestionCard", () => {
     fireEvent.click(await screen.findByRole("button", { name: "다음" }));
     expect(screen.getByText("정답이에요!")).toBeInTheDocument();
     expect(onDone).toHaveBeenCalledWith(false);
+    // Each new answer is its own submission (a fresh idempotency key).
+    const keys = attempt.mock.calls.map((c) => (c[1] as { client_request_id: string }).client_request_id);
+    expect(new Set(keys).size).toBe(2);
+  });
+
+  it("resends a failed submission under the same key, and sends the practice set id", async () => {
+    attempt.mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce({ attempt_id: "a1", correct: true });
+    ko(<QuestionCard quiz={QUIZ} source="custom" learningSessionId="set-1" onDone={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("radio", { name: /덕분에/ }));
+    fireEvent.click(screen.getByRole("button", { name: "제출" }));
+    await waitFor(() => expect(attempt).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByRole("button", { name: "제출" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "제출" }));
+    expect(await screen.findByRole("button", { name: "다음" })).toBeInTheDocument();
+
+    const [first, second] = attempt.mock.calls.map((c) => c[1] as Record<string, unknown>);
+    expect(second.client_request_id).toBe(first.client_request_id);
+    expect(second.learning_session_id).toBe("set-1");
   });
 });
 

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "../../i18n";
+import { errorMessage } from "../../lib/http";
 import { Button } from "./kit";
 import { Spinner } from "./Spinner";
 
@@ -85,7 +86,8 @@ export function Async<T>({
   const { t } = useTranslation();
   if (loading && data === undefined) return <>{skeleton ?? <LoadingState />}</>;
   if (error && data === undefined)
-    return <ErrorState message={(error as Error)?.message || t("ui.errorBody")} onRetry={onRetry} />;
+    // The catalog wording, never the server's English `detail` or a raw key.
+    return <ErrorState message={errorMessage(error)} onRetry={onRetry} />;
   if (data === undefined) return null;
   if (isEmpty && isEmpty(data)) return <>{empty ?? <EmptyState title={t("ui.emptyTitle")} />}</>;
   return <>{children(data)}</>;

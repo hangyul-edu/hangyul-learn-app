@@ -3,8 +3,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { gameApi } from "../api/endpoints";
 import { useAuth } from "../hooks/auth";
 import { AttendanceModal } from "./AttendanceModal";
+import { localDay } from "../lib/timezone";
 import { syncDeviceTimezone } from "../lib/timezoneSync";
 import type { AttendanceCheckIn } from "../lib/types";
+
+// How often an open tab looks for a new local day (focus and visibility
+// changes also check).
+const DAY_RECHECK_MS = 60_000;
 
 interface AttendanceModalData {
   pointsAwarded: number;
@@ -27,7 +32,8 @@ function isValidResponse(r: AttendanceCheckIn | undefined | null): r is Attendan
 /**
  * Drives the daily attendance flow. Mounted once at the app root (inside the
  * auth + query providers). When a signed-in session is established (cold-start
- * auto-login or a fresh login), it calls the attendance API once and shows the
+ * auto-login or a fresh login), and again when the device's local day rolls
+ * over, it calls the attendance API once and shows the
  * completion modal ONLY for a newly-recorded check-in that awarded points. The
  * server is the source of truth; all modal values come from its response.
  *
@@ -46,20 +52,38 @@ export function AttendanceGate() {
   // still counts — see Onboarding.submit.)
   const onboardingComplete = status === "signed-in" && !!me && me.onboarding_completed;
 
-  const firedRef = useRef(false); // one request per signed-in session
+  // The device's local day. A tab left open (or resumed from the background)
+  // past midnight checks in for the new day without a reload.
+  const [day, setDay] = useState(() => localDay());
+  useEffect(() => {
+    const recheck = () => setDay(localDay());
+    const onVisible = () => {
+      if (document.visibilityState === "visible") recheck();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", recheck);
+    const timer = window.setInterval(recheck, DAY_RECHECK_MS);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", recheck);
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  const firedDayRef = useRef<string | null>(null); // one request per signed-in session and day
   const inFlightRef = useRef(false); // no concurrent requests
   const processedDateRef = useRef<string | null>(null); // don't reprocess a date
 
   useEffect(() => {
     if (status !== "signed-in") {
       // Reset so the next sign-in checks in again (e.g. after re-login).
-      firedRef.current = false;
+      firedDayRef.current = null;
       inFlightRef.current = false;
       return;
     }
     if (!onboardingComplete) return; // wait until onboarding is fully complete
-    if (firedRef.current || inFlightRef.current) return;
-    firedRef.current = true;
+    if (firedDayRef.current === day || inFlightRef.current) return;
+    firedDayRef.current = day;
     inFlightRef.current = true;
     (async () => {
       try {
@@ -102,7 +126,7 @@ export function AttendanceGate() {
         inFlightRef.current = false;
       }
     })();
-  }, [status, onboardingComplete, qc]);
+  }, [status, onboardingComplete, day, qc]);
 
   if (!data) return null;
   return (

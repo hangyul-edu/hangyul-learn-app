@@ -91,6 +91,10 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   if (me && !me.terms_agreement_pending && onTerms) return <Navigate to={nextSetupPath(me)} replace />;
   // Signed in but profile never set up → force profile setup.
   if (me && !me.nickname && !onTerms && !loc.pathname.startsWith("/setup")) return <Navigate to="/setup/profile" replace />;
+  // …then onboarding. Sign-in routes there (nextSetupPath), but a cold start
+  // on a stored session would otherwise skip it and never record attendance.
+  if (me && !me.onboarding_completed && !onTerms && !loc.pathname.startsWith("/setup"))
+    return <Navigate to="/setup/onboarding" replace />;
   return <>{children}</>;
 }
 

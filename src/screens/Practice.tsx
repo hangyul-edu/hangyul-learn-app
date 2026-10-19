@@ -15,6 +15,7 @@ import { useRecordDisplayedItem } from "../hooks/learningActivity";
 import { isSubscriptionRequired, useLeaveLockedLecture, usePremiumLectureGate } from "../hooks/premiumLecture";
 import { errorMessage } from "../lib/http";
 import type { Quiz } from "../lib/types";
+import { randomUuid } from "../lib/uuid";
 
 /**
  * TOPIK practice for one lecture: COU-003's count picker (1464:21369), then
@@ -39,6 +40,9 @@ export function Practice() {
   const [idx, setIdx] = useState(0);
   // Bumped by 다시 풀기 so every card starts over unanswered.
   const [round, setRound] = useState(0);
+  // One per practice set, kept across 다시 풀기: the server credits each
+  // question's points and goal at most once per set.
+  const [learningSessionId, setLearningSessionId] = useState("");
   const [solved, setSolved] = useState(false);
   const [wrongAttempt, setWrongAttempt] = useState<string | null>(null);
   const [askOpen, setAskOpen] = useState(false);
@@ -70,6 +74,7 @@ export function Practice() {
     setStarting(true);
     try {
       const res = await practiceApi.start(lectureId, n);
+      setLearningSessionId(randomUuid());
       setItems(res.items);
     } catch (e) {
       if (isSubscriptionRequired(e)) setLocked(true);
@@ -168,6 +173,7 @@ export function Practice() {
           key={`${round}-${current.quiz_id}`}
           quiz={current}
           source="custom"
+          learningSessionId={learningSessionId}
           onWrong={(r) => setWrongAttempt(r.attempt_id)}
           onSolved={() => setSolved(true)}
           onDone={() => (last ? nav(-1) : goTo(idx + 1))}

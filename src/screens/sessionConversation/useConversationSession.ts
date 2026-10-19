@@ -689,6 +689,7 @@ export function useConversationSession() {
     finishOrExit,
     exitSession,
     backToSaved,
-    retryLoad: () => void bootStudy(null),
+    // Review mode retries the same saved sentence, never a new session.
+    retryLoad: () => void (isReview ? loadReviewItem(reviewSentenceId!) : bootStudy(null)),
   };
 }

@@ -95,7 +95,7 @@ export function useRecoveryRetry() {
         setResultModal({ kind: "success" });
         // The paid invoice restores premium: the subscription card, the
         // dashboard's paywall flag and the payment history all changed.
-        for (const key of [["sub-me"], ["dashboard"], ["invoices"], ["invoices-inf"]]) {
+        for (const key of [["sub-me"], ["dashboard"], ["invoices-inf"]]) {
           qc.invalidateQueries({ queryKey: key });
         }
       } else if (result?.kind === "failure") {

@@ -29,6 +29,13 @@ let authState: {
 };
 vi.mock("../hooks/auth", () => ({ useAuth: () => authState }));
 
+// The device's local day, moved by the day-rollover test.
+const clock = vi.hoisted(() => ({ today: "2026-07-22" }));
+vi.mock("../lib/timezone", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../lib/timezone")>()),
+  localDay: () => clock.today,
+}));
+
 import { AttendanceGate } from "./AttendanceGate";
 import { I18nProvider } from "../i18n";
 import { resetTimezoneSync } from "../lib/timezoneSync";
@@ -58,7 +65,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   calls.length = 0;
   resetTimezoneSync();
-  authState = { status: "signed-in", me: { app_language: "ko", onboarding_completed: true } };
+  clock.today = "2026-07-22";
+  authState ={ status: "signed-in", me: { app_language: "ko", onboarding_completed: true } };
   checkIn.mockImplementation(async () => {
     calls.push("checkIn");
     return FRESH;
@@ -163,6 +171,22 @@ describe("AttendanceGate", () => {
     );
     await new Promise((r) => setTimeout(r, 0));
     expect(checkIn).toHaveBeenCalledTimes(1);
+  });
+
+  it("checks in again when an open tab comes back on a new local day", async () => {
+    checkIn.mockResolvedValue(ALREADY);
+    renderGate();
+    await waitFor(() => expect(checkIn).toHaveBeenCalledTimes(1));
+
+    // Same day: coming back to the tab sends nothing.
+    window.dispatchEvent(new Event("focus"));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(checkIn).toHaveBeenCalledTimes(1);
+
+    // Past local midnight: the new day is checked in without a reload.
+    clock.today = "2026-07-23";
+    window.dispatchEvent(new Event("focus"));
+    await waitFor(() => expect(checkIn).toHaveBeenCalledTimes(2));
   });
 
   it("does not re-show the modal after it is dismissed (same session)", async () => {

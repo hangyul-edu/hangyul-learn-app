@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { http, setAuthHandlers, ApiError, NetworkError } from "../lib/http";
 import { resetChannelTalkUser } from "../lib/channelTalk";
+import { clearLearningDrafts } from "../lib/learningDrafts";
 import { clearSession, loadSession, saveSession } from "../lib/storage";
 import type { StoredSession } from "../lib/storage";
 import type { Me, TokenResponse } from "../lib/types";
@@ -122,6 +123,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // The support messenger is still booted as this member; on a shared
     // device the next person would otherwise see their chats.
     resetChannelTalkUser();
+    // Likewise the study sets and drafts this tab kept for resuming.
+    clearLearningDrafts();
   }
 
   // Server-side revocation only (no local sign-out). Resolves on success and on

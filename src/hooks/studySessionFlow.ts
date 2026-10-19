@@ -104,6 +104,8 @@ export function useExitSession(category: DailyTrack, clearSnapshot: () => void) 
     startedAt: number;
   }) {
     if (finalizingRef.current) return;
+    // Before either path: a double tap must not complete twice or go back twice.
+    finalizingRef.current = true;
     clearSnapshot();
     if (study) {
       const id = study.sessionId;
@@ -114,7 +116,6 @@ export function useExitSession(category: DailyTrack, clearSnapshot: () => void) 
       nav(-1);
       return;
     }
-    finalizingRef.current = true;
     const duration_seconds = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
     try {
       await learnApi.recordSession({ session_type: "sentence", category, duration_seconds });

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { payApi, subApi } from "../../api/endpoints";
+import { useAuth } from "../../hooks/auth";
 import { useToast } from "../../hooks/toast";
 import { useTranslation } from "../../i18n";
 import { ApiError } from "../../lib/http";
@@ -27,6 +28,7 @@ export function needsOverseasCard(block: CurrencyBlock): boolean {
  */
 export function usePurchase() {
   const { t } = useTranslation();
+  const { bootstrapMe } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
   const toast = useToast();
@@ -117,6 +119,9 @@ export function usePurchase() {
       qc.invalidateQueries({ queryKey: ["sub-me"] });
       qc.invalidateQueries({ queryKey: ["sub-offers"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
+      // Premium gates read the profile's membership, so re-read it now rather
+      // than leave a new trial or subscriber treated as free until a reload.
+      await bootstrapMe().catch(() => undefined);
       nav("/subscription", { replace: true });
     } catch (e) {
       // e.g. trial already used → refresh eligibility so the UI switches to paid.

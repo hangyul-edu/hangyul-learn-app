@@ -7,6 +7,7 @@ import { learnApi } from "../api/endpoints";
 import { LearningSectionHeader } from "../components/LearningSectionSwitcher";
 import { Button } from "../components/ui/kit";
 import { ErrorState } from "../components/ui/states";
+import { errorMessage } from "../lib/http";
 import type { ManagementPeriod } from "../lib/types";
 import { Chart } from "./learningManagement/Chart";
 import { fmtHHMM } from "./learningManagement/format";
@@ -72,7 +73,7 @@ export function LearningManagement() {
         {q.isError && !data ? (
           <div className="lmgmt__errwrap">
             <ErrorState
-              message={(q.error as Error)?.message || t("learningManagement.loadError")}
+              message={errorMessage(q.error)}
               onRetry={() => q.refetch()}
             />
           </div>

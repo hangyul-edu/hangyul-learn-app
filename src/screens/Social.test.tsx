@@ -83,6 +83,25 @@ beforeEach(() => {
 });
 
 describe("Friend Management (Social)", () => {
+  it("words a request's age in the app's language, as LEG-015 / LEG-016 do", async () => {
+    // The server's `relative_time` is English prose; using it put
+    // "Sent 1 day ago 요청" on the Korean list.
+    api.received.mockResolvedValue({
+      requests: [{ ...request("r9", "u9", "Ravi"), created_at: new Date(Date.now() - 5 * 3600_000).toISOString(), relative_time: "Received 5 hours ago" }],
+      count: 1,
+    });
+    api.sent.mockResolvedValue({
+      requests: [{ ...request("s9", "u8", "Tom"), created_at: new Date(Date.now() - 30 * 60_000).toISOString(), relative_time: "Sent 30 minutes ago" }],
+      count: 1,
+    });
+    renderSocial();
+    await userEvent.click(await screen.findByRole("tab", { name: "받은 요청 1" }));
+    expect(await screen.findByText("5시간 전 요청")).toBeInTheDocument();
+    expect(screen.queryByText(/Received|Sent/)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("tab", { name: "보낸 요청 1" }));
+    expect(await screen.findByText("30분 전 요청")).toBeInTheDocument();
+  });
+
   it("renders the header, add-friend button, and tabs with backend counts", async () => {
     renderSocial();
     expect(screen.getByRole("heading", { name: "친구 관리" })).toBeInTheDocument();

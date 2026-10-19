@@ -56,12 +56,13 @@ function useFmCopy() {
     toastRejected: t("friends.toastRejected"),
     toastCancelled: t("friends.toastCancelled"),
     toastRemoved: t("friends.toastRemoved"),
-    /* Both locales wrap the relative time: "{age} 요청" / "Requested {age}"
-       (1815:25373 / 1816:24265). A server-supplied `relative_time` is already
-       formatted, so it substitutes for the locally computed one but still goes
-       through the same wrapper. */
+    /* Both locales wrap the relative time: "2시간 전 요청" / "Requested 2h
+       ago" (LEG-015 1815:25241, LEG-016 1816:24265), computed here from
+       `created_at` in the app's language. The server's `relative_time` is
+       English prose ("Sent 1 day ago"); preferring it put "Sent 1 day ago 요청"
+       on the Korean list, so it is only the fallback when there is no date. */
     requestAge: (iso?: string, preformatted?: string | null) => {
-      const age = preformatted ?? (iso ? timeAgo(iso, t, localeFor(language)) : "");
+      const age = iso ? timeAgo(iso, t, localeFor(language)) : preformatted ?? "";
       return age ? t("friends.requestAge", { age }) : "";
     },
   };

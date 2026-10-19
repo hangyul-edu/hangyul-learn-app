@@ -29,6 +29,19 @@ function rule(selector: string): Record<string, string> {
   );
 }
 
+describe("friend-management rows (LEG-013 / 015 / 016)", () => {
+  it("keeps the chip outline inside its 15px padding, as Figma draws it", () => {
+    const pill = rule(".fm__pill");
+    expect(pill.padding).toBe("0 15px");
+    expect(pill.border).toBe("none");
+    expect(pill["box-shadow"]).toBe("inset 0 0 0 1.5px #f4f4f5");
+  });
+
+  it("rings the no-picture avatar in Gray 3", () => {
+    expect(rule(".fm__row-avatar .rank-avatar-char--none")["box-shadow"]).toBe("inset 0 0 0 1px #dbdddf");
+  });
+});
+
 describe("bottom notice (cp_G_03_toast)", () => {
   it("draws the one-line variant at its Figma size", () => {
     expect(rule(".hg-toast--notice.hg-toast--line")).toMatchObject({

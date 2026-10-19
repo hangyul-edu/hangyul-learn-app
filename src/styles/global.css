@@ -15755,6 +15755,12 @@ input[type="tel"] {
      box, so the shadow has to follow its silhouette. */
   filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.25));
 }
+/* The no-picture disc in LEG-013 / 015 / 016 (Rectangle 25702, e.g.
+   1815:25225) has a 1px Gray 3 stroke drawn inside its 48px; the app drew the
+   disc without it. */
+.fm__row-avatar .rank-avatar-char--none {
+  box-shadow: inset 0 0 0 1px #dbdddf;
+}
 /* The request rows wrap their avatar + name in a button so the whole identity
    opens the request. It had NO rule at all, so it fell back to the UA's
    inline-block button: the avatar and the name stacked into a 66x96 column that
@@ -15819,7 +15825,10 @@ input[type="tel"] {
 }
 .fm__pill {
   /* comp_btn_choice chip_round_ — 55x36, 15px side padding, r24, 1.5px
-     Gray-100 outline. */
+     Gray-100 outline. Figma draws the outline INSIDE the 15px (label + 30 =
+     55), so it is an inset ring here, taking no room: a CSS border added to
+     the padding (the chips were 1–2px wide and started that much left), and
+     Chrome lays a 1.5px border out as 1px. */
   flex-shrink: 0;
   box-sizing: border-box;
   height: 36px;
@@ -15827,7 +15836,8 @@ input[type="tel"] {
   align-items: center;
   justify-content: center;
   padding: 0 15px;
-  border: 1.5px solid #f4f4f5;
+  border: none;
+  box-shadow: inset 0 0 0 1.5px #f4f4f5;
   border-radius: 24px;
   background: #fff;
   color: #27272a;
@@ -15846,7 +15856,7 @@ input[type="tel"] {
 }
 .fm__pill--primary {
   background: var(--brand-500);
-  border-color: var(--brand-500);
+  box-shadow: inset 0 0 0 1.5px var(--brand-500);
   color: #fff;
 }
 .fm__pill--primary:active {

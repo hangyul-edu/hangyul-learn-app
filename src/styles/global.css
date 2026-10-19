@@ -12612,7 +12612,9 @@ input[type="tel"] {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  /* No fixed gap: at 375 LEG-011 leaves only 5px (KO) / 1px (EN) between the
+     last tab and 친구 관리 / Manage, which space-between gives exactly. */
+  gap: 0;
   /* Pinned to the top of the scrolling body so 정규 리그 / 친구 리그 / My 포인트
      / 히스토리 stay in reach on a long ranking. The row reaches up over the
      body's safe-area padding and out over its 20px gutters, so the white
@@ -12642,14 +12644,22 @@ input[type="tel"] {
   /* Figma comp_tab (node 960:22846) — 84px tabs, butted together from x20 */
   display: flex;
   gap: 0;
+  min-width: 0;
 }
 .lg__tab {
-  /* Figma comp_tab (node 960:22846) — 48h, SemiBold 15 / 21, tracking -0.3 */
+  /* Figma comp_tab (node 960:22846) — 48h, SemiBold 15 / 21, tracking -0.3.
+     84 wide at the 375 design width; below it the tabs give up width so the
+     button beside them never lands on My 포인트 (at 360 it overlapped by 14). */
   position: relative;
   background: none;
   border: none;
   min-height: 48px;
+  /* A width, not just a flex-basis: the tab set sizes itself from its tabs'
+     widths, and with only a basis it shrank them to their labels (57). */
   width: 84px;
+  flex-shrink: 1;
+  min-width: 0;
+  white-space: nowrap;
   padding: 0;
   font-family: var(--font-body);
   font-size: 15px;
@@ -12672,16 +12682,19 @@ input[type="tel"] {
   background: var(--brand-500);
 }
 .lg__history {
-  /* Figma node 960:23376 — r8, 1px Gray 3, Body 8 SemiBold 14 / 20.
-     LEG-011 (1658:23883) pins it 14 from the frame edge, which is 6 beyond the
-     page's 20px inset; as a plain flex item the row overflowed and it drifted to
-     369.7 instead of 361. Same escape the full-bleed rule under the tabs uses. */
-  position: absolute;
-  /* 14 from the frame edge; .lg__tabs now spans the full width (see above). */
-  right: 14px;
-  top: calc(var(--safe-top) + 6px);
+  /* Figma node 960:23376 — r8, 1px Gray 3, Body 8 SemiBold 14 / 20; 36 tall,
+     centred on the 48px tab row (y 50 in a bar at 44).
+
+     In the row's flow, not absolutely placed: pinned to the edge it slid over
+     the third tab whenever the screen was narrower than 375. LEG-011
+     (1658:23883) sets it 14 from the frame edge, 6 beyond the row's 20px
+     inset — hence the negative margin.
+
+     Figma's 16px padding includes its inside stroke, so 15 + the 1px border
+     gives the frames' widths exactly (84 친구 관리, 80 History). */
   flex-shrink: 0;
-  padding: 7px 16px;
+  margin-right: -6px;
+  padding: 7px 15px;
   border: 1px solid var(--border-strong);
   border-radius: var(--r-xs);
   background: var(--surface);
@@ -12693,6 +12706,13 @@ input[type="tel"] {
 }
 .lg__history:active {
   background: var(--surface-2);
+}
+/* LEG-011 EN (1658:24073) alone draws Manage larger: SemiBold 15 / 22.25 in an
+   88 x 39 box at y 48. 히스토리 / History and 친구 관리 stay 14 / 36 tall. */
+:root:lang(en) .lg__history--manage {
+  height: 39px;
+  font-size: 15px;
+  line-height: 22.25px;
 }
 
 /* Progress carousel */

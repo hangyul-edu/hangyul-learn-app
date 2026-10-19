@@ -65,7 +65,7 @@ export function League() {
             ))}
           </div>
           {tab === "friend" ? (
-            <button className="lg__history" onClick={() => nav("/social")} aria-label={t("league.manageFriends")}>
+            <button className="lg__history lg__history--manage" onClick={() => nav("/social")} aria-label={t("league.manageFriends")}>
               {t("league.manageFriends")}
             </button>
           ) : (

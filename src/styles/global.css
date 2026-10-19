@@ -12977,9 +12977,9 @@ input[type="tel"] {
   font-weight: 600;
   letter-spacing: -0.15px;
   color: var(--black);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* A long nickname wraps (the row grows past its 50) rather than being cut
+     with an ellipsis; `anywhere` breaks a name with no spaces too. */
+  overflow-wrap: anywhere;
 }
 .lg__rank-pts {
   /* Figma node 960:23293 — Regular 13 / 1.38, black, tracking -0.13 */
@@ -15127,18 +15127,28 @@ input[type="tel"] {
   position: absolute;
   transform: translateX(-50%);
   text-align: center;
-  white-space: nowrap;
 }
 .fl__block-rank {
+  white-space: nowrap;
   font-size: 30px;
   line-height: 35px;
   font-weight: 800;
   color: #ffffff;
 }
 .fl__block-name {
+  /* A long nickname wraps onto further lines, up to 63 wide (max-content so
+     the absolute box isn't squeezed to the space right of its `left`). The
+     blocks are fixed-size, so the lines stop where the block does — 4 on the
+     1st-place block, 2 on the others — and only a name longer than that
+     still ends in an ellipsis, rather than being clipped mid-letter. */
+  width: max-content;
   max-width: 63px;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
   font-size: 14px;
   line-height: 20px;
   font-weight: 600;
@@ -15152,6 +15162,9 @@ input[type="tel"] {
   left: 37.5px;
   top: 48px;
   color: #000000;
+  /* 145 tall: room for four 20px lines below the name's top at 48. */
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
 }
 .fl__block--r2 .fl__block-rank {
   left: 42.5px;
@@ -15265,7 +15278,8 @@ input[type="tel"] {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 50px;
+  /* 50 tall, growing when a long nickname wraps onto a second line. */
+  min-height: 50px;
   padding: 0 20px;
   border-radius: 0;
   background: none;
@@ -15319,9 +15333,8 @@ input[type="tel"] {
   font-weight: 600;
   line-height: 20px;
   color: #000;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* Wraps within the 181-wide text block instead of ending in an ellipsis. */
+  overflow-wrap: anywhere;
 }
 .fl__row-league {
   /* Caption 4 — Medium 12 / 16.5, Gray 5 */

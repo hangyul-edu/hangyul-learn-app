@@ -15815,6 +15815,11 @@ input[type="tel"] {
   font-weight: 500;
   line-height: 20px;
   color: #adb4ba;
+  /* One line, like the name above it: a long age ("Requested October 10")
+     wrapped to a second line under the 48px row and pushed the list apart. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .fm__row-actions {
   /* The chips are pinned to the row's right edge (222 / 280 of 335). */

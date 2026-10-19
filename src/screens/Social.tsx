@@ -62,7 +62,8 @@ function useFmCopy() {
        English prose ("Sent 1 day ago"); preferring it put "Sent 1 day ago 요청"
        on the Korean list, so it is only the fallback when there is no date. */
     requestAge: (iso?: string, preformatted?: string | null) => {
-      const age = iso ? timeAgo(iso, t, localeFor(language)) : preformatted ?? "";
+      // A short month past a week ("Requested Oct 10"), so it fits its one line.
+      const age = iso ? timeAgo(iso, t, localeFor(language), "short") : preformatted ?? "";
       return age ? t("friends.requestAge", { age }) : "";
     },
   };
@@ -273,7 +274,7 @@ export function Social() {
                   busy={busy.has(r.request_id)}
                   onOpen={() => setIncomingId(r.request_id)}
                   actions={[
-                    { label: copy.reject, onClick: () => act(r.request_id, () => friendApi.reject(r.request_id), copy.toastRejected) },
+                    { label: copy.reject, onClick: () => act(r.request_id, () => friendApi.reject(r.request_id), copy.toastRejected, "notice") },
                     { label: copy.accept, primary: true, onClick: () => act(r.request_id, () => friendApi.accept(r.request_id), copy.toastAccepted(nameOf(r, t)), "notice") },
                   ]}
                 />

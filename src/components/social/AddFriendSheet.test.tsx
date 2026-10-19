@@ -256,6 +256,9 @@ describe("IncomingFriendRequestSheet", () => {
     await waitFor(() => expect(api.reject).toHaveBeenCalledWith("r1"));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     expect(api.accept).not.toHaveBeenCalled();
+    // The bottom notice (cp_G_03_toast), as after an accept.
+    const notice = await screen.findByText("요청을 거절했어요");
+    expect(notice.closest(".hg-toast")).toHaveClass("hg-toast--notice", "hg-toast--line");
   });
 
   it("accepts the request (one call) and closes", async () => {

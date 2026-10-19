@@ -187,6 +187,20 @@ describe("Friend Management (Social)", () => {
     await userEvent.click(await screen.findByRole("tab", { name: "받은 요청 1" }));
     await userEvent.click(await screen.findByRole("button", { name: "거절" }));
     await waitFor(() => expect(api.reject).toHaveBeenCalledWith("r1"));
+    // The bottom notice (cp_G_03_toast), as after an accept — not the green success toast.
+    const notice = await screen.findByText("요청을 거절했어요");
+    expect(notice.closest(".hg-toast")).toHaveClass("hg-toast--notice", "hg-toast--line");
+    expect(notice.closest(".hg-toast")).not.toHaveClass("hg-toast--success");
+  });
+
+  it("dates an older request with a short month so it stays on one line", async () => {
+    api.received.mockResolvedValue({
+      requests: [{ ...request("r8", "u8", "Old"), created_at: "2026-09-02T03:00:00Z" }],
+      count: 1,
+    });
+    renderSocial();
+    await userEvent.click(await screen.findByRole("tab", { name: "받은 요청 1" }));
+    expect(await screen.findByText("9월 2일 요청")).toBeInTheDocument();
   });
 
   it("received empty state: centered heading + two-line desc, and no CTA", async () => {

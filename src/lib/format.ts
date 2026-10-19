@@ -14,8 +14,15 @@ export function mmss(total: number): string {
 /**
  * Compact relative age ("just now" / N minutes / N hours / N days), formatted in
  * the active language. `t` is passed in because this runs outside React.
+ * Past a week it is the date; `month: "short"` gives "Oct 10" rather than
+ * "October 10" in English for one-line spots (Korean reads 10월 10일 either way).
  */
-export function timeAgo(iso: string | null | undefined, t: Translate, locale = "ko-KR"): string {
+export function timeAgo(
+  iso: string | null | undefined,
+  t: Translate,
+  locale = "ko-KR",
+  month: "long" | "short" = "long",
+): string {
   if (!iso) return "";
   const then = new Date(iso).getTime();
   const s = Math.floor((Date.now() - then) / 1000);
@@ -23,7 +30,7 @@ export function timeAgo(iso: string | null | undefined, t: Translate, locale = "
   if (s < 3600) return t("time.minutesAgo", { n: Math.floor(s / 60) });
   if (s < 86400) return t("time.hoursAgo", { n: Math.floor(s / 3600) });
   if (s < 604800) return t("time.daysAgo", { n: Math.floor(s / 86400) });
-  return new Date(iso).toLocaleDateString(locale, { month: "long", day: "numeric" });
+  return new Date(iso).toLocaleDateString(locale, { month, day: "numeric" });
 }
 
 // Notice dates are shown on the device's calendar, like every other date in

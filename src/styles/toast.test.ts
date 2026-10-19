@@ -37,6 +37,14 @@ describe("friend-management rows (LEG-013 / 015 / 016)", () => {
     expect(pill["box-shadow"]).toBe("inset 0 0 0 1.5px #f4f4f5");
   });
 
+  it("keeps a request's age on one line, ending in an ellipsis if it must", () => {
+    expect(rule(".fm__row-age")).toMatchObject({
+      "white-space": "nowrap",
+      overflow: "hidden",
+      "text-overflow": "ellipsis",
+    });
+  });
+
   it("rings the no-picture avatar in Gray 3", () => {
     expect(rule(".fm__row-avatar .rank-avatar-char--none")["box-shadow"]).toBe("inset 0 0 0 1px #dbdddf");
   });

@@ -102,7 +102,7 @@ export function IncomingFriendRequestSheet({
                 variant="secondary"
                 block
                 disabled={busy}
-                onClick={() => respond(() => friendApi.reject(requestId as string), copy.rejected)}
+                onClick={() => respond(() => friendApi.reject(requestId as string), copy.rejected, true)}
               >
                 {copy.reject}
               </Button>

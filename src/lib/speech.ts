@@ -41,10 +41,13 @@ export function isTranscript(spoken: Blob | SpokenTranscript): spoken is SpokenT
 /**
  * Messages the STT agent publishes on the session's data topic. `vad` says
  * whether the learner is being heard; `transcript` is the result of one
- * utterance (`transcript_id` is null when the agent could not store it).
+ * utterance (`transcript_id` is null when the agent could not store it);
+ * `stopped` answers the app's `stop` once everything heard before it has
+ * been reported (`in_flight`: utterances still being transcribed).
  */
 export type SpeechAgentMessage =
   | { type: "vad"; state: "speaking" | "silence"; speech_ms?: number }
+  | { type: "stopped"; in_flight: number }
   | { type: "vad_level"; probability: number; speaking: boolean }
   | { type: "transcribing"; utterance_id: string; audio_duration_ms: number }
   | {
@@ -63,6 +66,17 @@ export type SpeechAgentMessage =
       audio_duration_ms: number;
       speech_ms: number;
     };
+
+/**
+ * Messages the app publishes to the agent on the same topic. `stop`: the take
+ * is over — close the utterance in flight now instead of waiting for silence.
+ */
+export type SpeechClientMessage = { type: "stop" };
+
+export function encodeClientMessage(message: SpeechClientMessage): Uint8Array<ArrayBuffer> {
+  // Copied into a plain ArrayBuffer: `publishData` refuses a shared one.
+  return new Uint8Array(new TextEncoder().encode(JSON.stringify(message)));
+}
 
 /** Parse one data-channel payload; null for anything that is not ours. */
 export function parseAgentMessage(payload: Uint8Array): SpeechAgentMessage | null {

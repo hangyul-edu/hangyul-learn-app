@@ -16,7 +16,10 @@ const { speechApi, room, RoomEvent } = vi.hoisted(() => {
     disconnect: vi.fn(async () => {
       room.state = "disconnected";
     }),
-    localParticipant: { setMicrophoneEnabled: vi.fn(async () => undefined) },
+    localParticipant: {
+      setMicrophoneEnabled: vi.fn(async () => undefined),
+      publishData: vi.fn(async () => undefined),
+    },
     emit(event: string, ...args: unknown[]) {
       for (const handler of handlers[event] ?? []) handler(...args);
     },
@@ -40,7 +43,7 @@ vi.mock("livekit-client", () => ({
   RoomEvent,
 }));
 
-import { TRANSCRIPT_WAIT_MS, useSpeechInput } from "./useSpeechInput";
+import { STOP_GRACE_MS, TRANSCRIPT_WAIT_MS, useSpeechInput } from "./useSpeechInput";
 
 const OPENED = {
   session_id: "spch_1",
@@ -203,7 +206,40 @@ describe("useSpeechInput — live path", () => {
     expect(result.current.recording).toBe(false);
   });
 
-  it("stop() with nothing heard reports silence after a short grace period", async () => {
+  it("stop() tells the agent the take is over and mutes the microphone at once", async () => {
+    const { result } = setup();
+    await act(async () => {
+      await result.current.start();
+    });
+    await act(async () => {
+      result.current.stop();
+    });
+    expect(room.localParticipant.publishData).toHaveBeenCalledTimes(1);
+    const [payload, options] = room.localParticipant.publishData.mock.calls[0] as unknown as [
+      Uint8Array,
+      { topic: string; reliable: boolean },
+    ];
+    expect(JSON.parse(new TextDecoder().decode(payload))).toEqual({ type: "stop" });
+    expect(options).toEqual({ reliable: true, topic: "hangyul.speech" });
+    expect(room.localParticipant.setMicrophoneEnabled).toHaveBeenLastCalledWith(false);
+  });
+
+  it("stop() with nothing heard ends the take as soon as the agent confirms nothing was in flight", async () => {
+    vi.useFakeTimers();
+    const { result, onSpoken, onNothingHeard } = setup();
+    await act(async () => {
+      await result.current.start();
+    });
+    act(() => result.current.stop());
+    expect(result.current.phase).toBe("processing");
+    expect(onNothingHeard).not.toHaveBeenCalled();
+    emit(message({ type: "stopped", in_flight: 0 }));
+    expect(onNothingHeard).toHaveBeenCalledTimes(1);
+    expect(onSpoken).not.toHaveBeenCalled();
+    expect(result.current.recording).toBe(false);
+  });
+
+  it("stop() with nothing heard and no reply from the agent reports silence after a short grace period", async () => {
     vi.useFakeTimers();
     const { result, onSpoken, onNothingHeard } = setup();
     await act(async () => {
@@ -212,10 +248,30 @@ describe("useSpeechInput — live path", () => {
     act(() => result.current.stop());
     expect(onNothingHeard).not.toHaveBeenCalled();
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(1_300);
+      await vi.advanceTimersByTimeAsync(STOP_GRACE_MS + 100);
     });
     expect(onNothingHeard).toHaveBeenCalledTimes(1);
     expect(onSpoken).not.toHaveBeenCalled();
+    expect(result.current.recording).toBe(false);
+  });
+
+  it("stop() mid-utterance: the agent closes it on request and its transcript ends the take", async () => {
+    vi.useFakeTimers();
+    const { result, onSpoken, onNothingHeard } = setup();
+    await act(async () => {
+      await result.current.start();
+    });
+    emit(message({ type: "vad", state: "speaking" }));
+    act(() => result.current.stop());
+    // The agent ends the utterance at once (no 1.1 s pause), announces it and
+    // confirms the stop while the transcript is still being made.
+    emit(message({ type: "vad", state: "silence", speech_ms: 700 }));
+    emit(message({ type: "stopped", in_flight: 1 }));
+    expect(onSpoken).not.toHaveBeenCalled();
+    expect(onNothingHeard).not.toHaveBeenCalled();
+    emit(transcriptMessage("trn_cut", "합의됐습니다"));
+    expect(onSpoken).toHaveBeenCalledTimes(1);
+    expect(onSpoken.mock.calls[0][0].transcript.transcriptIds).toEqual(["trn_cut"]);
     expect(result.current.recording).toBe(false);
   });
 

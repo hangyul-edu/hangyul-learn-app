@@ -1313,6 +1313,13 @@ textarea.input {
   line-height: 22.3px;
   margin-bottom: 5px;
 }
+/* A detail line under a dialog's fixed copy (the provider's reason on SET-011). */
+.dialog__detail {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 18.75px;
+}
 .dialog__text {
   /* Figma I1332:22195;841:23565 — Body 6 (Medium 15 / 22.3), Gray 5 */
   color: var(--ink-3);
@@ -8686,6 +8693,47 @@ input[type="tel"] {
   transform: scale(0.99);
 }
 
+/* ---- Card registered (SET-010 1332:22357): the status card plus the card's
+   name on a Gray 1 panel between the copy and the CTA. ---- */
+.wdd--card .wdd__copy {
+  /* The panel's top edge is at 171, 1px under the copy's line box. */
+  margin-bottom: 1px;
+}
+.crd__panel {
+  /* Frame 427319206 — 280x75, Gray 1, r8, 10/12 padding; the card art
+     (Group 1410118747) 8px in from the content edge and the name 8px after. */
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 75px;
+  margin: 0 2.5px 14px;
+  padding: 10px 12px 10px 20px;
+  background: var(--gray-1);
+  border-radius: 8px;
+  text-align: left;
+}
+.crd__panel .pm__thumb {
+  align-self: center;
+}
+.crd__name {
+  color: var(--ink-3);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 22.3px;
+  overflow-wrap: anywhere;
+}
+/* ---- Grading wait (2677:26028): the status card without a button — 320x223,
+   badge 39 down, title at 117, copy centred on 167. ---- */
+.wdd--wait {
+  padding: 39px 17.5px 36px;
+}
+.wdd--wait .wdd__copy {
+  margin-bottom: 0;
+  white-space: pre-line;
+}
+
 /* ---- Language-saved success modal (reuses .wdd; no X, softer separation) ---- */
 /* Medium gray semi-transparent overlay — the reference leans on the dim, not a
    heavy modal shadow. */
@@ -10040,6 +10088,15 @@ input[type="tel"] {
   color: var(--brand-500);
   font: var(--t-h8);
 }
+.vou__subtitle {
+  /* 1217:22453 (EN only) — Medium 13 / 22.3, Gray 5, right under the title. */
+  margin: 5px 0 0;
+  color: var(--ink-3);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 22.3px;
+}
 .vou__input {
   /* 1215:21486 — 280x51, r12, 1px #D9D9D9, 14/16 padding, Body 6 left-aligned. */
   width: 100%;
@@ -10371,12 +10428,15 @@ input[type="tel"] {
   line-height: 1;
 }
 .wfa__title {
-  margin: 0 0 16.8px;
+  /* 2231:24617 lays its copy out exactly as 2231:24610 does (title at 82,
+     the 32px copy box at 124 of the same 280x166 frame), so the rendered
+     first line sits 10.5 under the title here too — see .wdd__title. */
+  margin: 0 0 10.5px;
   color: #000;
   font: var(--t-h8);
 }
 .wfa__body {
-  margin: 0 0 4.9px;
+  margin: 0 0 11.2px;
   color: var(--ink-3);
   font-family: var(--font-body);
   font-weight: 500;
@@ -11967,31 +12027,6 @@ input[type="tel"] {
 }
 
 /* Deletion modal buttons (side by side). */
-.pm__modal-actions {
-  display: flex;
-  gap: 8px;
-  /* SET-004's row (I1332:22195;841:23566) is drop-shadow 0 4 / sigma 2 / black
-     0.1 — CSS blur is 2x sigma, so 4, and the alpha is .1 not .25. */
-  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.1));
-}
-.pm__modal-btn {
-  /* cp_C_01_primaryBtn — 136 wide, 14/10 padding, Body 4. */
-  flex: 1 1 0;
-  padding: 14px 10px;
-  border: none;
-  border-radius: 12px;
-  font-family: var(--font-body);
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 20.3px;
-  color: #ffffff;
-  cursor: pointer;
-}
-.pm__modal-btn:disabled { opacity: 0.6; cursor: default; }
-.pm__modal-btn--cancel { background: #bec5cc; }
-.pm__modal-btn--delete { background: var(--brand-500, #ff6700); }
-.pm__modal-btn--delete:active { background: var(--brand-600, #e65c00); }
-
 /* Loading / error states. */
 .pm__state {
   display: flex;

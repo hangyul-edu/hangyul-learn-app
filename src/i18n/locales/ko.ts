@@ -18,6 +18,9 @@ export const ko = {
   common: {
     confirm: "확인", // Figma 1332:22046 cp_C_01_primaryBtn
     cancel: "취소",
+    /** The single button of the status modals (2231:24610, 2165:24864, 1542:22954 …);
+        the English frames label it OK where the terminal ones say Confirm. */
+    ok: "확인",
     back: "뒤로 가기", // app-authored (a11y)
     close: "닫기", // app-authored (a11y)
     retry: "다시 시도",
@@ -198,12 +201,11 @@ export const ko = {
     imageDefaultA11y: "프로필 이미지: 기본 이미지",
     exitTitle: "프로필 변경을 종료할까요?",
     exitSubtitle: "저장하지 않고 나가면 변경사항이 사라져요",
-    // No KO frame was found for the three AME-006 modals; these mirror the EN
-    // Figma copy (2231:24627 / 2231:24634) in the catalog's existing voice.
-    savedTitle: "프로필이 변경되었습니다",
-    savedBody: "프로필 정보가 업데이트되었어요",
-    saveFailTitle: "프로필 변경에 실패했어요",
-    saveFailBody: "문제가 발생했어요\n잠시 후 다시 시도해주세요",
+    // cp_G_01_modals 2231:24610 (saved) / 2231:24617 (failed), verbatim.
+    savedTitle: "프로필이 변경됐습니다",
+    savedBody: "변경하신 프로필 정보가 반영되었습니다",
+    saveFailTitle: "프로필 변경에 실패했습니다",
+    saveFailBody: "일시적인 오류가 발생했어요\n잠시 후 다시 시도해 주세요",
   },
 
   /** Accessible names for the three default characters (app-authored — the
@@ -352,6 +354,12 @@ export const ko = {
     paySuccessConfirmA11y: "결제 완료 확인",
     payFailConfirmA11y: "다른 결제수단 선택하기",
     chooseAnother: "다른 결제수단 선택",
+    /** SET-010 (1332:22357) — the card-registered modal; SET-011 (1332:22415) — its failure. */
+    cardRegisteredTitle: "카드 등록이 완료됐습니다",
+    cardRegisteredDesc: "등록하신 카드로 구독 결제가 진행됩니다",
+    cardRegisteredConfirm: "확인",
+    cardRegisterFailTitle: "신용/체크카드 등록 실패",
+    cardRegisterFailDesc: "신용카드 등록에 실패했습니다. 카드 정보를 다시 확인해주시기 바랍니다.",
     tossPay: "토스페이",
     naverPay: "네이버페이",
     planFallback: "프리미엄",
@@ -653,9 +661,12 @@ export const ko = {
     submit: "제출", // 725:20729
   },
 
-  /** Subscription-code modal. app-authored (no design frame located). */
+  /** Subscription-code modal — MOR-017 (1215:21452 / EN 1217:22445). */
   voucher: {
     title: "구독권 코드 등록",
+    /** The English frame (1217:22445) carries this line under the title; the
+        Korean frame does not, so VoucherModal shows it for English only. */
+    subtitle: "코드가 있다면 여기에서 등록할 수 있어요",
     closeA11y: "구독권 코드 등록 창 닫기",
     codeA11y: "구독권 코드",
     empty: "코드를 입력해주세요.",
@@ -1327,7 +1338,15 @@ export const ko = {
     additionalStart: "시작할게요!",
     additionalPrompt: "추가할 {unit} 수를 선택해 주세요",
     countUnit: "{n}개",
-    completeCount: "총 {count}{unit} 학습했어요 👏",
+    /* TAL-013 (1938:28526) phrases the count per unit; English differs by unit. */
+    completeCountSentences: "총 {count}문장 학습했어요 👏",
+    completeCountQuestions: "총 {count}문제 학습했어요 👏",
+    /** Leaving a session with items still open — cp_G_01_modals beside TAL-008 (1:5529 / EN 784:52243). */
+    quitTitle: "아직 조금 남아있지만,\n학습을 종료하시겠어요?",
+    quitText: "끝까지 해내면 오늘이 더 뿌듯해질 거예요",
+    /** While an AI-graded writing answer is being scored — 2677:26028 / EN 2678:26338. */
+    gradingTitle: "채점 중이에요",
+    gradingText: "AI가 답안을 꼼꼼히 채점하고 있어요\n잠시만 기다려 주세요",
     additionalCloseA11y: "닫기",
     additionalA11y: "추가 {unit} {count}개로 학습 시작할게요",
     partTitle: "오늘은 어떤 파트를 학습해볼까요?",
@@ -1539,6 +1558,7 @@ export const ko = {
     subType: "구독 유형",
     validity: "유효기간",
     singleUse: "1회 사용 후 재사용 불가",
+    confirm: "확인", // I1234:22924 — the English frame says Done
   },
 
   /** League lifecycle modals + result. */

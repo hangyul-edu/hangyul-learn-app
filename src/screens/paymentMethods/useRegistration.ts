@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { PaymentMethod } from "../../lib/types";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { payApi } from "../../api/endpoints";
@@ -24,8 +25,16 @@ const RETURN_URL = () => window.location.origin + "/account/payment";
 export type Flow = {
   title: string;
   placeholder: string;
-  confirm: (token: string) => Promise<void>;
+  /** A card or a wallet: only a card ends in SET-010 / SET-011. */
+  kind: "card" | "wallet";
+  confirm: (token: string) => Promise<PaymentMethod>;
 };
+
+/** A registration the member has not acknowledged yet (SET-010), and where
+ *  acknowledging it leads. */
+type Registered = { method: PaymentMethod; returnTo: ReturnTo | null; viaWindow: boolean };
+/** A failed card registration (SET-011); `detail` is the provider's reason, if any. */
+type Failed = { detail: string | null };
 
 /**
  * Registering a method: a domestic card or a Korean wallet in the provider's
@@ -48,6 +57,10 @@ export function useRegistration() {
   const [token, setToken] = useState("");
   const [starting, setStarting] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  // A card lands in the SET-010 modal (and SET-011 on failure); the member
+  // moves on when they acknowledge it. Wallets keep the bottom notice.
+  const [registered, setRegistered] = useState<Registered | null>(null);
+  const [failed, setFailed] = useState<Failed | null>(null);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: METHODS_QK });
   /** After a registration: back to the purchase screen when that is where the
@@ -73,10 +86,12 @@ export function useRegistration() {
     if (!pending) return;
     const ret = parseRegistrationReturn(pending, search);
     if (!ret) return;
+    const isCard = pending.provider === "toss_card";
     if (ret.kind === "failed") {
       // Closing the window is the member's choice, not an error.
       if (ret.code === "PAY_PROCESS_CANCELED" || ret.code === "USER_CANCEL") return;
-      toast.error(ret.message || t("paymentMethods.registerFailed"));
+      if (isCard) setFailed({ detail: ret.message || null });
+      else toast.error(ret.message || t("paymentMethods.registerFailed"));
       return;
     }
     setConfirming(true);
@@ -87,12 +102,15 @@ export function useRegistration() {
           ? payApi.naverpayConfirm
           : payApi.cardConfirm;
     confirm(pending.intentId, { authKey: ret.authKey, customerKey: ret.customerKey })
-      .then(() => {
-        toast.success(t("paymentMethods.registered"));
+      .then(({ method }) => {
         invalidate();
-        backToPurchase(returnTo, true);
+        if (isCard) setRegistered({ method, returnTo, viaWindow: true });
+        else {
+          toast.success(t("paymentMethods.registered"));
+          backToPurchase(returnTo, true);
+        }
       })
-      .catch((e) => toast.error(errorMessage(e)))
+      .catch((e) => (isCard ? setFailed({ detail: errorMessage(e) }) : toast.error(errorMessage(e))))
       .finally(() => setConfirming(false));
     // Runs once per arrival; the handled flag guards StrictMode's re-run.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -139,8 +157,9 @@ export function useRegistration() {
       return {
         title: t("paymentMethods.domesticCardTitle"),
         placeholder: t("paymentMethods.authKeyPlaceholder"),
+        kind: "card",
         confirm: (key) =>
-          payApi.cardConfirm(res.intent_id, { authKey: key, customerKey: res.customer_key }).then(() => undefined),
+          payApi.cardConfirm(res.intent_id, { authKey: key, customerKey: res.customer_key }).then((r) => r.method),
       };
     });
 
@@ -173,31 +192,42 @@ export function useRegistration() {
       return {
         title: t(provider === "toss_pay" ? "paymentMethods.tossPay" : "paymentMethods.naverPay"),
         placeholder: t("paymentMethods.authKeyPlaceholder"),
-        confirm: (key) => confirm(res.intent_id, { authKey: key, customerKey: res.customer_key }).then(() => undefined),
+        kind: "wallet",
+        confirm: (key) => confirm(res.intent_id, { authKey: key, customerKey: res.customer_key }).then((r) => r.method),
       };
     });
 
   // Stable: the sheet's effects depend on it.
   const closeIntl = useCallback(() => setIntlOpen(false), []);
-  const intlRegistered = () => {
+  const intlRegistered = (method: PaymentMethod) => {
     setIntlOpen(false);
-    toast.success(t("paymentMethods.registered"));
     void invalidate();
-    backToPurchase(navState);
+    setRegistered({ method, returnTo: navState, viaWindow: false });
+  };
+
+  /** 확인 on SET-010: the registration is acknowledged and the screen carries on. */
+  const acknowledgeRegistered = () => {
+    const done = registered;
+    setRegistered(null);
+    if (done) backToPurchase(done.returnTo, done.viaWindow);
   };
 
   async function confirmFlow() {
     if (!flow || !token.trim() || confirming) return;
     setConfirming(true);
     try {
-      await flow.confirm(token.trim());
+      const method = await flow.confirm(token.trim());
       setFlow(null);
       setToken("");
-      toast.success(t("paymentMethods.registered"));
       invalidate();
-      backToPurchase(navState);
+      if (flow.kind === "card") setRegistered({ method, returnTo: navState, viaWindow: false });
+      else {
+        toast.success(t("paymentMethods.registered"));
+        backToPurchase(navState);
+      }
     } catch (e) {
-      toast.error(errorMessage(e));
+      if (flow.kind === "card") setFailed({ detail: errorMessage(e) });
+      else toast.error(errorMessage(e));
     } finally {
       setConfirming(false);
     }
@@ -217,5 +247,9 @@ export function useRegistration() {
     openIntl: () => setIntlOpen(true),
     closeIntl,
     intlRegistered,
+    registered,
+    acknowledgeRegistered,
+    failed,
+    closeFailed: () => setFailed(null),
   };
 }

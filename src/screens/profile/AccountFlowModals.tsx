@@ -33,6 +33,7 @@ export function AccountFlowModals({
         open={logout.doneOpen}
         title={t("accountFlow.logoutDoneTitle")}
         description={t("accountFlow.logoutDoneDesc")}
+        confirmLabel={t("common.confirm")} // MOR-009 EN (3085:29162) says Confirm
         onClose={logout.finish}
       />
 
@@ -85,6 +86,7 @@ export function AccountFlowModals({
             {t("accountFlow.withdrawDoneLine2")}
           </>
         }
+        confirmLabel={t("common.confirm")} // MOR-007 EN (3085:29141) says Confirm
         onClose={withdraw.finish}
       />
     </>

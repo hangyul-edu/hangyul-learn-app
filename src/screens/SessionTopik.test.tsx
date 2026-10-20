@@ -5,8 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createMemoryRouter } from "react-router-dom";
 
 vi.mock("../components/SessionChrome", () => ({
-  SessionChrome: ({ children, panel }: { children: React.ReactNode; panel?: React.ReactNode }) => (
+  SessionChrome: ({ children, panel, onBack }: { children: React.ReactNode; panel?: React.ReactNode; onBack?: () => void }) => (
     <div>
+      <button aria-label="뒤로" onClick={onBack} />
       {panel}
       {children}
     </div>
@@ -140,5 +141,45 @@ describe("SessionTopik — the question-type picker is premium-only (TAL-016)", 
       const raw = sessionStorage.getItem(KEY);
       expect(raw && JSON.parse(raw).typeCode).toBeNull();
     });
+  });
+});
+
+describe("SessionTopik — cp_G_01_modals around the session", () => {
+  it("asks before leaving with questions still open (1:5529), and 조금 더 해볼래요 stays", async () => {
+    renderScreen();
+    await screen.findByRole("textbox");
+    await userEvent.click(screen.getByRole("button", { name: "뒤로" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("아직 조금 남아있지만, 학습을 종료하시겠어요?");
+    expect(dialog).toHaveTextContent("끝까지 해내면 오늘이 더 뿌듯해질 거예요");
+    expect(screen.getByRole("button", { name: "조금 더 해볼래요" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "지금 그만할래요" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "조금 더 해볼래요" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.getByRole("textbox")).toBeInTheDocument();
+    expect(recordSession).not.toHaveBeenCalled();
+  });
+
+  it("shows 채점 중이에요 (2677:26028) while a writing answer is being graded, and nothing else", async () => {
+    questions.mockResolvedValue({ items: [{ ...WRITING, answer: { ...WRITING.answer, min_length: 1 } }] });
+    let settle!: (value: unknown) => void;
+    attempt.mockReturnValue(new Promise((resolve) => (settle = resolve)));
+    renderScreen();
+    await userEvent.type(await screen.findByRole("textbox"), "답안");
+    await userEvent.click(screen.getByRole("button", { name: "제출" }));
+    const wait = await screen.findByRole("dialog", { name: "채점 중이에요" });
+    expect(wait).toHaveAttribute("aria-busy", "true");
+    expect(wait).toHaveTextContent("AI가 답안을 꼼꼼히 채점하고 있어요 잠시만 기다려 주세요");
+    expect(wait.querySelector("button")).toBeNull();
+    settle({
+      attempt_id: "att_1",
+      quiz_id: "q_essay",
+      correct: null,
+      status: "graded",
+      writing: { score: 70, max_score: 100, feedback: [], criteria: [] },
+      completed_now: true,
+      points_earned: 50,
+    });
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "채점 중이에요" })).not.toBeInTheDocument());
   });
 });

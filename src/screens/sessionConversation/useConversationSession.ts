@@ -702,6 +702,8 @@ export function useConversationSession() {
     total,
     // Progress counts resolved items, not only correct ones.
     progress: total ? answered.size / total : 0,
+    /** Items still open: leaving asks first (cp_G_01_modals 1:5529). */
+    hasRemaining: total > 0 && answered.size < total,
     correctCount: correctSet.size,
     points,
     completed,

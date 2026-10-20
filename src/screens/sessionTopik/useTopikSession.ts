@@ -526,6 +526,8 @@ export function useTopikSession() {
     submit,
     next,
     isLastStep,
+    /** The goal (or the extra batch) is done: leaving needs no confirmation. */
+    targetReached,
     progress: { current: shownCurrent, total: shownTotal, ratio: shownTotal ? shownCurrent / shownTotal : 0 },
     correctCount: correctSet.size,
     points,

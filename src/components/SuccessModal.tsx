@@ -18,11 +18,15 @@ export function SuccessModal({
   description,
   onClose,
   icon = doneBadge,
+  confirmLabel,
 }: {
   open: boolean;
   title: string;
   description: ReactNode;
   onClose: () => void;
+  /** The button's label: OK (2231:24627) unless the frame says otherwise —
+   *  MOR-007 / MOR-009 read Confirm. */
+  confirmLabel?: string;
   /** 60px status badge. Defaults to MOR-007's mint disc; AME-006's profile
    *  modal (2231:24627) uses the green ic-modal-success one instead. */
   icon?: string;
@@ -51,7 +55,7 @@ export function SuccessModal({
         <h2 className="wdd__title" id="succ-title">{title}</h2>
         <p className="wdd__copy" id="succ-desc">{description}</p>
 
-        <button className="wdd__btn" onClick={onClose}>{t("common.confirm")}</button>
+        <button className="wdd__btn" onClick={onClose}>{confirmLabel ?? t("common.ok")}</button>
       </div>
     </div>
   );

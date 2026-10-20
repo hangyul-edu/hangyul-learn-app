@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useTranslation } from "../i18n";
 import { SessionChrome } from "../components/SessionChrome";
+import { ConfirmDialog } from "../components/ui/Modal";
 import { SessionCompleteModal } from "../components/SessionCompleteModal";
 import { CorrectAnswerSheet } from "../components/CorrectAnswerSheet";
 import { ReviewCompleteSheet } from "../components/ReviewCompleteSheet";
@@ -38,6 +40,8 @@ export function SessionConversation() {
   const curStage = cur ? s.hintStage[cur.sentence_id] : undefined;
   const hintShown = curStage != null;
   const bookmark = cur && { saved: !!s.saved[cur.sentence_id], onToggle: () => s.toggleSave(cur) };
+  // Back with sentences still open asks first (cp_G_01_modals 1:5529).
+  const [quitOpen, setQuitOpen] = useState(false);
 
   return (
     <>
@@ -55,7 +59,7 @@ export function SessionConversation() {
           )
         }
         minimal={isReview}
-        onBack={isReview ? s.backToSaved : s.finishOrExit}
+        onBack={isReview ? s.backToSaved : s.hasRemaining && !s.completed ? () => setQuitOpen(true) : s.finishOrExit}
         askContext={
           !cur
             ? null
@@ -143,6 +147,19 @@ export function SessionConversation() {
       {s.completed && !isReview && (
         <SessionCompleteModal mode="conversation" correctCount={s.correctCount} points={s.points} onConfirm={s.exitSession} />
       )}
+      {/* 1:5529 (KO) / 784:52243 (EN) — leaving with sentences still open. */}
+      <ConfirmDialog
+        open={quitOpen}
+        title={<span className="dialog__title-lines">{t("session.quitTitle")}</span>}
+        text={t("session.quitText")}
+        cancelLabel={t("courses.keepGoing")}
+        confirmLabel={t("courses.quitNow")}
+        onCancel={() => setQuitOpen(false)}
+        onConfirm={() => {
+          setQuitOpen(false);
+          s.finishOrExit();
+        }}
+      />
     </>
   );
 }

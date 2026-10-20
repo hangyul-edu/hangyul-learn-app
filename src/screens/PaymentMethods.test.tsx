@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, useLocation } from "react-router-dom";
@@ -413,16 +413,26 @@ describe("PaymentMethods screen", () => {
     await waitFor(() =>
       expect(api.cardConfirm).toHaveBeenCalledWith("pmi_c", { authKey: "ak_1", customerKey: "cus_1" }),
     );
-    expect(await screen.findByText("등록되었어요")).toBeInTheDocument();
+    // SET-010 (1332:22357): the status modal names the card; no bottom notice.
+    const done = await screen.findByRole("dialog", { name: "카드 등록이 완료됐습니다" });
+    expect(within(done).getByText("Shinhan Card (5327********0518)")).toBeInTheDocument();
+    expect(screen.queryByText("등록되었어요")).not.toBeInTheDocument();
     expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
+    await userEvent.click(within(done).getByRole("button", { name: "확인" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 
   it("14d. shows Toss's failure message and confirms nothing", async () => {
     setMethods();
     sessionStorage.setItem(PENDING_KEY, JSON.stringify({ provider: "toss_card", intentId: "pmi_c", customerKey: "cus_1" }));
     renderScreen("/account/payment?code=REJECT_CARD_COMPANY&message=%EA%B1%B0%EC%A0%88%EB%90%A8");
-    expect(await screen.findByText("거절됨")).toBeInTheDocument();
+    // SET-011 (1332:22415) with Toss's reason under its copy, one 확인 to close.
+    const failed = await screen.findByRole("dialog", { name: "신용/체크카드 등록 실패" });
+    expect(within(failed).getByText(/카드 정보를 다시 확인해주시기 바랍니다/)).toBeInTheDocument();
+    expect(within(failed).getByText("거절됨")).toBeInTheDocument();
     expect(api.cardConfirm).not.toHaveBeenCalled();
+    await userEvent.click(within(failed).getByRole("button", { name: "확인" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 
   it("14e. a window the member cancelled returns quietly", async () => {
@@ -488,6 +498,11 @@ describe("PaymentMethods screen", () => {
       await userEvent.click(screen.getByRole("button", { name: "등록 완료" }));
       await waitFor(() => expect(api.cardConfirm).toHaveBeenCalled());
     }
+    /** 확인 on the SET-010 modal, which is when the screen moves on. */
+    async function acknowledgeRegistered() {
+      const done = await screen.findByRole("dialog", { name: "카드 등록이 완료됐습니다" });
+      await userEvent.click(within(done).getByRole("button", { name: "확인" }));
+    }
 
     it("goes back to it with the chosen plan once a method is registered", async () => {
       // One step back: the purchase screen's own entry, which kept the plan.
@@ -496,6 +511,9 @@ describe("PaymentMethods screen", () => {
         { pathname: "/subscription/start", state: { selectedPlanId: "p_month" } },
       ]);
       await registerManually();
+      // Not before the member has acknowledged SET-010.
+      expect(screen.getByTestId("loc")).toHaveTextContent(/^\/account\/payment/);
+      await acknowledgeRegistered();
       await waitFor(() =>
         expect(screen.getByTestId("loc")).toHaveTextContent('/subscription/start{"selectedPlanId":"p_month"}'),
       );
@@ -504,7 +522,7 @@ describe("PaymentMethods screen", () => {
     it("stays put when the member came from anywhere else", async () => {
       renderAt({ pathname: "/account/payment" });
       await registerManually();
-      expect(await screen.findByText("등록되었어요")).toBeInTheDocument();
+      await acknowledgeRegistered();
       expect(screen.getByTestId("loc")).toHaveTextContent(/^\/account\/payment/);
     });
 
@@ -522,6 +540,7 @@ describe("PaymentMethods screen", () => {
       api.cardConfirm.mockResolvedValue({ method: card() });
       renderAt({ pathname: "/account/payment", search: "?customerKey=cus_1&authKey=ak_1" });
       await waitFor(() => expect(api.cardConfirm).toHaveBeenCalledWith("pmi_c", { authKey: "ak_1", customerKey: "cus_1" }));
+      await acknowledgeRegistered();
       await waitFor(() =>
         expect(screen.getByTestId("loc")).toHaveTextContent('/subscription/start{"selectedPlanId":"p_month"}'),
       );

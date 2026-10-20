@@ -33,7 +33,7 @@ export function VoucherModal({
   onClose: () => void;
   onSubmit: (code: string) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [emptyErr, setEmptyErr] = useState(false);
   const [dirty, setDirty] = useState(false); // typed since last submit → hide server error
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -69,6 +69,9 @@ export function VoucherModal({
   }
 
   const shownError = emptyErr ? t("voucher.empty") : dirty ? null : error;
+  // Only the English frame (1217:22445) carries a line under the title; the
+  // Korean one (1215:21452) goes straight from the title to the field.
+  const subtitle = language === "ko" ? null : t("voucher.subtitle");
 
   return (
     <div className="overlay overlay--center wd__overlay">
@@ -84,6 +87,7 @@ export function VoucherModal({
         </button>
 
         <h2 className="vou__title" id="vou-title">{t("voucher.title")}</h2>
+        {subtitle && <p className="vou__subtitle">{subtitle}</p>}
 
         <input
           ref={inputRef}

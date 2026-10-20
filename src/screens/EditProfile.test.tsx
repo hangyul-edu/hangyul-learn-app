@@ -143,7 +143,7 @@ describe("EditProfile unsaved-changes guard", () => {
     // AME-006 (2231:24627) confirms the save with a modal; navigation happens
     // when the user acknowledges it, so the unsaved-changes guard must not fire
     // either before or after that.
-    expect(await screen.findByText("프로필이 변경되었습니다")).toBeInTheDocument();
+    expect(await screen.findByText("프로필이 변경됐습니다")).toBeInTheDocument();
     expect(modal()).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "확인" }));
     expect(await screen.findByText("PROFILE_SCREEN")).toBeInTheDocument();

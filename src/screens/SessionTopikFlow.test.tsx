@@ -174,6 +174,8 @@ describe("SessionTopik — answer flow (incorrect → retry → correct)", () =>
     await waitFor(() => expect(attempt).toHaveBeenCalledTimes(1));
 
     await userEvent.click(screen.getByRole("button", { name: "chrome-back" }));
+    // Questions are still open, so back asks first (cp_G_01_modals 1:5529).
+    await userEvent.click(await screen.findByRole("button", { name: "지금 그만할래요" }));
     await waitFor(() => expect(recordSession).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(qc.getQueryState(["management", "7d"])?.isInvalidated).toBe(true));
   });

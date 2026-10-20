@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "./http";
-import { retryBlockedKey, retryRefusal } from "./paymentRecovery";
+import { failureModalKeys, noticeReasonKey, retryBlockedKey, retryRefusal } from "./paymentRecovery";
+
+describe("failure classes", () => {
+  it("treats an unreadable billing key as an unusable method (register it again)", () => {
+    expect(noticeReasonKey("billing_key_unreadable")).toBe("paymentRecovery.reasonMethodRevoked");
+    expect(failureModalKeys("billing_key_unreadable")).toEqual([
+      "paymentRecovery.failUnusableTitle",
+      "paymentRecovery.failUnusableSub",
+    ]);
+    expect(noticeReasonKey("something_new")).toBe("paymentRecovery.reasonGeneric");
+  });
+});
 
 describe("retryBlockedKey", () => {
   it("maps each refusal reason to its explanation", () => {

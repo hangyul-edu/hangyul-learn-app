@@ -266,6 +266,10 @@ export const ko = {
     invalidCodeSub: "코드를 확인하고 다시 시도해 주세요",
     invoiceA11y:
       "{date}, {plan}, 이용 기간 {from}부터 {to}까지, 결제 금액 {amount}",
+    /** app-authored: an invoice that is not a completed payment (GET /billing/invoices `status`). */
+    invoiceOpen: "미결제",
+    invoiceVoid: "결제 실패",
+    invoiceRefunded: "환불됨",
   },
 
   /**
@@ -371,6 +375,7 @@ export const ko = {
     delete: "삭제",
     retryingStatus: "결제를 진행하고 있어요",
     changingDefaultStatus: "기본 결제수단 변경 중",
+    confirmingRegistration: "결제수단 등록을 확인하고 있어요",
     /** Under the one card button the member gets (+82 phone: domestic; otherwise: overseas). */
     addDomesticSub: "한국에서 발급한 카드 · 원화(KRW)로 결제",
     addInternationalSub: "해외에서 발급한 Visa·Mastercard·JCB 등 · {currency}로 결제",
@@ -682,13 +687,13 @@ export const ko = {
     selectedSuffix: ", 선택됨",
     perMonth: "/월",
     /** `<s>` marks the cream-highlighted run in the CTA (Figma I1:4089). */
-    startTrial: "<s>7일 무료 체험</s>  시작하기",
+    startTrial: "<s>{days}일 무료 체험</s>  시작하기",
     startNow: "지금 바로 시작하기",
     close: "닫기",
     productsTitle: "구독 상품",
     cancelAnytime: "구독은 언제든지 취소할 수 있어요", // 1:4075
     trialNote:
-      "7일 무료 체험 종료 후 선택한 플랜으로 자동 결제됩니다.\n연간 구독은 결제일로부터 30일 초과 시 환불이 제한됩니다.", // 898:19355
+      "{days}일 무료 체험 종료 후 선택한 플랜으로 자동 결제됩니다.\n연간 구독은 결제일로부터 30일 초과 시 환불이 제한됩니다.", // 898:19355
     paidNote: "연간 구독은 결제일로부터 30일 초과 시 환불이 제한됩니다.", // SET-032 3610:30132
     loading: "불러오는 중…",
     loadError: "정보를 불러오지 못했어요.",

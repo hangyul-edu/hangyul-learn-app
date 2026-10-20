@@ -21,6 +21,9 @@ export function noticeReasonKey(failureClass?: string | null): TranslationKey {
     case "declined_generic":
       return "paymentRecovery.reasonDeclined";
     case "method_revoked":
+    // The stored billing key could not be read: nothing was charged and the
+    // method must be registered again — to the member, an unusable method.
+    case "billing_key_unreadable":
       return "paymentRecovery.reasonMethodRevoked";
     case "provider_outage":
       return "paymentRecovery.reasonProviderOutage";
@@ -96,6 +99,7 @@ export function failureModalKeys(failureClass?: string | null): [TranslationKey,
       return ["paymentRecovery.failInsufficientTitle", "paymentRecovery.failInsufficientSub"];
     case "card_expired":
     case "method_revoked":
+    case "billing_key_unreadable":
       return ["paymentRecovery.failUnusableTitle", "paymentRecovery.failUnusableSub"];
     case "provider_outage":
       return ["paymentRecovery.failTemporaryTitle", "paymentRecovery.failTemporarySub"];

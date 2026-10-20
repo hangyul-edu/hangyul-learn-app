@@ -450,6 +450,8 @@ export type { CardRegion } from "../lib/types";
 type CardIntent = {
   intent_id: string;
   customer_key: string;
+  /** About 15 minutes after creation: the window must return and be confirmed by then. */
+  expires_at: string;
   widget: { client_key: string; success_url: string; fail_url: string; card_region: "domestic" };
 };
 /** One currency an overseas card can be registered in (charged only in it). */
@@ -492,6 +494,8 @@ export type InternationalCardRegistration = {
 export type EasyPayIntent = {
   intent_id: string;
   customer_key: string;
+  /** About 15 minutes after creation: the window must return and be confirmed by then. */
+  expires_at: string;
   window: {
     client_key: string;
     easy_pay: "TOSSPAY" | "NAVERPAY";
@@ -649,10 +653,13 @@ export const subApi = {
   mine: () => http.get<MySubscription>("/subscriptions/me"),
   /** `quote` is what the screen showed; the server refuses (409
    *  subscription.price_changed) rather than charge anything else. */
-  startTrial: (plan_id: string, quote?: CheckoutQuote) =>
-    http.post<unknown>("/subscriptions/trial", { plan_id, ...quote }),
+  startTrial: (plan_id: string, method_id?: string, quote?: CheckoutQuote) =>
+    http.post<unknown>("/subscriptions/trial", { plan_id, method_id, ...quote }),
   // 201 = paid and active; 202 = the first charge is still undecided
-  // (`subscription.status === "payment_pending"`, no access yet); a decline is 402.
+  // (`subscription.status === "payment_pending"`, no access yet); a decline
+  // is 402 `subscription.payment_declined` with `details.failure_class`
+  // (lib/paymentErrors paymentDeclinedMessage). `method_id` omitted = the
+  // member's default method.
   subscribe: (plan_id: string, method_id?: string, quote?: CheckoutQuote) =>
     http.post<{ subscription?: { status?: string } }>("/subscriptions", { plan_id, method_id, ...quote }),
   cancel: (reason?: CancellationReason, reason_text?: string) =>

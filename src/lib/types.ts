@@ -543,6 +543,9 @@ export type PaymentFailureClass =
   | "provider_outage"
   /** The plan's currency no longer matches the card's; no retry can fix it. */
   | "currency_mismatch"
+  /** The stored billing key could not be decrypted; nothing was charged and
+   *  the method must be registered again. */
+  | "billing_key_unreadable"
   | "unknown";
 /** Consolidated failed-automatic-payment recovery state (GET /billing/recovery). */
 export interface PaymentRecovery {

@@ -58,8 +58,10 @@ export function usePurchase() {
   const chargeMethod = active.find((m) => m.is_default) ?? active[0];
   const [currencyBlock, setCurrencyBlock] = useState<CurrencyBlock | null>(null);
   // Free-trial eligibility is server-authoritative (never local): one trial
-  // per person, across accounts they withdrew and signed up again.
+  // per person, across accounts they withdrew and signed up again — and so
+  // is the trial's length, which the copy quotes.
   const eligible = offersQ.data?.trial.available;
+  const trialDays = offersQ.data?.trial.days ?? 7;
 
   // Default selection: recommended → annual → first active plan. (No recommended
   // flag on the plan today, so annual is the effective recommendation.)
@@ -108,11 +110,16 @@ export function usePurchase() {
     submittingRef.current = true;
     setSubmitting(true);
     try {
+      // The server charges (or, for a trial, converts onto) the default method
+      // unless told otherwise; the pre-check above looked at `chargeMethod`, so
+      // name it when it is not the default (a wallet left after the default
+      // card was removed).
+      const methodId = chargeMethod && !chargeMethod.is_default ? chargeMethod.method_id : undefined;
       // Separate flows: trial only for eligible accounts, paid otherwise. The
       // backend rechecks both, so this can never grant a second trial.
-      if (eligible) await subApi.startTrial(plan.plan_id, quote);
+      if (eligible) await subApi.startTrial(plan.plan_id, methodId, quote);
       else {
-        const res = await subApi.subscribe(plan.plan_id, undefined, quote);
+        const res = await subApi.subscribe(plan.plan_id, methodId, quote);
         // Charge not decided yet: no access until it settles, so say so.
         if (res?.subscription?.status === "payment_pending") toast.show(t("subscription.subPending"));
       }
@@ -162,6 +169,7 @@ export function usePurchase() {
     status,
     plans,
     eligible,
+    trialDays,
     selectedId,
     setSelectedId,
     submitting,

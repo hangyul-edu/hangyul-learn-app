@@ -9988,6 +9988,12 @@ input[type="tel"] {
   font-size: 12px;
   line-height: 16.5px;
 }
+/* Invoice rows that are not settled (open / unpaid / void / refunded) carry a
+   status line under the period; the design (624:9876) only drew paid rows. */
+.subm__pstatus {
+  color: #2c2c2c;
+  font-weight: 600;
+}
 .subm__pamt {
   /* Body 5 — SemiBold 15 / 22.25 in #2C2C2C. 624:9882 leaves it left-aligned at
      the end of the 66px gap; it is not flushed to the section's right edge. */

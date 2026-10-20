@@ -368,6 +368,10 @@ export function PaymentMethods() {
       {(selectDisabled || retry.isPending) && (
         <span className="pm__sr" role="status">{t(retry.isPending ? "paymentMethods.retryingStatus" : "paymentMethods.changingDefaultStatus")}</span>
       )}
+      {/* Back from a registration window: the authKey is being exchanged. */}
+      {reg.confirmingReturn && (
+        <span className="pm__sr" role="status" aria-live="polite">{t("paymentMethods.confirmingRegistration")}</span>
+      )}
     </div>
   );
 }

@@ -27,7 +27,9 @@ export function SubscriptionPurchase() {
   const block = p.currencyBlock;
 
   const ctaKey = p.eligible ? "purchase.startTrial" : "purchase.startNow";
-  const ctaLabel = t(ctaKey).replace(/<\/?s>/g, "");
+  // The trial's length comes with the offers (`trial.days`), not from the copy.
+  const vars = { days: p.trialDays };
+  const ctaLabel = t(ctaKey, vars).replace(/<\/?s>/g, "");
   const ctaDisabled = p.status !== "ready" || !p.selectedId;
 
   return (
@@ -88,14 +90,14 @@ export function SubscriptionPurchase() {
               {p.submitting ? (
                 <Spinner size={22} />
               ) : (
-                <T k={ctaKey} strongClass="subp__cta-hl" />
+                <T k={ctaKey} vars={vars} strongClass="subp__cta-hl" />
               )}
             </button>
 
             <p className="subp__cancel">{t("purchase.cancelAnytime")}</p>
             <p className="subp__note">
               {p.eligible
-                ? t("purchase.trialNote")
+                ? t("purchase.trialNote", vars)
                 : t("purchase.paidNote")}
             </p>
             <button className="subp__refund" onClick={() => nav("/policy/refund")}>

@@ -457,6 +457,27 @@ describe("PaymentMethods screen", () => {
     expect(api.cardConfirm).not.toHaveBeenCalled();
   });
 
+  it("14h. says so while the window's authKey is being exchanged", async () => {
+    setMethods();
+    sessionStorage.setItem(PENDING_KEY, JSON.stringify({ provider: "toss_card", intentId: "pmi_c", customerKey: "cus_1" }));
+    let resolve!: (v: { method: PaymentMethod }) => void;
+    api.cardConfirm.mockReturnValue(new Promise((r) => { resolve = r; }));
+    renderScreen("/account/payment?customerKey=cus_1&authKey=ak_1");
+    expect(await screen.findByText("결제수단 등록을 확인하고 있어요")).toHaveAttribute("role", "status");
+    resolve({ method: card() });
+    await screen.findByRole("dialog", { name: "카드 등록이 완료됐습니다" });
+    expect(screen.queryByText("결제수단 등록을 확인하고 있어요")).not.toBeInTheDocument();
+  });
+
+  it("14i. a return this tab has no intent for cannot be confirmed and says so", async () => {
+    setMethods();
+    renderScreen("/account/payment?customerKey=cus_1&authKey=ak_1"); // nothing in sessionStorage
+    expect(await screen.findByText("결제수단을 등록하지 못했어요. 다시 시도해 주세요.")).toBeInTheDocument();
+    expect(api.cardConfirm).not.toHaveBeenCalled();
+    // A cancelled window with no intent is not an error either.
+    sessionStorage.clear();
+  });
+
   it("14g. refuses a return for another customerKey than the window was opened with", async () => {
     setMethods();
     sessionStorage.setItem(PENDING_KEY, JSON.stringify({ provider: "naver_pay", intentId: "pmi_n", customerKey: "cus_mine" }));

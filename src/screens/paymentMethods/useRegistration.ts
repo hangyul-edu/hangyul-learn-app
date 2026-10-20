@@ -57,6 +57,9 @@ export function useRegistration() {
   const [token, setToken] = useState("");
   const [starting, setStarting] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  // The window's authKey is being exchanged for a billing key (the screen
+  // shows it as a status: the member has just landed back here).
+  const [confirmingReturn, setConfirmingReturn] = useState(false);
   // A card lands in the SET-010 modal (and SET-011 on failure); the member
   // moves on when they acknowledge it. Wallets keep the bottom notice.
   const [registered, setRegistered] = useState<Registered | null>(null);
@@ -83,7 +86,13 @@ export function useRegistration() {
     navigate({ pathname: location.pathname }, { replace: true, state: location.state });
     const returnTo = takeReturnTo();
     const pending = takePendingRegistration();
-    if (!pending) return;
+    if (!pending) {
+      // The window came back with an authKey but this tab no longer knows
+      // which intent it was opened for (storage cleared, another tab): the
+      // key cannot be exchanged, so say the registration must be redone.
+      if (new URLSearchParams(search).get("authKey")) toast.error(t("paymentMethods.registerFailed"));
+      return;
+    }
     const ret = parseRegistrationReturn(pending, search);
     if (!ret) return;
     const isCard = pending.provider === "toss_card";
@@ -95,6 +104,7 @@ export function useRegistration() {
       return;
     }
     setConfirming(true);
+    setConfirmingReturn(true);
     const confirm =
       pending.provider === "toss_pay"
         ? payApi.tosspayConfirm
@@ -111,7 +121,10 @@ export function useRegistration() {
         }
       })
       .catch((e) => (isCard ? setFailed({ detail: errorMessage(e) }) : toast.error(errorMessage(e))))
-      .finally(() => setConfirming(false));
+      .finally(() => {
+        setConfirming(false);
+        setConfirmingReturn(false);
+      });
     // Runs once per arrival; the handled flag guards StrictMode's re-run.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
@@ -236,6 +249,7 @@ export function useRegistration() {
   return {
     starting,
     confirming,
+    confirmingReturn,
     flow,
     closeFlow: () => !confirming && setFlow(null),
     token,

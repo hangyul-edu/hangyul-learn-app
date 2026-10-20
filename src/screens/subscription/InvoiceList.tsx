@@ -4,9 +4,26 @@ import { billingApi } from "../../api/endpoints";
 import { SkeletonList } from "../../components/ui/states";
 import { Spinner } from "../../components/ui/Spinner";
 import { useLoadMoreSentinel } from "../../hooks/useLoadMoreSentinel";
-import { useTranslation } from "../../i18n";
+import { useTranslation, type TranslationKey } from "../../i18n";
 import { uniqueBy } from "../../lib/collections";
 import { formatLongDate, formatMoney, formatYmd } from "../../lib/format";
+
+/** An invoice that is not a payment: the list says so under its period
+ *  (`open` awaits its charge or a retry, `void` will never be charged —
+ *  declined, expired owing it, or replaced by a coupon period — and
+ *  `refunded` was paid back). Null for a paid one. */
+function invoiceStatusKey(status: string): TranslationKey | null {
+  switch (status) {
+    case "open":
+      return "subscription.invoiceOpen";
+    case "void":
+      return "subscription.invoiceVoid";
+    case "refunded":
+      return "subscription.invoiceRefunded";
+    default:
+      return null;
+  }
+}
 
 /** 결제 정보: the payment history, cursor-paged as it scrolls (the cool-gray
  * region to the bottom). */
@@ -58,7 +75,10 @@ export function InvoiceList() {
             <span className="subm__th subm__th--amt">{t("subscription.colAmount")}</span>
           </div>
           <ul className="subm__plist" role="list">
-            {rows.map((r) => (
+            {rows.map((r) => {
+              const statusKey = invoiceStatusKey(r.status);
+              const amount = formatMoney(r.total.amount_cents, r.total.currency);
+              return (
               <li
                 key={r.invoice_id}
                 className="subm__prow"
@@ -67,7 +87,7 @@ export function InvoiceList() {
                   plan: r.plan_name,
                   from: longDate(r.period_start),
                   to: longDate(r.period_end),
-                  amount: formatMoney(r.total.amount_cents, r.total.currency),
+                  amount: statusKey ? `${amount}, ${t(statusKey)}` : amount,
                 })}
               >
                 {/* 624:9876 — date + description are one group 19 apart; the
@@ -80,11 +100,13 @@ export function InvoiceList() {
                       {formatYmd(r.period_start, "/")}
                       <br />- {formatYmd(r.period_end, "/")}
                     </div>
+                    {statusKey && <div className="subm__pperiod subm__pstatus">{t(statusKey)}</div>}
                   </div>
                 </div>
-                <span className="subm__pamt">{formatMoney(r.total.amount_cents, r.total.currency)}</span>
+                <span className="subm__pamt">{amount}</span>
               </li>
-            ))}
+              );
+            })}
           </ul>
 
           <div className="subm__foot" ref={sentinel}>

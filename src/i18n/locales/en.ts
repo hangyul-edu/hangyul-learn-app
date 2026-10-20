@@ -255,6 +255,10 @@ export const en: Catalog = {
     invalidCode: "This code is invalid or has already been used", // 2165:24873
     invalidCodeSub: "Please check the code and try again",
     invoiceA11y: "{date}, {plan}, covering {from} to {to}, charged {amount}",
+    /** app-authored: an invoice that is not a completed payment. */
+    invoiceOpen: "Unpaid",
+    invoiceVoid: "Payment failed",
+    invoiceRefunded: "Refunded",
   },
 
   /** app-authored: no design frame exists for payment-method management. */
@@ -353,6 +357,7 @@ export const en: Catalog = {
     delete: "Delete",
     retryingStatus: "Processing your payment",
     changingDefaultStatus: "Changing default payment method",
+    confirmingRegistration: "Confirming your payment method registration",
     addDomesticSub: "Issued in Korea · charged in won (KRW)",
     addInternationalSub: "Visa, Mastercard, JCB etc. issued abroad · charged in {currency}",
     regionDomestic: "Korean",
@@ -652,14 +657,14 @@ export const en: Catalog = {
     /** `<s>` marks the cream-highlighted run in the CTA. */
     // 784:50762 splits this as white "Start " + #FCEEC1 "7-day free trial";
     // the marker was around "Start 7-day", which inverted the two colours.
-    startTrial: "Start <s>7-day free trial</s>", // 784:50692
+    startTrial: "Start <s>{days}-day free trial</s>", // 784:50692
     startNow: "Start now",
     close: "Close",
     productsTitle: "Plans",
     cancelAnytime: "Cancel anytime.", // 784:50692
     // One paragraph, wrapped by its 324px box (1421:21525) — unlike ko, no break.
     trialNote:
-      "7-day free trial ends with automatic billing for your selected plan. Annual subscriptions are non-refundable after 30 days from the billing date.",
+      "{days}-day free trial ends with automatic billing for your selected plan. Annual subscriptions are non-refundable after 30 days from the billing date.",
     // SET-032 EN (1421:21533): the refund sentence only.
     paidNote: "Annual subscriptions are non-refundable after 30 days from the billing date.",
     loading: "Loading…",

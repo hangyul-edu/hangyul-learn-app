@@ -95,7 +95,7 @@ export function VoucherModal({
           type="text"
           inputMode="text"
           autoComplete="off"
-          autoCapitalize="characters"
+          autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
           maxLength={40}
@@ -105,8 +105,10 @@ export function VoucherModal({
           value={code}
           disabled={loading}
           onChange={(e) => {
-            // Canonical charset only: A–Z, 0–9, hyphen (uppercased).
-            onCodeChange(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""));
+            // The server's alphabet only: letters, digits, hyphen. Codes are
+            // case-sensitive (coupons/domain/code.py draws from 62 symbols,
+            // lowercase included), so the case typed is sent as it is.
+            onCodeChange(e.target.value.replace(/[^A-Za-z0-9-]/g, ""));
             setEmptyErr(false);
             setDirty(true);
           }}

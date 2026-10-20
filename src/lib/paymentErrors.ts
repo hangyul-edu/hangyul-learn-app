@@ -9,6 +9,7 @@ import { tCurrent } from "../i18n/current";
 import type { TranslationKey, Translate } from "../i18n";
 import { ApiError, NetworkError, errorMessage } from "./http";
 import type { CardField } from "./cardInput";
+import { failureModalKeys } from "./paymentRecovery";
 
 const tNow: Translate = (key, vars) => tCurrent(key, vars);
 
@@ -78,9 +79,27 @@ export function registrationNotOfferedMessage(e: unknown, t: Translate = tNow): 
       });
 }
 
+/**
+ * `subscription.payment_declined` (402 on POST /subscriptions): the first
+ * charge was declined and nothing was started. The server's `details`
+ * carry the payment `failure_class`, which picks the same wording as the
+ * failed-renewal modal. Returns null for any other error.
+ */
+export function paymentDeclinedMessage(e: unknown, t: Translate = tNow): string | null {
+  if (!(e instanceof ApiError) || e.code !== "subscription.payment_declined") return null;
+  const failureClass = e.details?.failure_class;
+  const [title, sub] = failureModalKeys(typeof failureClass === "string" ? failureClass : null);
+  return `${t(title)} ${t(sub)}`;
+}
+
 /** `errorMessage()` plus the payment codes that need their own wording. */
 export function paymentErrorMessage(e: unknown, t: Translate = tNow): string {
-  return currencyMismatchMessage(e, t) ?? registrationNotOfferedMessage(e, t) ?? errorMessage(e);
+  return (
+    currencyMismatchMessage(e, t) ??
+    registrationNotOfferedMessage(e, t) ??
+    paymentDeclinedMessage(e, t) ??
+    errorMessage(e)
+  );
 }
 
 /* ------------------- overseas-card registration errors ------------------- */

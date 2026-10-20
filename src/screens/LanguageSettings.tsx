@@ -151,7 +151,7 @@ export function LanguageSettings() {
         open={savedOpen}
         title={t("languageSettings.savedModalTitle")}
         description={t("languageSettings.savedModalDesc")}
-        confirmLabel={t("common.confirm")}
+        confirmLabel={t("common.ok")} // 2414:29658 labels it OK
         onConfirm={() => {
           // Close once, then return to the previous screen (the current
           // post-save flow). No re-save, no reload; the form is already clean.

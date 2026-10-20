@@ -43,7 +43,8 @@ export function FailModal({
         <h2 className="wfa__title" id="wfa-title">{title}</h2>
         <p className="wfa__body" id="wfa-desc">{description}</p>
 
-        <button className="wfa__btn" onClick={onClose}>{t("common.confirm")}</button>
+        {/* 2231:24634 / 2165:24873 / 1542:23318 label this OK, not Confirm. */}
+        <button className="wfa__btn" onClick={onClose}>{t("common.ok")}</button>
       </div>
     </div>
   );

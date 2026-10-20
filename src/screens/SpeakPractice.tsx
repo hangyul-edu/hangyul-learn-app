@@ -102,7 +102,7 @@ export function SpeakPractice() {
         )}
       </div>
 
-      {last && outcome !== "prompt" && (
+      {last && (outcome === "correct" || outcome === "wrong") && (
         <div className="spk-page__bar">
           <button className="spk-page__tile" onClick={restart}>
             {t("courses.restart")}

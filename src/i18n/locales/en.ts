@@ -14,6 +14,7 @@ export const en: Catalog = {
   common: {
     confirm: "Confirm",
     cancel: "Cancel",
+    ok: "OK",
     back: "Go back", // app-authored (a11y)
     close: "Close", // app-authored (a11y)
     retry: "Try again",
@@ -241,7 +242,7 @@ export const en: Catalog = {
     subPending: "We're confirming your payment. You'll get access as soon as it goes through.",
     cancelScheduled: "Cancellation scheduled",
     resumed: "Your subscription has resumed",
-    voucherFailTitle: "Couldn't register that code",
+    voucherFailTitle: "Coupon Registration Failed", // 2165:24873
     cancelConfirmTitle: "Cancel your subscription?", // 893:33756
     cancelConfirmText: "Some features will be limited after cancellation.", // 893:33757
     cancelConfirmText2:
@@ -251,9 +252,13 @@ export const en: Catalog = {
     /** 893:33760 reads "Cancle Plan" — a typo in the frame, corrected here. */
     cancelConfirmGo: "Cancel Plan",
     register: "Redeem", // 784:62109 — the English frame says "Redeem"
-    invalidCode: "That code is invalid or already used",
-    invalidCodeSub: "Check the code and try again",
+    invalidCode: "This code is invalid or has already been used", // 2165:24873
+    invalidCodeSub: "Please check the code and try again",
     invoiceA11y: "{date}, {plan}, covering {from} to {to}, charged {amount}",
+    /** app-authored: an invoice that is not a completed payment. */
+    invoiceOpen: "Unpaid",
+    invoiceVoid: "Payment failed",
+    invoiceRefunded: "Refunded",
   },
 
   /** app-authored: no design frame exists for payment-method management. */
@@ -326,7 +331,7 @@ export const en: Catalog = {
     checkingResult: "We're confirming the payment. The status will update shortly.",
     alreadyProcessed: "That payment was already processed, so the list has been refreshed.",
     deleteTitle: "Delete this payment method?",
-    deleteText: "It can't be restored once deleted",
+    deleteText: "This action cannot be undone", // 1332:23584
     paySuccessA11y: "Payment complete",
     payFailA11y: "Payment failed",
     paySuccessTitle: "Payment complete", // 1542:23311
@@ -334,7 +339,13 @@ export const en: Catalog = {
     paySuccessSub: "You can keep enjoying all learning content", // 1542:23312
     paySuccessConfirmA11y: "Confirm payment completion",
     payFailConfirmA11y: "Choose another payment method",
-    chooseAnother: "Choose another method",
+    chooseAnother: "Try another method", // 1542:23318
+    /** SET-010 (1332:24034) / SET-011 (1332:24137). */
+    cardRegisteredTitle: "Card Successfully Registered",
+    cardRegisteredDesc: "Your subscription will be billed to this card",
+    cardRegisteredConfirm: "Done",
+    cardRegisterFailTitle: "Card Registration Failed",
+    cardRegisterFailDesc: "We couldn't add your card. Please check your card details and try again.",
     tossPay: "Toss Pay",
     naverPay: "Naver Pay",
     planFallback: "Premium",
@@ -346,6 +357,7 @@ export const en: Catalog = {
     delete: "Delete",
     retryingStatus: "Processing your payment",
     changingDefaultStatus: "Changing default payment method",
+    confirmingRegistration: "Confirming your payment method registration",
     addDomesticSub: "Issued in Korea · charged in won (KRW)",
     addInternationalSub: "Visa, Mastercard, JCB etc. issued abroad · charged in {currency}",
     regionDomestic: "Korean",
@@ -624,15 +636,16 @@ export const en: Catalog = {
     submit: "Submit",
   },
 
-  /** Subscription-code modal. app-authored (no design frame located). */
+  /** Subscription-code modal — MOR-017 EN (1217:22445), verbatim. */
   voucher: {
-    title: "Enter Subscription Code",
+    title: "Enter Course Code",
+    subtitle: "If you have a code, you can redeem it here",
     closeA11y: "Close the subscription-code dialog",
     codeA11y: "Subscription code",
     empty: "Enter a code.",
-    note1: "Applied to your subscription as soon as the code is verified",
-    note2: "Queued to start after your current subscription ends",
-    submit: "Register",
+    note1: "Subscription activated immediately upon verification",
+    note2: "Applied after your current subscription ends",
+    submit: "Redeem",
   },
 
   /** Subscription purchase / SET-030–032. app-authored. */
@@ -644,14 +657,14 @@ export const en: Catalog = {
     /** `<s>` marks the cream-highlighted run in the CTA. */
     // 784:50762 splits this as white "Start " + #FCEEC1 "7-day free trial";
     // the marker was around "Start 7-day", which inverted the two colours.
-    startTrial: "Start <s>7-day free trial</s>", // 784:50692
+    startTrial: "Start <s>{days}-day free trial</s>", // 784:50692
     startNow: "Start now",
     close: "Close",
     productsTitle: "Plans",
     cancelAnytime: "Cancel anytime.", // 784:50692
     // One paragraph, wrapped by its 324px box (1421:21525) — unlike ko, no break.
     trialNote:
-      "7-day free trial ends with automatic billing for your selected plan. Annual subscriptions are non-refundable after 30 days from the billing date.",
+      "{days}-day free trial ends with automatic billing for your selected plan. Annual subscriptions are non-refundable after 30 days from the billing date.",
     // SET-032 EN (1421:21533): the refund sentence only.
     paidNote: "Annual subscriptions are non-refundable after 30 days from the billing date.",
     loading: "Loading…",
@@ -821,6 +834,8 @@ export const en: Catalog = {
     keyboardMode: "Keyboard Mode", // 798:76717
     pronunciationTitle: "Pronunciation accuracy",
     pronunciationFallback: "Try saying it a little more clearly.",
+    unrelatedSpeech: "That sounded like something else. Please repeat the sentence above.",
+    heardAs: "We heard: “{text}”",
     scoreA11y: "Pronunciation accuracy: {percent} percent",
     evaluationError: "We couldn't score that. Please try again shortly.",
     micPermission: "Microphone access is needed. Please check your browser settings.",
@@ -1163,9 +1178,9 @@ export const en: Catalog = {
     logoutTitle: "Log out?",
     logoutBody: "Your study history is safely saved.", // 893:33426
     logout: "Log Out", // 893:33426
-    unsavedTitle: "Leave without saving your changes?",
-    unsavedBody: "Your changes will not be applied",
-    unsavedContinue: "Keep editing",
+    unsavedTitle: "Leave without saving changes?", // 2387:25899
+    unsavedBody: "Changes will not be applied",
+    unsavedContinue: "Continue",
     unsavedLeave: "Leave",
   },
 
@@ -1319,7 +1334,12 @@ export const en: Catalog = {
     additionalStart: "Let's go!",
     additionalPrompt: "How many more {unit}?",
     countUnit: "{n}",
-    completeCount: "You studied {count} {unit} 👏",
+    completeCountSentences: "You studied {count} sentences 👏",
+    completeCountQuestions: "You solved {count} questions 👏", // 1938:27527
+    quitTitle: "You're almost there. Ready to stop?", // 784:52243
+    quitText: "Finishing it will make your day 😊",
+    gradingTitle: "Grading in Progress", // 2678:26338
+    gradingText: "AI is carefully reviewing your answer\nPlease wait a moment",
     additionalCloseA11y: "Close",
     additionalA11y: "Start with {count} more {unit}",
     partTitle: "Which part shall we study today?",
@@ -1368,7 +1388,7 @@ export const en: Catalog = {
     topikGrade: "TOPIK Lv.{n}", // 1718:32055
     selected: "Selected",
     hint: "Hint",
-    answerShownAfterTries: "That was your second try, so here's the answer. Type it in to continue.",
+    answerShownAfterTries: "That was your second try, so here's the answer. Say or type it to continue.",
     topikAnswerShown: "That was your second try, so the correct answer is highlighted.",
     topikAnswerRevealedTitle: "Here's the correct answer",
     customApplied: "The rest of your set now matches your request.",
@@ -1444,6 +1464,8 @@ export const en: Catalog = {
     speakPerfect: "Perfect!", // EN 784:50165
     speakAgain: "Try again!", // EN 784:50221
     speakRetry: "Retry",
+    speakError: "We couldn't score that. Please try again.",
+    speakUnrelated: "That sounded like something else. Please read the sentence above.",
     listenA11y: "Listen to the sentence",
     listeningA11y: "Listening. Repeat the sentence.",
     scoringA11y: "Checking your pronunciation.",
@@ -1506,13 +1528,15 @@ export const en: Catalog = {
   },
 
   /** Voucher success modal. */
+  /** MOR-018 EN (1234:23090), verbatim. */
   voucherSuccess: {
-    title: "Your code has been registered",
-    appliedPlan: "Applied subscription",
+    title: "Code Redeemed!",
+    appliedPlan: "Subscription Details",
     plan: "Plan",
-    subType: "Subscription type",
-    validity: "Valid until",
-    singleUse: "Single use only",
+    subType: "Type",
+    validity: "Valid",
+    singleUse: "One-time use only",
+    confirm: "Done",
   },
 
   /** League lifecycle modals + result. */
@@ -1617,10 +1641,10 @@ export const en: Catalog = {
     /** 3085:29166 breaks after "data" — line 2 is the longer of the two, so
         this is an explicit break, not where the text would wrap on its own. */
     logoutDoneDesc: "Your learning history and data\nare safely stored in your account",
-    logoutFailTitle: "Couldn't log out",
-    withdrawFailTitle: "Couldn't delete your account",
+    logoutFailTitle: "Log Out Failed", // 2165:24824
+    withdrawFailTitle: "Account Deletion Failed", // 2165:24817
     temporaryError: "Something went wrong",
-    tryAgainLater: "Please try again shortly",
+    tryAgainLater: "Please try again in a moment",
     withdrawDoneTitle: "Account Deleted", // 3085:29144
     withdrawDoneLine1: "Thank you for using our service",
     withdrawDoneLine2: "We hope to see you again",
@@ -1659,8 +1683,8 @@ export const en: Catalog = {
     save: "Save",
     saveA11y: "Save language setting", // app-authored (a11y)
     selected: "selected", // app-authored (a11y)
-    savedModalTitle: "Language settings have been saved",
-    savedModalDesc: "You can now use the app in your selected language",
+    savedModalTitle: "Language Setting Saved", // 2414:29658
+    savedModalDesc: "Your app language has been updated",
     errorToast: "Unable to save the language setting. Please try again shortly.", // app-authored
   },
 

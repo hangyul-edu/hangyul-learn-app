@@ -3,7 +3,12 @@ import { API_BASE_URL } from "../lib/config";
 import { randomUuid } from "../lib/uuid";
 import { activeLanguage } from "../lib/language";
 import { recordingFilename, type RecordingInfo } from "../lib/recording";
+import { isTranscript, type SpokenTranscript } from "../lib/speech";
 import type {
+  PracticeTranscription,
+  SpeechAvailability,
+  SpeechSessionOpened,
+  SpeechTranscriptView,
   AttendanceCheckIn,
   CheckoutQuote,
   CheckpointInteraction,
@@ -197,16 +202,54 @@ export const dashboardApi = {
   ),
 };
 
+/* ------------------------------ Speech ------------------------------ */
+/** The live microphone path: a LiveKit room per session, transcripts by the STT agent. */
+export const speechApi = {
+  availability: () => http.get<SpeechAvailability>("/speech/availability"),
+  openSession: (body: { purpose: "sentence" | "blank" | "study_session" | "conversation"; context?: Record<string, unknown>; language?: string }) =>
+    http.post<SpeechSessionOpened>("/speech/sessions", body),
+  endSession: (sessionId: string) => http.post<void>(`/speech/sessions/${sessionId}/end`),
+  // Transcribe-only, for practice re-answers checked on the device; never a graded answer.
+  transcribe: (audio: Blob, take?: RecordingInfo) => {
+    const fd = new FormData();
+    fd.append("audio", audio, take?.filename ?? recordingFilename(audio.type));
+    return http.upload<PracticeTranscription>("/speech/transcriptions", fd);
+  },
+  transcripts: (sessionId: string, afterSeq = 0) =>
+    http.get<{ session_id: string; transcripts: SpeechTranscriptView[]; last_seq: number }>(
+      `/speech/sessions/${sessionId}/transcripts`,
+      { after_seq: String(afterSeq) },
+    ),
+};
+
+/** The one way a take goes into a form: the recording to transcribe, or the live transcript's id. */
+function appendSpoken(fd: FormData, spoken: Blob | SpokenTranscript, take: RecordingInfo | undefined): void {
+  if (isTranscript(spoken)) {
+    for (const id of spoken.transcriptIds) fd.append("transcript_ids", id);
+    return;
+  }
+  fd.append("audio", spoken, take?.filename ?? recordingFilename(spoken.type));
+  if (take) fd.append("duration_ms", String(take.durationMs));
+}
+
 /* ----------------------------- Sentences ---------------------------- */
 export const sentenceApi = {
   get: (id: string) => http.get<Sentence>(`/sentences/${id}`),
   audio: (id: string) => http.get<{ url: string }>(`/sentences/${id}/audio`),
   bookmark: (id: string) => http.post<unknown>(`/sentences/${id}/bookmark`),
   unbookmark: (id: string) => http.del<void>(`/sentences/${id}/bookmark`),
-  speechAttempt: (id: string, audio: Blob, take: RecordingInfo, source = "custom", reviewSessionId?: string) => {
+  // A speaking attempt: the recording to transcribe, or the id of a transcript
+  // the live STT agent already produced (graded by id — the app never sends
+  // the text as the answer).
+  speechAttempt: (
+    id: string,
+    spoken: Blob | SpokenTranscript,
+    take: RecordingInfo | undefined,
+    source = "custom",
+    reviewSessionId?: string,
+  ) => {
     const fd = new FormData();
-    fd.append("audio", audio, take.filename);
-    fd.append("duration_ms", String(take.durationMs));
+    appendSpoken(fd, spoken, take);
     fd.append("source", source);
     // Ties a review attempt to its session so points are awarded once per
     // session (a restart re-answers without re-awarding).
@@ -222,6 +265,8 @@ export const sentenceApi = {
       answerText?: string;
       audio?: Blob;
       take?: RecordingInfo;
+      /** A live transcript's id, instead of `audio` (voice mode). */
+      transcript?: SpokenTranscript;
       clientRequestId?: string;
       source?: string;
       reviewSessionId?: string;
@@ -230,8 +275,8 @@ export const sentenceApi = {
     const fd = new FormData();
     fd.append("input_mode", opts.inputMode);
     if (opts.answerText != null) fd.append("answer_text", opts.answerText);
-    if (opts.audio) fd.append("audio", opts.audio, opts.take?.filename ?? recordingFilename(opts.audio.type));
-    if (opts.take) fd.append("duration_ms", String(opts.take.durationMs));
+    if (opts.transcript) appendSpoken(fd, opts.transcript, undefined);
+    else if (opts.audio) appendSpoken(fd, opts.audio, opts.take);
     if (opts.clientRequestId) fd.append("client_request_id", opts.clientRequestId);
     fd.append("source", opts.source ?? "custom");
     // See speechAttempt: award review points once per session, not per restart.
@@ -365,10 +410,15 @@ export const studyApi = {
     http.post<void>(`/study-sessions/${sessionId}/activities/${activityId}/present`),
   attempt: (sessionId: string, activityId: string, body: { answer: string; client_request_id: string; duration_ms?: number }) =>
     http.post<StudyAttemptResult>(`/study-sessions/${sessionId}/activities/${activityId}/attempts`, body),
-  voiceAttempt: (sessionId: string, activityId: string, audio: Blob, take: RecordingInfo, clientRequestId: string) => {
+  voiceAttempt: (
+    sessionId: string,
+    activityId: string,
+    spoken: Blob | SpokenTranscript,
+    take: RecordingInfo | undefined,
+    clientRequestId: string,
+  ) => {
     const fd = new FormData();
-    fd.append("audio", audio, take.filename);
-    fd.append("duration_ms", String(take.durationMs));
+    appendSpoken(fd, spoken, take);
     fd.append("client_request_id", clientRequestId);
     return http.upload<StudyAttemptResult>(`/study-sessions/${sessionId}/activities/${activityId}/voice-attempts`, fd);
   },
@@ -400,6 +450,8 @@ export type { CardRegion } from "../lib/types";
 type CardIntent = {
   intent_id: string;
   customer_key: string;
+  /** About 15 minutes after creation: the window must return and be confirmed by then. */
+  expires_at: string;
   widget: { client_key: string; success_url: string; fail_url: string; card_region: "domestic" };
 };
 /** One currency an overseas card can be registered in (charged only in it). */
@@ -442,6 +494,8 @@ export type InternationalCardRegistration = {
 export type EasyPayIntent = {
   intent_id: string;
   customer_key: string;
+  /** About 15 minutes after creation: the window must return and be confirmed by then. */
+  expires_at: string;
   window: {
     client_key: string;
     easy_pay: "TOSSPAY" | "NAVERPAY";
@@ -599,10 +653,13 @@ export const subApi = {
   mine: () => http.get<MySubscription>("/subscriptions/me"),
   /** `quote` is what the screen showed; the server refuses (409
    *  subscription.price_changed) rather than charge anything else. */
-  startTrial: (plan_id: string, quote?: CheckoutQuote) =>
-    http.post<unknown>("/subscriptions/trial", { plan_id, ...quote }),
+  startTrial: (plan_id: string, method_id?: string, quote?: CheckoutQuote) =>
+    http.post<unknown>("/subscriptions/trial", { plan_id, method_id, ...quote }),
   // 201 = paid and active; 202 = the first charge is still undecided
-  // (`subscription.status === "payment_pending"`, no access yet); a decline is 402.
+  // (`subscription.status === "payment_pending"`, no access yet); a decline
+  // is 402 `subscription.payment_declined` with `details.failure_class`
+  // (lib/paymentErrors paymentDeclinedMessage). `method_id` omitted = the
+  // member's default method.
   subscribe: (plan_id: string, method_id?: string, quote?: CheckoutQuote) =>
     http.post<{ subscription?: { status?: string } }>("/subscriptions", { plan_id, method_id, ...quote }),
   cancel: (reason?: CancellationReason, reason_text?: string) =>

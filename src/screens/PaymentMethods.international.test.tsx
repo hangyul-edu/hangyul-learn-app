@@ -320,9 +320,14 @@ describe("international card form", () => {
       expiry_year: 2031,
       recurring_billing_consent: true,
     });
-    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
-    expect(await screen.findByText("등록되었어요")).toBeInTheDocument();
+    // The form closes and SET-010 (1332:22357) names the card; no bottom notice.
+    const done = await screen.findByRole("dialog", { name: "카드 등록이 완료됐습니다" });
+    expect(screen.queryByLabelText("카드 번호")).not.toBeInTheDocument();
+    expect(within(done).getByText("Visa (42424242****424*)")).toBeInTheDocument();
+    expect(screen.queryByText("등록되었어요")).not.toBeInTheDocument();
     await waitFor(() => expect(api.methods.mock.calls.length).toBeGreaterThan(listCalls));
+    await userEvent.click(within(done).getByRole("button", { name: "확인" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     // Nothing card-related reached the query cache (queries or mutations).
     const cache = JSON.stringify([
       qc.getQueryCache().getAll().map((q) => [q.queryKey, q.state.data]),

@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { SkeletonList } from "../../components/ui/states";
 import { useTranslation } from "../../i18n";
 import { formatLongDate, formatMoney } from "../../lib/format";
-import { hasLiveSubscription } from "../../lib/subscription";
+import { hasLiveSubscription, isCancelableStatus } from "../../lib/subscription";
 import type { MySubscription } from "../../lib/types";
 
 /** One label / value line of the plan card. */
@@ -78,9 +78,13 @@ export function PlanSection({
           {scheduledCancel && (
             <Row label={t("subscription.statusLabel")} value={t("subscription.statusCanceling")} />
           )}
-          {/* `trial_ending` is a trial in its last 72h — exactly when a
-              member most wants to cancel before the first charge. */}
-          {!scheduledCancel && ["trial", "trial_ending", "active"].includes(status) && (
+          {/* Every state the server lets a member cancel from (not expired
+              or suspended): `trial_ending` is a trial in its last 72h —
+              exactly when a member most wants to cancel before the first
+              charge — and a renewal being retried can be stopped too. A
+              coupon pass (status `active`, no provider) renews nothing, so
+              there is nothing to cancel. */}
+          {!scheduledCancel && !m?.coupon_backed && isCancelableStatus(status) && (
             <button className="subm__cancel" onClick={onCancel}>{t("subscription.cancel")}</button>
           )}
         </div>

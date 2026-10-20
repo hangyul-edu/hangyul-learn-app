@@ -71,12 +71,23 @@ describe("Subscription — renewal price", () => {
 });
 
 describe("Subscription — my plan", () => {
-  it.each(["trial", "trial_ending", "active"])("offers 해지하기 for a %s subscription", async (status) => {
+  it.each(["trial", "trial_ending", "active", "payment_pending", "payment_failed", "grace_period"])(
+    "offers 해지하기 for a %s subscription",
+    async (status) => {
     // Regression: `trial_ending` (a trial in its last 72h) hid the button, so a
-    // member could not cancel right before the first charge.
+    // member could not cancel right before the first charge — and so did the
+    // renewal-retry states, which the server cancels from just as well.
     mine.mockResolvedValue(sub(status));
     renderPage();
     expect(await screen.findByRole("button", { name: "해지하기" })).toBeInTheDocument();
+    },
+  );
+
+  it.each(["suspended", "expired"])("has no 해지하기 for a %s subscription (the server refuses it)", async (status) => {
+    mine.mockResolvedValue(sub(status));
+    renderPage();
+    await screen.findByText("내 구독정보");
+    expect(screen.queryByRole("button", { name: "해지하기" })).not.toBeInTheDocument();
   });
 
   it("names the plan in force, older plans included", async () => {
@@ -92,6 +103,14 @@ describe("Subscription — my plan", () => {
     mine.mockResolvedValue(sub("expired", { coupon_backed: true, plan_id: null, plan_name: null }));
     renderPage();
     expect(await screen.findByText("프리미엄")).toBeInTheDocument();
+  });
+
+  it("offers nothing to cancel on a coupon pass (status active, nothing renews)", async () => {
+    // Subscription.start_coupon_period makes the row `active` without a provider.
+    mine.mockResolvedValue(sub("active", { coupon_backed: true, plan_id: null, plan_name: null, provider: null }));
+    renderPage();
+    expect(await screen.findByText("프리미엄")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "해지하기" })).not.toBeInTheDocument();
   });
 
   it("hides 해지하기 once a cancellation is already scheduled", async () => {
@@ -137,6 +156,41 @@ describe("Subscription — cancellation reason", () => {
   });
 });
 
+describe("Subscription — billing history", () => {
+  const invoice = (over: Record<string, unknown>) => ({
+    invoice_id: "inv_1",
+    plan_id: "p_year",
+    plan_name: "Annual",
+    total: { amount_cents: 7188, currency: "USD" },
+    status: "paid",
+    period_start: "2026-09-01T00:00:00Z",
+    period_end: "2026-10-01T00:00:00Z",
+    paid_at: "2026-09-01T00:00:00Z",
+    receipt_url: null,
+    ...over,
+  });
+
+  it("says when an invoice is not a completed payment", async () => {
+    // GET /billing/invoices lists every invoice — an open renewal (still
+    // being retried) and a void one must not read as money taken.
+    mine.mockResolvedValue(sub("payment_failed"));
+    invoices.mockResolvedValue({
+      invoices: [
+        invoice({ invoice_id: "inv_open", status: "open", paid_at: null }),
+        invoice({ invoice_id: "inv_void", status: "void", paid_at: null }),
+        invoice({ invoice_id: "inv_paid" }),
+      ],
+      next_cursor: null,
+    });
+    renderPage();
+    expect(await screen.findByText("미결제")).toBeInTheDocument();
+    expect(screen.getByText("결제 실패")).toBeInTheDocument();
+    expect(screen.getAllByText("US$71.88")).toHaveLength(3);
+    expect(screen.getByRole("listitem", { name: /US\$71\.88, 미결제/ })).toBeInTheDocument();
+    expect(screen.getByRole("listitem", { name: /US\$71\.88$/ })).toBeInTheDocument();
+  });
+});
+
 describe("Subscription — coupon redemption", () => {
   async function submitCode(code: string) {
     await userEvent.click(await screen.findByRole("button", { name: "등록하기" }));
@@ -167,6 +221,26 @@ describe("Subscription — coupon redemption", () => {
     expect(await screen.findByText("2026.09.01~2026.10.01")).toBeInTheDocument();
     // The grant changes membership, which the premium gates read from the profile.
     expect(bootstrapMe).toHaveBeenCalled();
+  });
+
+  it("sends the code exactly as typed: codes are case-sensitive", async () => {
+    // Regression: the field upper-cased what was typed, so a code with a
+    // lowercase letter (the server's alphabet has 62 symbols) was never found.
+    mine.mockResolvedValue(NO_SUB);
+    redeemCoupon.mockResolvedValue({
+      coupon_id: "c2",
+      code: "A1bC-2dEf-3GhI",
+      plan_name: "Partner pass",
+      subscription_type: "course_pass_coupon",
+      duration_days: 30,
+      activated: true,
+      queue_position: 1,
+      effective_start_at: "2026-09-01T00:00:00Z",
+      effective_end_at: "2026-10-01T00:00:00Z",
+    });
+    renderPage();
+    await submitCode(" A1bC-2dEf-3GhI ");
+    await waitFor(() => expect(redeemCoupon).toHaveBeenCalledWith("A1bC-2dEf-3GhI"));
   });
 
   it("keeps the code entry open (not 'invalid code') when the attempt cap is hit", async () => {

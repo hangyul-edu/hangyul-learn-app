@@ -15,6 +15,8 @@ export function useSessionConversationCopy() {
     keyboardMode: t("sessionConversation.keyboardMode"),
     pronunciationTitle: t("sessionConversation.pronunciationTitle"),
     pronunciationFallback: t("sessionConversation.pronunciationFallback"),
+    unrelatedSpeech: t("sessionConversation.unrelatedSpeech"),
+    heardAs: (text: string) => t("sessionConversation.heardAs", { text }),
     scoreA11y: (percent: number) => t("sessionConversation.scoreA11y", { percent }),
     evaluationError: t("sessionConversation.evaluationError"),
     retryMessage: t("common.networkError"),

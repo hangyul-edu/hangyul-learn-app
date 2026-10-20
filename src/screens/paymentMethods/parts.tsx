@@ -3,7 +3,8 @@ import { useTranslation, type TranslationKey } from "../../i18n";
 import { NaverPayLogo, TossPayLogo } from "../../components/brand/PayBrand";
 import { Spinner } from "../../components/ui/Spinner";
 import { NOTICE_GUIDANCE_KEY, failureModalKeys, formatRetryAt, noticeReasonKey } from "../../lib/paymentRecovery";
-import type { MethodProvider, PaymentRecovery } from "../../lib/types";
+import { useModalFocus } from "../../hooks/useModalFocus";
+import type { MethodProvider, PaymentMethod, PaymentRecovery } from "../../lib/types";
 import cardArt from "../../assets/brand/pm-card-art.svg";
 import trashIcon from "../../assets/brand/ic-trash.svg";
 import successIcon from "../../assets/brand/ic-modal-success.svg";
@@ -233,8 +234,54 @@ export function PaymentResultModal({
         <h2 className="pm-result__title">{t(success ? "paymentMethods.paySuccessTitle" : "paymentMethods.payFailTitle")}</h2>
         <p className="pm-result__desc">{l1}<br />{l2}</p>
         <button ref={btnRef} className="pm-result__btn" onClick={onConfirm} aria-label={t(success ? "paymentMethods.paySuccessConfirmA11y" : "paymentMethods.payFailConfirmA11y")}>
-          {success ? t("common.confirm") : t("paymentMethods.chooseAnother")}
+          {/* 1542:23308 labels the success button OK; 1542:23318 "Try another method". */}
+          {success ? t("common.ok") : t("paymentMethods.chooseAnother")}
         </button>
+      </div>
+    </div>
+  );
+}
+
+/** How SET-010 names the card: the issuer and the masked number in brackets,
+ *  as the list rows show it. */
+function cardFace(m: PaymentMethod): string {
+  if (m.display_name.includes("(") || !m.masked_card_number) return m.display_name;
+  return `${m.display_name} (${m.masked_card_number})`;
+}
+
+/**
+ * "카드 등록이 완료됐습니다" — SET-010 (KO 1332:22357 / EN 1332:24034): the
+ * status-badge card with the registered card named in a Gray 1 panel under the
+ * copy. Shown only once the server has confirmed the registration; the single
+ * button acknowledges it (`onConfirm`), which is when the screen carries on
+ * (back to the purchase screen when that is where the member came from).
+ * Backdrop is non-dismissable; the button / Escape confirm.
+ */
+export function CardRegisteredModal({ method, onConfirm }: { method: PaymentMethod; onConfirm: () => void }) {
+  const { t } = useTranslation();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus({ open: true, containerRef: dialogRef, onEscape: onConfirm, initialFocus: ".wdd__btn" });
+  return (
+    <div className="overlay overlay--center wd__overlay">
+      <div
+        ref={dialogRef}
+        className="wdd wdd--card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="crd-title"
+        aria-describedby="crd-desc"
+      >
+        <div className="wdd__icon" aria-hidden="true">
+          <CheckMark />
+        </div>
+        <h2 className="wdd__title" id="crd-title">{t("paymentMethods.cardRegisteredTitle")}</h2>
+        <p className="wdd__copy" id="crd-desc">{t("paymentMethods.cardRegisteredDesc")}</p>
+        {/* Frame 427319206 — the card art and its name on Gray 1, r8. */}
+        <div className="crd__panel">
+          <CardGlyph />
+          <span className="crd__name">{cardFace(method)}</span>
+        </div>
+        <button className="wdd__btn" onClick={onConfirm}>{t("paymentMethods.cardRegisteredConfirm")}</button>
       </div>
     </div>
   );

@@ -69,7 +69,7 @@ export function VoucherSuccessModal({
           </div>
         </dl>
 
-        <button className="vsc__confirm" onClick={onClose}>{t("common.confirm")}</button>
+        <button className="vsc__confirm" onClick={onClose}>{t("voucherSuccess.confirm")}</button>
       </div>
     </div>
   );

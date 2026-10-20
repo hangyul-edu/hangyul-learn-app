@@ -13,7 +13,7 @@ import { useTranslation } from "../i18n";
 import type { PaymentMethod, PaymentMethodList } from "../lib/types";
 import { isPayLaunched } from "../lib/launch";
 import { DetailHeader } from "../components/DetailHeader";
-import { AddMethodButton, CardGlyph, EASY_PAY, MethodRow, PaymentResultModal, RecoveryNotice } from "./paymentMethods/parts";
+import { AddMethodButton, CardGlyph, CardRegisteredModal, EASY_PAY, MethodRow, PaymentResultModal, RecoveryNotice } from "./paymentMethods/parts";
 import { METHODS_QK as QK, useRecoveryRetry } from "./paymentMethods/useRecoveryRetry";
 import { useRegistration } from "./paymentMethods/useRegistration";
 
@@ -316,20 +316,45 @@ export function PaymentMethods() {
         onRegistered={reg.intlRegistered}
       />
 
-      {/* --- deletion / disconnect confirmation --- */}
+      {/* --- deletion / disconnect confirmation — SET-004 (1332:22195 / EN 1332:23584):
+          the shared two-button cp_G_01_modals row, 취소 on bgray.400 and 삭제 on Brand 1. --- */}
       <Dialog
         open={!!removeTarget}
         onClose={remove.isPending ? undefined : () => setRemoveTarget(null)}
         title={t("paymentMethods.deleteTitle")}
         text={t("paymentMethods.deleteText")}
       >
-        <div className="pm__modal-actions">
-          <button className="pm__modal-btn pm__modal-btn--cancel" disabled={remove.isPending} onClick={() => setRemoveTarget(null)}>
+        <div className="dialog__actions">
+          <Button variant="ghost" block disabled={remove.isPending} onClick={() => setRemoveTarget(null)}>
             {t("common.cancel")}
-          </button>
-          <button className="pm__modal-btn pm__modal-btn--delete" disabled={remove.isPending} onClick={() => removeTarget && remove.mutate(removeTarget)}>
+          </Button>
+          <Button variant="primary" block loading={remove.isPending} onClick={() => removeTarget && remove.mutate(removeTarget)}>
             {t("paymentMethods.delete")}
-          </button>
+          </Button>
+        </div>
+      </Dialog>
+
+      {/* --- SET-010: a card is on file; 확인 carries on (back to the purchase
+          screen when the member came from there). --- */}
+      {reg.registered && <CardRegisteredModal method={reg.registered.method} onConfirm={reg.acknowledgeRegistered} />}
+
+      {/* --- SET-011 (1332:22415 / EN 1332:24137): a card that could not be
+          registered; the provider's reason, when it gave one, under the copy. --- */}
+      <Dialog
+        open={!!reg.failed}
+        onClose={reg.closeFailed}
+        title={t("paymentMethods.cardRegisterFailTitle")}
+        text={
+          <>
+            {t("paymentMethods.cardRegisterFailDesc")}
+            {reg.failed?.detail && <span className="dialog__detail">{reg.failed.detail}</span>}
+          </>
+        }
+      >
+        <div className="dialog__actions">
+          <Button variant="primary" block onClick={reg.closeFailed}>
+            {t("common.ok")}
+          </Button>
         </div>
       </Dialog>
 
@@ -342,6 +367,10 @@ export function PaymentMethods() {
 
       {(selectDisabled || retry.isPending) && (
         <span className="pm__sr" role="status">{t(retry.isPending ? "paymentMethods.retryingStatus" : "paymentMethods.changingDefaultStatus")}</span>
+      )}
+      {/* Back from a registration window: the authKey is being exchanged. */}
+      {reg.confirmingReturn && (
+        <span className="pm__sr" role="status" aria-live="polite">{t("paymentMethods.confirmingRegistration")}</span>
       )}
     </div>
   );

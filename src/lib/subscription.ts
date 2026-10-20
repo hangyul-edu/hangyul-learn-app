@@ -19,6 +19,15 @@ export function isTrialStatus(status: string | null | undefined): boolean {
   return status === "trial" || status === "trial_ending";
 }
 
+/**
+ * Statuses POST /subscriptions/cancel accepts (Subscription.cancel_at_period
+ * refuses only `expired` and `suspended`): a live subscription, a renewal
+ * still being retried included.
+ */
+export function isCancelableStatus(status: string | null | undefined): boolean {
+  return !!status && LIVE_STATUSES.has(status);
+}
+
 /** Whether the member has a subscription (paid, trial or coupon) in force. */
 export function hasLiveSubscription(sub: MySubscription | null | undefined): boolean {
   return !!sub && (LIVE_STATUSES.has(sub.status) || !!sub.coupon_backed);

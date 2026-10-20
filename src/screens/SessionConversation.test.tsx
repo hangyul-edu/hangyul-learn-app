@@ -76,6 +76,13 @@ vi.mock("../api/endpoints", () => ({
   dashboardApi: { summary },
   learnApi: { recordSession: vi.fn(), recordActivity },
   studyApi: study,
+  // The live microphone path is off in these tests: takes are recorded and uploaded.
+  speechApi: {
+    availability: vi.fn().mockResolvedValue({ realtime_available: false, livekit_configured: false, agent_online: false }),
+    openSession: vi.fn(),
+    endSession: vi.fn().mockResolvedValue(undefined),
+    transcripts: vi.fn(),
+  },
 }));
 
 /* ---- minimal MediaRecorder / getUserMedia so voice attempts can be driven ---- */
@@ -547,13 +554,17 @@ describe("SessionConversation — voice incorrect state", () => {
     expect(screen.getByRole("group", { name: "발음 정확도 100 퍼센트" })).toBeInTheDocument();
   });
 
-  it("falls back to a safe localized message when the response has no tips", async () => {
+  it("shows what was heard when the response has no tips, and a safe message when there is no transcript", async () => {
     recSentences.mockResolvedValue({ items: [NON_BLANK] });
     speechAttempt.mockResolvedValue({ ...SPEECH_WRONG, tips: [] });
     renderScreen();
     await screen.findByText(/좋은 일들이/);
     await recordVoice("따라 말하기");
+    expect(await screen.findByText("이렇게 들렸어요: “좋은 일들이 고 올 거예요”")).toBeInTheDocument();
 
+    // A wrong verdict with no transcript at all: the safe fallback line.
+    speechAttempt.mockResolvedValue({ ...SPEECH_WRONG, tips: [], transcription: "" });
+    await recordVoice("다시 녹음하기");
     expect(await screen.findByText("조금 더 또렷하게 말해보세요.")).toBeInTheDocument();
   });
 

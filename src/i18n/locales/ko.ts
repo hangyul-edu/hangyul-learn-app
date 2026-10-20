@@ -18,6 +18,9 @@ export const ko = {
   common: {
     confirm: "확인", // Figma 1332:22046 cp_C_01_primaryBtn
     cancel: "취소",
+    /** The single button of the status modals (2231:24610, 2165:24864, 1542:22954 …);
+        the English frames label it OK where the terminal ones say Confirm. */
+    ok: "확인",
     back: "뒤로 가기", // app-authored (a11y)
     close: "닫기", // app-authored (a11y)
     retry: "다시 시도",
@@ -198,12 +201,11 @@ export const ko = {
     imageDefaultA11y: "프로필 이미지: 기본 이미지",
     exitTitle: "프로필 변경을 종료할까요?",
     exitSubtitle: "저장하지 않고 나가면 변경사항이 사라져요",
-    // No KO frame was found for the three AME-006 modals; these mirror the EN
-    // Figma copy (2231:24627 / 2231:24634) in the catalog's existing voice.
-    savedTitle: "프로필이 변경되었습니다",
-    savedBody: "프로필 정보가 업데이트되었어요",
-    saveFailTitle: "프로필 변경에 실패했어요",
-    saveFailBody: "문제가 발생했어요\n잠시 후 다시 시도해주세요",
+    // cp_G_01_modals 2231:24610 (saved) / 2231:24617 (failed), verbatim.
+    savedTitle: "프로필이 변경됐습니다",
+    savedBody: "변경하신 프로필 정보가 반영되었습니다",
+    saveFailTitle: "프로필 변경에 실패했습니다",
+    saveFailBody: "일시적인 오류가 발생했어요\n잠시 후 다시 시도해 주세요",
   },
 
   /** Accessible names for the three default characters (app-authored — the
@@ -264,6 +266,10 @@ export const ko = {
     invalidCodeSub: "코드를 확인하고 다시 시도해 주세요",
     invoiceA11y:
       "{date}, {plan}, 이용 기간 {from}부터 {to}까지, 결제 금액 {amount}",
+    /** app-authored: an invoice that is not a completed payment (GET /billing/invoices `status`). */
+    invoiceOpen: "미결제",
+    invoiceVoid: "결제 실패",
+    invoiceRefunded: "환불됨",
   },
 
   /**
@@ -352,6 +358,12 @@ export const ko = {
     paySuccessConfirmA11y: "결제 완료 확인",
     payFailConfirmA11y: "다른 결제수단 선택하기",
     chooseAnother: "다른 결제수단 선택",
+    /** SET-010 (1332:22357) — the card-registered modal; SET-011 (1332:22415) — its failure. */
+    cardRegisteredTitle: "카드 등록이 완료됐습니다",
+    cardRegisteredDesc: "등록하신 카드로 구독 결제가 진행됩니다",
+    cardRegisteredConfirm: "확인",
+    cardRegisterFailTitle: "신용/체크카드 등록 실패",
+    cardRegisterFailDesc: "신용카드 등록에 실패했습니다. 카드 정보를 다시 확인해주시기 바랍니다.",
     tossPay: "토스페이",
     naverPay: "네이버페이",
     planFallback: "프리미엄",
@@ -363,6 +375,7 @@ export const ko = {
     delete: "삭제",
     retryingStatus: "결제를 진행하고 있어요",
     changingDefaultStatus: "기본 결제수단 변경 중",
+    confirmingRegistration: "결제수단 등록을 확인하고 있어요",
     /** Under the one card button the member gets (+82 phone: domestic; otherwise: overseas). */
     addDomesticSub: "한국에서 발급한 카드 · 원화(KRW)로 결제",
     addInternationalSub: "해외에서 발급한 Visa·Mastercard·JCB 등 · {currency}로 결제",
@@ -653,9 +666,12 @@ export const ko = {
     submit: "제출", // 725:20729
   },
 
-  /** Subscription-code modal. app-authored (no design frame located). */
+  /** Subscription-code modal — MOR-017 (1215:21452 / EN 1217:22445). */
   voucher: {
     title: "구독권 코드 등록",
+    /** The English frame (1217:22445) carries this line under the title; the
+        Korean frame does not, so VoucherModal shows it for English only. */
+    subtitle: "코드가 있다면 여기에서 등록할 수 있어요",
     closeA11y: "구독권 코드 등록 창 닫기",
     codeA11y: "구독권 코드",
     empty: "코드를 입력해주세요.",
@@ -671,13 +687,13 @@ export const ko = {
     selectedSuffix: ", 선택됨",
     perMonth: "/월",
     /** `<s>` marks the cream-highlighted run in the CTA (Figma I1:4089). */
-    startTrial: "<s>7일 무료 체험</s>  시작하기",
+    startTrial: "<s>{days}일 무료 체험</s>  시작하기",
     startNow: "지금 바로 시작하기",
     close: "닫기",
     productsTitle: "구독 상품",
     cancelAnytime: "구독은 언제든지 취소할 수 있어요", // 1:4075
     trialNote:
-      "7일 무료 체험 종료 후 선택한 플랜으로 자동 결제됩니다.\n연간 구독은 결제일로부터 30일 초과 시 환불이 제한됩니다.", // 898:19355
+      "{days}일 무료 체험 종료 후 선택한 플랜으로 자동 결제됩니다.\n연간 구독은 결제일로부터 30일 초과 시 환불이 제한됩니다.", // 898:19355
     paidNote: "연간 구독은 결제일로부터 30일 초과 시 환불이 제한됩니다.", // SET-032 3610:30132
     loading: "불러오는 중…",
     loadError: "정보를 불러오지 못했어요.",
@@ -851,6 +867,8 @@ export const ko = {
     keyboardMode: "키보드 모드",
     pronunciationTitle: "발음 정확도",
     pronunciationFallback: "조금 더 또렷하게 말해보세요.",
+    unrelatedSpeech: "다른 말을 한 것 같아요. 위 문장을 따라 말해 주세요.", // app-authored
+    heardAs: "이렇게 들렸어요: “{text}”", // app-authored
     scoreA11y: "발음 정확도 {percent} 퍼센트",
     evaluationError: "채점하지 못했어요. 잠시 후 다시 시도해 주세요.",
     micPermission: "마이크 권한이 필요해요. 브라우저 설정을 확인해 주세요.",
@@ -1325,7 +1343,15 @@ export const ko = {
     additionalStart: "시작할게요!",
     additionalPrompt: "추가할 {unit} 수를 선택해 주세요",
     countUnit: "{n}개",
-    completeCount: "총 {count}{unit} 학습했어요 👏",
+    /* TAL-013 (1938:28526) phrases the count per unit; English differs by unit. */
+    completeCountSentences: "총 {count}문장 학습했어요 👏",
+    completeCountQuestions: "총 {count}문제 학습했어요 👏",
+    /** Leaving a session with items still open — cp_G_01_modals beside TAL-008 (1:5529 / EN 784:52243). */
+    quitTitle: "아직 조금 남아있지만,\n학습을 종료하시겠어요?",
+    quitText: "끝까지 해내면 오늘이 더 뿌듯해질 거예요",
+    /** While an AI-graded writing answer is being scored — 2677:26028 / EN 2678:26338. */
+    gradingTitle: "채점 중이에요",
+    gradingText: "AI가 답안을 꼼꼼히 채점하고 있어요\n잠시만 기다려 주세요",
     additionalCloseA11y: "닫기",
     additionalA11y: "추가 {unit} {count}개로 학습 시작할게요",
     partTitle: "오늘은 어떤 파트를 학습해볼까요?",
@@ -1375,7 +1401,7 @@ export const ko = {
     topikGrade: "토픽 {n}급",
     selected: "선택됨",
     hint: "힌트",
-    answerShownAfterTries: "두 번 모두 틀려서 정답을 보여드려요. 정답을 따라 입력해 보세요.",
+    answerShownAfterTries: "두 번 모두 틀려서 정답을 보여드려요. 정답을 따라 말하거나 입력해 보세요.",
     topikAnswerShown: "두 번 모두 틀려서 정답을 표시했어요.",
     topikAnswerRevealedTitle: "정답을 확인해 보세요",
     customApplied: "요청에 맞게 남은 문장을 바꿨어요.",
@@ -1461,6 +1487,8 @@ export const ko = {
     speakPerfect: "완벽해요!",
     speakAgain: "다시 한 번 말해보세요!",
     speakRetry: "다시하기",
+    speakError: "채점하지 못했어요. 다시 시도해 주세요.", // app-authored
+    speakUnrelated: "다른 말을 한 것 같아요. 위 문장을 읽어 주세요.", // app-authored
     listenA11y: "문장 듣기",
     listeningA11y: "듣고 있어요. 문장을 따라 말해보세요.",
     scoringA11y: "발음을 확인하고 있어요.",
@@ -1535,6 +1563,7 @@ export const ko = {
     subType: "구독 유형",
     validity: "유효기간",
     singleUse: "1회 사용 후 재사용 불가",
+    confirm: "확인", // I1234:22924 — the English frame says Done
   },
 
   /** League lifecycle modals + result. */

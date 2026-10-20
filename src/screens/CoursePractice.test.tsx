@@ -17,7 +17,7 @@ const api = vi.hoisted(() => ({
   speechAttempt: vi.fn(),
   start: vi.fn(),
   attempt: vi.fn(),
-  recorder: { options: null as null | { onRecorded: (b: Blob) => Promise<void> | void } },
+  recorder: { options: null as null | { onSpoken: (spoken: { audio: Blob; take: { filename: string; durationMs: number } }) => Promise<void> | void } },
   // Each time a card starts listening.
   listen: vi.fn(() => Promise.resolve()),
 }));
@@ -36,8 +36,8 @@ vi.mock("../api/endpoints", () => ({
   studyApi: {},
 }));
 vi.mock("../hooks/toast", () => ({ useToast: () => ({ error: vi.fn(), success: vi.fn(), show: vi.fn() }) }));
-vi.mock("../hooks/useVoiceRecorder", () => ({
-  useVoiceRecorder: (options: typeof api.recorder.options) => {
+vi.mock("../hooks/useSpeechInput", () => ({
+  useSpeechInput: (options: typeof api.recorder.options) => {
     api.recorder.options = options;
     return { recording: false, start: api.listen, stop: vi.fn() };
   },
@@ -219,7 +219,7 @@ describe("SpeakPractice", () => {
 
     await waitFor(() => expect(api.recorder.options).not.toBeNull());
     await act(async () => {
-      await api.recorder.options!.onRecorded(new Blob(["x"]));
+      await api.recorder.options!.onSpoken({ audio: new Blob(["x"]), take: { filename: "attempt.webm", durationMs: 1500 } });
     });
     expect(screen.getByText("완벽해요!")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "다시 시작" }));
@@ -240,7 +240,7 @@ describe("SpeakPractice", () => {
     await waitFor(() => expect(api.recorder.options).not.toBeNull());
     await waitFor(() => expect(api.listen).toHaveBeenCalledTimes(1));
     await act(async () => {
-      await api.recorder.options!.onRecorded(new Blob(["x"]));
+      await api.recorder.options!.onSpoken({ audio: new Blob(["x"]), take: { filename: "attempt.webm", durationMs: 1500 } });
     });
     expect(screen.getByText("다시 한 번 말해보세요!")).toBeInTheDocument();
 
@@ -252,7 +252,7 @@ describe("SpeakPractice", () => {
     await waitFor(() => expect(api.listen).toHaveBeenCalledTimes(2));
     // …and the new take is graded like the first.
     await act(async () => {
-      await api.recorder.options!.onRecorded(new Blob(["y"]));
+      await api.recorder.options!.onSpoken({ audio: new Blob(["y"]), take: { filename: "attempt.webm", durationMs: 1500 } });
     });
     expect(api.speechAttempt).toHaveBeenCalledTimes(2);
     expect(screen.getByRole("button", { name: "다시 시작" })).toBeInTheDocument();
@@ -266,7 +266,7 @@ describe("SpeakPractice", () => {
     expect(await screen.findByText("감사합니다")).toBeInTheDocument();
     await waitFor(() => expect(api.recorder.options).not.toBeNull());
     await act(async () => {
-      await api.recorder.options!.onRecorded(new Blob(["x"]));
+      await api.recorder.options!.onSpoken({ audio: new Blob(["x"]), take: { filename: "attempt.webm", durationMs: 1500 } });
     });
     const before = api.listen.mock.calls.length;
     fireEvent.click(screen.getByRole("button", { name: "다시 시작" }));

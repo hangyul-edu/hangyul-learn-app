@@ -335,6 +335,14 @@ loading/error/retry/caching, and central token/refresh handling in `lib/http.ts`
   without `REDIS_URL` the API uses an in-memory session store for dev.
 
 **Microphone / pronunciation not working**
+- Speaking screens stream the microphone live into the API's self-hosted
+  LiveKit server when `GET /speech/availability` says it is up (LiveKit
+  running + the STT agent heartbeating); otherwise they record and upload,
+  and the API transcribes with local Whisper. Either way the server grades
+  what was said (`correct` / `feedback_code`, incl. `unrelated_speech`);
+  the app never marks a take correct on its own. The browser must reach the
+  LiveKit URL (`ws://localhost:7880` locally) directly, not through the Vite
+  proxy. See `hangyul-api/docs/stt.md`.
 - The record button needs mic permission and a secure context. `localhost` is
   treated as secure; on other hosts serve over HTTPS.
 

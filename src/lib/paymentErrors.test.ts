@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { setCurrentLanguage } from "../i18n/current";
 import { ApiError, NetworkError, errorMessage } from "./http";
-import { currencyMismatchMessage, intlCardError, paymentErrorMessage } from "./paymentErrors";
+import { currencyMismatchMessage, intlCardError, paymentDeclinedMessage, paymentErrorMessage } from "./paymentErrors";
 import { failureModalKeys, noticeReasonKey } from "./paymentRecovery";
 
 beforeEach(() => setCurrentLanguage("ko"));
@@ -24,6 +24,24 @@ describe("currency mismatch copy", () => {
     expect(currencyMismatchMessage(new ApiError(409, "conflict", "Already"))).toBeNull();
     const other = new ApiError(409, "conflict", "Already");
     expect(paymentErrorMessage(other)).toBe(errorMessage(other));
+  });
+});
+
+describe("first-charge decline (402 subscription.payment_declined)", () => {
+  it("explains the decline from the server's failure_class", () => {
+    const e = new ApiError(402, "subscription.payment_declined", "raw", {
+      invoice_id: "inv_1",
+      failure_class: "insufficient_funds",
+      failure_code: "EXCEED_MAX_AMOUNT",
+    });
+    expect(paymentErrorMessage(e)).toBe("잔액 부족으로 결제가 진행되지 않았어요 다른 결제수단을 선택하거나 잔액을 확인해 주세요");
+  });
+
+  it("falls back to the generic wording without a known class, and ignores other errors", () => {
+    expect(paymentDeclinedMessage(new ApiError(402, "subscription.payment_declined", "raw"))).toBe(
+      "구독료 결제가 진행되지 않았어요 다른 카드를 선택하거나 잠시 후 다시 시도해 주세요",
+    );
+    expect(paymentDeclinedMessage(new ApiError(409, "subscription.already_active", "raw"))).toBeNull();
   });
 });
 

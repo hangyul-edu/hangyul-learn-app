@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "../i18n";
 import { SessionChrome } from "../components/SessionChrome";
 import { SessionCompleteModal } from "../components/SessionCompleteModal";
@@ -13,6 +14,14 @@ import { useTopikSessionCopy } from "../lib/topikSessionCopy";
 import { PremiumLockedField } from "../components/session/PremiumLockedField";
 import { TopikTypeDropdown } from "./sessionTopik/TopikTypeDropdown";
 import { useTopikSession } from "./sessionTopik/useTopikSession";
+import { ConfirmDialog } from "../components/ui/Modal";
+import { GradingModal } from "../components/GradingModal";
+import type { Quiz } from "../lib/types";
+
+/** A writing answer is graded by the server, which takes a moment (2677:26028). */
+function isWritingQuiz(q: Quiz): boolean {
+  return q.question_type?.startsWith("writing") || q.answer.format === "free_response";
+}
 
 /** The daily TOPIK session for one part: see useTopikSession for the flow. */
 export function SessionTopik() {
@@ -22,6 +31,9 @@ export function SessionTopik() {
   const reviewCopy = useReviewSessionCopy();
   const s = useTopikSession();
   const { cur, phase, result } = s;
+  // Back with questions still open asks first (cp_G_01_modals 1:5529); once
+  // the goal is met the back chevron runs the completion flow directly.
+  const [quitOpen, setQuitOpen] = useState(false);
 
   // Writing is scored (not right/wrong): a graded-writing or still-deferred
   // result renders the score card, never the correct/retry verdict header.
@@ -75,7 +87,7 @@ export function SessionTopik() {
             <PremiumLockedField placeholder={t("session.topikTypePrompt")} />
           )
         }
-        onBack={s.finishOrExit}
+        onBack={() => (s.targetReached || s.completed ? s.finishOrExit() : setQuitOpen(true))}
         askContext={
           !cur
             ? null
@@ -154,6 +166,21 @@ export function SessionTopik() {
       {s.completed && (
         <SessionCompleteModal mode="topik" correctCount={s.correctCount} points={s.points} onConfirm={s.exitSession} />
       )}
+      {/* 1:5529 (KO) / 784:52243 (EN) — leaving with questions still open. */}
+      <ConfirmDialog
+        open={quitOpen}
+        title={<span className="dialog__title-lines">{t("session.quitTitle")}</span>}
+        text={t("session.quitText")}
+        cancelLabel={t("courses.keepGoing")}
+        confirmLabel={t("courses.quitNow")}
+        onCancel={() => setQuitOpen(false)}
+        onConfirm={() => {
+          setQuitOpen(false);
+          s.finishOrExit();
+        }}
+      />
+      {/* 2677:26028 — the wait while the server grades a writing answer. */}
+      {phase === "submitting" && cur != null && isWritingQuiz(cur) && <GradingModal />}
     </>
   );
 }

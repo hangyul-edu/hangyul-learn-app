@@ -221,9 +221,9 @@ describe("LanguageSettings screen", () => {
     await userEvent.click(screen.getByRole("button", { name: "Go back" }));
     expect(await screen.findByRole("alertdialog")).toBeInTheDocument();
     // The screen renders in English here, so the shared modal does too.
-    expect(screen.getByText("Leave without saving your changes?")).toBeInTheDocument();
-    expect(screen.getByText("Your changes will not be applied")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Keep editing" })).toBeInTheDocument();
+    expect(screen.getByText("Leave without saving changes?")).toBeInTheDocument();
+    expect(screen.getByText("Changes will not be applied")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Leave" })).toBeInTheDocument();
     expect(screen.queryByText("PROFILE_SCREEN")).not.toBeInTheDocument();
     expect(api.setLanguage).not.toHaveBeenCalled(); // 나가기 must not save
@@ -234,7 +234,7 @@ describe("LanguageSettings screen", () => {
     await userEvent.click(card("한국어"));
     await userEvent.click(screen.getByRole("button", { name: "Go back" }));
     await screen.findByRole("alertdialog");
-    await userEvent.click(screen.getByRole("button", { name: "Keep editing" }));
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
     await waitFor(() => expect(modal()).not.toBeInTheDocument());
     expect(screen.queryByText("PROFILE_SCREEN")).not.toBeInTheDocument();
     expect(card("한국어")).toHaveAttribute("aria-checked", "true"); // edit preserved

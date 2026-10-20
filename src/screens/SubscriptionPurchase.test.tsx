@@ -24,7 +24,7 @@ vi.mock("../api/endpoints", () => ({
   subApi: {
     offers: async () => {
       const [p, m, b] = await Promise.all([plans(), mine(), billing()]);
-      return { plans: p.plans, new_member: false, trial: { available: !!m.trial_available, days: 7 }, ...b };
+      return { plans: p.plans, new_member: false, trial: { available: !!m.trial_available, days: m.trial_days ?? 7 }, ...b };
     },
     startTrial,
     subscribe,
@@ -217,7 +217,8 @@ describe("SubscriptionPurchase", () => {
     });
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: "7일 무료 체험 시작하기" }));
-    await waitFor(() => expect(startTrial).toHaveBeenCalledWith("p_year", YEAR_QUOTE));
+    // …and the trial converts onto that wallet, not a default the member lacks.
+    await waitFor(() => expect(startTrial).toHaveBeenCalledWith("p_year", "pm2", YEAR_QUOTE));
     expect(screen.queryByText("결제 수단 등록이 필요해요")).not.toBeInTheDocument();
   });
 
@@ -279,11 +280,58 @@ describe("SubscriptionPurchase", () => {
   it("trial CTA (with a valid method) calls the trial endpoint, then routes to management", async () => {
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: "7일 무료 체험 시작하기" }));
-    await waitFor(() => expect(startTrial).toHaveBeenCalledWith("p_year", YEAR_QUOTE));
+    await waitFor(() => expect(startTrial).toHaveBeenCalledWith("p_year", undefined, YEAR_QUOTE));
     expect(subscribe).not.toHaveBeenCalled();
     await waitFor(() => expect(screen.getByText("MANAGE")).toBeInTheDocument());
     // The profile's membership drives the premium gates: it is re-read.
     expect(bootstrapMe).toHaveBeenCalled();
+  });
+
+  it("quotes the trial length the offers carry, not a number in the copy", async () => {
+    mine.mockResolvedValue({ status: "expired", trial_started: false, trial_available: true, trial_days: 14 });
+    renderPage();
+    expect(await screen.findByRole("button", { name: "14일 무료 체험 시작하기" })).toBeInTheDocument();
+    expect(screen.getByText(/14일 무료 체험 종료 후/)).toBeInTheDocument();
+  });
+
+  it("names the method the trial converts onto when it is not the default", async () => {
+    mine.mockResolvedValue({ status: "expired", trial_started: false, trial_available: true });
+    paymentMethods.mockResolvedValue({
+      methods: [
+        { method_id: "pm2", kind: "naver_pay", provider: "naver_pay", status: "active", is_default: false, display_name: "네이버페이" },
+      ],
+    });
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: /무료 체험 시작하기/ }));
+    await waitFor(() => expect(startTrial).toHaveBeenCalledWith("p_year", "pm2", YEAR_QUOTE));
+    expect(subscribe).not.toHaveBeenCalled();
+  });
+
+  it("names the method to charge when the only usable one is not the default", async () => {
+    // The server charges the default method unless told which; after the
+    // default card was removed a remaining wallet is what the screen checked.
+    mine.mockResolvedValue({ status: "expired", trial_started: true, trial_available: false });
+    paymentMethods.mockResolvedValue({
+      methods: [
+        { method_id: "pm2", kind: "naver_pay", provider: "naver_pay", status: "active", is_default: false, display_name: "네이버페이" },
+      ],
+    });
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "지금 바로 시작하기" }));
+    await waitFor(() => expect(subscribe).toHaveBeenCalledWith("p_year", "pm2", YEAR_QUOTE));
+  });
+
+  it("explains a declined first charge (402) from its failure class", async () => {
+    const { ApiError } = await import("../lib/http");
+    mine.mockResolvedValue({ status: "expired", trial_started: true, trial_available: false });
+    subscribe.mockRejectedValue(
+      new ApiError(402, "subscription.payment_declined", "declined", { invoice_id: "inv_1", failure_class: "card_expired" }),
+    );
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "지금 바로 시작하기" }));
+    await waitFor(() => expect(toastError).toHaveBeenCalled());
+    expect(toastError.mock.calls[0][0]).toMatch(/현재 결제수단을 사용할 수 없어요/);
+    expect(screen.getByTestId("loc")).toHaveTextContent(/^\/subscription\/start/);
   });
 
   it("paid CTA (ineligible) calls the paid endpoint, never the trial one", async () => {
@@ -551,7 +599,7 @@ describe("SubscriptionPurchase — currency and what is charged", () => {
     expect(screen.getByText("(69,000원)")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "7일 무료 체험 시작하기" }));
     await waitFor(() =>
-      expect(startTrial).toHaveBeenCalledWith("p_year", { currency: "KRW", quoted_amount_cents: 69000 }),
+      expect(startTrial).toHaveBeenCalledWith("p_year", undefined, { currency: "KRW", quoted_amount_cents: 69000 }),
     );
   });
 

@@ -44,7 +44,7 @@ export function SessionCompleteModal({
           className="scomp__summary"
           aria-label={t("session.completeSummaryA11y", { count: correctCount, unit, points })}
         >
-          {t("session.completeCount", { count: correctCount, unit })}
+          {t(mode === "topik" ? "session.completeCountQuestions" : "session.completeCountSentences", { count: correctCount })}
         </p>
 
         <button className="scomp__confirm" onClick={onConfirm} aria-label={t("common.confirm")}>
